@@ -1,0 +1,132 @@
+/**
+ * Bot Twitch Handler
+ * 
+ * Checker periodisk Twitch streamers og sender live notifikationer.
+ * Importér denne fil i din bot's main fil og kald startTwitchChecker().
+ */
+
+const SUPABASE_URL = process.env.SUPABASE_URL || 'https://sleiplyixaxuvydzudxn.supabase.co';
+const BOT_SECRET_KEY = process.env.BOT_SECRET_KEY;
+
+// Check interval i millisekunder (60 sekunder)
+const CHECK_INTERVAL = 60000;
+let twitchCheckerStartupTimeout = null;
+let twitchCheckerInterval = null;
+
+/**
+ * Check Twitch streamers for en enkelt guild
+ * @param {string} guildId - Discord guild ID (optional - checks all if not provided)
+ */
+async function checkTwitchStreamers(guildId = null) {
+  if (!BOT_SECRET_KEY) {
+    console.error('[Twitch] BOT_SECRET_KEY er ikke sat i environment variables');
+    return;
+  }
+
+  try {
+    const url = guildId 
+      ? `${SUPABASE_URL}/functions/v1/twitch-handler?action=check&guild_id=${guildId}`
+      : `${SUPABASE_URL}/functions/v1/twitch-handler?action=check`;
+
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-bot-secret': BOT_SECRET_KEY
+      }
+    });
+
+    if (!response.ok) {
+      const error = await response.text();
+      console.error('[Twitch] Check fejl:', error);
+      return;
+    }
+
+    const result = await response.json();
+    
+    if (result.notifications && result.notifications.length > 0) {
+      console.log(`[Twitch] Sendte ${result.notifications.length} notifikation(er):`, 
+        result.notifications.map(n => `${n.streamer}: ${n.action}`).join(', '));
+    } else {
+      console.log(`[Twitch] Checked ${result.checked || 0} streamers, ${result.live || 0} live`);
+    }
+  } catch (error) {
+    console.error('[Twitch] Network fejl:', error.message);
+  }
+}
+
+/**
+ * Post weekly stream schedule to Discord
+ */
+async function postWeeklySchedule() {
+  if (!BOT_SECRET_KEY) return;
+
+  try {
+    const response = await fetch(
+      `${SUPABASE_URL}/functions/v1/twitch-handler?action=schedule_post`,
+      {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-bot-secret': BOT_SECRET_KEY,
+        },
+      }
+    );
+
+    if (!response.ok) {
+      const error = await response.text();
+      console.error('[Twitch] Schedule post fejl:', error);
+      return;
+    }
+
+    const result = await response.json();
+    if (result.posted > 0) {
+      console.log(`[Twitch] Postede ugeskema til ${result.posted} guild(s)`);
+    }
+  } catch (error) {
+    console.error('[Twitch] Schedule post network fejl:', error.message);
+  }
+}
+
+/**
+ * Start Twitch checker service
+ * @param {object} client - Discord.js client (optional, for logging)
+ */
+function startTwitchChecker(client = null, config = {}) {
+  void client;
+  void config;
+
+  if (!BOT_SECRET_KEY) {
+    console.error('[Twitch] BOT_SECRET_KEY mangler! Twitch checker deaktiveret.');
+    console.error('[Twitch] Sæt BOT_SECRET_KEY i dine environment variables.');
+    return;
+  }
+
+  // Twitch checks are server-side and do not depend on a specific bot client.
+  // We only want ONE periodic loop per process, regardless of default/custom bots.
+  if (twitchCheckerStartupTimeout || twitchCheckerInterval) {
+    console.log('[Twitch] Checker allerede initialiseret - skipper duplicate start');
+    return;
+  }
+
+  console.log('[Twitch] Starter Twitch checker service...');
+
+  twitchCheckerStartupTimeout = setTimeout(() => {
+    checkTwitchStreamers();
+    postWeeklySchedule();
+    twitchCheckerInterval = setInterval(() => {
+      checkTwitchStreamers();
+      // Check schedule posting every run (the edge function handles dedup)
+      postWeeklySchedule();
+    }, CHECK_INTERVAL);
+    twitchCheckerStartupTimeout = null;
+  }, 10000);
+
+  console.log('[Twitch] Service initialiseret (checker hvert 60. sekund)');
+}
+
+module.exports = {
+  startTwitchChecker,
+  checkTwitchStreamers,
+  postWeeklySchedule
+};
