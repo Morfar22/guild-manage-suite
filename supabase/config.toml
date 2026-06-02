@@ -1,1 +1,97 @@
 project_id = "sleiplyixaxuvydzudxn"
+
+[functions.discord-oauth]
+verify_jwt = false
+
+[functions.bot-settings]
+verify_jwt = false
+
+[functions.bot-heartbeat]
+verify_jwt = false
+
+[functions.log-action]
+verify_jwt = false
+
+[functions.bot-log-events]
+verify_jwt = false
+
+[functions.send-ticket-panel]
+verify_jwt = false
+
+[functions.admin-users]
+verify_jwt = false
+
+[functions.create-demo-guild]
+verify_jwt = false
+
+[functions.discord-interactions]
+verify_jwt = false
+
+[functions.bot-tickets]
+verify_jwt = false
+
+[functions.bot-welcome]
+verify_jwt = false
+
+[functions.bot-characters]
+verify_jwt = false
+
+[functions.review-application]
+verify_jwt = false
+
+[functions.discord-roles]
+verify_jwt = false
+
+[functions.discord-channels]
+verify_jwt = false
+
+[functions.xp-handler]
+verify_jwt = false
+
+[functions.reaction-role-handler]
+verify_jwt = false
+
+[functions.automod-handler]
+verify_jwt = false
+
+[functions.giveaway-handler]
+verify_jwt = false
+
+[functions.twitch-handler]
+verify_jwt = false
+
+[functions.jtc-handler]
+verify_jwt = false
+
+[functions.ai-chat]
+verify_jwt = false
+
+[functions.application-handler]
+verify_jwt = false
+
+[functions.admin-check-ip]
+verify_jwt = false
+
+[functions.guild-bot-config]
+verify_jwt = false
+
+[functions.modmail-handler]
+verify_jwt = false
+
+[functions.tebex-handler]
+verify_jwt = false
+
+[functions.tebex-webhook]
+verify_jwt = false
+
+[functions.send-embed]
+verify_jwt = false
+
+[functions.server-backup]
+verify_jwt = false
+
+[functions.global-ban-handler]
+verify_jwt = false
+
+[functions.send-poll]
+verify_jwt = false

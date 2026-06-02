@@ -1,0 +1,134 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Discord Bot Dashboard Design System
+   Dark theme inspired by Discord's aesthetic with blurple accents
+*/
+
+@layer base {
+  :root {
+    /* Dark mode by default - Discord-inspired */
+    --background: 232 15% 10%;
+    --foreground: 210 20% 95%;
+
+    --card: 232 15% 13%;
+    --card-foreground: 210 20% 95%;
+
+    --popover: 232 15% 15%;
+    --popover-foreground: 210 20% 95%;
+
+    /* Discord Blurple */
+    --primary: 235 86% 65%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 232 15% 18%;
+    --secondary-foreground: 210 20% 90%;
+
+    --muted: 232 12% 20%;
+    --muted-foreground: 215 15% 55%;
+
+    --accent: 235 86% 65%;
+    --accent-foreground: 0 0% 100%;
+
+    /* Status colors */
+    --success: 145 65% 42%;
+    --success-foreground: 0 0% 100%;
+    
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 10%;
+
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 232 12% 22%;
+    --input: 232 12% 22%;
+    --ring: 235 86% 65%;
+
+    --radius: 0.625rem;
+
+    /* Sidebar */
+    --sidebar-background: 232 15% 8%;
+    --sidebar-foreground: 210 20% 85%;
+    --sidebar-primary: 235 86% 65%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 232 15% 15%;
+    --sidebar-accent-foreground: 210 20% 95%;
+    --sidebar-border: 232 12% 18%;
+    --sidebar-ring: 235 86% 65%;
+
+    /* Custom gradients */
+    --gradient-blurple: linear-gradient(135deg, hsl(235 86% 65%) 0%, hsl(255 70% 55%) 100%);
+    --gradient-dark: linear-gradient(180deg, hsl(232 15% 12%) 0%, hsl(232 15% 8%) 100%);
+    
+    /* Shadows */
+    --shadow-glow: 0 0 20px hsl(235 86% 65% / 0.15);
+    --shadow-card: 0 4px 24px hsl(0 0% 0% / 0.25);
+  }
+
+  .light {
+    --background: 0 0% 98%;
+    --foreground: 232 15% 12%;
+    --card: 0 0% 100%;
+    --card-foreground: 232 15% 12%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 232 15% 12%;
+    --primary: 235 86% 60%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 220 14% 96%;
+    --secondary-foreground: 232 15% 12%;
+    --muted: 220 14% 96%;
+    --muted-foreground: 215 15% 45%;
+    --accent: 235 86% 60%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 220 13% 91%;
+    --input: 220 13% 91%;
+    --ring: 235 86% 60%;
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 232 15% 12%;
+    --sidebar-primary: 235 86% 60%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 220 14% 96%;
+    --sidebar-accent-foreground: 232 15% 12%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 235 86% 60%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  }
+}
+
+@layer utilities {
+  .gradient-blurple {
+    background: var(--gradient-blurple);
+  }
+  
+  .gradient-dark {
+    background: var(--gradient-dark);
+  }
+  
+  .shadow-glow {
+    box-shadow: var(--shadow-glow);
+  }
+  
+  .shadow-card {
+    box-shadow: var(--shadow-card);
+  }
+  
+  .text-gradient {
+    background: var(--gradient-blurple);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+}
