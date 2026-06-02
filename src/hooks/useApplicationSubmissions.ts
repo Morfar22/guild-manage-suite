@@ -48,7 +48,7 @@ export function useApplicationSubmissions(status?: 'pending' | 'approved' | 'den
       const { data, error } = await query;
 
       if (error) throw error;
-      return (data || []) as ApplicationSubmission[];
+      return (data || []) as unknown as ApplicationSubmission[];
     },
     enabled: !!selectedGuild?.id,
   });
@@ -73,7 +73,7 @@ export function useApplicationSubmission(submissionId: string | undefined) {
         .single();
 
       if (error) throw error;
-      return data as ApplicationSubmission & { form: { name: string; emoji: string | null; granted_role_id: string | null } };
+      return data as unknown as ApplicationSubmission & { form: { name: string; emoji: string | null; granted_role_id: string | null } };
     },
     enabled: !!submissionId && !!selectedGuild?.id,
   });
