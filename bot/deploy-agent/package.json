@@ -1,0 +1,13 @@
+{
+  "name": "deploy-agent",
+  "version": "1.0.0",
+  "description": "Lokal HTTP-agent på VPS der modtager deploy-kommandoer fra Lovable admin panel",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "dotenv": "^16.4.5"
+  }
+}

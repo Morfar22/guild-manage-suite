@@ -1,0 +1,1 @@
+ALTER TABLE public.twitch_settings ADD COLUMN IF NOT EXISTS highlights_channel_id TEXT;

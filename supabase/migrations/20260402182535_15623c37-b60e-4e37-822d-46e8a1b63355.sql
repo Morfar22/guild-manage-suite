@@ -1,0 +1,1 @@
+ALTER TABLE public.guild_bot_settings ADD COLUMN IF NOT EXISTS command_prefix text NOT NULL DEFAULT '!';

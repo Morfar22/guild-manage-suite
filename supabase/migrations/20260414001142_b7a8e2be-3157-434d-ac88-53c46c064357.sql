@@ -1,0 +1,1 @@
+ALTER TABLE public.welcome_settings ADD COLUMN auto_role_ids text[] DEFAULT '{}';
