@@ -14,6 +14,9 @@ import { Separator } from '@/components/ui/separator';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useApplicationSubmission, useReviewApplication } from '@/hooks/useApplicationSubmissions';
 import { useAuth } from '@/contexts/AuthContext';
+import { AiScoreCard } from '@/components/applications/AiScoreCard';
+import { useGuildPremium } from '@/hooks/useGuildPremium';
+import { PremiumBadge } from '@/components/applications/PremiumLock';
 
 const statusConfig = {
   pending: { label: 'Pending', variant: 'default' as const, icon: Clock },
@@ -26,6 +29,7 @@ export default function ApplicationReview() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { data: submission, isLoading } = useApplicationSubmission(submissionId);
+  const { data: hasPremium } = useGuildPremium();
   const reviewMutation = useReviewApplication();
 
   const [notes, setNotes] = useState('');
@@ -107,9 +111,22 @@ export default function ApplicationReview() {
 
         <div className="grid gap-6 lg:grid-cols-3">
           <div className="lg:col-span-2 space-y-6">
+            {hasPremium && (
+              <AiScoreCard
+                submissionId={submission.id}
+                score={(submission as any).ai_score ?? null}
+                summary={(submission as any).ai_summary ?? null}
+                flags={((submission as any).ai_flags as string[]) ?? null}
+                reasoning={(submission as any).ai_reasoning ?? null}
+              />
+            )}
+
             <Card>
               <CardHeader>
-                <CardTitle>Application Answers</CardTitle>
+                <CardTitle className="flex items-center gap-2">
+                  Application Answers
+                  {hasPremium && <PremiumBadge />}
+                </CardTitle>
                 <CardDescription>
                   Submitted on {format(new Date(submission.created_at), "MMMM d, yyyy 'at' HH:mm", { locale: enUS })}
                 </CardDescription>
