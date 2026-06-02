@@ -1,9 +1,0 @@
-ALTER TABLE public.twitch_settings 
-  ADD COLUMN IF NOT EXISTS clips_channel_id TEXT,
-  ADD COLUMN IF NOT EXISTS vods_channel_id TEXT,
-  ADD COLUMN IF NOT EXISTS notify_clips BOOLEAN NOT NULL DEFAULT false,
-  ADD COLUMN IF NOT EXISTS notify_vods BOOLEAN NOT NULL DEFAULT false,
-  ADD COLUMN IF NOT EXISTS notify_highlights BOOLEAN NOT NULL DEFAULT false,
-  ADD COLUMN IF NOT EXISTS clip_message TEXT,
-  ADD COLUMN IF NOT EXISTS vod_message TEXT,
-  ADD COLUMN IF NOT EXISTS highlight_message TEXT;

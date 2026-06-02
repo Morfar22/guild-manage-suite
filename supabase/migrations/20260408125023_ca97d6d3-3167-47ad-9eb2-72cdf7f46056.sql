@@ -1,1 +1,0 @@
-CREATE POLICY "Allow bot inserts on reports" ON public.global_ban_reports FOR INSERT TO anon WITH CHECK (true);

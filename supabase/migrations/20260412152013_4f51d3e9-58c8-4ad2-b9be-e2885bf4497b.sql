@@ -1,1 +1,0 @@
-ALTER TABLE public.verification_settings ADD COLUMN IF NOT EXISTS panel_message_id text;

@@ -1,1 +1,0 @@
-ALTER PUBLICATION supabase_realtime ADD TABLE public.bot_console_logs;

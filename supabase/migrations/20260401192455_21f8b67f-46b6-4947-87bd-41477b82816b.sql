@@ -1,1 +1,0 @@
-ALTER TABLE public.log_settings ADD COLUMN IF NOT EXISTS boost_channel_id text DEFAULT NULL;

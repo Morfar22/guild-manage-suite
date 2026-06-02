@@ -1,1 +1,0 @@
-ALTER TABLE public.welcome_settings ADD COLUMN IF NOT EXISTS thumbnail_type text NOT NULL DEFAULT 'user_avatar';
