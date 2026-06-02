@@ -34,6 +34,7 @@ const ApplicationList = lazy(() => import("./pages/ApplicationList"));
 const ApplicationSettings = lazy(() => import("./pages/ApplicationSettings"));
 const ApplicationFormEdit = lazy(() => import("./pages/ApplicationFormEdit"));
 const ApplicationReview = lazy(() => import("./pages/ApplicationReview"));
+const ApplicationAnalytics = lazy(() => import("./pages/ApplicationAnalytics"));
 const Characters = lazy(() => import("./pages/Characters"));
 const Members = lazy(() => import("./pages/Members"));
 const WelcomeSettings = lazy(() => import("./pages/WelcomeSettings"));
@@ -135,9 +136,10 @@ const App = () => (
                       <Route path="tickets/:ticketId" element={<TicketDetail />} />
                       <Route path="tickets/settings" element={<TicketSettings />} />
                       <Route path="applications" element={<ApplicationList />} />
-                      <Route path="applications/settings" element={<ApplicationSettings />} />
-                      <Route path="applications/forms/:formId" element={<ApplicationFormEdit />} />
-                      <Route path="applications/:submissionId" element={<ApplicationReview />} />
+                     <Route path="applications/settings" element={<ApplicationSettings />} />
+                     <Route path="applications/analytics" element={<ApplicationAnalytics />} />
+                     <Route path="applications/forms/:formId" element={<ApplicationFormEdit />} />
+                     <Route path="applications/:submissionId" element={<ApplicationReview />} />
                       <Route path="members" element={<Members />} />
                       <Route path="characters" element={<Characters />} />
                       <Route path="welcome" element={<WelcomeSettings />} />

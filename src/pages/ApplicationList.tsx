@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import { enUS } from 'date-fns/locale';
-import { FileText, Settings, Clock, CheckCircle, XCircle, User, Filter } from 'lucide-react';
+import { FileText, Settings, Clock, CheckCircle, XCircle, User, Filter, BarChart3, Sparkles } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -22,6 +22,18 @@ const statusConfig = {
 function ApplicationCard({ submission, onClick }: { submission: ApplicationSubmission; onClick: () => void }) {
   const config = statusConfig[submission.status];
   const StatusIcon = config.icon;
+  const aiScore = (submission as any).ai_score as number | null;
+
+  const scoreColor =
+    aiScore == null
+      ? ''
+      : aiScore >= 80
+      ? 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30'
+      : aiScore >= 60
+      ? 'text-amber-400 bg-amber-500/10 border-amber-500/30'
+      : aiScore >= 40
+      ? 'text-orange-400 bg-orange-500/10 border-orange-500/30'
+      : 'text-rose-400 bg-rose-500/10 border-rose-500/30';
 
   return (
     <Card className="cursor-pointer hover:bg-accent/50 transition-colors" onClick={onClick}>
@@ -34,12 +46,18 @@ function ApplicationCard({ submission, onClick }: { submission: ApplicationSubmi
             </AvatarFallback>
           </Avatar>
           <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 mb-1">
+            <div className="flex items-center gap-2 mb-1 flex-wrap">
               <span className="font-medium truncate">{submission.discord_username || 'Unknown User'}</span>
               <Badge variant={config.variant} className="shrink-0">
                 <StatusIcon className="h-3 w-3 mr-1" />
                 {config.label}
               </Badge>
+              {aiScore != null && (
+                <Badge variant="outline" className={`shrink-0 ${scoreColor}`}>
+                  <Sparkles className="h-3 w-3 mr-1" />
+                  AI {aiScore}
+                </Badge>
+              )}
             </div>
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <span>{submission.form?.emoji}</span>
@@ -77,10 +95,16 @@ export default function ApplicationList() {
           <h1 className="text-3xl font-bold">Applications</h1>
           <p className="text-muted-foreground">Review and manage application submissions</p>
         </div>
-        <Button variant="outline" onClick={() => navigate('/dashboard/applications/settings')}>
-          <Settings className="h-4 w-4 mr-2" />
-          Settings
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => navigate('/dashboard/applications/analytics')}>
+            <BarChart3 className="h-4 w-4 mr-2" />
+            Analytics
+          </Button>
+          <Button variant="outline" onClick={() => navigate('/dashboard/applications/settings')}>
+            <Settings className="h-4 w-4 mr-2" />
+            Settings
+          </Button>
+        </div>
       </div>
 
       <div className="grid gap-4 md:grid-cols-3">

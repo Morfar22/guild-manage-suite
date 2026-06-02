@@ -367,10 +367,77 @@ export type Database = {
           },
         ]
       }
+      application_audit_log: {
+        Row: {
+          action: string
+          actor_id: string | null
+          actor_name: string | null
+          actor_type: string
+          created_at: string
+          form_id: string | null
+          guild_id: string
+          id: string
+          payload: Json | null
+          submission_id: string | null
+        }
+        Insert: {
+          action: string
+          actor_id?: string | null
+          actor_name?: string | null
+          actor_type?: string
+          created_at?: string
+          form_id?: string | null
+          guild_id: string
+          id?: string
+          payload?: Json | null
+          submission_id?: string | null
+        }
+        Update: {
+          action?: string
+          actor_id?: string | null
+          actor_name?: string | null
+          actor_type?: string
+          created_at?: string
+          form_id?: string | null
+          guild_id?: string
+          id?: string
+          payload?: Json | null
+          submission_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "application_audit_log_form_id_fkey"
+            columns: ["form_id"]
+            isOneToOne: false
+            referencedRelation: "application_forms"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "application_audit_log_guild_id_fkey"
+            columns: ["guild_id"]
+            isOneToOne: false
+            referencedRelation: "guilds"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "application_audit_log_submission_id_fkey"
+            columns: ["submission_id"]
+            isOneToOne: false
+            referencedRelation: "application_submissions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       application_forms: {
         Row: {
+          ai_auto_approve_threshold: number | null
+          ai_auto_deny_threshold: number | null
+          ai_screening_enabled: boolean
+          ai_screening_prompt: string | null
           allow_reapply: boolean
           approval_channel_id: string | null
+          blacklist_role_ids: string[] | null
+          color: string | null
           created_at: string
           denial_channel_id: string | null
           description: string | null
@@ -379,15 +446,31 @@ export type Database = {
           granted_role_id: string | null
           guild_id: string
           id: string
+          interview_category_id: string | null
+          interview_enabled: boolean
+          interview_questions: Json
+          max_pending_per_user: number
+          min_account_age_days: number | null
           name: string
           questions: Json
           reapply_cooldown_hours: number | null
           required_role_id: string | null
+          required_role_ids: string[] | null
+          sort_order: number
+          stages: Json
+          submit_message: string | null
+          thumbnail_url: string | null
           updated_at: string
         }
         Insert: {
+          ai_auto_approve_threshold?: number | null
+          ai_auto_deny_threshold?: number | null
+          ai_screening_enabled?: boolean
+          ai_screening_prompt?: string | null
           allow_reapply?: boolean
           approval_channel_id?: string | null
+          blacklist_role_ids?: string[] | null
+          color?: string | null
           created_at?: string
           denial_channel_id?: string | null
           description?: string | null
@@ -396,15 +479,31 @@ export type Database = {
           granted_role_id?: string | null
           guild_id: string
           id?: string
+          interview_category_id?: string | null
+          interview_enabled?: boolean
+          interview_questions?: Json
+          max_pending_per_user?: number
+          min_account_age_days?: number | null
           name: string
           questions?: Json
           reapply_cooldown_hours?: number | null
           required_role_id?: string | null
+          required_role_ids?: string[] | null
+          sort_order?: number
+          stages?: Json
+          submit_message?: string | null
+          thumbnail_url?: string | null
           updated_at?: string
         }
         Update: {
+          ai_auto_approve_threshold?: number | null
+          ai_auto_deny_threshold?: number | null
+          ai_screening_enabled?: boolean
+          ai_screening_prompt?: string | null
           allow_reapply?: boolean
           approval_channel_id?: string | null
+          blacklist_role_ids?: string[] | null
+          color?: string | null
           created_at?: string
           denial_channel_id?: string | null
           description?: string | null
@@ -413,10 +512,20 @@ export type Database = {
           granted_role_id?: string | null
           guild_id?: string
           id?: string
+          interview_category_id?: string | null
+          interview_enabled?: boolean
+          interview_questions?: Json
+          max_pending_per_user?: number
+          min_account_age_days?: number | null
           name?: string
           questions?: Json
           reapply_cooldown_hours?: number | null
           required_role_id?: string | null
+          required_role_ids?: string[] | null
+          sort_order?: number
+          stages?: Json
+          submit_message?: string | null
+          thumbnail_url?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -487,52 +596,85 @@ export type Database = {
       }
       application_submissions: {
         Row: {
+          ai_flags: Json | null
+          ai_reasoning: string | null
+          ai_score: number | null
+          ai_summary: string | null
           answers: Json
           created_at: string
+          current_stage: string
           discord_avatar: string | null
           discord_user_id: string
           discord_username: string | null
           form_id: string
           guild_id: string
           id: string
+          interview_answers: Json | null
+          interview_thread_id: string | null
+          review_channel_id: string | null
+          review_message_id: string | null
           reviewed_at: string | null
           reviewer_discord_id: string | null
           reviewer_name: string | null
           reviewer_notes: string | null
           status: string
+          time_to_review_seconds: number | null
           updated_at: string
+          votes: Json
         }
         Insert: {
+          ai_flags?: Json | null
+          ai_reasoning?: string | null
+          ai_score?: number | null
+          ai_summary?: string | null
           answers?: Json
           created_at?: string
+          current_stage?: string
           discord_avatar?: string | null
           discord_user_id: string
           discord_username?: string | null
           form_id: string
           guild_id: string
           id?: string
+          interview_answers?: Json | null
+          interview_thread_id?: string | null
+          review_channel_id?: string | null
+          review_message_id?: string | null
           reviewed_at?: string | null
           reviewer_discord_id?: string | null
           reviewer_name?: string | null
           reviewer_notes?: string | null
           status?: string
+          time_to_review_seconds?: number | null
           updated_at?: string
+          votes?: Json
         }
         Update: {
+          ai_flags?: Json | null
+          ai_reasoning?: string | null
+          ai_score?: number | null
+          ai_summary?: string | null
           answers?: Json
           created_at?: string
+          current_stage?: string
           discord_avatar?: string | null
           discord_user_id?: string
           discord_username?: string | null
           form_id?: string
           guild_id?: string
           id?: string
+          interview_answers?: Json | null
+          interview_thread_id?: string | null
+          review_channel_id?: string | null
+          review_message_id?: string | null
           reviewed_at?: string | null
           reviewer_discord_id?: string | null
           reviewer_name?: string | null
           reviewer_notes?: string | null
           status?: string
+          time_to_review_seconds?: number | null
           updated_at?: string
+          votes?: Json
         }
         Relationships: [
           {
@@ -6475,6 +6617,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      guild_has_applications_pro: {
+        Args: { _guild_id: string }
+        Returns: boolean
+      }
       has_admin_or_staff_role: { Args: { _user_id: string }; Returns: boolean }
       has_role: {
         Args: {
