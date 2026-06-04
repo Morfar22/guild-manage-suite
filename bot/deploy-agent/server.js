@@ -125,7 +125,8 @@ app.post('/bot/deploy', async (_req, res) => {
   res.json({ step: 'restart', pull, install, restart });
 });
 
-app.listen(PORT, '127.0.0.1', () => {
-  console.log(`[deploy-agent] listening on 127.0.0.1:${PORT}`);
+const BIND = process.env.BIND_ADDRESS || '0.0.0.0';
+app.listen(PORT, BIND, () => {
+  console.log(`[deploy-agent] listening on ${BIND}:${PORT}`);
   console.log(`[deploy-agent] REPO_DIR=${REPO_DIR}  PM2_NAME=${PM2_NAME}`);
 });
