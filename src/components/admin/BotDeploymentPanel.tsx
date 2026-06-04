@@ -43,6 +43,10 @@ function getAgentError(data: unknown, fallback: string) {
   return fallback;
 }
 
+function textValue(value: unknown) {
+  return typeof value === 'string' ? value : '';
+}
+
 export function BotDeploymentPanel() {
   const { toast } = useToast();
   const qc = useQueryClient();
@@ -80,11 +84,11 @@ export function BotDeploymentPanel() {
     try {
       const res = await callAgent('logs', 200);
       if (!res.ok) throw new Error(getAgentError(res.data, 'Failed'));
-      const out = res.data?.out ?? res.data?.logs ?? '';
-      const err = res.data?.err ?? '';
+      const out = textValue(res.data?.out) || textValue(res.data?.logs);
+      const err = textValue(res.data?.err);
       setLogs([out, err].filter(Boolean).join('\n--- STDERR ---\n') || '(ingen logs)');
-    } catch (e: any) {
-      toast({ title: 'Fejl', description: e.message, variant: 'destructive' });
+    } catch (e: unknown) {
+      toast({ title: 'Fejl', description: e instanceof Error ? e.message : 'Kunne ikke hente logs', variant: 'destructive' });
     } finally {
       setLogsLoading(false);
     }
@@ -94,8 +98,9 @@ export function BotDeploymentPanel() {
   const agentReachable = status?.ok === true;
   const agentData = status?.data ?? {};
   const isOnline = agentData.online === true;
-  const branch: string = agentData.branch || '';
-  const commit: string = agentData.commit || '';
+  const branch = textValue(agentData.branch);
+  const commit = textValue(agentData.commit);
+  const pm2Name = textValue(agentData.pm2_name);
 
   return (
     <div className="space-y-6">
@@ -143,9 +148,9 @@ export function BotDeploymentPanel() {
                   <Badge variant={isOnline ? 'default' : 'secondary'}>
                     {isOnline ? 'Online' : 'Offline'}
                   </Badge>
-                  {agentData.pm2_name && (
+                  {pm2Name && (
                     <span className="text-xs text-muted-foreground font-mono">
-                      {agentData.pm2_name}
+                      {pm2Name}
                     </span>
                   )}
                 </div>
