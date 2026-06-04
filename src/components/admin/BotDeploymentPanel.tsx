@@ -11,11 +11,12 @@ import {
 } from 'lucide-react';
 
 type Action = 'status' | 'logs' | 'pull' | 'restart' | 'start' | 'stop' | 'deploy';
+type AgentPayload = Record<string, unknown>;
 
 interface AgentResponse {
   ok: boolean;
   status: number;
-  data: any;
+  data: AgentPayload;
 }
 
 async function callAgent(action: Action, lines?: number): Promise<AgentResponse> {
@@ -24,6 +25,26 @@ async function callAgent(action: Action, lines?: number): Promise<AgentResponse>
   });
   if (error) throw error;
   return data as AgentResponse;
+}
+
+function asPayload(value: unknown): AgentPayload | null {
+  return value && typeof value === 'object' ? (value as AgentPayload) : null;
+}
+
+function getAgentError(data: unknown, fallback: string) {
+  const payload = asPayload(data);
+  if (!payload) return fallback;
+  if (typeof payload.error === 'string') return payload.error;
+  if (typeof payload.stderr === 'string') return payload.stderr;
+  for (const step of ['restart', 'install', 'pull']) {
+    const stepPayload = asPayload(payload[step]);
+    if (typeof stepPayload?.stderr === 'string') return stepPayload.stderr;
+  }
+  return fallback;
+}
+
+function textValue(value: unknown) {
+  return typeof value === 'string' ? value : '';
 }
 
 export function BotDeploymentPanel() {
@@ -47,14 +68,14 @@ export function BotDeploymentPanel() {
       } else {
         toast({
           title: 'Agent fejl',
-          description: res.data?.error || `Status ${res.status}`,
+          description: getAgentError(res.data, `Status ${res.status}`),
           variant: 'destructive',
         });
       }
       qc.invalidateQueries({ queryKey: ['bot-deploy-status'] });
     },
-    onError: (err: any) => {
-      toast({ title: 'Fejl', description: err.message || 'Kunne ikke nå agent', variant: 'destructive' });
+    onError: (err: unknown) => {
+      toast({ title: 'Fejl', description: err instanceof Error ? err.message : 'Kunne ikke nå agent', variant: 'destructive' });
     },
   });
 
@@ -62,12 +83,12 @@ export function BotDeploymentPanel() {
     setLogsLoading(true);
     try {
       const res = await callAgent('logs', 200);
-      if (!res.ok) throw new Error(res.data?.error || 'Failed');
-      const out = res.data?.out ?? res.data?.logs ?? '';
-      const err = res.data?.err ?? '';
+      if (!res.ok) throw new Error(getAgentError(res.data, 'Failed'));
+      const out = textValue(res.data?.out) || textValue(res.data?.logs);
+      const err = textValue(res.data?.err);
       setLogs([out, err].filter(Boolean).join('\n--- STDERR ---\n') || '(ingen logs)');
-    } catch (e: any) {
-      toast({ title: 'Fejl', description: e.message, variant: 'destructive' });
+    } catch (e: unknown) {
+      toast({ title: 'Fejl', description: e instanceof Error ? e.message : 'Kunne ikke hente logs', variant: 'destructive' });
     } finally {
       setLogsLoading(false);
     }
@@ -77,8 +98,9 @@ export function BotDeploymentPanel() {
   const agentReachable = status?.ok === true;
   const agentData = status?.data ?? {};
   const isOnline = agentData.online === true;
-  const branch: string = agentData.branch || '';
-  const commit: string = agentData.commit || '';
+  const branch = textValue(agentData.branch);
+  const commit = textValue(agentData.commit);
+  const pm2Name = textValue(agentData.pm2_name);
 
   return (
     <div className="space-y-6">
@@ -126,9 +148,9 @@ export function BotDeploymentPanel() {
                   <Badge variant={isOnline ? 'default' : 'secondary'}>
                     {isOnline ? 'Online' : 'Offline'}
                   </Badge>
-                  {agentData.pm2_name && (
+                  {pm2Name && (
                     <span className="text-xs text-muted-foreground font-mono">
-                      {agentData.pm2_name}
+                      {pm2Name}
                     </span>
                   )}
                 </div>
