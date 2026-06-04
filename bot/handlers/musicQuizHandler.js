@@ -9,7 +9,7 @@
  */
 
 const { EmbedBuilder } = require('discord.js');
-const { createRealtimeSubscription } = require('./realtimeRetry');
+const { createRealtimeSubscription } = require('../realtimeRetry');
 
 const settingsCache = new Map();
 const CACHE_TTL = 300_000;

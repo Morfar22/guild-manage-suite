@@ -7,7 +7,7 @@
  */
 
 const { Events, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
-const { createRealtimeSubscription } = require('./realtimeRetry');
+const { createRealtimeSubscription } = require('../realtimeRetry');
 
 function setupSuggestionHandler(client, supabase, options = {}) {
   const { shouldHandleGuild, isCustomBot } = options;

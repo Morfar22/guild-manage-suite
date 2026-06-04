@@ -7,7 +7,7 @@
  */
 
 const { Events } = require('discord.js');
-const { botLog } = require('./consoleLogger');
+const { botLog } = require('../consoleLogger');
 const { isAutomodBypassed } = require('./automodBypass');
 
 const AUTOMOD_URL = process.env.SUPABASE_URL

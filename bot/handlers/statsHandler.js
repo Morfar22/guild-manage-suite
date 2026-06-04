@@ -4,7 +4,7 @@
 // Includes delay between updates and retry logic for rate limits.
 
 const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
-const { createRealtimeSubscription } = require('./realtimeRetry');
+const { createRealtimeSubscription } = require('../realtimeRetry');
 
 function setupStatsHandler(client, supabase, options = {}) {
   const { shouldHandleGuild, isCustomBot } = options;

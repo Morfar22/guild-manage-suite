@@ -16,7 +16,7 @@
  * - SUPABASE_SERVICE_ROLE_KEY (anbefalet til botten)
  */
 
-require('dotenv').config();
+require('dotenv').config({ path: require('path').join(__dirname, '.env') });
 
 const { Events, EmbedBuilder, PermissionFlagsBits, ChannelType } = require('discord.js');
 const { createClient } = require('@supabase/supabase-js');
@@ -37,13 +37,13 @@ const jtcHandler = require('./handlers/jtcHandler');
 const jtcButtonHandler = require('./handlers/jtcButtonHandler');
 const { setupAIChatHandler } = require('./handlers/aiChatHandler');
 const { initXPHandler } = require('./handlers/xpHandler');
-const { setupApplicationHandler } = require('./applicationHandler');
+const { setupApplicationHandler } = require('./handlers/applicationHandler');
 
 // NEW: Import new feature handlers
 const { setupStarboardHandler } = require('./handlers/starboardHandler');
 const { WarningHandler } = require('./handlers/warningHandler');
 const { AnalyticsHandler } = require('./handlers/analyticsHandler');
-const { setupSchedulerHandler } = require('./handlers/schedulerHandler');
+const { setupSchedulerHandler } = require('./schedulerHandler');
 const { setupModmailHandler } = require('./handlers/modmailHandler');
 const { setupTebexHandler } = require('./handlers/tebexHandler');
 const { setupSuggestionHandler } = require('./handlers/suggestionHandler');
@@ -56,7 +56,7 @@ const { setupPollHandler } = require('./handlers/pollHandler');
 const { setupAutoResponderHandler } = require('./handlers/autoResponderHandler');
 const { setupCustomCommandHandler } = require('./handlers/customCommandHandler');
 const { startHeartbeat, sendOfflineStatus, countMessage } = require('./handlers/heartbeatHandler');
-const { botLog, flushLogs } = require('./handlers/consoleLogger');
+const { botLog, flushLogs } = require('./consoleLogger');
 const { setupReminderHandler } = require('./handlers/reminderHandler');
 const { setupAutoReportHandler } = require('./handlers/autoReportHandler');
 const { setupAIAutomodHandler } = require('./handlers/aiAutomodHandler');
@@ -65,14 +65,14 @@ const { setupNotificationHandler } = require('./handlers/notificationHandler');
 const { setupWebhookDispatcher } = require('./handlers/webhookDispatcher');
 const { setupRaidProtectionHandler } = require('./handlers/raidProtectionHandler');
 const { setupQuarantineHandler } = require('./handlers/quarantineHandler');
-const { setupSlowmodeScheduler } = require('./handlers/slowmodeScheduler');
+const { setupSlowmodeScheduler } = require('./slowmodeScheduler');
 const { setupAltDetectionHandler } = require('./handlers/altDetectionHandler');
 const { setupCountingHandler } = require('./handlers/countingHandler');
 const { setupConfessionHandler } = require('./handlers/confessionHandler');
 const { setupBirthdayHandler } = require('./handlers/birthdayHandler');
 const { setupMusicQuizHandler } = require('./handlers/musicQuizHandler');
 const { setupCurrencyShopHandler } = require('./handlers/currencyShopHandler');
-const { setupPrefixHandler } = require('./prefixHandler');
+const { setupPrefixHandler } = require('./handlers/prefixHandler');
 // Optional: Music system (comment out if not using)
 let initMusic, musicCommands, getKazagumo;
 try {
