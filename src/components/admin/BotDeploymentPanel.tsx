@@ -26,6 +26,10 @@ async function callAgent(action: Action, lines?: number): Promise<AgentResponse>
   return data as AgentResponse;
 }
 
+function getAgentError(data: any, fallback: string) {
+  return data?.error || data?.stderr || data?.restart?.stderr || data?.install?.stderr || data?.pull?.stderr || fallback;
+}
+
 export function BotDeploymentPanel() {
   const { toast } = useToast();
   const qc = useQueryClient();
@@ -47,7 +51,7 @@ export function BotDeploymentPanel() {
       } else {
         toast({
           title: 'Agent fejl',
-          description: res.data?.error || `Status ${res.status}`,
+          description: getAgentError(res.data, `Status ${res.status}`),
           variant: 'destructive',
         });
       }
@@ -62,7 +66,7 @@ export function BotDeploymentPanel() {
     setLogsLoading(true);
     try {
       const res = await callAgent('logs', 200);
-      if (!res.ok) throw new Error(res.data?.error || 'Failed');
+      if (!res.ok) throw new Error(getAgentError(res.data, 'Failed'));
       const out = res.data?.out ?? res.data?.logs ?? '';
       const err = res.data?.err ?? '';
       setLogs([out, err].filter(Boolean).join('\n--- STDERR ---\n') || '(ingen logs)');
