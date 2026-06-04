@@ -84,9 +84,35 @@ app.get('/bot/logs', async (req, res) => {
   res.json(out);
 });
 
+async function startBotProcess() {
+  if (fs.existsSync(path.join(REPO_DIR, 'ecosystem.config.js'))) {
+    return run(`pm2 start ecosystem.config.js --only ${PM2_NAME} --update-env`);
+  }
+  return run(`pm2 start bot.js --name ${PM2_NAME} --update-env`);
+}
+
+async function restartBotProcess() {
+  const restart = await run(`pm2 restart ${PM2_NAME} --update-env`);
+  if (restart.ok) return restart;
+
+  const missingProcess = /not found|process.*not found|doesn't exist|unknown process/i.test(
+    `${restart.stdout}\n${restart.stderr}`,
+  );
+  if (!missingProcess) return restart;
+
+  const start = await startBotProcess();
+  return {
+    ok: start.ok,
+    code: start.code,
+    stdout: [restart.stdout, start.stdout].filter(Boolean).join('\n--- fallback start ---\n'),
+    stderr: [restart.stderr, start.stderr].filter(Boolean).join('\n--- fallback start ---\n'),
+    fallback: 'start',
+  };
+}
+
 app.post('/bot/pull',    async (_req, res) => res.json(await run(`git pull`)));
-app.post('/bot/restart', async (_req, res) => res.json(await run(`pm2 restart ${PM2_NAME}`)));
-app.post('/bot/start',   async (_req, res) => res.json(await run(`pm2 start ${PM2_NAME}`)));
+app.post('/bot/restart', async (_req, res) => res.json(await restartBotProcess()));
+app.post('/bot/start',   async (_req, res) => res.json(await startBotProcess()));
 app.post('/bot/stop',    async (_req, res) => res.json(await run(`pm2 stop ${PM2_NAME}`)));
 
 // POST /bot/deploy – pull + install + restart i ét hug
@@ -95,7 +121,7 @@ app.post('/bot/deploy', async (_req, res) => {
   if (!pull.ok) return res.json({ step: 'pull', ...pull });
   const install = await run(`npm install --omit=dev`);
   if (!install.ok) return res.json({ step: 'install', ...install });
-  const restart = await run(`pm2 restart ${PM2_NAME}`);
+  const restart = await restartBotProcess();
   res.json({ step: 'restart', pull, install, restart });
 });
 
