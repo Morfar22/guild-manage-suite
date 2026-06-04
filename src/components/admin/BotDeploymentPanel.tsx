@@ -11,11 +11,12 @@ import {
 } from 'lucide-react';
 
 type Action = 'status' | 'logs' | 'pull' | 'restart' | 'start' | 'stop' | 'deploy';
+type AgentPayload = Record<string, unknown>;
 
 interface AgentResponse {
   ok: boolean;
   status: number;
-  data: any;
+  data: AgentPayload;
 }
 
 async function callAgent(action: Action, lines?: number): Promise<AgentResponse> {
@@ -26,8 +27,20 @@ async function callAgent(action: Action, lines?: number): Promise<AgentResponse>
   return data as AgentResponse;
 }
 
-function getAgentError(data: any, fallback: string) {
-  return data?.error || data?.stderr || data?.restart?.stderr || data?.install?.stderr || data?.pull?.stderr || fallback;
+function asPayload(value: unknown): AgentPayload | null {
+  return value && typeof value === 'object' ? (value as AgentPayload) : null;
+}
+
+function getAgentError(data: unknown, fallback: string) {
+  const payload = asPayload(data);
+  if (!payload) return fallback;
+  if (typeof payload.error === 'string') return payload.error;
+  if (typeof payload.stderr === 'string') return payload.stderr;
+  for (const step of ['restart', 'install', 'pull']) {
+    const stepPayload = asPayload(payload[step]);
+    if (typeof stepPayload?.stderr === 'string') return stepPayload.stderr;
+  }
+  return fallback;
 }
 
 export function BotDeploymentPanel() {
