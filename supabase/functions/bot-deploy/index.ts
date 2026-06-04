@@ -90,7 +90,8 @@ Deno.serve(async (req) => {
     let payload: unknown;
     try { payload = JSON.parse(text); } catch { payload = { raw: text }; }
 
-    return json({ ok: upstream.ok, status: upstream.status, data: payload }, 200);
+    const commandOk = upstream.ok && isSuccessfulAgentPayload(body.action, payload);
+    return json({ ok: commandOk, status: upstream.status, data: payload }, 200);
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Unknown error";
     console.error("[bot-deploy] error:", message);
@@ -103,4 +104,18 @@ function json(body: unknown, status: number) {
     status,
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
+}
+
+function isSuccessfulAgentPayload(action: DeployRequest["action"], payload: unknown): boolean {
+  if (!payload || typeof payload !== "object") return true;
+  const data = payload as Record<string, unknown>;
+
+  if (typeof data.ok === "boolean") return data.ok;
+
+  if (action === "deploy") {
+    const steps = [data.pull, data.install, data.restart].filter(Boolean) as Record<string, unknown>[];
+    if (steps.length > 0) return steps.every((step) => step.ok === true);
+  }
+
+  return true;
 }
