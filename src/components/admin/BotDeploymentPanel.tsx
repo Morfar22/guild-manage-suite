@@ -74,8 +74,8 @@ export function BotDeploymentPanel() {
       }
       qc.invalidateQueries({ queryKey: ['bot-deploy-status'] });
     },
-    onError: (err: any) => {
-      toast({ title: 'Fejl', description: err.message || 'Kunne ikke nå agent', variant: 'destructive' });
+    onError: (err: unknown) => {
+      toast({ title: 'Fejl', description: err instanceof Error ? err.message : 'Kunne ikke nå agent', variant: 'destructive' });
     },
   });
 
