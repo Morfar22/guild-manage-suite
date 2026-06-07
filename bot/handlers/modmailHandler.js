@@ -120,6 +120,14 @@ class ModmailHandler {
     if (message.author.bot) return;
 
     if (!message.guild) {
+      // Skip DM if user has an active application session — applicationHandler owns it
+      try {
+        const { hasActiveApplicationSession } = require('./applicationHandler');
+        if (typeof hasActiveApplicationSession === 'function' && hasActiveApplicationSession(message.author.id)) {
+          return;
+        }
+      } catch (_) { /* applicationHandler not loaded */ }
+
       // This is a DM
       await this.handleDM(message);
     } else {
