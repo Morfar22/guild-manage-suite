@@ -464,4 +464,8 @@ function setupApplicationHandler(client, config = {}) {
   console.log('✅ Application handler initialized (DM session mode)');
 }
 
-module.exports = { setupApplicationHandler };
+function hasActiveApplicationSession(userId) {
+  return sessions.has(userId);
+}
+
+module.exports = { setupApplicationHandler, hasActiveApplicationSession };
