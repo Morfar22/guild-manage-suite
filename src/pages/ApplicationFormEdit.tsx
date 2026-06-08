@@ -33,6 +33,10 @@ export default function ApplicationFormEdit() {
   const [allowReapply, setAllowReapply] = useState(false);
   const [reapplyCooldown, setReapplyCooldown] = useState(24);
   const [questions, setQuestions] = useState<ApplicationQuestion[]>([]);
+  const [aiEnabled, setAiEnabled] = useState(false);
+  const [aiPrompt, setAiPrompt] = useState('');
+  const [aiAutoApprove, setAiAutoApprove] = useState<number | ''>('');
+  const [aiAutoDeny, setAiAutoDeny] = useState<number | ''>('');
 
   useEffect(() => {
     if (form) {
