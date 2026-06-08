@@ -49,6 +49,10 @@ export default function ApplicationFormEdit() {
       setAllowReapply(form.allow_reapply);
       setReapplyCooldown(form.reapply_cooldown_hours || 24);
       setQuestions(form.questions || []);
+      setAiEnabled(!!form.ai_screening_enabled);
+      setAiPrompt(form.ai_screening_prompt || '');
+      setAiAutoApprove(form.ai_auto_approve_threshold ?? '');
+      setAiAutoDeny(form.ai_auto_deny_threshold ?? '');
     }
   }, [form]);
 
