@@ -1,4 +1,4 @@
-import { Sparkles, AlertTriangle, CheckCircle2, ThumbsDown, ThumbsUp } from 'lucide-react';
+import { Sparkles, AlertTriangle, CheckCircle2, ThumbsDown, ThumbsUp, Bot } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -14,6 +14,8 @@ interface AiScoreCardProps {
   summary: string | null;
   flags: string[] | null;
   reasoning: string | null;
+  aiGeneratedLikelihood?: number | null;
+  aiGeneratedReasoning?: string | null;
   canRescreen?: boolean;
 }
 
@@ -65,6 +67,8 @@ export function AiScoreCard({
   summary,
   flags,
   reasoning,
+  aiGeneratedLikelihood,
+  aiGeneratedReasoning,
   canRescreen = true,
 }: AiScoreCardProps) {
   const [loading, setLoading] = useState(false);
@@ -163,6 +167,36 @@ export function AiScoreCard({
               <p className="text-xs text-muted-foreground/90 leading-relaxed border-l-2 border-primary/30 pl-3">
                 {reasoning}
               </p>
+            )}
+
+            {aiGeneratedLikelihood != null && (
+              <div className={cn(
+                'mt-2 rounded-lg border p-3 space-y-1.5',
+                aiGeneratedLikelihood >= 70
+                  ? 'border-rose-500/30 bg-rose-500/10'
+                  : aiGeneratedLikelihood >= 40
+                  ? 'border-amber-500/30 bg-amber-500/10'
+                  : 'border-emerald-500/30 bg-emerald-500/10',
+              )}>
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <Bot className={cn(
+                      'h-4 w-4',
+                      aiGeneratedLikelihood >= 70 ? 'text-rose-400' : aiGeneratedLikelihood >= 40 ? 'text-amber-400' : 'text-emerald-400',
+                    )} />
+                    <span className="text-xs font-semibold uppercase tracking-wide">AI-detektion</span>
+                  </div>
+                  <span className={cn(
+                    'text-sm font-bold tabular-nums',
+                    aiGeneratedLikelihood >= 70 ? 'text-rose-400' : aiGeneratedLikelihood >= 40 ? 'text-amber-400' : 'text-emerald-400',
+                  )}>
+                    {aiGeneratedLikelihood}% AI
+                  </span>
+                </div>
+                {aiGeneratedReasoning && (
+                  <p className="text-xs text-muted-foreground/90 leading-relaxed">{aiGeneratedReasoning}</p>
+                )}
+              </div>
             )}
           </div>
         </div>

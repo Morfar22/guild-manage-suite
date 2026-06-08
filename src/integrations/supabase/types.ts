@@ -597,6 +597,8 @@ export type Database = {
       application_submissions: {
         Row: {
           ai_flags: Json | null
+          ai_generated_likelihood: number | null
+          ai_generated_reasoning: string | null
           ai_reasoning: string | null
           ai_score: number | null
           ai_summary: string | null
@@ -624,6 +626,8 @@ export type Database = {
         }
         Insert: {
           ai_flags?: Json | null
+          ai_generated_likelihood?: number | null
+          ai_generated_reasoning?: string | null
           ai_reasoning?: string | null
           ai_score?: number | null
           ai_summary?: string | null
@@ -651,6 +655,8 @@ export type Database = {
         }
         Update: {
           ai_flags?: Json | null
+          ai_generated_likelihood?: number | null
+          ai_generated_reasoning?: string | null
           ai_reasoning?: string | null
           ai_score?: number | null
           ai_summary?: string | null

@@ -29,6 +29,8 @@ interface AiResult {
   flags: string[];
   reasoning: string;
   recommendation: 'approve' | 'deny' | 'review';
+  ai_generated_likelihood: number;
+  ai_generated_reasoning: string;
 }
 
 Deno.serve(async (req) => {
@@ -81,9 +83,11 @@ Deno.serve(async (req) => {
 Du skal returnere en struktureret vurdering via tool call. 
 - score: 0-100 (0=ubrugelig, 100=perfekt)
 - summary: 1-2 sætninger på dansk
-- flags: array af korte tags som "kort_svar", "uoverensstemmelse", "manglende_detaljer", "fremragende", "engageret"
+- flags: array af korte tags som "kort_svar", "uoverensstemmelse", "manglende_detaljer", "fremragende", "engageret", "muligt_ai_genereret"
 - reasoning: 2-4 sætninger der forklarer scoren
-- recommendation: "approve" hvis fremragende, "deny" hvis ubrugelig, "review" ellers`;
+- recommendation: "approve" hvis fremragende, "deny" hvis ubrugelig, "review" ellers
+- ai_generated_likelihood: 0-100 sandsynlighed for at svarene er skrevet af AI (ChatGPT, Gemini osv). Kig efter: generisk/poleret sprog, manglende personlige detaljer, perfekt grammatik uden naturlige fejl, lister/struktur der ligner LLM output, klichéfyldte vendinger, mangel på autentisk stemme.
+- ai_generated_reasoning: 1-2 sætninger på dansk der forklarer hvorfor du tror/ikke tror det er AI-genereret`;
 
     const userPrompt = `Form: ${form.name}\nBeskrivelse: ${form.description || '(ingen)'}\n\nAnsøgers svar:\n${answersText}`;
 
@@ -113,8 +117,10 @@ Du skal returnere en struktureret vurdering via tool call.
                   flags: { type: 'array', items: { type: 'string' } },
                   reasoning: { type: 'string' },
                   recommendation: { type: 'string', enum: ['approve', 'deny', 'review'] },
+                  ai_generated_likelihood: { type: 'integer', minimum: 0, maximum: 100 },
+                  ai_generated_reasoning: { type: 'string' },
                 },
-                required: ['score', 'summary', 'flags', 'reasoning', 'recommendation'],
+                required: ['score', 'summary', 'flags', 'reasoning', 'recommendation', 'ai_generated_likelihood', 'ai_generated_reasoning'],
               },
             },
           },
@@ -145,6 +151,8 @@ Du skal returnere en struktureret vurdering via tool call.
         ai_summary: result.summary,
         ai_flags: result.flags,
         ai_reasoning: result.reasoning,
+        ai_generated_likelihood: result.ai_generated_likelihood,
+        ai_generated_reasoning: result.ai_generated_reasoning,
       })
       .eq('id', submission_id);
 
