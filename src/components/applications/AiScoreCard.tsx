@@ -1,4 +1,4 @@
-import { Sparkles, AlertTriangle, CheckCircle2, ThumbsDown, ThumbsUp } from 'lucide-react';
+import { Sparkles, AlertTriangle, CheckCircle2, ThumbsDown, ThumbsUp, Bot } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -14,6 +14,8 @@ interface AiScoreCardProps {
   summary: string | null;
   flags: string[] | null;
   reasoning: string | null;
+  aiGeneratedLikelihood?: number | null;
+  aiGeneratedReasoning?: string | null;
   canRescreen?: boolean;
 }
 
