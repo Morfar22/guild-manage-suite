@@ -258,7 +258,8 @@ class ModmailHandler {
       }
 
       if (!targetGuild || !settings) {
-        await message.reply('Der er ingen servere med modmail aktiveret, som du er medlem af.');
+        // Silently ignore DMs when user has no modmail-enabled server.
+        // Avoids interfering with other DM flows (applications, etc.) when sessions are lost.
         this.markDMFailed(message);
         return;
       }
