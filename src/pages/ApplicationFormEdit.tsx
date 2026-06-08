@@ -245,6 +245,59 @@ export default function ApplicationFormEdit() {
             )}
           </CardContent>
         </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>AI Screening</CardTitle>
+            <CardDescription>Lad AI vurdere ansøgninger automatisk (kræver Applications Pro)</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <Label>Aktivér AI-screening</Label>
+                <p className="text-sm text-muted-foreground">Giver score, resumé og flags på hver ansøgning</p>
+              </div>
+              <Switch checked={aiEnabled} onCheckedChange={setAiEnabled} />
+            </div>
+            {aiEnabled && (
+              <>
+                <div className="space-y-2">
+                  <Label>Ekstra kontekst til AI (valgfri)</Label>
+                  <Textarea
+                    value={aiPrompt}
+                    onChange={(e) => setAiPrompt(e.target.value)}
+                    placeholder="Fx: Vi leder efter modne ansøgere med RP-erfaring..."
+                    rows={3}
+                  />
+                </div>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label>Auto-godkend over (0–100)</Label>
+                    <Input
+                      type="number"
+                      min={0}
+                      max={100}
+                      value={aiAutoApprove}
+                      onChange={(e) => setAiAutoApprove(e.target.value === '' ? '' : parseInt(e.target.value))}
+                      placeholder="Tom = fra"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Auto-afvis under (0–100)</Label>
+                    <Input
+                      type="number"
+                      min={0}
+                      max={100}
+                      value={aiAutoDeny}
+                      onChange={(e) => setAiAutoDeny(e.target.value === '' ? '' : parseInt(e.target.value))}
+                      placeholder="Tom = fra"
+                    />
+                  </div>
+                </div>
+              </>
+            )}
+          </CardContent>
+        </Card>
       </div>
 
       <Card>
