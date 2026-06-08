@@ -67,6 +67,8 @@ export function AiScoreCard({
   summary,
   flags,
   reasoning,
+  aiGeneratedLikelihood,
+  aiGeneratedReasoning,
   canRescreen = true,
 }: AiScoreCardProps) {
   const [loading, setLoading] = useState(false);
