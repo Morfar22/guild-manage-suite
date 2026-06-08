@@ -28,6 +28,10 @@ export interface ApplicationForm {
   enabled: boolean;
   allow_reapply: boolean;
   reapply_cooldown_hours: number | null;
+  ai_screening_enabled?: boolean | null;
+  ai_screening_prompt?: string | null;
+  ai_auto_approve_threshold?: number | null;
+  ai_auto_deny_threshold?: number | null;
   created_at: string;
   updated_at: string;
 }
