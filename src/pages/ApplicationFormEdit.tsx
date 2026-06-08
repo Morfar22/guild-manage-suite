@@ -33,6 +33,10 @@ export default function ApplicationFormEdit() {
   const [allowReapply, setAllowReapply] = useState(false);
   const [reapplyCooldown, setReapplyCooldown] = useState(24);
   const [questions, setQuestions] = useState<ApplicationQuestion[]>([]);
+  const [aiEnabled, setAiEnabled] = useState(false);
+  const [aiPrompt, setAiPrompt] = useState('');
+  const [aiAutoApprove, setAiAutoApprove] = useState<number | ''>('');
+  const [aiAutoDeny, setAiAutoDeny] = useState<number | ''>('');
 
   useEffect(() => {
     if (form) {
@@ -45,6 +49,10 @@ export default function ApplicationFormEdit() {
       setAllowReapply(form.allow_reapply);
       setReapplyCooldown(form.reapply_cooldown_hours || 24);
       setQuestions(form.questions || []);
+      setAiEnabled(!!form.ai_screening_enabled);
+      setAiPrompt(form.ai_screening_prompt || '');
+      setAiAutoApprove(form.ai_auto_approve_threshold ?? '');
+      setAiAutoDeny(form.ai_auto_deny_threshold ?? '');
     }
   }, [form]);
 
@@ -84,6 +92,10 @@ export default function ApplicationFormEdit() {
       allow_reapply: allowReapply,
       reapply_cooldown_hours: reapplyCooldown,
       questions: questions,
+      ai_screening_enabled: aiEnabled,
+      ai_screening_prompt: aiPrompt || null,
+      ai_auto_approve_threshold: aiAutoApprove === '' ? null : Number(aiAutoApprove),
+      ai_auto_deny_threshold: aiAutoDeny === '' ? null : Number(aiAutoDeny),
     });
   };
 
@@ -230,6 +242,59 @@ export default function ApplicationFormEdit() {
                   Time users must wait before reapplying (0 = no cooldown)
                 </p>
               </div>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>AI Screening</CardTitle>
+            <CardDescription>Lad AI vurdere ansøgninger automatisk (kræver Applications Pro)</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <Label>Aktivér AI-screening</Label>
+                <p className="text-sm text-muted-foreground">Giver score, resumé og flags på hver ansøgning</p>
+              </div>
+              <Switch checked={aiEnabled} onCheckedChange={setAiEnabled} />
+            </div>
+            {aiEnabled && (
+              <>
+                <div className="space-y-2">
+                  <Label>Ekstra kontekst til AI (valgfri)</Label>
+                  <Textarea
+                    value={aiPrompt}
+                    onChange={(e) => setAiPrompt(e.target.value)}
+                    placeholder="Fx: Vi leder efter modne ansøgere med RP-erfaring..."
+                    rows={3}
+                  />
+                </div>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label>Auto-godkend over (0–100)</Label>
+                    <Input
+                      type="number"
+                      min={0}
+                      max={100}
+                      value={aiAutoApprove}
+                      onChange={(e) => setAiAutoApprove(e.target.value === '' ? '' : parseInt(e.target.value))}
+                      placeholder="Tom = fra"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Auto-afvis under (0–100)</Label>
+                    <Input
+                      type="number"
+                      min={0}
+                      max={100}
+                      value={aiAutoDeny}
+                      onChange={(e) => setAiAutoDeny(e.target.value === '' ? '' : parseInt(e.target.value))}
+                      placeholder="Tom = fra"
+                    />
+                  </div>
+                </div>
+              </>
             )}
           </CardContent>
         </Card>

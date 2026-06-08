@@ -28,6 +28,10 @@ export interface ApplicationForm {
   enabled: boolean;
   allow_reapply: boolean;
   reapply_cooldown_hours: number | null;
+  ai_screening_enabled?: boolean | null;
+  ai_screening_prompt?: string | null;
+  ai_auto_approve_threshold?: number | null;
+  ai_auto_deny_threshold?: number | null;
   created_at: string;
   updated_at: string;
 }
@@ -139,6 +143,10 @@ export function useUpdateApplicationForm() {
       if (form.denial_channel_id !== undefined) updateData.denial_channel_id = form.denial_channel_id;
       if (form.allow_reapply !== undefined) updateData.allow_reapply = form.allow_reapply;
       if (form.reapply_cooldown_hours !== undefined) updateData.reapply_cooldown_hours = form.reapply_cooldown_hours;
+      if (form.ai_screening_enabled !== undefined) updateData.ai_screening_enabled = form.ai_screening_enabled;
+      if (form.ai_screening_prompt !== undefined) updateData.ai_screening_prompt = form.ai_screening_prompt;
+      if (form.ai_auto_approve_threshold !== undefined) updateData.ai_auto_approve_threshold = form.ai_auto_approve_threshold;
+      if (form.ai_auto_deny_threshold !== undefined) updateData.ai_auto_deny_threshold = form.ai_auto_deny_threshold;
 
       const { data, error } = await supabase
         .from('application_forms')
