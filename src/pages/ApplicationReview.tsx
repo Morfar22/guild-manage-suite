@@ -39,11 +39,22 @@ export default function ApplicationReview() {
   const handleReview = async (status: 'approved' | 'denied') => {
     if (!submission || !user) return;
 
+    const meta = (user.user_metadata || {}) as Record<string, any>;
+    const discordName =
+      meta.custom_claims?.global_name ||
+      meta.full_name ||
+      meta.name ||
+      meta.user_name ||
+      meta.preferred_username ||
+      user.email ||
+      'Dashboard User';
+    const discordId = meta.provider_id || meta.sub || '';
+
     await reviewMutation.mutateAsync({
       submissionId: submission.id,
       status,
-      reviewerName: user.email || 'Dashboard User',
-      reviewerDiscordId: '',
+      reviewerName: discordName,
+      reviewerDiscordId: discordId,
       notes: notes || undefined,
     });
 
