@@ -83,9 +83,11 @@ Deno.serve(async (req) => {
 Du skal returnere en struktureret vurdering via tool call. 
 - score: 0-100 (0=ubrugelig, 100=perfekt)
 - summary: 1-2 sætninger på dansk
-- flags: array af korte tags som "kort_svar", "uoverensstemmelse", "manglende_detaljer", "fremragende", "engageret"
+- flags: array af korte tags som "kort_svar", "uoverensstemmelse", "manglende_detaljer", "fremragende", "engageret", "muligt_ai_genereret"
 - reasoning: 2-4 sætninger der forklarer scoren
-- recommendation: "approve" hvis fremragende, "deny" hvis ubrugelig, "review" ellers`;
+- recommendation: "approve" hvis fremragende, "deny" hvis ubrugelig, "review" ellers
+- ai_generated_likelihood: 0-100 sandsynlighed for at svarene er skrevet af AI (ChatGPT, Gemini osv). Kig efter: generisk/poleret sprog, manglende personlige detaljer, perfekt grammatik uden naturlige fejl, lister/struktur der ligner LLM output, klichéfyldte vendinger, mangel på autentisk stemme.
+- ai_generated_reasoning: 1-2 sætninger på dansk der forklarer hvorfor du tror/ikke tror det er AI-genereret`;
 
     const userPrompt = `Form: ${form.name}\nBeskrivelse: ${form.description || '(ingen)'}\n\nAnsøgers svar:\n${answersText}`;
 
