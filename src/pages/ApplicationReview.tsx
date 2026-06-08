@@ -129,6 +129,8 @@ export default function ApplicationReview() {
                 summary={(submission as any).ai_summary ?? null}
                 flags={((submission as any).ai_flags as string[]) ?? null}
                 reasoning={(submission as any).ai_reasoning ?? null}
+                aiGeneratedLikelihood={(submission as any).ai_generated_likelihood ?? null}
+                aiGeneratedReasoning={(submission as any).ai_generated_reasoning ?? null}
               />
             )}
 
