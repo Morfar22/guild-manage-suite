@@ -92,6 +92,10 @@ export default function ApplicationFormEdit() {
       allow_reapply: allowReapply,
       reapply_cooldown_hours: reapplyCooldown,
       questions: questions,
+      ai_screening_enabled: aiEnabled,
+      ai_screening_prompt: aiPrompt || null,
+      ai_auto_approve_threshold: aiAutoApprove === '' ? null : Number(aiAutoApprove),
+      ai_auto_deny_threshold: aiAutoDeny === '' ? null : Number(aiAutoDeny),
     });
   };
 
