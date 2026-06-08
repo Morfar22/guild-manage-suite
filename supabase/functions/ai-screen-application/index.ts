@@ -151,6 +151,8 @@ Du skal returnere en struktureret vurdering via tool call.
         ai_summary: result.summary,
         ai_flags: result.flags,
         ai_reasoning: result.reasoning,
+        ai_generated_likelihood: result.ai_generated_likelihood,
+        ai_generated_reasoning: result.ai_generated_reasoning,
       })
       .eq('id', submission_id);
 
