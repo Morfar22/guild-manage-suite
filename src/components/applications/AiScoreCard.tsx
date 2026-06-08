@@ -168,6 +168,36 @@ export function AiScoreCard({
                 {reasoning}
               </p>
             )}
+
+            {aiGeneratedLikelihood != null && (
+              <div className={cn(
+                'mt-2 rounded-lg border p-3 space-y-1.5',
+                aiGeneratedLikelihood >= 70
+                  ? 'border-rose-500/30 bg-rose-500/10'
+                  : aiGeneratedLikelihood >= 40
+                  ? 'border-amber-500/30 bg-amber-500/10'
+                  : 'border-emerald-500/30 bg-emerald-500/10',
+              )}>
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <Bot className={cn(
+                      'h-4 w-4',
+                      aiGeneratedLikelihood >= 70 ? 'text-rose-400' : aiGeneratedLikelihood >= 40 ? 'text-amber-400' : 'text-emerald-400',
+                    )} />
+                    <span className="text-xs font-semibold uppercase tracking-wide">AI-detektion</span>
+                  </div>
+                  <span className={cn(
+                    'text-sm font-bold tabular-nums',
+                    aiGeneratedLikelihood >= 70 ? 'text-rose-400' : aiGeneratedLikelihood >= 40 ? 'text-amber-400' : 'text-emerald-400',
+                  )}>
+                    {aiGeneratedLikelihood}% AI
+                  </span>
+                </div>
+                {aiGeneratedReasoning && (
+                  <p className="text-xs text-muted-foreground/90 leading-relaxed">{aiGeneratedReasoning}</p>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </CardContent>
