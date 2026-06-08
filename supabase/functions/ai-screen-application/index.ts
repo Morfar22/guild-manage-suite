@@ -29,6 +29,8 @@ interface AiResult {
   flags: string[];
   reasoning: string;
   recommendation: 'approve' | 'deny' | 'review';
+  ai_generated_likelihood: number;
+  ai_generated_reasoning: string;
 }
 
 Deno.serve(async (req) => {
