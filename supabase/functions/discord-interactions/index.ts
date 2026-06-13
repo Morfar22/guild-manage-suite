@@ -2122,7 +2122,7 @@ function handleFiveMSlashCommand(
             .from("fivem_server_status")
             .select("is_online, player_count, max_players, uptime_seconds, server_name")
             .eq("guild_id", internalGuildId)
-            .order("last_update", { ascending: false })
+            .order("updated_at", { ascending: false })
             .limit(1)
             .maybeSingle();
 
