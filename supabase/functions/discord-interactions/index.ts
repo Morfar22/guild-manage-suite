@@ -2614,9 +2614,8 @@ Deno.serve(async (req) => {
 
         if (options.length > 0) {
           const first = options[0];
-          const nested = first.options?.[0];
-
-          if (nested?.options || (nested && first.options?.length === 1)) {
+          if (first.type === 2) {
+            const nested = first.options?.[0];
             return handleFiveMSlashCommand(interaction, first.name, nested.name, nested.options || []);
           }
 
