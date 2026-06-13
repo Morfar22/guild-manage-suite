@@ -1989,7 +1989,7 @@ function createSlashHandlers(client) {
         });
 
         // Format response
-        let responseMessage = `✅ Command \`/fivem ${group} ${subcommand}\` queued for execution`;
+        let responseMessage = `✅ Command \`/fivem ${group ? group + ' ' : ''}${subcommand}\` queued for execution`;
         if (commandData.targetPlayerId) {
           responseMessage += ` on player #${commandData.targetPlayerId}`;
         }
