@@ -2611,29 +2611,23 @@ Deno.serve(async (req) => {
       // Handle /fivem command with subcommand groups
       if (commandName === "fivem") {
         const options = interaction.data?.options || [];
-        
-        // Structure: /fivem <group> <subcommand> <options>
-        // options[0] = subcommand group (e.g., "moderation", "player", "vehicle")
-        // options[0].options[0] = actual subcommand (e.g., "kick", "ban")
-        // options[0].options[0].options = subcommand options
-        
+
         if (options.length > 0) {
-          const group = options[0].name; // e.g., "moderation"
-          const groupOptions = options[0].options || [];
-          
-          if (groupOptions.length > 0) {
-            const subcommand = groupOptions[0].name; // e.g., "kick"
-            const subcommandOptions = groupOptions[0].options || []; // actual options
-            
-            return handleFiveMSlashCommand(interaction, group, subcommand, subcommandOptions);
+          const first = options[0];
+          const nested = first.options?.[0];
+
+          if (nested?.options || (nested && first.options?.length === 1)) {
+            return handleFiveMSlashCommand(interaction, first.name, nested.name, nested.options || []);
           }
+
+          return handleFiveMSlashCommand(interaction, null, first.name, first.options || []);
         }
         
         return new Response(
           JSON.stringify({
             type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
             data: {
-              content: "❌ Invalid command format. Use `/fivem <category> <command>`",
+              content: "❌ Invalid command format.",
               flags: 64,
             },
           }),
