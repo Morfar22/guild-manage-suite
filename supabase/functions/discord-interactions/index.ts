@@ -2026,7 +2026,7 @@ async function handleApplicationFormSubmit(interaction: any): Promise<Response> 
 // Now supports subcommand structure: /fivem <group> <subcommand> <options>
 function handleFiveMSlashCommand(
   interaction: any,
-  group: string,
+  group: string | null,
   subcommand: string,
   subcommandOptions: any[]
 ): Response {
@@ -2043,9 +2043,25 @@ function handleFiveMSlashCommand(
         const userId = interaction.member?.user?.id || interaction.user?.id;
         const userName = interaction.member?.user?.username || interaction.user?.username;
 
-        const effectiveCommand = `${group}_${subcommand}`;
+        const commandData: Record<string, any> = {
+          moderatorDiscordId: userId,
+          moderatorName: userName,
+          group: group || subcommand,
+          subcommand,
+        };
 
-        console.log("FiveM command:", `/fivem ${group} ${subcommand}`, "options:", JSON.stringify(subcommandOptions));
+        for (const opt of subcommandOptions) {
+          commandData[opt.name] = opt.value;
+        }
+
+        const effectiveCommand = group
+          ? `${group}_${subcommand}`
+          : commandData.action
+            ? String(commandData.action)
+            : subcommand;
+        const cmdLabel = group ? `/fivem ${group} ${subcommand}` : `/fivem ${subcommand}`;
+
+        console.log("FiveM command:", cmdLabel, "->", effectiveCommand, "options:", JSON.stringify(subcommandOptions));
 
         // Get internal guild ID
         const { data: guild, error: guildError } = await supabase
@@ -2061,26 +2077,74 @@ function handleFiveMSlashCommand(
 
         const internalGuildId = guild.id;
 
-        // Parse command options into a data object
-        const commandData: Record<string, any> = {
-          moderatorDiscordId: userId,
-          moderatorName: userName,
-          group,
-          subcommand,
-        };
-
-        for (const opt of subcommandOptions) {
-          commandData[opt.name] = opt.value;
+        // Map Discord option 'target' / 'id' to 'targetPlayerId'
+        if (commandData.target && !commandData.targetPlayerId) {
+          commandData.targetPlayerId = commandData.target;
         }
-
-        // Map Discord option 'id' to 'targetPlayerId'
         if (commandData.id) {
           commandData.targetPlayerId = commandData.id;
           delete commandData.id;
         }
+        if (!commandData.reason && commandData.message) {
+          commandData.reason = commandData.message;
+        }
+
+        if (effectiveCommand === "players") {
+          const { data: players, error: playersErr } = await supabase
+            .from("fivem_online_players")
+            .select("player_id, character_name, discord_username, ping")
+            .eq("guild_id", internalGuildId)
+            .order("player_id", { ascending: true });
+
+          if (playersErr) {
+            await sendFollowupEphemeral(interaction, `❌ Kunne ikke hente spillerliste: ${playersErr.message}`);
+            return;
+          }
+
+          const count = players?.length || 0;
+          if (count === 0) {
+            await sendFollowupEphemeral(interaction, "👥 **Spillere online:** 0\n\n*Ingen spillere på serveren lige nu.*");
+            return;
+          }
+
+          const lines = players.map((p: any) => {
+            const name = p.character_name || p.discord_username || `Player #${p.player_id}`;
+            return `[${p.player_id}] ${name}${p.ping ? ` (${p.ping}ms)` : ""}`;
+          });
+          let body = lines.join("\n");
+          if (body.length > 1800) body = body.slice(0, 1800) + "\n…";
+          await sendFollowupEphemeral(interaction, `👥 **Spillere online:** ${count}\n\`\`\`\n${body}\n\`\`\``);
+          return;
+        }
+
+        if (effectiveCommand === "status") {
+          const { data: status } = await supabase
+            .from("fivem_server_status")
+            .select("is_online, player_count, max_players, uptime_seconds, server_name")
+            .eq("guild_id", internalGuildId)
+            .order("last_update", { ascending: false })
+            .limit(1)
+            .maybeSingle();
+
+          if (!status) {
+            await sendFollowupEphemeral(interaction, "❌ Ingen serverstatus tilgængelig endnu.");
+            return;
+          }
+
+          const online = status.is_online ? "🟢 Online" : "🔴 Offline";
+          const uptime = `${Math.floor((status.uptime_seconds || 0) / 3600)}t ${Math.floor(((status.uptime_seconds || 0) % 3600) / 60)}m`;
+          await sendFollowupEphemeral(
+            interaction,
+            `**${status.server_name || "FiveM Server"}**\n` +
+              `Status: ${online}\n` +
+              `Spillere: ${status.player_count || 0}/${status.max_players || 64}\n` +
+              `Uptime: ${uptime}`
+          );
+          return;
+        }
 
         // Queue the command for FiveM server
-        const { error: queueError } = await supabase.from("fivem_command_queue").insert({
+        const { data: queuedRow, error: queueError } = await supabase.from("fivem_command_queue").insert({
           guild_id: internalGuildId,
           command_name: effectiveCommand,
           command_data: commandData,
@@ -2090,9 +2154,9 @@ function handleFiveMSlashCommand(
           moderator_discord_id: userId,
           moderator_name: userName,
           status: "pending",
-        });
+        }).select("id").single();
 
-        if (queueError) {
+        if (queueError || !queuedRow?.id) {
           console.error("Error queuing FiveM command:", queueError);
           await sendFollowupEphemeral(interaction, "❌ Failed to queue command.");
           return;
@@ -2110,15 +2174,33 @@ function handleFiveMSlashCommand(
           metadata: commandData,
         });
 
-        // Format response message
-        let responseMessage = `✅ Command \`/fivem ${group} ${subcommand}\` queued for execution`;
-        if (commandData.targetPlayerId) {
-          responseMessage += ` on player #${commandData.targetPlayerId}`;
-        }
-        if (commandData.reason) {
-          responseMessage += `\n**Reason:** ${commandData.reason}`;
+        let resultRow = null;
+        for (let i = 0; i < 24; i++) {
+          await new Promise((resolve) => setTimeout(resolve, 500));
+          const { data: row } = await supabase
+            .from("fivem_command_queue")
+            .select("status, result")
+            .eq("id", queuedRow.id)
+            .single();
+          if (row && row.status !== "pending") {
+            resultRow = row;
+            break;
+          }
         }
 
+        if (!resultRow) {
+          await sendFollowupEphemeral(interaction, `⏳ \`${cmdLabel}\` queued, men FiveM-serveren svarede ikke i tide.`);
+          return;
+        }
+
+        if (resultRow.status === "failed") {
+          await sendFollowupEphemeral(interaction, `❌ \`${cmdLabel}\` fejlede: ${resultRow.result || "Ukendt fejl"}`);
+          return;
+        }
+
+        let responseMessage = `✅ \`${cmdLabel}\` udført`;
+        const rawResult = (resultRow.result || "").trim();
+        if (rawResult) responseMessage += `\n\`\`\`\n${rawResult.slice(0, 1800)}\n\`\`\``;
         await sendFollowupEphemeral(interaction, responseMessage);
       } catch (e: any) {
         console.error("Background FiveM command failed:", e);
@@ -2529,29 +2611,23 @@ Deno.serve(async (req) => {
       // Handle /fivem command with subcommand groups
       if (commandName === "fivem") {
         const options = interaction.data?.options || [];
-        
-        // Structure: /fivem <group> <subcommand> <options>
-        // options[0] = subcommand group (e.g., "moderation", "player", "vehicle")
-        // options[0].options[0] = actual subcommand (e.g., "kick", "ban")
-        // options[0].options[0].options = subcommand options
-        
+
         if (options.length > 0) {
-          const group = options[0].name; // e.g., "moderation"
-          const groupOptions = options[0].options || [];
-          
-          if (groupOptions.length > 0) {
-            const subcommand = groupOptions[0].name; // e.g., "kick"
-            const subcommandOptions = groupOptions[0].options || []; // actual options
-            
-            return handleFiveMSlashCommand(interaction, group, subcommand, subcommandOptions);
+          const first = options[0];
+          if (first.type === 2) {
+            const nested = first.options?.[0];
+            if (!nested) break;
+            return handleFiveMSlashCommand(interaction, first.name, nested.name, nested.options || []);
           }
+
+          return handleFiveMSlashCommand(interaction, null, first.name, first.options || []);
         }
         
         return new Response(
           JSON.stringify({
             type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
             data: {
-              content: "❌ Invalid command format. Use `/fivem <category> <command>`",
+              content: "❌ Invalid command format.",
               flags: 64,
             },
           }),
