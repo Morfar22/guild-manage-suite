@@ -1934,13 +1934,16 @@ function createSlashHandlers(client) {
         // - Without group: if an "action" option exists, use it (e.g. kick, ban, restart, announce);
         //   otherwise use the subcommand name (status, players)
         let effectiveCommand;
-        if (group) {
+        if (group && group !== subcommand) {
           effectiveCommand = `${group}_${subcommand}`;
         } else if (commandData.action) {
           effectiveCommand = String(commandData.action);
         } else {
           effectiveCommand = subcommand;
         }
+
+        const directInfoCommand = ['players', 'status'].includes(subcommand)
+          && (!group || group === subcommand);
 
         // Map 'target' / 'id' option to 'targetPlayerId'
         if (commandData.target && !commandData.targetPlayerId) {
@@ -1959,7 +1962,8 @@ function createSlashHandlers(client) {
 
         // Short-circuit: `players` and `status` don't need to round-trip via the queue —
         // read live data straight from the DB tables the Lua resource keeps updated.
-        if (effectiveCommand === 'players') {
+        if (directInfoCommand && subcommand === 'players') {
+          console.log('[FiveM] Direct Discord response: players');
           const { data: players, error: playersErr } = await supabase
             .from('fivem_online_players')
             .select('player_id, character_name, discord_username, ping')
@@ -1984,7 +1988,8 @@ function createSlashHandlers(client) {
           return interaction.editReply(`👥 **Spillere online:** ${count}\n\`\`\`\n${body}\n\`\`\``);
         }
 
-        if (effectiveCommand === 'status') {
+        if (directInfoCommand && subcommand === 'status') {
+          console.log('[FiveM] Direct Discord response: status');
           const { data: status } = await supabase
             .from('fivem_server_status')
             .select('is_online, player_count, max_players, uptime_seconds, server_name')
