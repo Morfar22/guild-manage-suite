@@ -1958,7 +1958,7 @@ function createSlashHandlers(client) {
         console.log(`[FiveM] Command: /fivem ${group ? group + ' ' : ''}${subcommand} -> ${effectiveCommand}`, JSON.stringify(commandData));
 
         // Queue the command for FiveM server
-        const { error: queueError } = await supabase.from('fivem_command_queue').insert({
+        const { data: queuedRow, error: queueError } = await supabase.from('fivem_command_queue').insert({
           guild_id: internalGuildId,
           command_name: effectiveCommand,
           command_data: commandData,
@@ -1968,12 +1968,12 @@ function createSlashHandlers(client) {
           moderator_discord_id: userId,
           moderator_name: userName,
           status: 'pending',
-        });
+        }).select('id').single();
 
-        if (queueError) {
+        if (queueError || !queuedRow?.id) {
           console.error('[FiveM] Queue error:', JSON.stringify(queueError));
-          botLog(internalGuildId, 'error', 'fivem', `Failed to queue command ${effectiveCommand}: ${queueError.message || JSON.stringify(queueError)}`, { error: queueError, commandData });
-          return interaction.editReply(`❌ Failed to queue command: ${queueError.message || 'Unknown error'}`);
+          botLog(internalGuildId, 'error', 'fivem', `Failed to queue command ${effectiveCommand}: ${queueError?.message || JSON.stringify(queueError)}`, { error: queueError, commandData });
+          return interaction.editReply(`❌ Failed to queue command: ${queueError?.message || 'Unknown error'}`);
         }
 
         // Log the action
@@ -1988,13 +1988,46 @@ function createSlashHandlers(client) {
           metadata: commandData,
         });
 
-        // Format response
-        let responseMessage = `✅ Command \`/fivem ${group ? group + ' ' : ''}${subcommand}\` queued for execution`;
-        if (commandData.targetPlayerId) {
-          responseMessage += ` on player #${commandData.targetPlayerId}`;
+        const cmdLabel = `/fivem ${group ? group + ' ' : ''}${subcommand}`;
+
+        // Poll for execution result (max ~12s)
+        let resultRow = null;
+        for (let i = 0; i < 24; i++) {
+          await new Promise(r => setTimeout(r, 500));
+          const { data: row } = await supabase
+            .from('fivem_command_queue')
+            .select('status, result')
+            .eq('id', queuedRow.id)
+            .single();
+          if (row && row.status !== 'pending') {
+            resultRow = row;
+            break;
+          }
         }
-        if (commandData.reason) {
-          responseMessage += `\n**Reason:** ${commandData.reason}`;
+
+        if (!resultRow) {
+          return interaction.editReply(`⏳ \`${cmdLabel}\` queued, men FiveM-serveren svarede ikke i tide.`);
+        }
+
+        if (resultRow.status === 'failed') {
+          return interaction.editReply(`❌ \`${cmdLabel}\` fejlede: ${resultRow.result || 'Ukendt fejl'}`);
+        }
+
+        const rawResult = (resultRow.result || '').trim();
+        let responseMessage;
+
+        if (effectiveCommand === 'players') {
+          // Result examples: "[1] Name, [2] Other" or "[1] Name\n[2] Other"
+          const matches = rawResult.match(/\[\d+\]/g) || [];
+          const count = matches.length;
+          if (count === 0) {
+            responseMessage = `👥 **Spillere online:** 0\n\n*Ingen spillere på serveren.*`;
+          } else {
+            responseMessage = `👥 **Spillere online:** ${count}\n\`\`\`\n${rawResult}\n\`\`\``;
+          }
+        } else {
+          responseMessage = `✅ \`${cmdLabel}\` udført`;
+          if (rawResult) responseMessage += `\n\`\`\`\n${rawResult}\n\`\`\``;
         }
 
         await interaction.editReply(responseMessage);
