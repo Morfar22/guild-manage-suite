@@ -1957,6 +1957,53 @@ function createSlashHandlers(client) {
 
         console.log(`[FiveM] Command: /fivem ${group ? group + ' ' : ''}${subcommand} -> ${effectiveCommand}`, JSON.stringify(commandData));
 
+        // Short-circuit: `players` and `status` don't need to round-trip via the queue —
+        // read live data straight from the DB tables the Lua resource keeps updated.
+        if (effectiveCommand === 'players') {
+          const { data: players, error: playersErr } = await supabase
+            .from('fivem_online_players')
+            .select('player_id, character_name, discord_username, ping')
+            .eq('guild_id', internalGuildId)
+            .order('player_id', { ascending: true });
+
+          if (playersErr) {
+            return interaction.editReply(`❌ Kunne ikke hente spillerliste: ${playersErr.message}`);
+          }
+
+          const count = players?.length || 0;
+          if (count === 0) {
+            return interaction.editReply('👥 **Spillere online:** 0\n\n*Ingen spillere på serveren lige nu.*');
+          }
+
+          const lines = players.map(p => {
+            const name = p.character_name || p.discord_username || `Player #${p.player_id}`;
+            return `[${p.player_id}] ${name}${p.ping ? ` (${p.ping}ms)` : ''}`;
+          });
+          let body = lines.join('\n');
+          if (body.length > 1800) body = body.slice(0, 1800) + '\n…';
+          return interaction.editReply(`👥 **Spillere online:** ${count}\n\`\`\`\n${body}\n\`\`\``);
+        }
+
+        if (effectiveCommand === 'status') {
+          const { data: status } = await supabase
+            .from('fivem_server_status')
+            .select('is_online, player_count, max_players, uptime_seconds, server_name')
+            .eq('guild_id', internalGuildId)
+            .order('last_update', { ascending: false })
+            .limit(1)
+            .maybeSingle();
+
+          if (!status) return interaction.editReply('❌ Ingen serverstatus tilgængelig endnu.');
+
+          const online = status.is_online ? '🟢 Online' : '🔴 Offline';
+          return interaction.editReply(
+            `**${status.server_name || 'FiveM Server'}**\n` +
+            `Status: ${online}\n` +
+            `Spillere: ${status.player_count || 0}/${status.max_players || 64}\n` +
+            `Uptime: ${formatDuration(status.uptime_seconds || 0)}`
+          );
+        }
+
         // Queue the command for FiveM server
         const { data: queuedRow, error: queueError } = await supabase.from('fivem_command_queue').insert({
           guild_id: internalGuildId,
