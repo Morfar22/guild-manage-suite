@@ -2054,12 +2054,13 @@ function handleFiveMSlashCommand(
           commandData[opt.name] = opt.value;
         }
 
-        const effectiveCommand = group
+        const effectiveCommand = group && group !== subcommand
           ? `${group}_${subcommand}`
           : commandData.action
             ? String(commandData.action)
             : subcommand;
         const cmdLabel = group ? `/fivem ${group} ${subcommand}` : `/fivem ${subcommand}`;
+        const directInfoCommand = ["players", "status"].includes(subcommand) && (!group || group === subcommand);
 
         console.log("FiveM command:", cmdLabel, "->", effectiveCommand, "options:", JSON.stringify(subcommandOptions));
 
@@ -2089,7 +2090,7 @@ function handleFiveMSlashCommand(
           commandData.reason = commandData.message;
         }
 
-        if (effectiveCommand === "players") {
+        if (directInfoCommand && subcommand === "players") {
           const { data: players, error: playersErr } = await supabase
             .from("fivem_online_players")
             .select("player_id, character_name, discord_username, ping")
@@ -2117,7 +2118,7 @@ function handleFiveMSlashCommand(
           return;
         }
 
-        if (effectiveCommand === "status") {
+        if (directInfoCommand && subcommand === "status") {
           const { data: status } = await supabase
             .from("fivem_server_status")
             .select("is_online, player_count, max_players, uptime_seconds, server_name")
