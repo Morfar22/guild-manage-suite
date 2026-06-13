@@ -1902,37 +1902,60 @@ function createSlashHandlers(client) {
 
         const internalGuildId = guild.id;
 
-        // Parse subcommand group structure: /fivem <group> <subcommand> <options>
+        // Parse command structure. Supports both:
+        //   /fivem <subcommand> [options]                 (current registration)
+        //   /fivem <group> <subcommand> [options]         (legacy)
         const group = interaction.options.getSubcommandGroup(false);
         const subcommand = interaction.options.getSubcommand(false);
 
-        if (!group || !subcommand) {
-          return interaction.editReply('❌ Invalid command format. Use `/fivem <category> <command>`');
+        if (!subcommand) {
+          return interaction.editReply('❌ Invalid command format.');
         }
-
-        const effectiveCommand = `${group}_${subcommand}`;
 
         // Build command data from all options
         const commandData = {
           moderatorDiscordId: userId,
           moderatorName: userName,
-          group,
+          group: group || subcommand,
           subcommand,
         };
 
-        // Extract all options from the subcommand
-        const rawOptions = interaction.options.data?.[0]?.options?.[0]?.options || [];
+        // Extract all options for the (sub)command
+        const topData = interaction.options.data?.[0];
+        const rawOptions = group
+          ? (topData?.options?.[0]?.options || [])
+          : (topData?.options || []);
         for (const opt of rawOptions) {
           commandData[opt.name] = opt.value;
         }
 
-        // Map 'id' option to 'targetPlayerId'
+        // Determine effective command name:
+        // - With group: "<group>_<subcommand>"
+        // - Without group: if an "action" option exists, use it (e.g. kick, ban, restart, announce);
+        //   otherwise use the subcommand name (status, players)
+        let effectiveCommand;
+        if (group) {
+          effectiveCommand = `${group}_${subcommand}`;
+        } else if (commandData.action) {
+          effectiveCommand = String(commandData.action);
+        } else {
+          effectiveCommand = subcommand;
+        }
+
+        // Map 'target' / 'id' option to 'targetPlayerId'
+        if (commandData.target && !commandData.targetPlayerId) {
+          commandData.targetPlayerId = commandData.target;
+        }
         if (commandData.id) {
           commandData.targetPlayerId = commandData.id;
           delete commandData.id;
         }
+        // Map 'message' to 'reason' for announce-style commands when no reason set
+        if (!commandData.reason && commandData.message) {
+          commandData.reason = commandData.message;
+        }
 
-        console.log(`[FiveM] Command: /fivem ${group} ${subcommand}`, JSON.stringify(commandData));
+        console.log(`[FiveM] Command: /fivem ${group ? group + ' ' : ''}${subcommand} -> ${effectiveCommand}`, JSON.stringify(commandData));
 
         // Queue the command for FiveM server
         const { error: queueError } = await supabase.from('fivem_command_queue').insert({
@@ -1966,7 +1989,7 @@ function createSlashHandlers(client) {
         });
 
         // Format response
-        let responseMessage = `✅ Command \`/fivem ${group} ${subcommand}\` queued for execution`;
+        let responseMessage = `✅ Command \`/fivem ${group ? group + ' ' : ''}${subcommand}\` queued for execution`;
         if (commandData.targetPlayerId) {
           responseMessage += ` on player #${commandData.targetPlayerId}`;
         }
