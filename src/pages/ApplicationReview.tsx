@@ -321,9 +321,32 @@ export default function ApplicationReview() {
               <Textarea
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
-                placeholder="Add a reason for the denial..."
-                rows={3}
+                placeholder="Skriv et udkast, og lad AI finpudse det..."
+                rows={4}
               />
+              <div className="flex items-center gap-2">
+                <Select value={aiTone} onValueChange={(v) => setAiTone(v as any)}>
+                  <SelectTrigger className="w-[160px] h-8 text-xs">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="professional">Professionel</SelectItem>
+                    <SelectItem value="friendly">Venlig</SelectItem>
+                    <SelectItem value="firm">Bestemt</SelectItem>
+                    <SelectItem value="empathetic">Empatisk</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={() => handlePolish('denied')}
+                  disabled={polishing || !notes.trim()}
+                >
+                  {polishing ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <Sparkles className="h-3 w-3 mr-1" />}
+                  Finpuds med AI
+                </Button>
+              </div>
             </div>
           </div>
           <DialogFooter>
