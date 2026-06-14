@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import { enUS } from 'date-fns/locale';
-import { ArrowLeft, User, Clock, CheckCircle, XCircle, MessageSquare } from 'lucide-react';
+import { ArrowLeft, User, Clock, CheckCircle, XCircle, MessageSquare, Sparkles, Loader2 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -12,11 +12,14 @@ import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Separator } from '@/components/ui/separator';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useApplicationSubmission, useReviewApplication } from '@/hooks/useApplicationSubmissions';
 import { useAuth } from '@/contexts/AuthContext';
 import { AiScoreCard } from '@/components/applications/AiScoreCard';
 import { useGuildPremium } from '@/hooks/useGuildPremium';
 import { PremiumBadge } from '@/components/applications/PremiumLock';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 const statusConfig = {
   pending: { label: 'Pending', variant: 'default' as const, icon: Clock },
@@ -35,6 +38,34 @@ export default function ApplicationReview() {
   const [notes, setNotes] = useState('');
   const [approveDialogOpen, setApproveDialogOpen] = useState(false);
   const [denyDialogOpen, setDenyDialogOpen] = useState(false);
+  const [aiTone, setAiTone] = useState<'professional' | 'friendly' | 'firm' | 'empathetic'>('professional');
+  const [polishing, setPolishing] = useState(false);
+
+  const handlePolish = async (decision: 'approved' | 'denied') => {
+    if (!notes.trim()) {
+      toast.error('Skriv et udkast først, så finpudser AI det.');
+      return;
+    }
+    setPolishing(true);
+    try {
+      const ctx = submission?.answers
+        ?.map((a) => `Q: ${a.question}\nA: ${a.answer}`)
+        .join('\n\n') || '';
+      const { data, error } = await supabase.functions.invoke('ai-polish-text', {
+        body: { text: notes, tone: aiTone, decision, context: ctx, language: 'da' },
+      });
+      if (error) throw error;
+      if (data?.polished) {
+        setNotes(data.polished);
+        toast.success('Svar finpudset med AI');
+      }
+    } catch (e: any) {
+      toast.error(e.message || 'AI fejlede');
+    } finally {
+      setPolishing(false);
+    }
+  };
+
 
   const handleReview = async (status: 'approved' | 'denied') => {
     if (!submission || !user) return;
@@ -234,9 +265,32 @@ export default function ApplicationReview() {
               <Textarea
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
-                placeholder="Add any notes about this decision..."
-                rows={3}
+                placeholder="Skriv et udkast, og lad AI finpudse det..."
+                rows={4}
               />
+              <div className="flex items-center gap-2">
+                <Select value={aiTone} onValueChange={(v) => setAiTone(v as any)}>
+                  <SelectTrigger className="w-[160px] h-8 text-xs">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="professional">Professionel</SelectItem>
+                    <SelectItem value="friendly">Venlig</SelectItem>
+                    <SelectItem value="firm">Bestemt</SelectItem>
+                    <SelectItem value="empathetic">Empatisk</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={() => handlePolish('approved')}
+                  disabled={polishing || !notes.trim()}
+                >
+                  {polishing ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <Sparkles className="h-3 w-3 mr-1" />}
+                  Finpuds med AI
+                </Button>
+              </div>
             </div>
           </div>
           <DialogFooter>
@@ -267,9 +321,32 @@ export default function ApplicationReview() {
               <Textarea
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
-                placeholder="Add a reason for the denial..."
-                rows={3}
+                placeholder="Skriv et udkast, og lad AI finpudse det..."
+                rows={4}
               />
+              <div className="flex items-center gap-2">
+                <Select value={aiTone} onValueChange={(v) => setAiTone(v as any)}>
+                  <SelectTrigger className="w-[160px] h-8 text-xs">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="professional">Professionel</SelectItem>
+                    <SelectItem value="friendly">Venlig</SelectItem>
+                    <SelectItem value="firm">Bestemt</SelectItem>
+                    <SelectItem value="empathetic">Empatisk</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={() => handlePolish('denied')}
+                  disabled={polishing || !notes.trim()}
+                >
+                  {polishing ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <Sparkles className="h-3 w-3 mr-1" />}
+                  Finpuds med AI
+                </Button>
+              </div>
             </div>
           </div>
           <DialogFooter>

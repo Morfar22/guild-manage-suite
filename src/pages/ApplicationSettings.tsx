@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, FileText, Settings, Send, Trash2, Edit, ToggleLeft, ToggleRight } from 'lucide-react';
+import { Plus, FileText, Settings, Send, Trash2, Edit, ToggleLeft, ToggleRight, LayoutTemplate, Sparkles } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -16,6 +16,8 @@ import { useApplicationForms, useCreateApplicationForm, useUpdateApplicationForm
 import { useApplicationSettings, useUpsertApplicationSettings } from '@/hooks/useApplicationSettings';
 import { useSendApplicationPanel } from '@/hooks/useApplicationSubmissions';
 import { useNavigate } from 'react-router-dom';
+import { APPLICATION_TEMPLATES, ApplicationFormTemplate } from '@/components/applications/FormTemplates';
+import { toast } from 'sonner';
 
 export default function ApplicationSettingsPage() {
   const navigate = useNavigate();
@@ -30,6 +32,7 @@ export default function ApplicationSettingsPage() {
   const [newFormName, setNewFormName] = useState('');
   const [newFormEmoji, setNewFormEmoji] = useState('📝');
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [templateDialogOpen, setTemplateDialogOpen] = useState(false);
 
   const [panelChannelId, setPanelChannelId] = useState('');
   const [logChannelId, setLogChannelId] = useState('');
@@ -65,6 +68,22 @@ export default function ApplicationSettingsPage() {
     setNewFormName('');
     setNewFormEmoji('📝');
     setCreateDialogOpen(false);
+  };
+
+  const handleUseTemplate = async (tpl: ApplicationFormTemplate) => {
+    const withIds = tpl.questions.map(q => ({ ...q, id: Math.random().toString(36).slice(2, 11) }));
+    try {
+      await createForm.mutateAsync({
+        name: tpl.name,
+        emoji: tpl.emoji,
+        description: tpl.description,
+        questions: withIds as any,
+      });
+      setTemplateDialogOpen(false);
+      toast.success(`Template "${tpl.name}" oprettet`);
+    } catch (e) {
+      toast.error('Kunne ikke oprette template');
+    }
   };
 
   const handleToggleForm = async (form: ApplicationForm) => {
@@ -111,6 +130,54 @@ export default function ApplicationSettingsPage() {
             <p className="text-sm text-muted-foreground">
               Create different application types for your server
             </p>
+            <div className="flex gap-2">
+            <Dialog open={templateDialogOpen} onOpenChange={setTemplateDialogOpen}>
+              <DialogTrigger asChild>
+                <Button variant="outline">
+                  <LayoutTemplate className="h-4 w-4 mr-2" />
+                  Use Template
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle>Vælg en template</DialogTitle>
+                  <DialogDescription>
+                    Færdig-byggede ansøgningsskemaer du kan bruge med det samme. Du kan altid redigere spørgsmålene bagefter.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 py-4">
+                  {APPLICATION_TEMPLATES.map((tpl) => (
+                    <div
+                      key={tpl.id}
+                      className="flex flex-col justify-between rounded-lg border border-border/50 bg-background/50 p-4 space-y-3 hover:border-primary/50 transition-colors"
+                    >
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xl">{tpl.emoji}</span>
+                          <span className="font-medium text-sm">{tpl.name}</span>
+                        </div>
+                        <p className="text-xs text-muted-foreground">{tpl.description}</p>
+                        <div className="flex flex-wrap gap-1">
+                          <Badge variant="outline" className="text-[10px] capitalize">{tpl.category}</Badge>
+                          <Badge variant="secondary" className="text-[10px]">
+                            {tpl.questions.length} spørgsmål
+                          </Badge>
+                        </div>
+                      </div>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="w-full"
+                        onClick={() => handleUseTemplate(tpl)}
+                        disabled={createForm.isPending}
+                      >
+                        Brug template
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              </DialogContent>
+            </Dialog>
             <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
               <DialogTrigger asChild>
                 <Button>
@@ -154,7 +221,9 @@ export default function ApplicationSettingsPage() {
                 </DialogFooter>
               </DialogContent>
             </Dialog>
+            </div>
           </div>
+
 
           {formsLoading ? (
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
