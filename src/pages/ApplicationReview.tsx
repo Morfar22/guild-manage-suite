@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import { enUS } from 'date-fns/locale';
-import { ArrowLeft, User, Clock, CheckCircle, XCircle, MessageSquare } from 'lucide-react';
+import { ArrowLeft, User, Clock, CheckCircle, XCircle, MessageSquare, Sparkles, Loader2 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -12,11 +12,14 @@ import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Separator } from '@/components/ui/separator';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useApplicationSubmission, useReviewApplication } from '@/hooks/useApplicationSubmissions';
 import { useAuth } from '@/contexts/AuthContext';
 import { AiScoreCard } from '@/components/applications/AiScoreCard';
 import { useGuildPremium } from '@/hooks/useGuildPremium';
 import { PremiumBadge } from '@/components/applications/PremiumLock';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 const statusConfig = {
   pending: { label: 'Pending', variant: 'default' as const, icon: Clock },
