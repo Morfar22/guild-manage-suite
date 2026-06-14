@@ -38,6 +38,34 @@ export default function ApplicationReview() {
   const [notes, setNotes] = useState('');
   const [approveDialogOpen, setApproveDialogOpen] = useState(false);
   const [denyDialogOpen, setDenyDialogOpen] = useState(false);
+  const [aiTone, setAiTone] = useState<'professional' | 'friendly' | 'firm' | 'empathetic'>('professional');
+  const [polishing, setPolishing] = useState(false);
+
+  const handlePolish = async (decision: 'approved' | 'denied') => {
+    if (!notes.trim()) {
+      toast.error('Skriv et udkast først, så finpudser AI det.');
+      return;
+    }
+    setPolishing(true);
+    try {
+      const ctx = submission?.answers
+        ?.map((a) => `Q: ${a.question}\nA: ${a.answer}`)
+        .join('\n\n') || '';
+      const { data, error } = await supabase.functions.invoke('ai-polish-text', {
+        body: { text: notes, tone: aiTone, decision, context: ctx, language: 'da' },
+      });
+      if (error) throw error;
+      if (data?.polished) {
+        setNotes(data.polished);
+        toast.success('Svar finpudset med AI');
+      }
+    } catch (e: any) {
+      toast.error(e.message || 'AI fejlede');
+    } finally {
+      setPolishing(false);
+    }
+  };
+
 
   const handleReview = async (status: 'approved' | 'denied') => {
     if (!submission || !user) return;
