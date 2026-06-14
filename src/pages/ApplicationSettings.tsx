@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, FileText, Settings, Send, Trash2, Edit, ToggleLeft, ToggleRight } from 'lucide-react';
+import { Plus, FileText, Settings, Send, Trash2, Edit, ToggleLeft, ToggleRight, LayoutTemplate, Sparkles } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -16,6 +16,8 @@ import { useApplicationForms, useCreateApplicationForm, useUpdateApplicationForm
 import { useApplicationSettings, useUpsertApplicationSettings } from '@/hooks/useApplicationSettings';
 import { useSendApplicationPanel } from '@/hooks/useApplicationSubmissions';
 import { useNavigate } from 'react-router-dom';
+import { APPLICATION_TEMPLATES, ApplicationFormTemplate } from '@/components/applications/FormTemplates';
+import { toast } from 'sonner';
 
 export default function ApplicationSettingsPage() {
   const navigate = useNavigate();
