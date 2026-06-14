@@ -70,6 +70,22 @@ export default function ApplicationSettingsPage() {
     setCreateDialogOpen(false);
   };
 
+  const handleUseTemplate = async (tpl: ApplicationFormTemplate) => {
+    const withIds = tpl.questions.map(q => ({ ...q, id: Math.random().toString(36).slice(2, 11) }));
+    try {
+      await createForm.mutateAsync({
+        name: tpl.name,
+        emoji: tpl.emoji,
+        description: tpl.description,
+        questions: withIds as any,
+      });
+      setTemplateDialogOpen(false);
+      toast.success(`Template "${tpl.name}" oprettet`);
+    } catch (e) {
+      toast.error('Kunne ikke oprette template');
+    }
+  };
+
   const handleToggleForm = async (form: ApplicationForm) => {
     await updateForm.mutateAsync({
       id: form.id,
