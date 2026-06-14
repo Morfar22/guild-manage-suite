@@ -32,6 +32,7 @@ export default function ApplicationSettingsPage() {
   const [newFormName, setNewFormName] = useState('');
   const [newFormEmoji, setNewFormEmoji] = useState('📝');
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [templateDialogOpen, setTemplateDialogOpen] = useState(false);
 
   const [panelChannelId, setPanelChannelId] = useState('');
   const [logChannelId, setLogChannelId] = useState('');
