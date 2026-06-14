@@ -130,6 +130,54 @@ export default function ApplicationSettingsPage() {
             <p className="text-sm text-muted-foreground">
               Create different application types for your server
             </p>
+            <div className="flex gap-2">
+            <Dialog open={templateDialogOpen} onOpenChange={setTemplateDialogOpen}>
+              <DialogTrigger asChild>
+                <Button variant="outline">
+                  <LayoutTemplate className="h-4 w-4 mr-2" />
+                  Use Template
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle>Vælg en template</DialogTitle>
+                  <DialogDescription>
+                    Færdig-byggede ansøgningsskemaer du kan bruge med det samme. Du kan altid redigere spørgsmålene bagefter.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 py-4">
+                  {APPLICATION_TEMPLATES.map((tpl) => (
+                    <div
+                      key={tpl.id}
+                      className="flex flex-col justify-between rounded-lg border border-border/50 bg-background/50 p-4 space-y-3 hover:border-primary/50 transition-colors"
+                    >
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xl">{tpl.emoji}</span>
+                          <span className="font-medium text-sm">{tpl.name}</span>
+                        </div>
+                        <p className="text-xs text-muted-foreground">{tpl.description}</p>
+                        <div className="flex flex-wrap gap-1">
+                          <Badge variant="outline" className="text-[10px] capitalize">{tpl.category}</Badge>
+                          <Badge variant="secondary" className="text-[10px]">
+                            {tpl.questions.length} spørgsmål
+                          </Badge>
+                        </div>
+                      </div>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="w-full"
+                        onClick={() => handleUseTemplate(tpl)}
+                        disabled={createForm.isPending}
+                      >
+                        Brug template
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              </DialogContent>
+            </Dialog>
             <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
               <DialogTrigger asChild>
                 <Button>
