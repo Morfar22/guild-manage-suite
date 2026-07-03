@@ -4,7 +4,8 @@ import { findCategory, findPage } from '@/docs';
 import { Badge } from '@/components/ui/badge';
 import { ChevronRight, ArrowRight } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { useEffect, useMemo } from 'react';
+import { useMemo } from 'react';
+import { Helmet } from 'react-helmet-async';
 
 export default function DocsPage() {
   const { category = '', slug = '' } = useParams();
@@ -22,17 +23,13 @@ export default function DocsPage() {
     };
   }, [cat, page, slug]);
 
-  useEffect(() => {
-    if (page) {
-      document.title = `${page.title[language]} – Docs – BotDash`;
-      const meta = document.querySelector('meta[name="description"]');
-      if (meta) meta.setAttribute('content', page.description[language].slice(0, 155));
-    }
-  }, [page, language]);
-
   if (!page || !cat) {
     return (
       <div className="text-center">
+        <Helmet>
+          <title>{language === 'da' ? 'Side ikke fundet – Paranox Docs' : 'Page not found – Paranox Docs'}</title>
+          <meta name="robots" content="noindex" />
+        </Helmet>
         <h1 className="text-2xl font-bold">{language === 'da' ? 'Side ikke fundet' : 'Page not found'}</h1>
         <Link to="/docs" className="mt-4 inline-block text-primary hover:underline">
           {language === 'da' ? 'Tilbage til docs' : 'Back to docs'}
@@ -40,6 +37,19 @@ export default function DocsPage() {
       </div>
     );
   }
+
+  const pageTitle = `${page.title[language]} – Paranox Docs`;
+  const pageDescription = page.description[language].slice(0, 155);
+  const pageUrl = `https://bot.nethost-solutions.dk/docs/${category}/${slug}`;
+  const articleLd = {
+    '@context': 'https://schema.org',
+    '@type': 'TechArticle',
+    headline: page.title[language],
+    description: pageDescription,
+    author: { '@type': 'Organization', name: 'Paranox' },
+    mainEntityOfPage: pageUrl,
+  };
+
 
   return (
     <article className="mx-auto max-w-3xl">
