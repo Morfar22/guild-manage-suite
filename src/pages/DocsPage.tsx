@@ -53,6 +53,16 @@ export default function DocsPage() {
 
   return (
     <article className="mx-auto max-w-3xl">
+      <Helmet>
+        <title>{pageTitle}</title>
+        <meta name="description" content={pageDescription} />
+        <link rel="canonical" href={pageUrl} />
+        <meta property="og:type" content="article" />
+        <meta property="og:url" content={pageUrl} />
+        <meta property="og:title" content={pageTitle} />
+        <meta property="og:description" content={pageDescription} />
+        <script type="application/ld+json">{JSON.stringify(articleLd)}</script>
+      </Helmet>
       <nav className="mb-6 flex items-center gap-1 text-sm text-muted-foreground">
         <Link to="/docs" className="hover:text-foreground">Docs</Link>
         <ChevronRight className="h-3.5 w-3.5" />
