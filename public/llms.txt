@@ -1,0 +1,25 @@
+# Paranox
+
+> Alt-i-én Discord bot platform med 49+ moduler — moderation, tickets, AI, leveling, FiveM integration og mere. Sikker, hurtig og fuldt tilpasselig.
+
+Paranox er en Discord bot management platform hvor server-ejere kan konfigurere avancerede moduler via et web-dashboard: moderation, ticket-systemer, ansøgningsformularer, leveling/XP, giveaways, AI-chat, FiveM-integration, Twitch/YouTube/TikTok notifikationer og meget mere.
+
+## Pages
+
+- [Forside](/): Oversigt over Paranox platformen og features.
+- [Log ind](/auth): Log ind med Discord OAuth for at komme i gang.
+- [Dokumentation](/docs): Komplet dokumentation for alle moduler og kommandoer.
+
+## Docs
+
+- [Kom i gang](/docs/getting-started/introduction): Introduktion og opsætning.
+- [Oversigt](/docs/overview/dashboard): Dashboard-oversigt.
+- [Serverhåndtering](/docs/server-management/welcome): Welcome, roller, kanaler.
+- [Moderation](/docs/moderation/automod): Automod, warnings, quarantine.
+- [Engagement](/docs/engagement/leveling): Leveling, giveaways, økonomi.
+- [Kommunikation](/docs/communication/tickets): Tickets, modmail, suggestions.
+- [Integrationer](/docs/integrations/fivem): FiveM, Twitch, Tebex m.fl.
+- [Avanceret](/docs/advanced/ai-chat): AI chat, custom commands, webhooks.
+- [FAQ](/docs/faq/general): Ofte stillede spørgsmål.
+- [Changelog](/docs/changelog/latest): Seneste opdateringer.
+- [Kontakt](/docs/contact/support): Support og kontakt.
