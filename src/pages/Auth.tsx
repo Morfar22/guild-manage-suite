@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Bot, Loader2, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
+import { Helmet } from 'react-helmet-async';
 import { z } from 'zod';
 
 const authSchema = z.object({
@@ -144,12 +145,20 @@ export default function Auth() {
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-background p-4">
+      <Helmet>
+        <title>Log ind — Paranox Discord Bot Platform</title>
+        <meta name="description" content="Log ind på Paranox med Discord for at administrere din server: moderation, tickets, AI, leveling og meget mere." />
+        <link rel="canonical" href="https://bot.nethost-solutions.dk/auth" />
+        <meta property="og:url" content="https://bot.nethost-solutions.dk/auth" />
+        <meta property="og:title" content="Log ind — Paranox Discord Bot Platform" />
+        <meta property="og:description" content="Log ind på Paranox med Discord for at administrere din server." />
+      </Helmet>
       <div className="w-full max-w-md animate-fade-in">
         <div className="mb-8 text-center">
-          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl gradient-blurple shadow-glow">
+          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl gradient-blurple shadow-glow" aria-hidden="true">
             <Bot className="h-8 w-8 text-primary-foreground" />
           </div>
-          <h1 className="text-2xl font-bold text-foreground">{t('auth.title')}</h1>
+          <h1 className="text-2xl font-bold text-foreground">Paranox — Discord Bot Management</h1>
           <p className="mt-2 text-muted-foreground">{t('auth.subtitle')}</p>
         </div>
 
