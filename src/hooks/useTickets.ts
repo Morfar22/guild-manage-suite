@@ -40,7 +40,9 @@ export interface CategoryQuestion {
   label: string;
   placeholder: string;
   required: boolean;
-  style: 'short' | 'paragraph';
+  style: 'short' | 'paragraph' | 'select';
+  options?: string[];
+  multi?: boolean;
 }
 
 export interface TicketCategory {
