@@ -10,23 +10,57 @@
  * setupTicketHandler(client);
  */
 
-const { 
-  EmbedBuilder, 
-  ActionRowBuilder, 
-  ButtonBuilder, 
-  ButtonStyle, 
+const {
+  EmbedBuilder,
+  ActionRowBuilder,
+  ButtonBuilder,
+  ButtonStyle,
   ChannelType,
   ModalBuilder,
   TextInputBuilder,
   TextInputStyle,
+  StringSelectMenuBuilder,
 } = require('discord.js');
 
 const API_URL = process.env.API_URL || 'https://sleiplyixaxuvydzudxn.supabase.co/functions/v1/bot-tickets';
 const BOT_SECRET = process.env.BOT_SECRET_KEY;
 
-/**
- * Call the Lovable API
- */
+// In-memory state for multi-step ticket creation flows (rich select-menu questions).
+// Key: `${userId}:${categoryId}`  Value: { answers: [{question, answer}], panelId, expires }
+const pendingFlows = new Map();
+const FLOW_TTL_MS = 10 * 60 * 1000;
+
+function flowKey(userId, categoryId) {
+  return `${userId}:${categoryId}`;
+}
+function getFlow(userId, categoryId) {
+  const key = flowKey(userId, categoryId);
+  const state = pendingFlows.get(key);
+  if (!state) return null;
+  if (state.expires < Date.now()) {
+    pendingFlows.delete(key);
+    return null;
+  }
+  return state;
+}
+function setFlow(userId, categoryId, patch) {
+  const key = flowKey(userId, categoryId);
+  const prev = pendingFlows.get(key) || { answers: [], panelId: null };
+  const next = { ...prev, ...patch, expires: Date.now() + FLOW_TTL_MS };
+  pendingFlows.set(key, next);
+  return next;
+}
+function clearFlow(userId, categoryId) {
+  pendingFlows.delete(flowKey(userId, categoryId));
+}
+// Periodic cleanup
+setInterval(() => {
+  const now = Date.now();
+  for (const [k, v] of pendingFlows.entries()) {
+    if (v.expires < now) pendingFlows.delete(k);
+  }
+}, 60_000).unref?.();
+
 async function callAPI(action, data) {
   const response = await fetch(API_URL, {
     method: 'POST',
@@ -36,14 +70,61 @@ async function callAPI(action, data) {
     },
     body: JSON.stringify({ action, data })
   });
-  
+
   if (!response.ok) {
-    const error = await response.json();
+    const error = await response.json().catch(() => ({}));
     throw new Error(error.error || 'API request failed');
   }
-  
+
   return response.json();
 }
+
+// ---------------- Operating hours ----------------
+const DAY_KEYS = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
+
+function isWithinOperatingHours(hours) {
+  if (!hours || !hours.enabled) return { open: true };
+  const tz = hours.timezone || 'UTC';
+  let dayIdx, hh, mm;
+  try {
+    const fmt = new Intl.DateTimeFormat('en-US', {
+      timeZone: tz,
+      weekday: 'short',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false,
+    });
+    const parts = fmt.formatToParts(new Date());
+    const wd = parts.find((p) => p.type === 'weekday')?.value || 'Sun';
+    hh = parseInt(parts.find((p) => p.type === 'hour')?.value || '0', 10);
+    mm = parseInt(parts.find((p) => p.type === 'minute')?.value || '0', 10);
+    if (hh === 24) hh = 0;
+    dayIdx = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].indexOf(wd);
+    if (dayIdx < 0) dayIdx = new Date().getDay();
+  } catch {
+    const now = new Date();
+    dayIdx = now.getDay();
+    hh = now.getUTCHours();
+    mm = now.getUTCMinutes();
+  }
+  const dayCfg = hours.days?.[DAY_KEYS[dayIdx]];
+  if (!dayCfg || !dayCfg.enabled) {
+    return { open: false, message: hours.closed_message || "We're currently closed. Please try again later." };
+  }
+  const cur = hh * 60 + mm;
+  const [oH, oM] = String(dayCfg.open || '00:00').split(':').map((n) => parseInt(n, 10) || 0);
+  const [cH, cM] = String(dayCfg.close || '23:59').split(':').map((n) => parseInt(n, 10) || 0);
+  const openMin = oH * 60 + oM;
+  const closeMin = cH * 60 + cM;
+  const isOpen = closeMin >= openMin
+    ? cur >= openMin && cur <= closeMin
+    : cur >= openMin || cur <= closeMin; // wraps past midnight
+  if (!isOpen) {
+    return { open: false, message: hours.closed_message || "We're currently closed. Please try again later." };
+  }
+  return { open: true };
+}
+
 
 /**
  * Setup ticket handler on Discord client
