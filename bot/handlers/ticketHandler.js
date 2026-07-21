@@ -191,8 +191,8 @@ function setupTicketHandler(client, config = {}) {
       return;
     }
 
-    // Handle ticket category select (dropdown)
-    if (interaction.isStringSelectMenu?.() && interaction.customId === 'ticket_category_select') {
+    // Handle ticket category select (dropdown) — supports optional _<panelId> suffix
+    if (interaction.isStringSelectMenu?.() && interaction.customId?.startsWith('ticket_category_select')) {
       try {
         await handleSelectCategory(interaction);
       } catch (error) {
@@ -221,9 +221,33 @@ function setupTicketHandler(client, config = {}) {
 
     const customId = interaction.customId;
 
+    // Ticket rating buttons: ticket_rate_<ticketUuid>_<1-5>
+    if (customId.startsWith('ticket_rate_')) {
+      try {
+        await handleRateTicket(interaction);
+      } catch (error) {
+        console.error('Rating handler error:', error);
+        if (!interaction.replied && !interaction.deferred) {
+          await interaction.reply({ content: '❌ Kunne ikke gemme rating.', ephemeral: true }).catch(console.error);
+        }
+      }
+      return;
+    }
+
+    // Helper: strip trailing panel-uuid suffix from custom_id (uuids contain hyphens, not underscores)
+    const stripPanelSuffix = (rest) => {
+      const parts = rest.split('_');
+      // If last part looks like a uuid (36 chars with hyphens), drop it as panel id
+      if (parts.length > 1 && parts[parts.length - 1].length === 36 && parts[parts.length - 1].includes('-')) {
+        return { id: parts.slice(0, -1).join('_'), panelId: parts[parts.length - 1] };
+      }
+      return { id: rest, panelId: null };
+    };
+
     try {
       if (customId.startsWith('ticket_create_')) {
-        await handleCreateTicket(interaction, customId.replace('ticket_create_', ''));
+        const { id: categoryId } = stripPanelSuffix(customId.replace('ticket_create_', ''));
+        await handleCreateTicket(interaction, categoryId);
         return;
       }
       if (customId.startsWith('ticket_claim_')) {
@@ -488,12 +512,19 @@ async function handleCloseTicket(interaction, threadId, deleteThread = false) {
   // Trigger AI summary asynchronously (fire-and-forget)
   if (result?.ticket_id) {
     const SUMMARY_URL = 'https://sleiplyixaxuvydzudxn.supabase.co/functions/v1/ai-ticket-summary';
-    const BOT_SECRET = process.env.BOT_SECRET_KEY;
     fetch(SUMMARY_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-bot-secret': BOT_SECRET },
       body: JSON.stringify({ action: 'summarize', data: { ticket_id: result.ticket_id } })
     }).catch(err => console.error('[Tickets] AI summary error:', err.message));
+
+    // Trigger HTML transcript generation + DM (fire-and-forget)
+    const TRANSCRIPT_URL = 'https://sleiplyixaxuvydzudxn.supabase.co/functions/v1/generate-ticket-transcript';
+    fetch(TRANSCRIPT_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-bot-secret': BOT_SECRET },
+      body: JSON.stringify({ ticket_id: result.ticket_id })
+    }).catch(err => console.error('[Tickets] Transcript error:', err.message));
   }
 
   // For button interactions, update the original message embed
@@ -605,6 +636,45 @@ async function handleTicketRemind(interaction, remindTimers) {
 
   remindTimers.set(interaction.channel.id, { timeout, creatorId });
   console.log(`[Tickets] Remind sent for ${interaction.channel.id}, auto-delete in 12h`);
+}
+
+
+async function handleRateTicket(interaction) {
+  // ticket_rate_<ticketUuid>_<n>
+  const raw = interaction.customId.replace('ticket_rate_', '');
+  const lastUnderscore = raw.lastIndexOf('_');
+  if (lastUnderscore < 0) return;
+  const ticketId = raw.slice(0, lastUnderscore);
+  const rating = parseInt(raw.slice(lastUnderscore + 1), 10);
+  if (!ticketId || !rating || rating < 1 || rating > 5) return;
+
+  const RATE_URL = 'https://sleiplyixaxuvydzudxn.supabase.co/functions/v1/submit-ticket-rating';
+  const resp = await fetch(RATE_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'x-bot-secret': BOT_SECRET },
+    body: JSON.stringify({
+      ticket_id: ticketId,
+      rated_by_id: interaction.user.id,
+      rating,
+    }),
+  });
+
+  if (!resp.ok) {
+    return interaction.reply({ content: '❌ Kunne ikke gemme rating.', ephemeral: true });
+  }
+
+  // Update the DM message to confirm and disable buttons
+  const stars = '★'.repeat(rating) + '☆'.repeat(5 - rating);
+  const disabled = new ActionRowBuilder().addComponents(
+    [1, 2, 3, 4, 5].map(n =>
+      new ButtonBuilder().setCustomId(`disabled_${n}`).setLabel(`${n} ★`).setStyle(ButtonStyle.Secondary).setDisabled(true)
+    )
+  );
+  await interaction.update({
+    content: `✅ Tak for din rating: **${stars}** (${rating}/5)`,
+    embeds: interaction.message?.embeds || [],
+    components: [disabled],
+  }).catch(() => {});
 }
 
 module.exports = { setupTicketHandler };

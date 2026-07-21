@@ -5052,12 +5052,16 @@ export type Database = {
       }
       ticket_categories: {
         Row: {
+          button_color: number | null
           created_at: string
           description: string | null
           emoji: string | null
+          form_fields: Json
           guild_id: string
           id: string
           name: string
+          panel_id: string | null
+          position: number | null
           questions: Json | null
           staff_role_id: string | null
           ticket_type: Database["public"]["Enums"]["ticket_type"]
@@ -5065,12 +5069,16 @@ export type Database = {
           welcome_message: string | null
         }
         Insert: {
+          button_color?: number | null
           created_at?: string
           description?: string | null
           emoji?: string | null
+          form_fields?: Json
           guild_id: string
           id?: string
           name: string
+          panel_id?: string | null
+          position?: number | null
           questions?: Json | null
           staff_role_id?: string | null
           ticket_type?: Database["public"]["Enums"]["ticket_type"]
@@ -5078,12 +5086,16 @@ export type Database = {
           welcome_message?: string | null
         }
         Update: {
+          button_color?: number | null
           created_at?: string
           description?: string | null
           emoji?: string | null
+          form_fields?: Json
           guild_id?: string
           id?: string
           name?: string
+          panel_id?: string | null
+          position?: number | null
           questions?: Json | null
           staff_role_id?: string | null
           ticket_type?: Database["public"]["Enums"]["ticket_type"]
@@ -5096,6 +5108,13 @@ export type Database = {
             columns: ["guild_id"]
             isOneToOne: false
             referencedRelation: "guilds"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ticket_categories_panel_id_fkey"
+            columns: ["panel_id"]
+            isOneToOne: false
+            referencedRelation: "ticket_panels"
             referencedColumns: ["id"]
           },
         ]
@@ -5141,33 +5160,176 @@ export type Database = {
           },
         ]
       }
-      ticket_settings: {
+      ticket_panels: {
         Row: {
+          button_emoji: string | null
+          button_label: string | null
+          button_style: number | null
+          category_ids: Json
+          channel_id: string | null
+          component_style: string
+          created_at: string
+          embed_color: number | null
+          embed_description: string | null
+          embed_footer_text: string | null
+          embed_image_url: string | null
+          embed_thumbnail_url: string | null
+          embed_title: string | null
+          enabled: boolean
+          guild_id: string
+          id: string
+          message_id: string | null
+          name: string
+          operating_hours: Json
+          updated_at: string
+        }
+        Insert: {
+          button_emoji?: string | null
+          button_label?: string | null
+          button_style?: number | null
+          category_ids?: Json
+          channel_id?: string | null
+          component_style?: string
+          created_at?: string
+          embed_color?: number | null
+          embed_description?: string | null
+          embed_footer_text?: string | null
+          embed_image_url?: string | null
+          embed_thumbnail_url?: string | null
+          embed_title?: string | null
+          enabled?: boolean
+          guild_id: string
+          id?: string
+          message_id?: string | null
+          name: string
+          operating_hours?: Json
+          updated_at?: string
+        }
+        Update: {
+          button_emoji?: string | null
+          button_label?: string | null
+          button_style?: number | null
+          category_ids?: Json
+          channel_id?: string | null
+          component_style?: string
+          created_at?: string
+          embed_color?: number | null
+          embed_description?: string | null
+          embed_footer_text?: string | null
+          embed_image_url?: string | null
+          embed_thumbnail_url?: string | null
+          embed_title?: string | null
+          enabled?: boolean
+          guild_id?: string
+          id?: string
+          message_id?: string | null
+          name?: string
+          operating_hours?: Json
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ticket_panels_guild_id_fkey"
+            columns: ["guild_id"]
+            isOneToOne: false
+            referencedRelation: "guilds"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ticket_ratings: {
+        Row: {
+          comment: string | null
           created_at: string
           guild_id: string
           id: string
+          rated_by_id: string
+          rating: number
+          staff_id: string | null
+          staff_name: string | null
+          ticket_id: string
+        }
+        Insert: {
+          comment?: string | null
+          created_at?: string
+          guild_id: string
+          id?: string
+          rated_by_id: string
+          rating: number
+          staff_id?: string | null
+          staff_name?: string | null
+          ticket_id: string
+        }
+        Update: {
+          comment?: string | null
+          created_at?: string
+          guild_id?: string
+          id?: string
+          rated_by_id?: string
+          rating?: number
+          staff_id?: string | null
+          staff_name?: string | null
+          ticket_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ticket_ratings_guild_id_fkey"
+            columns: ["guild_id"]
+            isOneToOne: false
+            referencedRelation: "guilds"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ticket_ratings_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: true
+            referencedRelation: "tickets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ticket_settings: {
+        Row: {
+          created_at: string
+          dm_transcript_to_user: boolean
+          enable_ratings: boolean
+          enable_transcripts: boolean
+          guild_id: string
+          id: string
+          operating_hours: Json
           panel_channel_id: string | null
           panel_message_id: string | null
+          ratings_dm_prompt: string | null
           thread_category_id: string | null
           transcript_channel_id: string | null
           updated_at: string
         }
         Insert: {
           created_at?: string
+          dm_transcript_to_user?: boolean
+          enable_ratings?: boolean
+          enable_transcripts?: boolean
           guild_id: string
           id?: string
+          operating_hours?: Json
           panel_channel_id?: string | null
           panel_message_id?: string | null
+          ratings_dm_prompt?: string | null
           thread_category_id?: string | null
           transcript_channel_id?: string | null
           updated_at?: string
         }
         Update: {
           created_at?: string
+          dm_transcript_to_user?: boolean
+          enable_ratings?: boolean
+          enable_transcripts?: boolean
           guild_id?: string
           id?: string
+          operating_hours?: Json
           panel_channel_id?: string | null
           panel_message_id?: string | null
+          ratings_dm_prompt?: string | null
           thread_category_id?: string | null
           transcript_channel_id?: string | null
           updated_at?: string
@@ -5178,6 +5340,51 @@ export type Database = {
             columns: ["guild_id"]
             isOneToOne: true
             referencedRelation: "guilds"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ticket_transcripts: {
+        Row: {
+          created_at: string
+          guild_id: string
+          html_url: string | null
+          id: string
+          message_count: number | null
+          storage_path: string | null
+          ticket_id: string
+        }
+        Insert: {
+          created_at?: string
+          guild_id: string
+          html_url?: string | null
+          id?: string
+          message_count?: number | null
+          storage_path?: string | null
+          ticket_id: string
+        }
+        Update: {
+          created_at?: string
+          guild_id?: string
+          html_url?: string | null
+          id?: string
+          message_count?: number | null
+          storage_path?: string | null
+          ticket_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ticket_transcripts_guild_id_fkey"
+            columns: ["guild_id"]
+            isOneToOne: false
+            referencedRelation: "guilds"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ticket_transcripts_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: true
+            referencedRelation: "tickets"
             referencedColumns: ["id"]
           },
         ]

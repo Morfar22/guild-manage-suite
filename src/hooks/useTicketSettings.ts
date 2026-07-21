@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useGuild } from '@/contexts/GuildContext';
+import type { OperatingHours } from './useTicketPanels';
 
 export interface TicketSettings {
   id: string;
@@ -9,6 +10,11 @@ export interface TicketSettings {
   thread_category_id: string | null;
   panel_message_id: string | null;
   transcript_channel_id: string | null;
+  enable_ratings: boolean;
+  enable_transcripts: boolean;
+  dm_transcript_to_user: boolean;
+  ratings_dm_prompt: string | null;
+  operating_hours: OperatingHours;
   created_at: string;
   updated_at: string;
 }
@@ -28,7 +34,11 @@ export function useTicketSettings() {
         .maybeSingle();
 
       if (error) throw error;
-      return data as TicketSettings | null;
+      if (!data) return null;
+      return {
+        ...data,
+        operating_hours: (data as any).operating_hours || { enabled: false },
+      } as TicketSettings;
     },
     enabled: !!selectedGuild?.id,
   });
@@ -42,7 +52,6 @@ export function useUpsertTicketSettings() {
     mutationFn: async (settings: Partial<Omit<TicketSettings, 'id' | 'guild_id' | 'created_at' | 'updated_at'>>) => {
       if (!selectedGuild?.id) throw new Error('No guild selected');
 
-      // Check if settings exist
       const { data: existing } = await supabase
         .from('ticket_settings')
         .select('id')
@@ -50,27 +59,20 @@ export function useUpsertTicketSettings() {
         .maybeSingle();
 
       if (existing) {
-        // Update
         const { data, error } = await supabase
           .from('ticket_settings')
-          .update(settings)
+          .update(settings as any)
           .eq('guild_id', selectedGuild.id)
           .select()
           .single();
-
         if (error) throw error;
         return data;
       } else {
-        // Insert
         const { data, error } = await supabase
           .from('ticket_settings')
-          .insert({
-            ...settings,
-            guild_id: selectedGuild.id,
-          })
+          .insert({ ...(settings as any), guild_id: selectedGuild.id })
           .select()
           .single();
-
         if (error) throw error;
         return data;
       }
@@ -81,6 +83,7 @@ export function useUpsertTicketSettings() {
   });
 }
 
+// Legacy - kept for backward compat with PanelSettingsCard (deprecated)
 export function useSendTicketPanel() {
   const queryClient = useQueryClient();
   const { selectedGuild } = useGuild();
@@ -88,12 +91,9 @@ export function useSendTicketPanel() {
   return useMutation({
     mutationFn: async () => {
       if (!selectedGuild?.id) throw new Error('No guild selected');
-
-      // This will call an edge function that tells the bot to send the panel
       const { data, error } = await supabase.functions.invoke('send-ticket-panel', {
         body: { guild_id: selectedGuild.id },
       });
-
       if (error) throw error;
       return data;
     },
