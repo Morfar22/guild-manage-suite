@@ -133,14 +133,30 @@ Deno.serve(async (req) => {
       }
 
       case "getSettings": {
-        const { guildId } = data;
+        const { guildId, panelId } = data;
         const { data: settings } = await supabase
           .from("ticket_settings")
           .select("*")
           .eq("guild_id", guildId)
           .maybeSingle();
-        
-        return new Response(JSON.stringify({ settings }), {
+
+        let panel: any = null;
+        if (panelId) {
+          const { data: p } = await supabase
+            .from("ticket_panels")
+            .select("*")
+            .eq("id", panelId)
+            .maybeSingle();
+          panel = p;
+        }
+
+        // Panel operating_hours (if set) override the global settings hours
+        const merged = settings ? { ...settings } : {};
+        if (panel?.operating_hours && panel.operating_hours.enabled) {
+          (merged as any).operating_hours = panel.operating_hours;
+        }
+
+        return new Response(JSON.stringify({ settings: merged, panel }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
