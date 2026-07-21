@@ -638,4 +638,43 @@ async function handleTicketRemind(interaction, remindTimers) {
   console.log(`[Tickets] Remind sent for ${interaction.channel.id}, auto-delete in 12h`);
 }
 
+
+async function handleRateTicket(interaction) {
+  // ticket_rate_<ticketUuid>_<n>
+  const raw = interaction.customId.replace('ticket_rate_', '');
+  const lastUnderscore = raw.lastIndexOf('_');
+  if (lastUnderscore < 0) return;
+  const ticketId = raw.slice(0, lastUnderscore);
+  const rating = parseInt(raw.slice(lastUnderscore + 1), 10);
+  if (!ticketId || !rating || rating < 1 || rating > 5) return;
+
+  const RATE_URL = 'https://sleiplyixaxuvydzudxn.supabase.co/functions/v1/submit-ticket-rating';
+  const resp = await fetch(RATE_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'x-bot-secret': BOT_SECRET },
+    body: JSON.stringify({
+      ticket_id: ticketId,
+      rated_by_id: interaction.user.id,
+      rating,
+    }),
+  });
+
+  if (!resp.ok) {
+    return interaction.reply({ content: '❌ Kunne ikke gemme rating.', ephemeral: true });
+  }
+
+  // Update the DM message to confirm and disable buttons
+  const stars = '★'.repeat(rating) + '☆'.repeat(5 - rating);
+  const disabled = new ActionRowBuilder().addComponents(
+    [1, 2, 3, 4, 5].map(n =>
+      new ButtonBuilder().setCustomId(`disabled_${n}`).setLabel(`${n} ★`).setStyle(ButtonStyle.Secondary).setDisabled(true)
+    )
+  );
+  await interaction.update({
+    content: `✅ Tak for din rating: **${stars}** (${rating}/5)`,
+    embeds: interaction.message?.embeds || [],
+    components: [disabled],
+  }).catch(() => {});
+}
+
 module.exports = { setupTicketHandler };
