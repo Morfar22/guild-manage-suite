@@ -512,12 +512,19 @@ async function handleCloseTicket(interaction, threadId, deleteThread = false) {
   // Trigger AI summary asynchronously (fire-and-forget)
   if (result?.ticket_id) {
     const SUMMARY_URL = 'https://sleiplyixaxuvydzudxn.supabase.co/functions/v1/ai-ticket-summary';
-    const BOT_SECRET = process.env.BOT_SECRET_KEY;
     fetch(SUMMARY_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-bot-secret': BOT_SECRET },
       body: JSON.stringify({ action: 'summarize', data: { ticket_id: result.ticket_id } })
     }).catch(err => console.error('[Tickets] AI summary error:', err.message));
+
+    // Trigger HTML transcript generation + DM (fire-and-forget)
+    const TRANSCRIPT_URL = 'https://sleiplyixaxuvydzudxn.supabase.co/functions/v1/generate-ticket-transcript';
+    fetch(TRANSCRIPT_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-bot-secret': BOT_SECRET },
+      body: JSON.stringify({ ticket_id: result.ticket_id })
+    }).catch(err => console.error('[Tickets] Transcript error:', err.message));
   }
 
   // For button interactions, update the original message embed
