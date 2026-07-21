@@ -95,3 +95,9 @@ verify_jwt = false
 
 [functions.send-poll]
 verify_jwt = false
+
+[functions.submit-ticket-rating]
+verify_jwt = false
+
+[functions.generate-ticket-transcript]
+verify_jwt = false
