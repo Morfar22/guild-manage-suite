@@ -386,13 +386,12 @@ async function handleTicketSlashCreate(interaction) {
   }
 
   if (categories.length === 1) {
-    // Only one category - create ticket directly
-    await handleCreateTicket(interaction, categories[0].id);
+    // Only one category - start flow directly
+    await startTicketFlow(interaction, categories[0].id, null);
     return;
   }
 
   // Multiple categories - show select menu
-  const { StringSelectMenuBuilder } = require('discord.js');
   const select = new StringSelectMenuBuilder()
     .setCustomId('ticket_category_select')
     .setPlaceholder('Vælg en kategori')
@@ -412,86 +411,214 @@ async function handleTicketSlashCreate(interaction) {
   });
 }
 
-async function handleSelectCategory(interaction) {
-  const categoryId = interaction.values?.[0];
-  if (!categoryId) {
-    return interaction.reply({ content: '❌ Ingen kategori valgt.', ephemeral: true });
-  }
+// ---------------- New multi-step ticket flow ----------------
 
-  // Get category from API
+function splitQuestions(category) {
+  const all = Array.isArray(category.questions) ? category.questions : [];
+  const selectQuestions = all.filter((q) => q.style === 'select' && Array.isArray(q.options) && q.options.length > 0);
+  const textQuestions = all.filter((q) => q.style !== 'select').slice(0, 5);
+  return { selectQuestions, textQuestions };
+}
+
+async function startTicketFlow(interaction, categoryId, panelId) {
+  // Fetch category
   const { category } = await callAPI('getCategory', { categoryId });
   if (!category) {
-    return interaction.reply({ content: '❌ Kategori ikke fundet.', ephemeral: true });
+    const reply = { content: '❌ Kategori ikke fundet.', ephemeral: true };
+    if (interaction.deferred || interaction.replied) return interaction.editReply(reply);
+    return interaction.reply(reply);
   }
 
-  const questions = Array.isArray(category.questions) ? category.questions : [];
-
-  // Any category with questions => show modal before creating ticket
-  if (questions.length > 0) {
-    const modal = new ModalBuilder()
-      .setCustomId(`ticket_modal_${categoryId}`)
-      .setTitle(`${category.emoji || '🎫'} ${category.name}`.substring(0, 45));
-
-    const rows = questions.slice(0, 5).map((q, index) => {
-      const input = new TextInputBuilder()
-        .setCustomId(`question_${index}`)
-        .setLabel(String(q.label || `Spørgsmål ${index + 1}`).substring(0, 45))
-        .setRequired(q.required !== false)
-        .setStyle(q.style === 'paragraph' ? TextInputStyle.Paragraph : TextInputStyle.Short);
-
-      if (q.placeholder) input.setPlaceholder(String(q.placeholder).substring(0, 100));
-
-      return new ActionRowBuilder().addComponents(input);
-    });
-
-    modal.addComponents(rows);
-    return interaction.showModal(modal);
+  // Operating hours check (panel override → settings fallback)
+  const { settings } = await callAPI('getSettings', { guildId: category.guild_id, panelId: panelId || undefined });
+  const hoursCheck = isWithinOperatingHours(settings?.operating_hours);
+  if (!hoursCheck.open) {
+    const reply = { content: `🕒 ${hoursCheck.message}`, ephemeral: true, components: [] };
+    if (interaction.isStringSelectMenu?.() && !interaction.deferred && !interaction.replied) {
+      return interaction.update(reply).catch(() => interaction.reply(reply));
+    }
+    if (interaction.deferred || interaction.replied) return interaction.editReply(reply);
+    return interaction.reply(reply);
   }
 
-  // No questions => create ticket directly (pass category to avoid re-fetch)
-  await handleCreateTicket(interaction, categoryId, undefined, category);
+  const { selectQuestions, textQuestions } = splitQuestions(category);
+
+  // Initialize flow state
+  setFlow(interaction.user.id, categoryId, {
+    panelId: panelId || null,
+    selectQuestions,
+    textQuestions,
+    selectAnswers: [],
+    currentSelectIdx: 0,
+    category,
+    settings,
+  });
+
+  if (selectQuestions.length > 0) {
+    // Ask the first rich select question
+    return askNextSelect(interaction, categoryId, /*firstTime*/ true);
+  }
+
+  if (textQuestions.length > 0) {
+    return showTextModal(interaction, category, textQuestions);
+  }
+
+  // Nothing to ask — create ticket
+  clearFlow(interaction.user.id, categoryId);
+  await handleCreateTicket(interaction, categoryId, [], category, settings);
+}
+
+function showTextModal(interaction, category, textQuestions) {
+  const modal = new ModalBuilder()
+    .setCustomId(`ticket_modal_${category.id}`)
+    .setTitle(`${category.emoji || '🎫'} ${category.name}`.substring(0, 45));
+
+  const rows = textQuestions.slice(0, 5).map((q, index) => {
+    const input = new TextInputBuilder()
+      .setCustomId(`question_${index}`)
+      .setLabel(String(q.label || `Spørgsmål ${index + 1}`).substring(0, 45))
+      .setRequired(q.required !== false)
+      .setStyle(q.style === 'paragraph' ? TextInputStyle.Paragraph : TextInputStyle.Short);
+    if (q.placeholder) input.setPlaceholder(String(q.placeholder).substring(0, 100));
+    return new ActionRowBuilder().addComponents(input);
+  });
+
+  modal.addComponents(rows);
+  return interaction.showModal(modal);
+}
+
+async function askNextSelect(interaction, categoryId, firstTime = false) {
+  const state = getFlow(interaction.user.id, categoryId);
+  if (!state) {
+    const reply = { content: '⚠️ Din session udløb. Prøv igen.', ephemeral: true, components: [] };
+    if (interaction.deferred || interaction.replied) return interaction.editReply(reply);
+    return interaction.reply(reply);
+  }
+
+  const q = state.selectQuestions[state.currentSelectIdx];
+  const optionCount = Math.min(q.options.length, 25);
+  const maxValues = q.multi ? optionCount : 1;
+  const minValues = q.required === false ? 0 : 1;
+
+  const select = new StringSelectMenuBuilder()
+    .setCustomId(`ticket_pick_${categoryId}_${state.currentSelectIdx}`)
+    .setPlaceholder(String(q.label || 'Vælg...').substring(0, 100))
+    .setMinValues(minValues)
+    .setMaxValues(maxValues)
+    .addOptions(
+      q.options.slice(0, 25).map((opt, i) => ({
+        label: String(opt).substring(0, 100),
+        value: `opt_${i}`,
+      }))
+    );
+
+  const row = new ActionRowBuilder().addComponents(select);
+  const content = `**${q.label}** ${q.multi ? '_(vælg en eller flere)_' : ''}\n_Trin ${state.currentSelectIdx + 1} af ${state.selectQuestions.length}_`;
+
+  if (firstTime) {
+    // Initial response to the triggering button/select
+    if (interaction.isStringSelectMenu?.() && !interaction.deferred && !interaction.replied) {
+      return interaction.update({ content, components: [row] });
+    }
+    if (!interaction.deferred && !interaction.replied) {
+      return interaction.reply({ content, components: [row], ephemeral: true });
+    }
+    return interaction.editReply({ content, components: [row] });
+  }
+
+  // Called from a pick-submit interaction — update the ephemeral message
+  return interaction.update({ content, components: [row] });
+}
+
+async function handlePickSubmit(interaction) {
+  // custom_id: ticket_pick_<categoryId>_<idx>
+  const rest = interaction.customId.replace('ticket_pick_', '');
+  const lastUnderscore = rest.lastIndexOf('_');
+  const categoryId = rest.slice(0, lastUnderscore);
+  const idx = parseInt(rest.slice(lastUnderscore + 1), 10);
+
+  const state = getFlow(interaction.user.id, categoryId);
+  if (!state || state.currentSelectIdx !== idx) {
+    return interaction.update({
+      content: '⚠️ Denne session er ikke længere aktiv. Start venligst forfra.',
+      components: [],
+    }).catch(() => {});
+  }
+
+  const q = state.selectQuestions[idx];
+  const picks = (interaction.values || []).map((v) => {
+    const optIdx = parseInt(String(v).replace('opt_', ''), 10);
+    return q.options[optIdx];
+  }).filter(Boolean);
+
+  state.selectAnswers.push({
+    question: q.label || `Spørgsmål ${idx + 1}`,
+    answer: picks.length > 0 ? picks.join(', ') : '(Intet valgt)',
+  });
+  state.currentSelectIdx = idx + 1;
+  setFlow(interaction.user.id, categoryId, state);
+
+  // More select questions?
+  if (state.currentSelectIdx < state.selectQuestions.length) {
+    return askNextSelect(interaction, categoryId, false);
+  }
+
+  // All selects done. Text questions next?
+  if (state.textQuestions.length > 0) {
+    // showModal must be the initial response and cannot follow an update.
+    // Since we haven't deferred/updated yet on this interaction, show modal directly.
+    return showTextModal(interaction, state.category, state.textQuestions);
+  }
+
+  // No text questions — create ticket now
+  await interaction.update({ content: '⏳ Opretter ticket...', components: [] });
+  const answers = [...state.selectAnswers];
+  clearFlow(interaction.user.id, categoryId);
+  await handleCreateTicket(interaction, categoryId, answers, state.category, state.settings);
 }
 
 async function handleTicketModalSubmit(interaction) {
   const categoryId = interaction.customId.replace('ticket_modal_', '');
   await interaction.deferReply({ ephemeral: true });
 
-  const { category } = await callAPI('getCategory', { categoryId });
+  const state = getFlow(interaction.user.id, categoryId);
+  const category = state?.category || (await callAPI('getCategory', { categoryId })).category;
   if (!category) {
     return interaction.editReply({ content: '❌ Kategori ikke fundet.' });
   }
 
-  const questions = Array.isArray(category.questions) ? category.questions : [];
-  const answers = questions.slice(0, 5).map((q, index) => {
-    const value = interaction.fields.getTextInputValue(`question_${index}`);
+  const textQuestions = state?.textQuestions || (Array.isArray(category.questions) ? category.questions.filter((q) => q.style !== 'select') : []);
+  const textAnswers = textQuestions.slice(0, 5).map((q, index) => {
+    let value = '';
+    try { value = interaction.fields.getTextInputValue(`question_${index}`); } catch { /* missing */ }
     return {
       question: q.label || `Spørgsmål ${index + 1}`,
-      answer: value || '(Intet svar)'
+      answer: value || '(Intet svar)',
     };
   });
 
-  // Pass category to avoid redundant API call
-  await handleCreateTicket(interaction, categoryId, answers, category);
+  const combined = [...(state?.selectAnswers || []), ...textAnswers];
+  const settings = state?.settings;
+  clearFlow(interaction.user.id, categoryId);
+  await handleCreateTicket(interaction, categoryId, combined, category, settings);
 }
 
-async function handleCreateTicket(interaction, categoryId, applicationAnswers) {
-  // If we're already deferred (modal submit path), don't defer again
+async function handleCreateTicket(interaction, categoryId, applicationAnswers, presetCategory, presetSettings) {
+  // If we're already deferred/updated (button flow or modal), don't defer again
   if (!interaction.deferred && !interaction.replied) {
     await interaction.deferReply({ ephemeral: true });
   }
 
-  // Get category from API
-  const { category } = await callAPI('getCategory', { categoryId });
-  
+  const category = presetCategory || (await callAPI('getCategory', { categoryId })).category;
+
   if (!category) {
     return interaction.editReply({ content: '❌ Kategori ikke fundet.' });
   }
 
-  // Get settings
-  const { settings } = await callAPI('getSettings', { guildId: category.guild_id });
+  const settings = presetSettings || (await callAPI('getSettings', { guildId: category.guild_id })).settings;
 
   // Get parent channel
-  const parentChannel = settings?.thread_category_id 
+  const parentChannel = settings?.thread_category_id
     ? await interaction.guild.channels.fetch(settings.thread_category_id).catch(() => null)
     : interaction.channel;
 
@@ -506,20 +633,13 @@ async function handleCreateTicket(interaction, categoryId, applicationAnswers) {
   // Add creator to thread
   await thread.members.add(interaction.user.id);
 
-  // Notify staff role - mentioning the role in a private thread automatically
-  // grants all role members access without needing to add each user individually.
-  // The mention message is sent and immediately deleted to keep the thread clean.
   if (category.staff_role_id) {
     try {
       const pingMsg = await thread.send({
         content: `<@&${category.staff_role_id}>`,
         allowedMentions: { roles: [category.staff_role_id] }
       });
-      // Delete the ping message after a short delay so the thread stays clean
-      setTimeout(() => {
-        pingMsg.delete().catch(() => {});
-      }, 1500);
-      console.log(`✅ Notified staff role ${category.staff_role_id} - all role members now have access`);
+      setTimeout(() => { pingMsg.delete().catch(() => {}); }, 1500);
     } catch (error) {
       console.error('Failed to notify staff role:', error);
     }
@@ -568,8 +688,9 @@ async function handleCreateTicket(interaction, categoryId, applicationAnswers) {
     answers: applicationAnswers || [],
   });
 
-  await interaction.editReply({ content: `✅ Ticket oprettet: <#${thread.id}>` });
+  await interaction.editReply({ content: `✅ Ticket oprettet: <#${thread.id}>`, components: [] });
 }
+
 
 async function handleClaimTicket(interaction, threadId) {
   await callAPI('claimTicket', {
