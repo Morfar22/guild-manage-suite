@@ -272,12 +272,40 @@ function setupTicketHandler(client, config = {}) {
       return;
     }
 
-    // Handle ticket category select (dropdown) — supports optional _<panelId> suffix
+    // Helper: strip trailing panel-uuid suffix from custom_id
+    const stripPanelSuffix = (rest) => {
+      const parts = rest.split('_');
+      if (parts.length > 1 && parts[parts.length - 1].length === 36 && parts[parts.length - 1].includes('-')) {
+        return { id: parts.slice(0, -1).join('_'), panelId: parts[parts.length - 1] };
+      }
+      return { id: rest, panelId: null };
+    };
+
+    // Handle ticket category select (dropdown from panel) — supports optional _<panelId> suffix
     if (interaction.isStringSelectMenu?.() && interaction.customId?.startsWith('ticket_category_select')) {
       try {
-        await handleSelectCategory(interaction);
+        const rest = interaction.customId.replace('ticket_category_select', '').replace(/^_/, '');
+        const { panelId } = rest ? stripPanelSuffix(rest) : { panelId: null };
+        const categoryId = interaction.values?.[0];
+        if (!categoryId) {
+          return interaction.reply({ content: '❌ Ingen kategori valgt.', ephemeral: true });
+        }
+        await startTicketFlow(interaction, categoryId, panelId);
       } catch (error) {
         console.error('Select category handler error:', error);
+        if (!interaction.replied && !interaction.deferred) {
+          await interaction.reply({ content: '❌ Der opstod en fejl.', ephemeral: true }).catch(console.error);
+        }
+      }
+      return;
+    }
+
+    // Handle rich-field select-menu pick (multi-step flow)
+    if (interaction.isStringSelectMenu?.() && interaction.customId?.startsWith('ticket_pick_')) {
+      try {
+        await handlePickSubmit(interaction);
+      } catch (error) {
+        console.error('Pick handler error:', error);
         if (!interaction.replied && !interaction.deferred) {
           await interaction.reply({ content: '❌ Der opstod en fejl.', ephemeral: true }).catch(console.error);
         }
@@ -315,20 +343,10 @@ function setupTicketHandler(client, config = {}) {
       return;
     }
 
-    // Helper: strip trailing panel-uuid suffix from custom_id (uuids contain hyphens, not underscores)
-    const stripPanelSuffix = (rest) => {
-      const parts = rest.split('_');
-      // If last part looks like a uuid (36 chars with hyphens), drop it as panel id
-      if (parts.length > 1 && parts[parts.length - 1].length === 36 && parts[parts.length - 1].includes('-')) {
-        return { id: parts.slice(0, -1).join('_'), panelId: parts[parts.length - 1] };
-      }
-      return { id: rest, panelId: null };
-    };
-
     try {
       if (customId.startsWith('ticket_create_')) {
-        const { id: categoryId } = stripPanelSuffix(customId.replace('ticket_create_', ''));
-        await handleCreateTicket(interaction, categoryId);
+        const { id: categoryId, panelId } = stripPanelSuffix(customId.replace('ticket_create_', ''));
+        await startTicketFlow(interaction, categoryId, panelId);
         return;
       }
       if (customId.startsWith('ticket_claim_')) {
@@ -350,9 +368,10 @@ function setupTicketHandler(client, config = {}) {
       }
     }
   });
-  
+
   console.log('✅ Ticket handler initialized');
 }
+
 
 async function handleTicketSlashCreate(interaction) {
   await interaction.deferReply({ ephemeral: true });
