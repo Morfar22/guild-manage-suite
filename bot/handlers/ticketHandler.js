@@ -191,8 +191,8 @@ function setupTicketHandler(client, config = {}) {
       return;
     }
 
-    // Handle ticket category select (dropdown)
-    if (interaction.isStringSelectMenu?.() && interaction.customId === 'ticket_category_select') {
+    // Handle ticket category select (dropdown) — supports optional _<panelId> suffix
+    if (interaction.isStringSelectMenu?.() && interaction.customId?.startsWith('ticket_category_select')) {
       try {
         await handleSelectCategory(interaction);
       } catch (error) {
@@ -221,9 +221,33 @@ function setupTicketHandler(client, config = {}) {
 
     const customId = interaction.customId;
 
+    // Ticket rating buttons: ticket_rate_<ticketUuid>_<1-5>
+    if (customId.startsWith('ticket_rate_')) {
+      try {
+        await handleRateTicket(interaction);
+      } catch (error) {
+        console.error('Rating handler error:', error);
+        if (!interaction.replied && !interaction.deferred) {
+          await interaction.reply({ content: '❌ Kunne ikke gemme rating.', ephemeral: true }).catch(console.error);
+        }
+      }
+      return;
+    }
+
+    // Helper: strip trailing panel-uuid suffix from custom_id (uuids contain hyphens, not underscores)
+    const stripPanelSuffix = (rest) => {
+      const parts = rest.split('_');
+      // If last part looks like a uuid (36 chars with hyphens), drop it as panel id
+      if (parts.length > 1 && parts[parts.length - 1].length === 36 && parts[parts.length - 1].includes('-')) {
+        return { id: parts.slice(0, -1).join('_'), panelId: parts[parts.length - 1] };
+      }
+      return { id: rest, panelId: null };
+    };
+
     try {
       if (customId.startsWith('ticket_create_')) {
-        await handleCreateTicket(interaction, customId.replace('ticket_create_', ''));
+        const { id: categoryId } = stripPanelSuffix(customId.replace('ticket_create_', ''));
+        await handleCreateTicket(interaction, categoryId);
         return;
       }
       if (customId.startsWith('ticket_claim_')) {
