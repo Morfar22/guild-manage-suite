@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Navigate, useSearchParams } from '@tanstack/react-router';
+import { Navigate } from '@tanstack/react-router';
+import { useSearchParams } from '@/hooks/useSearchParams';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
