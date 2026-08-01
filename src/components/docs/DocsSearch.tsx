@@ -73,7 +73,7 @@ export function DocsSearch() {
             <button
               key={`${item.category}-${item.slug}`}
               onMouseDown={() => {
-                navigate(`/docs/${item.category}/${item.slug}`);
+                navigate({ to: `/docs/${item.category}/${item.slug}` });
                 setQuery('');
                 setOpen(false);
               }}

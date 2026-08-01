@@ -40,7 +40,7 @@ export default function GuildSelect() {
       const target = guilds.find(g => g.id === guildParam);
       if (target) {
         setSelectedGuild(target);
-        navigate('/dashboard', { replace: true });
+        navigate({ to: '/dashboard',  replace: true  });
       }
     }
   }, [guilds, loading, searchParams]);
@@ -85,7 +85,7 @@ export default function GuildSelect() {
     } finally { setDeletingGuildId(null); }
   };
 
-  const handleSelectGuild = (guild: Guild) => { setSelectedGuild(guild); navigate('/dashboard'); };
+  const handleSelectGuild = (guild: Guild) => { setSelectedGuild(guild); navigate({ to: '/dashboard' }); };
 
   const handleSyncDiscord = async () => {
     setSyncing(true);

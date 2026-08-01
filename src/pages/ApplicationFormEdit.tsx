@@ -112,7 +112,7 @@ export default function ApplicationFormEdit() {
     return (
       <div className="flex flex-col items-center justify-center py-12">
         <h2 className="text-xl font-semibold mb-2">Form not found</h2>
-        <Button onClick={() => navigate('/dashboard/applications/settings')}>
+        <Button onClick={() => navigate({ to: '/dashboard/applications/settings' })}>
           Go back
         </Button>
       </div>
@@ -122,7 +122,7 @@ export default function ApplicationFormEdit() {
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" onClick={() => navigate('/dashboard/applications/settings')}>
+        <Button variant="ghost" size="icon" onClick={() => navigate({ to: '/dashboard/applications/settings' })}>
           <ArrowLeft className="h-5 w-5" />
         </Button>
         <div className="flex-1">

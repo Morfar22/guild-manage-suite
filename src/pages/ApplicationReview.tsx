@@ -91,7 +91,7 @@ export default function ApplicationReview() {
 
     setApproveDialogOpen(false);
     setDenyDialogOpen(false);
-    navigate('/dashboard/applications');
+    navigate({ to: '/dashboard/applications' });
   };
 
   if (isLoading) {
@@ -107,7 +107,7 @@ export default function ApplicationReview() {
     return (
       <div className="flex flex-col items-center justify-center py-12">
         <h2 className="text-xl font-semibold mb-2">Application not found</h2>
-        <Button onClick={() => navigate('/dashboard/applications')}>
+        <Button onClick={() => navigate({ to: '/dashboard/applications' })}>
           Go back
         </Button>
       </div>
@@ -121,7 +121,7 @@ export default function ApplicationReview() {
     <>
       <div className="space-y-6">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={() => navigate('/dashboard/applications')}>
+          <Button variant="ghost" size="icon" onClick={() => navigate({ to: '/dashboard/applications' })}>
             <ArrowLeft className="h-5 w-5" />
           </Button>
           <div className="flex-1">

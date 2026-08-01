@@ -96,11 +96,11 @@ export default function ApplicationList() {
           <p className="text-muted-foreground">Review and manage application submissions</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" onClick={() => navigate('/dashboard/applications/analytics')}>
+          <Button variant="outline" onClick={() => navigate({ to: '/dashboard/applications/analytics' })}>
             <BarChart3 className="h-4 w-4 mr-2" />
             Analytics
           </Button>
-          <Button variant="outline" onClick={() => navigate('/dashboard/applications/settings')}>
+          <Button variant="outline" onClick={() => navigate({ to: '/dashboard/applications/settings' })}>
             <Settings className="h-4 w-4 mr-2" />
             Settings
           </Button>
@@ -201,7 +201,7 @@ export default function ApplicationList() {
                 <ApplicationCard
                   key={submission.id}
                   submission={submission}
-                  onClick={() => navigate(`/dashboard/applications/${submission.id}`)}
+                  onClick={() => navigate({ to: `/dashboard/applications/${submission.id}` })}
                 />
               ))}
             </div>
