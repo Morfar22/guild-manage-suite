@@ -7,7 +7,7 @@ interface BotStatus {
   guild_id: string;
   is_online: boolean;
   latency_ms: number | null;
-  last_heartbeat: string;
+  last_heartbeat: string | null;
   member_count: number | null;
   message_count_today: number | null;
 }

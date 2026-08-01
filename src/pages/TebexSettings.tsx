@@ -312,7 +312,7 @@ function PackagesTab({ tebexActive, packagesQuery }: { tebexActive: boolean; pac
                       return (
                         <Card key={pi} className="border-border">
                           <CardContent className="pt-4 pb-4 space-y-2">
-                            {pkg.image && (
+                            {!!pkg.image && (
                               <img src={String(pkg.image)} alt="" className="w-full h-24 object-cover rounded-md mb-2" />
                             )}
                             <div className="flex items-start justify-between">
