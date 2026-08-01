@@ -15,7 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useApplicationForms, useCreateApplicationForm, useUpdateApplicationForm, useDeleteApplicationForm, ApplicationForm } from '@/hooks/useApplicationForms';
 import { useApplicationSettings, useUpsertApplicationSettings } from '@/hooks/useApplicationSettings';
 import { useSendApplicationPanel } from '@/hooks/useApplicationSubmissions';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from '@tanstack/react-router';
 import { APPLICATION_TEMPLATES, ApplicationFormTemplate } from '@/components/applications/FormTemplates';
 import { toast } from 'sonner';
 

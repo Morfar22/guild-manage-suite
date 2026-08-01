@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Navigate, useNavigate, Link, useSearchParams } from 'react-router-dom';
+import { Navigate, useNavigate, Link, useSearchParams } from '@tanstack/react-router';
 import { useAuth } from '@/contexts/AuthContext';
 import { useGuild } from '@/contexts/GuildContext';
 import { useLanguage } from '@/contexts/LanguageContext';

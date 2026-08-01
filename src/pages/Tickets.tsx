@@ -11,7 +11,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Ticket, Search, Clock, CheckCircle, AlertCircle, TrendingUp, Users, MessageSquare, Trash2 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { da, enUS } from 'date-fns/locale';
-import { Link } from 'react-router-dom';
+import { Link } from '@tanstack/react-router';
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
 

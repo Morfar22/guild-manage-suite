@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom';
+import { Link } from '@tanstack/react-router';
 import { AlertTriangle, Info, XCircle, ChevronRight, X } from 'lucide-react';
 import { useConfigurationAlerts, ConfigurationAlert } from '@/hooks/useConfigurationAlerts';
 import { Button } from '@/components/ui/button';

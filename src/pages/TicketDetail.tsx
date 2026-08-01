@@ -1,4 +1,4 @@
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link } from '@tanstack/react-router';
 import { useTicket, useTicketMessages } from '@/hooks/useTickets';
 import { useApplicationByTicketId } from '@/hooks/useApplications';
 import { useAITicketSummary } from '@/hooks/useAITicketSummary';

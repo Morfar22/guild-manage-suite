@@ -4,7 +4,7 @@ import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useGuildPremium } from '@/hooks/useGuildPremium';
-import { Link } from 'react-router-dom';
+import { Link } from '@tanstack/react-router';
 
 interface PremiumLockProps {
   children: ReactNode;

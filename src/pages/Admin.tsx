@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Navigate, Link } from 'react-router-dom';
+import { Navigate, Link } from '@tanstack/react-router';
 import { useAuth } from '@/contexts/AuthContext';
 import { useIsAdmin, useAllUsers, useAllGuilds, useUserGuilds, useAssignGuildToUser, useRemoveGuildFromUser } from '@/hooks/useAdmin';
 import { useAdminAllBots, useAdminLeaveGuild } from '@/hooks/useGuildBotSettings';

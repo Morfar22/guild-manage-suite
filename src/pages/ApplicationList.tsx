@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from '@tanstack/react-router';
 import { format } from 'date-fns';
 import { enUS } from 'date-fns/locale';
 import { FileText, Settings, Clock, CheckCircle, XCircle, User, Filter, BarChart3, Sparkles } from 'lucide-react';

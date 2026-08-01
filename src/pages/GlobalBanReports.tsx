@@ -22,7 +22,7 @@ import {
 } from '@/components/ui/dialog';
 import { formatDistanceToNow } from 'date-fns';
 import { da } from 'date-fns/locale';
-import { Link } from 'react-router-dom';
+import { Link } from '@tanstack/react-router';
 import { PremiumGate } from '@/components/premium/PremiumGate';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 

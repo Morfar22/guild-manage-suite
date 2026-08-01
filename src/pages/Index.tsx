@@ -1,4 +1,4 @@
-import { Navigate, Link } from 'react-router-dom';
+import { Navigate, Link } from '@tanstack/react-router';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';

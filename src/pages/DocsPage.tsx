@@ -1,4 +1,4 @@
-import { Link, useParams } from 'react-router-dom';
+import { Link, useParams } from '@tanstack/react-router';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { findCategory, findPage } from '@/docs';
 import { Badge } from '@/components/ui/badge';

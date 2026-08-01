@@ -31,7 +31,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { NavLink } from 'react-router-dom';
+import { NavLink } from '@tanstack/react-router';
 import { cn } from '@/lib/utils';
 import { Crown } from 'lucide-react';
 

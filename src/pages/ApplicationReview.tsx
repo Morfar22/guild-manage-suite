@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate } from '@tanstack/react-router';
 import { format } from 'date-fns';
 import { enUS } from 'date-fns/locale';
 import { ArrowLeft, User, Clock, CheckCircle, XCircle, MessageSquare, Sparkles, Loader2 } from 'lucide-react';
