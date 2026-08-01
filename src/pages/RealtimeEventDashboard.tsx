@@ -34,7 +34,7 @@ function EventRow({ event }: { event: RealtimeEvent }) {
         <p className="text-sm text-muted-foreground truncate">
           {event.user_name && <span className="font-medium text-foreground">{event.user_name}</span>}
           {event.channel_name && <span> i #{event.channel_name}</span>}
-          {(event.event_data as Record<string, unknown>)?.description && (
+          {!!(event.event_data as Record<string, unknown>)?.description && (
             <span> — {String((event.event_data as Record<string, unknown>).description)}</span>
           )}
         </p>

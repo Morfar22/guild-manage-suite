@@ -312,7 +312,7 @@ function PackagesTab({ tebexActive, packagesQuery }: { tebexActive: boolean; pac
                       return (
                         <Card key={pi} className="border-border">
                           <CardContent className="pt-4 pb-4 space-y-2">
-                            {pkg.image && (
+                            {!!pkg.image && (
                               <img src={String(pkg.image)} alt="" className="w-full h-24 object-cover rounded-md mb-2" />
                             )}
                             <div className="flex items-start justify-between">
@@ -321,7 +321,7 @@ function PackagesTab({ tebexActive, packagesQuery }: { tebexActive: boolean; pac
                                 <p className="text-xs text-muted-foreground">ID: {String(pkg.id || '-')}</p>
                               </div>
                               <Badge variant="secondary" className="text-xs">
-                                {price ? `${price.amount || price} ${price.currency || ''}` : String(pkg.price || '-')}
+                                {price ? `${String(price.amount || price)} ${String(price.currency || '')}` : String(pkg.price || '-')}
                               </Badge>
                             </div>
                           </CardContent>
@@ -560,7 +560,7 @@ function SettingsTab({
   handleSave: () => void; saving: boolean; guildId: string;
 }) {
   const { data: channelsData } = useDiscordChannels();
-  const webhookUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/tebex-webhook?guild_id=${guildId}`;
+  const webhookUrl = `${import.meta.env['VITE_SUPABASE_URL']}/functions/v1/tebex-webhook?guild_id=${guildId}`;
 
   return (
     <div className="space-y-6">

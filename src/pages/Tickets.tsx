@@ -11,7 +11,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Ticket, Search, Clock, CheckCircle, AlertCircle, TrendingUp, Users, MessageSquare, Trash2 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { da, enUS } from 'date-fns/locale';
-import { Link } from 'react-router-dom';
+import { Link } from '@tanstack/react-router';
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
 
@@ -129,7 +129,7 @@ export default function Tickets() {
                           <TableCell className="text-muted-foreground">{formatDistanceToNow(new Date(ticket.created_at), { addSuffix: true, locale: dateLoc })}</TableCell>
                           <TableCell className="text-right">
                             <div className="flex items-center justify-end gap-1">
-                              <Link to={`/dashboard/tickets/${ticket.id}`}><Button variant="ghost" size="sm">{en ? 'View transcript' : 'Se transskript'}</Button></Link>
+                              <Link to={`/dashboard/tickets/${ticket.id}` as any}><Button variant="ghost" size="sm">{en ? 'View transcript' : 'Se transskript'}</Button></Link>
                               <AlertDialog>
                                 <AlertDialogTrigger asChild><Button variant="ghost" size="sm" className="text-destructive hover:text-destructive"><Trash2 className="h-4 w-4" /></Button></AlertDialogTrigger>
                                 <AlertDialogContent>

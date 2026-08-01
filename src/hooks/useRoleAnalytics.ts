@@ -20,7 +20,7 @@ export function useRoleAnalytics() {
       if (!selectedGuild?.id) return [];
 
       const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/discord-members?guildId=${selectedGuild.id}`,
+        `${import.meta.env['VITE_SUPABASE_URL']}/functions/v1/discord-members?guildId=${selectedGuild.id}`,
         {
           headers: {
             Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate } from '@tanstack/react-router';
 import { ArrowLeft, Plus, Trash2, GripVertical, Save } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -18,7 +18,7 @@ function generateId() {
 }
 
 export default function ApplicationFormEdit() {
-  const { formId } = useParams<{ formId: string }>();
+  const { formId } = useParams({ from: '/dashboard/applications/forms/$formId' });
   const navigate = useNavigate();
   const { data: form, isLoading } = useApplicationForm(formId);
   const updateForm = useUpdateApplicationForm();
@@ -112,7 +112,7 @@ export default function ApplicationFormEdit() {
     return (
       <div className="flex flex-col items-center justify-center py-12">
         <h2 className="text-xl font-semibold mb-2">Form not found</h2>
-        <Button onClick={() => navigate('/dashboard/applications/settings')}>
+        <Button onClick={() => navigate({ to: '/dashboard/applications/settings' })}>
           Go back
         </Button>
       </div>
@@ -122,7 +122,7 @@ export default function ApplicationFormEdit() {
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" onClick={() => navigate('/dashboard/applications/settings')}>
+        <Button variant="ghost" size="icon" onClick={() => navigate({ to: '/dashboard/applications/settings' })}>
           <ArrowLeft className="h-5 w-5" />
         </Button>
         <div className="flex-1">

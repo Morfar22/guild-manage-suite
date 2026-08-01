@@ -92,13 +92,13 @@ export function StreamScheduleTab({ streamers, textChannels }: StreamScheduleTab
       }
 
       const res = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/twitch-handler?action=schedule_post_manual`,
+        `${import.meta.env['VITE_SUPABASE_URL']}/functions/v1/twitch-handler?action=schedule_post_manual`,
         {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${session.access_token}`,
-            'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+            'apikey': import.meta.env['VITE_SUPABASE_PUBLISHABLE_KEY'],
           },
           body: JSON.stringify({ guild_id: selectedGuild?.id || entries[0]?.guild_id }),
         }

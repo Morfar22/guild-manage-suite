@@ -15,7 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useApplicationForms, useCreateApplicationForm, useUpdateApplicationForm, useDeleteApplicationForm, ApplicationForm } from '@/hooks/useApplicationForms';
 import { useApplicationSettings, useUpsertApplicationSettings } from '@/hooks/useApplicationSettings';
 import { useSendApplicationPanel } from '@/hooks/useApplicationSubmissions';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from '@tanstack/react-router';
 import { APPLICATION_TEMPLATES, ApplicationFormTemplate } from '@/components/applications/FormTemplates';
 import { toast } from 'sonner';
 
@@ -113,7 +113,7 @@ export default function ApplicationSettingsPage() {
           <h1 className="text-3xl font-bold">Applications</h1>
           <p className="text-muted-foreground">Create and manage application forms for whitelist, staff, and more</p>
         </div>
-        <Button onClick={() => navigate('/dashboard/applications')}>
+        <Button onClick={() => navigate({ to: '/dashboard/applications' })}>
           <FileText className="h-4 w-4 mr-2" />
           View Submissions
         </Button>
@@ -274,7 +274,7 @@ export default function ApplicationSettingsPage() {
                       <Button
                         size="sm"
                         variant="outline"
-                        onClick={() => navigate(`/dashboard/applications/forms/${form.id}`)}
+                        onClick={() => navigate({ to: `/dashboard/applications/forms/${form.id}` })}
                       >
                         <Edit className="h-4 w-4 mr-1" />
                         Edit

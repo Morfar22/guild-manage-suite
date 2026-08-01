@@ -34,7 +34,7 @@ export function useDiscordMembers() {
       if (!selectedGuild?.id) return { members: [], roles: [] };
 
       const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/discord-members?guildId=${selectedGuild.id}&limit=1000`,
+        `${import.meta.env['VITE_SUPABASE_URL']}/functions/v1/discord-members?guildId=${selectedGuild.id}&limit=1000`,
         {
           headers: {
             Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
@@ -60,7 +60,7 @@ export function useDiscordMembers() {
   const toggleRole = useMutation({
     mutationFn: async ({ memberId, roleId, action }: { memberId: string; roleId: string; action: 'add' | 'remove' }) => {
       const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/discord-members?guildId=${selectedGuild?.id}`,
+        `${import.meta.env['VITE_SUPABASE_URL']}/functions/v1/discord-members?guildId=${selectedGuild?.id}`,
         {
           method: 'POST',
           headers: {

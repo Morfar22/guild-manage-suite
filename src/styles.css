@@ -1,0 +1,190 @@
+@import "tailwindcss" source(none);
+@source "../src";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+/*
+ * Design system definition.
+ *
+ * The @theme inline block maps CSS custom properties to Tailwind utility
+ * classes (e.g. --color-primary -> bg-primary, text-primary).
+ *
+ * The :root and .dark blocks define the actual color values.
+ */
+
+@theme inline {
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
+  --radius-3xl: calc(var(--radius) + 12px);
+  --radius-4xl: calc(var(--radius) + 16px);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-ring-offset-background: var(--background);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+}
+
+:root {
+  --radius: 0.625rem;
+
+  /* Light mode */
+  --background: 0 0% 98%;
+  --foreground: 232 15% 12%;
+  --card: 0 0% 100%;
+  --card-foreground: 232 15% 12%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 232 15% 12%;
+  --primary: 235 86% 60%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 220 14% 96%;
+  --secondary-foreground: 232 15% 12%;
+  --muted: 220 14% 96%;
+  --muted-foreground: 215 15% 45%;
+  --accent: 235 86% 60%;
+  --accent-foreground: 0 0% 100%;
+  --destructive: 0 84% 60%;
+  --destructive-foreground: 0 0% 100%;
+  --success: 145 65% 42%;
+  --success-foreground: 0 0% 100%;
+  --warning: 38 92% 50%;
+  --warning-foreground: 0 0% 10%;
+  --border: 220 13% 91%;
+  --input: 220 13% 91%;
+  --ring: 235 86% 60%;
+
+  --chart-1: 235 86% 60%;
+  --chart-2: 145 65% 42%;
+  --chart-3: 38 92% 50%;
+  --chart-4: 0 84% 60%;
+  --chart-5: 255 70% 55%;
+
+  --sidebar-background: 0 0% 100%;
+  --sidebar-foreground: 232 15% 12%;
+  --sidebar-primary: 235 86% 60%;
+  --sidebar-primary-foreground: 0 0% 100%;
+  --sidebar-accent: 220 14% 96%;
+  --sidebar-accent-foreground: 232 15% 12%;
+  --sidebar-border: 220 13% 91%;
+  --sidebar-ring: 235 86% 60%;
+
+  /* Custom gradients & shadows */
+  --gradient-blurple: linear-gradient(135deg, hsl(235 86% 65%) 0%, hsl(255 70% 55%) 100%);
+  --gradient-dark: linear-gradient(180deg, hsl(232 15% 12%) 0%, hsl(232 15% 8%) 100%);
+  --shadow-glow: 0 0 20px hsl(235 86% 65% / 0.15);
+  --shadow-card: 0 4px 24px hsl(0 0% 0% / 0.25);
+}
+
+.dark {
+  /* Discord-inspired dark mode */
+  --background: 232 15% 10%;
+  --foreground: 210 20% 95%;
+  --card: 232 15% 13%;
+  --card-foreground: 210 20% 95%;
+  --popover: 232 15% 15%;
+  --popover-foreground: 210 20% 95%;
+  --primary: 235 86% 65%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 232 15% 18%;
+  --secondary-foreground: 210 20% 90%;
+  --muted: 232 12% 20%;
+  --muted-foreground: 215 15% 55%;
+  --accent: 235 86% 65%;
+  --accent-foreground: 0 0% 100%;
+  --destructive: 0 72% 51%;
+  --destructive-foreground: 0 0% 100%;
+  --success: 145 65% 42%;
+  --success-foreground: 0 0% 100%;
+  --warning: 38 92% 50%;
+  --warning-foreground: 0 0% 10%;
+  --border: 232 12% 22%;
+  --input: 232 12% 22%;
+  --ring: 235 86% 65%;
+
+  --chart-1: 235 86% 65%;
+  --chart-2: 145 65% 42%;
+  --chart-3: 38 92% 50%;
+  --chart-4: 0 72% 51%;
+  --chart-5: 255 70% 55%;
+
+  --sidebar-background: 232 15% 8%;
+  --sidebar-foreground: 210 20% 85%;
+  --sidebar-primary: 235 86% 65%;
+  --sidebar-primary-foreground: 0 0% 100%;
+  --sidebar-accent: 232 15% 15%;
+  --sidebar-accent-foreground: 210 20% 95%;
+  --sidebar-border: 232 12% 18%;
+  --sidebar-ring: 235 86% 65%;
+}
+
+@layer base {
+  * {
+    border-color: var(--color-border);
+  }
+
+  body {
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  }
+}
+
+@layer utilities {
+  .gradient-blurple {
+    background: var(--gradient-blurple);
+  }
+
+  .gradient-dark {
+    background: var(--gradient-dark);
+  }
+
+  .shadow-glow {
+    box-shadow: var(--shadow-glow);
+  }
+
+  .shadow-card {
+    box-shadow: var(--shadow-card);
+  }
+
+  .text-gradient {
+    background: var(--gradient-blurple);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+}

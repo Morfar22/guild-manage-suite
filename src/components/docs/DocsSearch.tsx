@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from '@tanstack/react-router';
 import Fuse from 'fuse.js';
 import { Search, X } from 'lucide-react';
 import { Input } from '@/components/ui/input';
@@ -73,7 +73,7 @@ export function DocsSearch() {
             <button
               key={`${item.category}-${item.slug}`}
               onMouseDown={() => {
-                navigate(`/docs/${item.category}/${item.slug}`);
+                navigate({ to: `/docs/${item.category}/${item.slug}` });
                 setQuery('');
                 setOpen(false);
               }}

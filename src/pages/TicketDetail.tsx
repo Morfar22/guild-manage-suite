@@ -1,4 +1,4 @@
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link } from '@tanstack/react-router';
 import { useTicket, useTicketMessages } from '@/hooks/useTickets';
 import { useApplicationByTicketId } from '@/hooks/useApplications';
 import { useAITicketSummary } from '@/hooks/useAITicketSummary';
@@ -26,7 +26,7 @@ import { format } from 'date-fns';
 import { enUS } from 'date-fns/locale';
 
 export default function TicketDetail() {
-  const { ticketId } = useParams<{ ticketId: string }>();
+  const { ticketId } = useParams({ from: '/dashboard/tickets/$ticketId' });
   const { data: ticket, isLoading: ticketLoading } = useTicket(ticketId);
   const { data: messages, isLoading: messagesLoading } = useTicketMessages(ticketId);
   const { data: linkedApplication } = useApplicationByTicketId(ticketId);
@@ -77,7 +77,7 @@ Status: ${statusConfig[ticket.status].label}
         <MessageSquare className="h-16 w-16 text-muted-foreground/50 mb-4" />
         <h2 className="text-xl font-semibold">Ticket not found</h2>
         <p className="text-muted-foreground mb-4">The requested ticket does not exist</p>
-        <Link to="/dashboard/tickets">
+        <Link to={"/dashboard/tickets" as any}>
           <Button>Back to tickets</Button>
         </Link>
       </div>
@@ -92,7 +92,7 @@ Status: ${statusConfig[ticket.status].label}
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <Link to="/dashboard/tickets">
+          <Link to={"/dashboard/tickets" as any}>
             <Button variant="ghost" size="icon">
               <ArrowLeft className="h-5 w-5" />
             </Button>

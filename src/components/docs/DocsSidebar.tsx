@@ -1,4 +1,4 @@
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation } from '@tanstack/react-router';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { docCategories } from '@/docs';
 import * as Icons from 'lucide-react';

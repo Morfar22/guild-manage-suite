@@ -55,7 +55,7 @@ export function useJTCSettings() {
       
       // Call the edge function to get enriched channel data
       const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/jtc-handler`,
+        `${import.meta.env['VITE_SUPABASE_URL']}/functions/v1/jtc-handler`,
         {
           method: 'POST',
           headers: {
@@ -111,7 +111,7 @@ export function useJTCSettings() {
       if (!selectedGuild?.id) throw new Error('No guild selected');
 
       const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/jtc-handler`,
+        `${import.meta.env['VITE_SUPABASE_URL']}/functions/v1/jtc-handler`,
         {
           method: 'POST',
           headers: {

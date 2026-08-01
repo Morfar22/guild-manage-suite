@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Navigate, Link } from 'react-router-dom';
+import { Navigate, Link } from '@tanstack/react-router';
 import { useAuth } from '@/contexts/AuthContext';
 import { useIsAdmin, useAllUsers, useAllGuilds, useUserGuilds, useAssignGuildToUser, useRemoveGuildFromUser } from '@/hooks/useAdmin';
 import { useAdminAllBots, useAdminLeaveGuild } from '@/hooks/useGuildBotSettings';
@@ -333,7 +333,7 @@ export default function Admin() {
                             <p className="font-mono">{bot.discord_guild_id}</p>
                             <p>{bot.bot_name}</p>
                           </div>
-                          <Link to={`/guilds?guild=${bot.guild_id}`}>
+                          <Link to={`/guilds?guild=${bot.guild_id}` as any}>
                             <Button variant="outline" size="sm" className="gap-1.5 text-xs" title="Åbn dashboard for denne server">
                               <LayoutDashboard className="h-3.5 w-3.5" />
                               Dashboard

@@ -1,4 +1,4 @@
-import { Outlet, Navigate } from 'react-router-dom';
+import { Outlet, Navigate } from '@tanstack/react-router';
 import { useAuth } from '@/contexts/AuthContext';
 import { useGuild } from '@/contexts/GuildContext';
 import { DashboardSidebar } from './DashboardSidebar';

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Navigate, useNavigate, Link, useSearchParams } from 'react-router-dom';
+import { Navigate, useNavigate, Link } from '@tanstack/react-router';
+import { useSearchParams } from '@/hooks/useSearchParams';
 import { useAuth } from '@/contexts/AuthContext';
 import { useGuild } from '@/contexts/GuildContext';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -13,7 +14,7 @@ import { toast } from 'sonner';
 import { useIsAdmin } from '@/hooks/useAdmin';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 
-const BOT_CLIENT_ID = import.meta.env.VITE_DISCORD_BOT_CLIENT_ID || '';
+const BOT_CLIENT_ID = import.meta.env['VITE_DISCORD_BOT_CLIENT_ID'] || '';
 const BOT_PERMISSIONS = '8';
 const BOT_INVITE_URL = BOT_CLIENT_ID ? `https://discord.com/api/oauth2/authorize?client_id=${BOT_CLIENT_ID}&permissions=${BOT_PERMISSIONS}&scope=bot%20applications.commands` : '';
 
@@ -40,7 +41,7 @@ export default function GuildSelect() {
       const target = guilds.find(g => g.id === guildParam);
       if (target) {
         setSelectedGuild(target);
-        navigate('/dashboard', { replace: true });
+        navigate({ to: '/dashboard',  replace: true  });
       }
     }
   }, [guilds, loading, searchParams]);
@@ -60,7 +61,7 @@ export default function GuildSelect() {
         if (error) throw error;
         setGuilds(data || []);
       } else {
-        const { data, error } = await supabase.from('user_guilds').select(`guild_id, has_admin_permission, guilds:guild_id (*)`).eq('user_id', user?.id);
+        const { data, error } = await supabase.from('user_guilds').select(`guild_id, has_admin_permission, guilds:guild_id (*)`).eq('user_id', user?.id ?? '');
         if (error) throw error;
         setGuilds(data?.filter(ug => ug.guilds && ug.has_admin_permission).map(ug => ug.guilds as Guild).sort((a, b) => a.guild_name.localeCompare(b.guild_name)) || []);
       }
@@ -85,7 +86,7 @@ export default function GuildSelect() {
     } finally { setDeletingGuildId(null); }
   };
 
-  const handleSelectGuild = (guild: Guild) => { setSelectedGuild(guild); navigate('/dashboard'); };
+  const handleSelectGuild = (guild: Guild) => { setSelectedGuild(guild); navigate({ to: '/dashboard' }); };
 
   const handleSyncDiscord = async () => {
     setSyncing(true);

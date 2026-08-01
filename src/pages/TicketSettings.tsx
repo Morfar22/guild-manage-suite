@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link } from '@tanstack/react-router';
 import { useTicketCategories, useCreateCategory, useUpdateCategory, useDeleteCategory, TicketCategory } from '@/hooks/useTickets';
 import CategoryForm, { CategoryFormData, defaultCategoryFormData } from '@/components/tickets/CategoryForm';
 import PanelList from '@/components/tickets/PanelList';

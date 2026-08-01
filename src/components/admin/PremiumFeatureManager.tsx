@@ -125,15 +125,15 @@ export function PremiumFeatureManager() {
   // Group features
   const guildFeaturesByGuild = (guildFeatures || []).reduce((acc, pf) => {
     if (!acc[pf.guild_id]) acc[pf.guild_id] = [];
-    acc[pf.guild_id].push(pf);
+    acc[pf.guild_id]!.push(pf);
     return acc;
-  }, {} as Record<string, typeof guildFeatures>);
+  }, {} as Record<string, NonNullable<typeof guildFeatures>[number][]>);
 
   const userFeaturesByUser = (userFeatures || []).reduce((acc, pf) => {
     if (!acc[pf.user_id]) acc[pf.user_id] = [];
-    acc[pf.user_id].push(pf);
+    acc[pf.user_id]!.push(pf);
     return acc;
-  }, {} as Record<string, typeof userFeatures>);
+  }, {} as Record<string, NonNullable<typeof userFeatures>[number][]>);
 
   const filteredGuildIds = Object.keys(guildFeaturesByGuild).filter(guildId =>
     getGuildName(guildId).toLowerCase().includes(searchTerm.toLowerCase())

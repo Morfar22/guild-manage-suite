@@ -77,7 +77,7 @@ export function useGuildBotSettings() {
       }
 
       const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/guild-bot-config?guild_id=${selectedGuild.id}`,
+        `${import.meta.env['VITE_SUPABASE_URL']}/functions/v1/guild-bot-config?guild_id=${selectedGuild.id}`,
         {
           method: 'GET',
           headers: {
@@ -108,7 +108,7 @@ export function useGuildBotSettings() {
       }
 
       const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/guild-bot-config?guild_id=${selectedGuild.id}`,
+        `${import.meta.env['VITE_SUPABASE_URL']}/functions/v1/guild-bot-config?guild_id=${selectedGuild.id}`,
         {
           method: 'POST',
           headers: {
@@ -147,7 +147,7 @@ export function useGuildBotSettings() {
       }
 
       const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/guild-bot-config?guild_id=${selectedGuild.id}`,
+        `${import.meta.env['VITE_SUPABASE_URL']}/functions/v1/guild-bot-config?guild_id=${selectedGuild.id}`,
         {
           method: 'DELETE',
           headers: {
@@ -209,7 +209,7 @@ export function useActiveBots() {
         throw new Error('Not authenticated');
       }
 
-      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/guild-bot-config`, {
+      const response = await fetch(`${import.meta.env['VITE_SUPABASE_URL']}/functions/v1/guild-bot-config`, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${session.session.access_token}`,
@@ -259,7 +259,7 @@ export function useAdminAllBots() {
         throw new Error('Not authenticated');
       }
 
-      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/guild-bot-config`, {
+      const response = await fetch(`${import.meta.env['VITE_SUPABASE_URL']}/functions/v1/guild-bot-config`, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${session.session.access_token}`,
@@ -298,7 +298,7 @@ export function useAdminLeaveGuild() {
       const { data: session } = await supabase.auth.getSession();
       if (!session?.session?.access_token) throw new Error('Not authenticated');
 
-      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/guild-bot-config`, {
+      const response = await fetch(`${import.meta.env['VITE_SUPABASE_URL']}/functions/v1/guild-bot-config`, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${session.session.access_token}`,

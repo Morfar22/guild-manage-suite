@@ -210,13 +210,13 @@ export default function TwitchSettings() {
       });
 
       const result = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/twitch-handler?action=test`,
+        `${import.meta.env['VITE_SUPABASE_URL']}/functions/v1/twitch-handler?action=test`,
         {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${session.access_token}`,
-            'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+            'apikey': import.meta.env['VITE_SUPABASE_PUBLISHABLE_KEY'],
           },
           body: JSON.stringify({ streamer_id: streamer.id }),
         }
@@ -903,7 +903,7 @@ export default function TwitchSettings() {
                     <div className="rounded-lg bg-[#313338] p-4 -mx-2">
                       <TwitchEmbedPreview
                         streamerName={streamers[0]?.display_name || 'ExampleStreamer'}
-                        streamerAvatar={streamers[0]?.profile_image_url}
+                        streamerAvatar={streamers[0]?.profile_image_url ?? undefined}
                         liveMessage={localSettings.live_message}
                         streamTitle="Just a chill stream! Come hang out 🎮"
                         gameName="Just Chatting"
@@ -920,7 +920,7 @@ export default function TwitchSettings() {
                     <div className="rounded-lg bg-[#313338] p-4 -mx-2">
                       <TwitchEmbedPreview
                         streamerName={streamers[0]?.display_name || 'ExampleStreamer'}
-                        streamerAvatar={streamers[0]?.profile_image_url}
+                        streamerAvatar={streamers[0]?.profile_image_url ?? undefined}
                         liveMessage={localSettings.live_message}
                         offlineMessage={localSettings.offline_message}
                         embedColor={localSettings.offline_embed_color}

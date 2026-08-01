@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useGuild } from '@/contexts/GuildContext';
 import { toast } from 'sonner';
 
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+const SUPABASE_URL = import.meta.env['VITE_SUPABASE_URL'];
 
 async function getAuthHeaders() {
   const { data: session } = await supabase.auth.getSession();

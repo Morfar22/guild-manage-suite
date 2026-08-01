@@ -39,7 +39,7 @@ export function useCloneWithProgress() {
         throw new Error('Not authenticated');
       }
 
-      const projectUrl = import.meta.env.VITE_SUPABASE_URL;
+      const projectUrl = import.meta.env['VITE_SUPABASE_URL'];
       const response = await fetch(`${projectUrl}/functions/v1/server-clone`, {
         method: 'POST',
         headers: {

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from '@tanstack/react-router';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { navGroups } from '@/lib/nav-items';
 import {
@@ -30,7 +30,7 @@ export function CommandPalette() {
 
   const handleSelect = (to: string) => {
     setOpen(false);
-    navigate(to);
+    navigate({ to });
   };
 
   return (

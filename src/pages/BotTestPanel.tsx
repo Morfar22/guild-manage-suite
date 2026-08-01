@@ -253,7 +253,7 @@ export default function BotTestPanel() {
                     {commandPassRate === 100 ? '🟢 Alle tests bestået' : commandPassRate >= 75 ? '🟡 De fleste tests bestået' : '🔴 Kritiske problemer fundet'}
                   </p>
                   <p className="text-sm text-muted-foreground">
-                    {commandResults.active.length} aktive · {commandResults.disabled.length} deaktiverede
+                    {commandResults?.active.length} aktive · {commandResults?.disabled.length} deaktiverede
                   </p>
                 </div>
               </div>

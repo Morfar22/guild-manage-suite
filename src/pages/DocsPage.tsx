@@ -1,4 +1,4 @@
-import { Link, useParams } from 'react-router-dom';
+import { Link, useParams } from '@tanstack/react-router';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { findCategory, findPage } from '@/docs';
 import { Badge } from '@/components/ui/badge';
@@ -8,7 +8,7 @@ import { useMemo } from 'react';
 import { Helmet } from 'react-helmet-async';
 
 export default function DocsPage() {
-  const { category = '', slug = '' } = useParams();
+  const { category = '', slug = '' } = useParams({ from: '/docs/$category/$slug' });
   const { language } = useLanguage();
   const page = findPage(category, slug);
   const cat = findCategory(category);
@@ -158,7 +158,7 @@ export default function DocsPage() {
       <nav className="mt-12 flex items-center justify-between gap-4 border-t pt-6">
         {prev ? (
           <Link
-            to={`/docs/${prev.category}/${prev.slug}`}
+            to={`/docs/${prev.category}/${prev.slug}` as any}
             className="group flex flex-col rounded-lg border p-4 transition-colors hover:border-primary/50"
           >
             <span className="text-xs text-muted-foreground">{language === 'da' ? 'Forrige' : 'Previous'}</span>
@@ -167,7 +167,7 @@ export default function DocsPage() {
         ) : <div />}
         {next ? (
           <Link
-            to={`/docs/${next.category}/${next.slug}`}
+            to={`/docs/${next.category}/${next.slug}` as any}
             className="group ml-auto flex flex-col rounded-lg border p-4 text-right transition-colors hover:border-primary/50"
           >
             <span className="text-xs text-muted-foreground">{language === 'da' ? 'Næste' : 'Next'}</span>

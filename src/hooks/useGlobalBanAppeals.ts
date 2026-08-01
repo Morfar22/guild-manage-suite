@@ -24,7 +24,7 @@ async function getAuthHeaders() {
   };
 }
 
-const BASE_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/global-ban-handler`;
+const BASE_URL = `${import.meta.env['VITE_SUPABASE_URL']}/functions/v1/global-ban-handler`;
 
 export function useGlobalBanAppeals(status?: string) {
   return useQuery({

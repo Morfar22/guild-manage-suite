@@ -22,7 +22,7 @@ import {
 } from '@/components/ui/dialog';
 import { formatDistanceToNow } from 'date-fns';
 import { da } from 'date-fns/locale';
-import { Link } from 'react-router-dom';
+import { Link } from '@tanstack/react-router';
 import { PremiumGate } from '@/components/premium/PremiumGate';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 
@@ -62,7 +62,7 @@ function useGlobalBanStats() {
       const { data: session } = await supabase.auth.getSession();
       if (!session?.session?.access_token) throw new Error('Not authenticated');
       const res = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/global-ban-handler?action=stats`,
+        `${import.meta.env['VITE_SUPABASE_URL']}/functions/v1/global-ban-handler?action=stats`,
         { headers: { Authorization: `Bearer ${session.session.access_token}`, 'Content-Type': 'application/json' } }
       );
       if (!res.ok) throw new Error('Failed');

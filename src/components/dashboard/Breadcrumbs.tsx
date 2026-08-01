@@ -1,4 +1,4 @@
-import { useLocation, Link } from 'react-router-dom';
+import { useLocation, Link } from '@tanstack/react-router';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { navGroups } from '@/lib/nav-items';
 import { ChevronRight, Home } from 'lucide-react';
