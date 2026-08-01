@@ -3,8 +3,10 @@ import { forwardRef } from "react";
 import { cn } from "@/lib/utils";
 
 interface NavLinkCompatProps extends LinkProps {
+  className?: string;
   activeClassName?: string;
   pendingClassName?: string;
+  onClick?: React.MouseEventHandler<HTMLAnchorElement>;
 }
 
 const NavLink = forwardRef<HTMLAnchorElement, NavLinkCompatProps>(
