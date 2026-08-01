@@ -1,0 +1,28 @@
+{
+  "customizations": [
+    { "token": "--background (dark HSL)", "source": "src/index.css", "reappliedIn": "src/styles.css" },
+    { "token": "--foreground (dark HSL)", "source": "src/index.css", "reappliedIn": "src/styles.css" },
+    { "token": "--card (dark HSL)", "source": "src/index.css", "reappliedIn": "src/styles.css" },
+    { "token": "--popover (dark HSL)", "source": "src/index.css", "reappliedIn": "src/styles.css" },
+    { "token": "--primary (Discord Blurple)", "source": "src/index.css", "reappliedIn": "src/styles.css" },
+    { "token": "--secondary (dark HSL)", "source": "src/index.css", "reappliedIn": "src/styles.css" },
+    { "token": "--muted (dark HSL)", "source": "src/index.css", "reappliedIn": "src/styles.css" },
+    { "token": "--accent (Discord Blurple)", "source": "src/index.css", "reappliedIn": "src/styles.css" },
+    { "token": "--success (HSL)", "source": "src/index.css", "reappliedIn": "src/styles.css" },
+    { "token": "--warning (HSL)", "source": "src/index.css", "reappliedIn": "src/styles.css" },
+    { "token": "--destructive (HSL)", "source": "src/index.css", "reappliedIn": "src/styles.css" },
+    { "token": "--border (dark HSL)", "source": "src/index.css", "reappliedIn": "src/styles.css" },
+    { "token": "--input (dark HSL)", "source": "src/index.css", "reappliedIn": "src/styles.css" },
+    { "token": "--ring (Discord Blurple)", "source": "src/index.css", "reappliedIn": "src/styles.css" },
+    { "token": "--sidebar-* (dark HSL)", "source": "src/index.css", "reappliedIn": "src/styles.css" },
+    { "token": "--gradient-blurple", "source": "src/index.css", "reappliedIn": "src/styles.css" },
+    { "token": "--gradient-dark", "source": "src/index.css", "reappliedIn": "src/styles.css" },
+    { "token": "--shadow-glow", "source": "src/index.css", "reappliedIn": "src/styles.css" },
+    { "token": "--shadow-card", "source": "src/index.css", "reappliedIn": "src/styles.css" },
+    { "token": ".gradient-blurple utility", "source": "src/index.css", "reappliedIn": "src/styles.css" },
+    { "token": ".gradient-dark utility", "source": "src/index.css", "reappliedIn": "src/styles.css" },
+    { "token": ".shadow-glow utility", "source": "src/index.css", "reappliedIn": "src/styles.css" },
+    { "token": ".shadow-card utility", "source": "src/index.css", "reappliedIn": "src/styles.css" },
+    { "token": ".text-gradient utility", "source": "src/index.css", "reappliedIn": "src/styles.css" }
+  ]
+}
