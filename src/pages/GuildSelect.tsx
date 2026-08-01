@@ -61,7 +61,7 @@ export default function GuildSelect() {
         if (error) throw error;
         setGuilds(data || []);
       } else {
-        const { data, error } = await supabase.from('user_guilds').select(`guild_id, has_admin_permission, guilds:guild_id (*)`).eq('user_id', user?.id);
+        const { data, error } = await supabase.from('user_guilds').select(`guild_id, has_admin_permission, guilds:guild_id (*)`).eq('user_id', user?.id ?? '');
         if (error) throw error;
         setGuilds(data?.filter(ug => ug.guilds && ug.has_admin_permission).map(ug => ug.guilds as Guild).sort((a, b) => a.guild_name.localeCompare(b.guild_name)) || []);
       }

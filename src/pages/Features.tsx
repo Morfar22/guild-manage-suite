@@ -382,7 +382,7 @@ export default function Features() {
               {filteredFeatures.map((feature) => {
                 const categoryBadge = categoryConfig[feature.category];
                 return (
-                  <NavLink key={feature.title} to={feature.link}>
+                  <NavLink key={feature.title} to={feature.link as any}>
                     <Card className="h-full transition-all duration-300 border-border/50 hover:border-primary/50 hover:shadow-xl hover:shadow-primary/5 cursor-pointer group relative overflow-hidden">
                       {/* Gradient overlay on hover */}
                       <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />

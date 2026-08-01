@@ -30,7 +30,7 @@ export function CommandPalette() {
 
   const handleSelect = (to: string) => {
     setOpen(false);
-    navigate(to);
+    navigate({ to });
   };
 
   return (

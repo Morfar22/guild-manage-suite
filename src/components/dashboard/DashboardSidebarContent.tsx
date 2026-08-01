@@ -91,7 +91,7 @@ export function DashboardSidebarContent({ onNavigate }: DashboardSidebarContentP
     return (
       <div key={item.to} className="group relative flex items-center">
         <NavLink
-          to={item.to}
+          to={item.to as any}
           onClick={onNavigate}
           className={cn(
             'flex flex-1 items-center gap-2.5 rounded-md px-2.5 py-2 text-sm transition-all',
@@ -148,7 +148,7 @@ export function DashboardSidebarContent({ onNavigate }: DashboardSidebarContentP
       {selectedGuild && (
         <div className="border-b border-sidebar-border p-4">
           <NavLink
-            to="/guilds"
+            to={"/guilds" as any}
             onClick={onNavigate}
             className="flex items-center gap-3 rounded-lg p-2 transition-colors hover:bg-sidebar-accent"
           >

@@ -321,7 +321,7 @@ function PackagesTab({ tebexActive, packagesQuery }: { tebexActive: boolean; pac
                                 <p className="text-xs text-muted-foreground">ID: {String(pkg.id || '-')}</p>
                               </div>
                               <Badge variant="secondary" className="text-xs">
-                                {price ? `${price.amount || price} ${price.currency || ''}` : String(pkg.price || '-')}
+                                {price ? `${String(price.amount || price)} ${String(price.currency || '')}` : String(pkg.price || '-')}
                               </Badge>
                             </div>
                           </CardContent>

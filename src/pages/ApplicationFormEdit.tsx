@@ -18,7 +18,7 @@ function generateId() {
 }
 
 export default function ApplicationFormEdit() {
-  const { formId } = useParams<{ formId: string }>();
+  const { formId } = useParams({ from: '/dashboard/applications/forms/$formId' });
   const navigate = useNavigate();
   const { data: form, isLoading } = useApplicationForm(formId);
   const updateForm = useUpdateApplicationForm();

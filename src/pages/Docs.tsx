@@ -43,7 +43,7 @@ export default function Docs() {
             const Icon = (Icons as any)[cat.icon] ?? Icons.Folder;
             const firstPage = cat.pages[0];
             return (
-              <Link key={cat.slug} to={`/docs/${cat.slug}/${firstPage.slug}`}>
+              <Link key={cat.slug} to={`/docs/${cat.slug}/${firstPage.slug}` as any}>
                 <Card className="h-full transition-colors hover:border-primary/50 hover:bg-muted/40">
                   <CardHeader>
                     <div className="mb-2 flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary">

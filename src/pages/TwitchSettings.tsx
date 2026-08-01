@@ -903,7 +903,7 @@ export default function TwitchSettings() {
                     <div className="rounded-lg bg-[#313338] p-4 -mx-2">
                       <TwitchEmbedPreview
                         streamerName={streamers[0]?.display_name || 'ExampleStreamer'}
-                        streamerAvatar={streamers[0]?.profile_image_url}
+                        streamerAvatar={streamers[0]?.profile_image_url ?? undefined}
                         liveMessage={localSettings.live_message}
                         streamTitle="Just a chill stream! Come hang out 🎮"
                         gameName="Just Chatting"
@@ -920,7 +920,7 @@ export default function TwitchSettings() {
                     <div className="rounded-lg bg-[#313338] p-4 -mx-2">
                       <TwitchEmbedPreview
                         streamerName={streamers[0]?.display_name || 'ExampleStreamer'}
-                        streamerAvatar={streamers[0]?.profile_image_url}
+                        streamerAvatar={streamers[0]?.profile_image_url ?? undefined}
                         liveMessage={localSettings.live_message}
                         offlineMessage={localSettings.offline_message}
                         embedColor={localSettings.offline_embed_color}

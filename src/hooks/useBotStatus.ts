@@ -6,10 +6,10 @@ interface BotStatus {
   id: string;
   guild_id: string;
   is_online: boolean;
-  latency_ms: number;
+  latency_ms: number | null;
   last_heartbeat: string;
-  member_count: number;
-  message_count_today: number;
+  member_count: number | null;
+  message_count_today: number | null;
 }
 
 const POLL_INTERVAL = 30000; // 30 seconds

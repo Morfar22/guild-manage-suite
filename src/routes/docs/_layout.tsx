@@ -6,9 +6,5 @@ export const Route = createFileRoute("/docs/_layout")({
 });
 
 function DocsLayoutWrapper() {
-  return (
-    <DocsLayout>
-      <Outlet />
-    </DocsLayout>
-  );
+  return <DocsLayout />;
 }

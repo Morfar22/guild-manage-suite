@@ -64,7 +64,7 @@ export function PremiumLock({
           size="sm"
           className="bg-gradient-to-r from-amber-500 to-yellow-500 text-black hover:from-amber-400 hover:to-yellow-400"
         >
-          <Link to="/premium">
+          <Link to={"/premium" as any}>
             <Crown className="mr-2 h-4 w-4" />
             Opgrader til Pro
           </Link>

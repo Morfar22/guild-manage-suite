@@ -28,7 +28,7 @@ const statusConfig = {
 };
 
 export default function ApplicationReview() {
-  const { submissionId } = useParams<{ submissionId: string }>();
+  const { submissionId } = useParams({ from: '/dashboard/applications/$submissionId' });
   const navigate = useNavigate();
   const { user } = useAuth();
   const { data: submission, isLoading } = useApplicationSubmission(submissionId);
