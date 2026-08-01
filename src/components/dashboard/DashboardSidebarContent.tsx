@@ -1,4 +1,5 @@
-import { NavLink, useLocation } from '@tanstack/react-router';
+import { useLocation } from '@tanstack/react-router';
+import { NavLink } from '@/components/NavLink';
 import { cn } from '@/lib/utils';
 import { useGuild } from '@/contexts/GuildContext';
 import { useGuildPremiumFeatures } from '@/hooks/useGuildPremiumFeatures';
