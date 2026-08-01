@@ -121,7 +121,7 @@ export default function EmbedBuilder() {
     setSending(true);
     try {
       const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-embed`,
+        `${import.meta.env['VITE_SUPABASE_URL']}/functions/v1/send-embed`,
         {
           method: 'POST',
           headers: {

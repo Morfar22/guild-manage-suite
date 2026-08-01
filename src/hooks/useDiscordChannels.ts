@@ -29,7 +29,7 @@ export function useDiscordChannels() {
       if (!selectedGuild?.id) return { channels: [], categories: [] };
 
       const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/discord-channels?guildId=${selectedGuild.id}`,
+        `${import.meta.env['VITE_SUPABASE_URL']}/functions/v1/discord-channels?guildId=${selectedGuild.id}`,
         {
           headers: {
             Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,

@@ -210,13 +210,13 @@ export default function TwitchSettings() {
       });
 
       const result = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/twitch-handler?action=test`,
+        `${import.meta.env['VITE_SUPABASE_URL']}/functions/v1/twitch-handler?action=test`,
         {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${session.access_token}`,
-            'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+            'apikey': import.meta.env['VITE_SUPABASE_PUBLISHABLE_KEY'],
           },
           body: JSON.stringify({ streamer_id: streamer.id }),
         }

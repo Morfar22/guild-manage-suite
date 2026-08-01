@@ -14,7 +14,7 @@ import { toast } from 'sonner';
 import { useIsAdmin } from '@/hooks/useAdmin';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 
-const BOT_CLIENT_ID = import.meta.env.VITE_DISCORD_BOT_CLIENT_ID || '';
+const BOT_CLIENT_ID = import.meta.env['VITE_DISCORD_BOT_CLIENT_ID'] || '';
 const BOT_PERMISSIONS = '8';
 const BOT_INVITE_URL = BOT_CLIENT_ID ? `https://discord.com/api/oauth2/authorize?client_id=${BOT_CLIENT_ID}&permissions=${BOT_PERMISSIONS}&scope=bot%20applications.commands` : '';
 
