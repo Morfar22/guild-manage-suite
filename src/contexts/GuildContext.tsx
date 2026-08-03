@@ -11,14 +11,18 @@ const GuildContext = createContext<GuildContextType | undefined>(undefined);
 const STORAGE_KEY = 'selectedGuild';
 
 export function GuildProvider({ children }: { children: ReactNode }) {
-  const [selectedGuild, setSelectedGuildState] = useState<Guild | null>(() => {
+  // Start as null on both server and client so SSR markup matches the first
+  // client render, then hydrate the stored guild in an effect.
+  const [selectedGuild, setSelectedGuildState] = useState<Guild | null>(null);
+
+  useEffect(() => {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
-      return raw ? (JSON.parse(raw) as Guild) : null;
+      if (raw) setSelectedGuildState(JSON.parse(raw) as Guild);
     } catch {
-      return null;
+      // ignore
     }
-  });
+  }, []);
 
   const setSelectedGuild = (guild: Guild | null) => {
     setSelectedGuildState(guild);

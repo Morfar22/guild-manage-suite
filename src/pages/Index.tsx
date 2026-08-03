@@ -99,7 +99,7 @@ export default function Index() {
   return (
     <div className="min-h-screen bg-background text-foreground">
       {/* ======================= NAV ======================= */}
-      <header className="sticky top-0 z-50 border-b border-border/40 bg-background/80 backdrop-blur-xl">
+      <header className="sticky top-0 z-50 border-b border-border/60 bg-background/70 backdrop-blur-xl">
         <nav
           className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-6 lg:px-8"
           aria-label="Hovednavigation"
@@ -108,7 +108,7 @@ export default function Index() {
             <div className="flex h-9 w-9 items-center justify-center rounded-lg gradient-blurple shadow-glow">
               <Bot className="h-5 w-5 text-primary-foreground" aria-hidden="true" />
             </div>
-            <span className="text-lg font-bold tracking-tight">Paranox</span>
+            <span className="font-display text-lg font-bold tracking-tight">Paranox</span>
           </Link>
           <div className="flex items-center gap-2 sm:gap-3">
             <Link to="/docs">
@@ -134,23 +134,24 @@ export default function Index() {
       {/* ======================= HERO ======================= */}
       <section className="relative overflow-hidden" aria-labelledby="hero-title">
         {/* Decorative background — aria-hidden so screen readers skip it */}
-        <div className="absolute inset-0 -z-10" aria-hidden="true">
-          <div className="absolute left-1/2 top-0 h-[600px] w-[800px] -translate-x-1/2 rounded-full bg-primary/20 blur-3xl" />
-          <div className="absolute bottom-0 right-0 h-[400px] w-[400px] rounded-full bg-accent/10 blur-3xl" />
+        <div className="absolute inset-0 -z-10 grid-backdrop" aria-hidden="true" />
+        <div className="absolute inset-0 -z-10 overflow-hidden" aria-hidden="true">
+          <div className="absolute left-1/2 top-[-10rem] h-[42rem] w-[52rem] -translate-x-1/2 rounded-full bg-primary/20 blur-[120px]" />
+          <div className="absolute -right-40 bottom-0 h-[26rem] w-[26rem] rounded-full bg-chart-5/20 blur-[110px]" />
         </div>
 
         <div className="mx-auto max-w-7xl px-4 pb-20 pt-12 sm:px-6 sm:pt-20 lg:px-8 lg:pt-28">
           <div className="grid gap-12 lg:grid-cols-2 lg:items-center lg:gap-16">
             {/* Copy */}
             <div className="text-center lg:text-left">
-              <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-4 py-1.5 text-xs font-medium text-primary">
+              <div className="mb-7 inline-flex items-center gap-2 rounded-full border border-primary/25 bg-primary/10 px-4 py-1.5 text-xs font-medium tracking-wide text-primary shadow-glow">
                 <Sparkles className="h-3.5 w-3.5" aria-hidden="true" />
                 <span>Bygget til moderne Discord-servere</span>
               </div>
 
               <h1
                 id="hero-title"
-                className="text-4xl font-bold leading-[1.1] tracking-tight sm:text-5xl lg:text-6xl"
+                className="font-display text-[2.6rem] font-bold leading-[1.05] tracking-tighter sm:text-6xl lg:text-[4.25rem]"
               >
                 Den{' '}
                 <span className="text-gradient">smarteste måde</span>
@@ -203,13 +204,13 @@ export default function Index() {
 
             {/* Hero image */}
             <div className="relative mx-auto w-full max-w-lg lg:max-w-none">
-              <div className="relative overflow-hidden rounded-2xl border border-border/50 shadow-card">
+              <div className="surface-card relative overflow-hidden rounded-3xl p-1.5">
                 <img
                   src={heroOrb}
                   alt="Paranox bot — abstrakt 3D illustration af en lysende orb med Discord-symbol"
                   width={1536}
                   height={1024}
-                  className="h-auto w-full"
+                  className="h-auto w-full rounded-[1.25rem]"
                   // LCP image — eager load
                   loading="eager"
                   decoding="async"
@@ -218,7 +219,7 @@ export default function Index() {
               </div>
 
               {/* Floating stat badges */}
-              <Card className="absolute -bottom-4 -left-4 hidden items-center gap-3 border-border/60 bg-card/95 p-3 shadow-card backdrop-blur sm:flex">
+              <Card className="surface-card absolute -bottom-5 -left-5 hidden items-center gap-3 rounded-2xl p-3.5 sm:flex">
                 <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-success/15">
                   <Zap className="h-4 w-4 text-success" aria-hidden="true" />
                 </div>
@@ -227,7 +228,7 @@ export default function Index() {
                   <div className="text-sm font-semibold">{'< 50ms'}</div>
                 </div>
               </Card>
-              <Card className="absolute -right-4 -top-4 hidden items-center gap-3 border-border/60 bg-card/95 p-3 shadow-card backdrop-blur sm:flex">
+              <Card className="surface-card absolute -right-5 -top-5 hidden items-center gap-3 rounded-2xl p-3.5 sm:flex">
                 <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/15">
                   <Globe className="h-4 w-4 text-primary" aria-hidden="true" />
                 </div>
@@ -240,7 +241,7 @@ export default function Index() {
           </div>
 
           {/* Stats row */}
-          <dl className="mt-16 grid grid-cols-2 gap-4 border-t border-border/40 pt-10 sm:grid-cols-4 sm:gap-8">
+          <dl className="surface-card mt-20 grid grid-cols-2 gap-6 rounded-3xl p-8 sm:grid-cols-4 sm:gap-8">
             {STATS.map((s) => (
               <div key={s.label} className="text-center">
                 <dt className="sr-only">{s.label}</dt>
@@ -270,8 +271,8 @@ export default function Index() {
               const Icon = f.icon;
               return (
                 <li key={f.title}>
-                  <Card className="group h-full border-border/50 bg-card p-6 transition-all hover:-translate-y-1 hover:border-primary/40 hover:shadow-glow">
-                    <div className="mb-4 inline-flex h-11 w-11 items-center justify-center rounded-lg gradient-blurple shadow-glow transition-transform group-hover:scale-110">
+                  <Card className="surface-card group h-full rounded-2xl p-6 transition-all duration-300 hover:-translate-y-1.5 hover:border-primary/40 hover:glow-ring">
+                    <div className="mb-5 inline-flex h-11 w-11 items-center justify-center rounded-xl gradient-blurple shadow-glow transition-transform duration-300 group-hover:-rotate-6 group-hover:scale-110">
                       <Icon className="h-5 w-5 text-primary-foreground" aria-hidden="true" />
                     </div>
                     <h3 className="text-base font-semibold">{f.title}</h3>
@@ -332,7 +333,7 @@ export default function Index() {
                 return (
                   <Card
                     key={item.label}
-                    className="border-border/50 bg-card/60 p-5 backdrop-blur transition-colors hover:border-primary/40"
+                    className="surface-card rounded-2xl p-5 transition-colors hover:border-primary/40"
                   >
                     <Icon className="mb-3 h-6 w-6 text-primary" aria-hidden="true" />
                     <div className="text-sm font-semibold">{item.label}</div>
@@ -348,7 +349,7 @@ export default function Index() {
       {/* ======================= CTA ======================= */}
       <section className="border-t border-border/40 py-20 sm:py-28" aria-labelledby="cta-title">
         <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
-          <Card className="relative overflow-hidden border-primary/30 bg-card p-8 text-center shadow-glow sm:p-14">
+          <Card className="surface-card relative overflow-hidden rounded-[1.75rem] border-primary/25 p-8 text-center glow-ring sm:p-16">
             <div
               className="absolute inset-0 -z-10 bg-gradient-to-br from-primary/15 via-transparent to-accent/10"
               aria-hidden="true"
