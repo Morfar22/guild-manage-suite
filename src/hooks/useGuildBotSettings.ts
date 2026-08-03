@@ -310,17 +310,22 @@ export function useAdminLeaveGuild() {
 
       if (!response.ok) {
         const err = await response.json().catch(() => ({}));
-        throw new Error(err.error || 'Failed to leave guild');
+        throw new Error(err.error || `Kunne ikke fjerne botten (HTTP ${response.status})`);
       }
-      return true;
+      const result = await response.json().catch(() => ({}));
+      return result as { success?: boolean; warning?: string | null };
     },
-    onSuccess: () => {
+    onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ['admin-all-bots'] });
-      toast.success('Botten er fjernet fra serveren');
+      if (result?.warning) {
+        toast.warning(result.warning);
+      } else {
+        toast.success('Botten er fjernet fra serveren');
+      }
     },
-    onError: (error) => {
+    onError: (error: Error) => {
       console.error('Error leaving guild:', error);
-      toast.error('Kunne ikke fjerne botten fra serveren');
+      toast.error(error.message || 'Kunne ikke fjerne botten fra serveren');
     },
   });
 }
