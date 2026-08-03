@@ -10,6 +10,7 @@ import { GuildProvider } from "@/contexts/GuildContext";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { reportLovableError } from "@/lib/lovable-error-reporting";
+import appCss from "@/styles.css?url";
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
   component: RootComponent,
