@@ -46,12 +46,23 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-8 animate-fade-in">
-      <div>
-        <h1 className="text-3xl font-bold text-foreground">{t('dashboard.title')}</h1>
-        <p className="mt-1 text-muted-foreground">
+      <div className="surface-card relative overflow-hidden rounded-2xl p-6 lg:p-8">
+        <div className="pointer-events-none absolute -right-10 -top-24 h-64 w-64 rounded-full bg-primary/15 blur-3xl" aria-hidden />
+        <div className="relative flex flex-wrap items-center gap-3">
+          <span className={`inline-flex items-center gap-2 rounded-full border border-border/60 px-3 py-1 text-xs font-medium ${isOnline ? 'text-success' : 'text-destructive'}`}>
+            <span className={`h-1.5 w-1.5 rounded-full ${isOnline ? 'bg-success animate-pulse' : 'bg-destructive'}`} />
+            {isOnline ? t('common.online') : t('common.offline')}
+          </span>
+          <span className="text-xs text-muted-foreground">{selectedGuild?.guild_name}</span>
+        </div>
+        <h1 className="relative mt-4 font-display text-3xl font-bold tracking-tight text-foreground lg:text-4xl">
+          {t('dashboard.title')}
+        </h1>
+        <p className="relative mt-2 max-w-xl text-muted-foreground">
           {t('dashboard.overview', { guild: selectedGuild?.guild_name || 'din server' })}
         </p>
       </div>
+
 
       <ConfigurationAlerts />
 
