@@ -83,32 +83,49 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   }),
 });
 
+function RootDocument({ children }: { children: React.ReactNode }) {
+  return (
+    <html lang="da" suppressHydrationWarning>
+      <head>
+        <HeadContent />
+      </head>
+      <body>
+        {children}
+        <Scripts />
+      </body>
+    </html>
+  );
+}
+
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   return (
-    <QueryClientProvider client={queryClient}>
-      <HelmetProvider>
-        <ErrorBoundary>
-          <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
-            <TooltipProvider>
-              <Toaster />
-              <Sonner />
-              <AuthProvider>
-                <GuildProvider>
-                  <LanguageProvider>
-                    <main className="min-h-screen">
-                      <Outlet />
-                    </main>
-                  </LanguageProvider>
-                </GuildProvider>
-              </AuthProvider>
-            </TooltipProvider>
-          </ThemeProvider>
-        </ErrorBoundary>
-      </HelmetProvider>
-    </QueryClientProvider>
+    <RootDocument>
+      <QueryClientProvider client={queryClient}>
+        <HelmetProvider>
+          <ErrorBoundary>
+            <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
+              <TooltipProvider>
+                <Toaster />
+                <Sonner />
+                <AuthProvider>
+                  <GuildProvider>
+                    <LanguageProvider>
+                      <main className="min-h-screen">
+                        <Outlet />
+                      </main>
+                    </LanguageProvider>
+                  </GuildProvider>
+                </AuthProvider>
+              </TooltipProvider>
+            </ThemeProvider>
+          </ErrorBoundary>
+        </HelmetProvider>
+      </QueryClientProvider>
+    </RootDocument>
   );
 }
+
 
 
 function ErrorFallback({ error }: { error: Error }) {
