@@ -15,20 +15,21 @@ interface QuickActionProps {
 
 const QuickAction = React.forwardRef<HTMLAnchorElement, QuickActionProps>(
   ({ icon: Icon, label, description, to, variant = 'default' }, ref) => (
-    <Button variant="outline" className="h-auto w-full flex items-start gap-3 p-4 text-left hover:bg-muted/50 transition-colors group" asChild>
+    <Button variant="ghost" className="h-auto w-full flex items-start gap-3 rounded-xl border border-border/60 bg-secondary/30 p-4 text-left transition-all hover:border-primary/40 hover:bg-secondary/60 group" asChild>
       <Link to={to} ref={ref}>
-        <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${variant === 'primary' ? 'bg-primary/10 text-primary' : 'bg-muted'}`}>
+        <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-border/60 ${variant === 'primary' ? 'bg-primary/15 text-primary' : 'bg-muted text-muted-foreground'}`}>
           <Icon className="h-5 w-5" />
         </div>
         <div className="flex-1 min-w-0">
           <p className="font-medium text-foreground">{label}</p>
           <p className="text-xs text-muted-foreground line-clamp-1">{description}</p>
         </div>
-        <ArrowRight className="h-4 w-4 text-muted-foreground group-hover:text-foreground transition-colors" />
+        <ArrowRight className="h-4 w-4 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-primary" />
       </Link>
     </Button>
   )
 );
+
 QuickAction.displayName = 'QuickAction';
 
 export function QuickActions() {

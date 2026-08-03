@@ -46,12 +46,23 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-8 animate-fade-in">
-      <div>
-        <h1 className="text-3xl font-bold text-foreground">{t('dashboard.title')}</h1>
-        <p className="mt-1 text-muted-foreground">
+      <div className="surface-card relative overflow-hidden rounded-2xl p-6 lg:p-8">
+        <div className="pointer-events-none absolute -right-10 -top-24 h-64 w-64 rounded-full bg-primary/15 blur-3xl" aria-hidden />
+        <div className="relative flex flex-wrap items-center gap-3">
+          <span className={`inline-flex items-center gap-2 rounded-full border border-border/60 px-3 py-1 text-xs font-medium ${isOnline ? 'text-success' : 'text-destructive'}`}>
+            <span className={`h-1.5 w-1.5 rounded-full ${isOnline ? 'bg-success animate-pulse' : 'bg-destructive'}`} />
+            {isOnline ? t('common.online') : t('common.offline')}
+          </span>
+          <span className="text-xs text-muted-foreground">{selectedGuild?.guild_name}</span>
+        </div>
+        <h1 className="relative mt-4 font-display text-3xl font-bold tracking-tight text-foreground lg:text-4xl">
+          {t('dashboard.title')}
+        </h1>
+        <p className="relative mt-2 max-w-xl text-muted-foreground">
           {t('dashboard.overview', { guild: selectedGuild?.guild_name || 'din server' })}
         </p>
       </div>
+
 
       <ConfigurationAlerts />
 
@@ -216,7 +227,7 @@ export default function Dashboard() {
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="lg:col-span-2 space-y-6">
           <div>
-            <h2 className="mb-4 text-xl font-semibold text-foreground">{t('dashboard.serverStats')}</h2>
+            <h2 className="mb-4 font-display text-xl font-semibold text-foreground">{t('dashboard.serverStats')}</h2>
             <div className="grid gap-4 sm:grid-cols-2">
               <StatusCard title={t('dashboard.members')} value={status?.member_count?.toLocaleString() || 'N/A'} icon={Users} />
               <StatusCard title={t('dashboard.messagesToday')} value={status?.message_count_today?.toLocaleString() || 'N/A'} icon={MessageSquare} />
@@ -236,14 +247,15 @@ export default function Dashboard() {
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
-        <div className="rounded-xl border border-border bg-card p-6">
-          <h3 className="font-semibold text-foreground">{t('dashboard.botConfig')}</h3>
+        <div className="surface-card rounded-xl p-6">
+          <h3 className="font-display font-semibold text-foreground">{t('dashboard.botConfig')}</h3>
+
           <div className="mt-4 space-y-3">
-            <div className="flex justify-between">
+            <div className="flex justify-between border-b border-border/50 pb-3">
               <span className="text-muted-foreground">{t('dashboard.commandPrefix')}</span>
-              <span className="font-mono text-foreground">{selectedGuild?.command_prefix || '!'}</span>
+              <span className="rounded-md bg-secondary/60 px-2 font-mono text-foreground">{selectedGuild?.command_prefix || '!'}</span>
             </div>
-            <div className="flex justify-between">
+            <div className="flex justify-between border-b border-border/50 pb-3">
               <span className="text-muted-foreground">{t('dashboard.logChannel')}</span>
               <span className="text-foreground">
                 {selectedGuild?.log_channel_id ? `#${selectedGuild.log_channel_id}` : t('common.notSet')}
@@ -251,15 +263,17 @@ export default function Dashboard() {
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">{t('dashboard.autoModeration')}</span>
-              <span className={selectedGuild?.auto_moderation_enabled ? 'text-green-500' : 'text-muted-foreground'}>
+              <span className={selectedGuild?.auto_moderation_enabled ? 'text-success' : 'text-muted-foreground'}>
                 {selectedGuild?.auto_moderation_enabled ? t('common.enabled') : t('common.disabled')}
               </span>
             </div>
+
           </div>
         </div>
 
-        <div className="rounded-xl border border-border bg-card p-6">
-          <h3 className="font-semibold text-foreground">{t('dashboard.recentActivity')}</h3>
+        <div className="surface-card rounded-xl p-6">
+          <h3 className="font-display font-semibold text-foreground">{t('dashboard.recentActivity')}</h3>
+
           <div className="mt-4 space-y-3">
             {logsLoading ? (
               <p className="text-muted-foreground text-sm">{t('common.loading')}</p>
