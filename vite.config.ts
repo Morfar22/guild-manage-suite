@@ -17,7 +17,7 @@ export default defineConfig({
     resolve: {
       alias: [
         {
-          find: "@/integrations/supabase/client",
+          find: /^@\/integrations\/supabase\/client$/,
           replacement: fileURLToPath(new URL("./src/integrations/supabase/ssr-safe-client.ts", import.meta.url)),
         },
       ],
