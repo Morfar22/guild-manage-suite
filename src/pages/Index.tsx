@@ -271,7 +271,7 @@ export default function Index() {
               const Icon = f.icon;
               return (
                 <li key={f.title}>
-                  <Card className="surface-card group h-full rounded-2xl p-6 transition-all duration-300 hover:-translate-y-1.5 hover:border-primary/40 glow-ring/0 hover:glow-ring">
+                  <Card className="surface-card group h-full rounded-2xl p-6 transition-all duration-300 hover:-translate-y-1.5 hover:border-primary/40 hover:glow-ring">
                     <div className="mb-5 inline-flex h-11 w-11 items-center justify-center rounded-xl gradient-blurple shadow-glow transition-transform duration-300 group-hover:-rotate-6 group-hover:scale-110">
                       <Icon className="h-5 w-5 text-primary-foreground" aria-hidden="true" />
                     </div>
