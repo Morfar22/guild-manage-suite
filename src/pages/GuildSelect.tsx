@@ -13,6 +13,7 @@ import { Bot, Loader2, Plus, LogOut, Users, Crown, ExternalLink, RefreshCw, Shie
 import { toast } from 'sonner';
 import { useIsAdmin } from '@/hooks/useAdmin';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { invokeFunction } from '@/lib/functions-client';
 
 const BOT_CLIENT_ID = import.meta.env['VITE_DISCORD_BOT_CLIENT_ID'] || '';
 const BOT_PERMISSIONS = '8';
@@ -91,7 +92,7 @@ export default function GuildSelect() {
   const handleSyncDiscord = async () => {
     setSyncing(true);
     try {
-      const response = await supabase.functions.invoke('discord-oauth?action=authorize', { body: { redirectUri: `${window.location.origin}/auth` }, headers: { 'Content-Type': 'application/json' } });
+      const response = await invokeFunction('discord-oauth?action=authorize', { body: { redirectUri: `${window.location.origin}/auth` }, headers: { 'Content-Type': 'application/json' } });
       if (response.error) throw response.error;
       if (response.data?.url) {
         const opened = window.open(response.data.url, '_blank', 'noopener,noreferrer');
@@ -104,7 +105,7 @@ export default function GuildSelect() {
   const handleAddDemoGuild = async () => {
     if (!user) return;
     try {
-      const { error } = await supabase.functions.invoke('create-demo-guild', { body: { guild_id: `demo_${Date.now()}`, guild_name: 'Demo Server', guild_icon: null, owner_id: user.id, command_prefix: '!', log_channel_id: null, auto_moderation_enabled: false } });
+      const { error } = await invokeFunction('create-demo-guild', { body: { guild_id: `demo_${Date.now()}`, guild_name: 'Demo Server', guild_icon: null, owner_id: user.id, command_prefix: '!', log_channel_id: null, auto_moderation_enabled: false } });
       if (error) throw error;
       toast.success(en ? 'Demo server created!' : 'Demo server oprettet!');
       fetchGuilds();

@@ -19,6 +19,7 @@ import { Trophy, Settings, Star, Plus, Trash2, Medal, Award, Crown, Send, Loader
 import { Skeleton } from '@/components/ui/skeleton';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { invokeFunction } from '@/lib/functions-client';
 
 function xpForLevel(level: number): number {
   return Math.pow((level - 1) * 10, 2);
@@ -131,7 +132,7 @@ export default function Leveling() {
 
     setIsTesting(true);
     try {
-      const { data, error } = await supabase.functions.invoke('xp-handler', {
+      const { data, error } = await invokeFunction('xp-handler', {
         body: { action: 'testLevelUp', guildId: selectedGuild.id, username: 'TestUser', level: 5 },
       });
       if (error) throw error;

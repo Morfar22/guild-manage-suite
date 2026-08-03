@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useGuild } from '@/contexts/GuildContext';
+import { invokeFunction } from '@/lib/functions-client';
 
 export interface InviteLeaderboardEntry {
   id: string;
@@ -31,7 +32,7 @@ export function useInviteLeaderboard() {
     queryKey: ['invite-leaderboard', selectedGuild?.guild_id],
     queryFn: async (): Promise<InviteLeaderboardEntry[]> => {
       if (!selectedGuild?.guild_id) return [];
-      const { data, error } = await supabase.functions.invoke('invite-tracker', {
+      const { data, error } = await invokeFunction('invite-tracker', {
         body: { action: 'getLeaderboard', data: { guildId: selectedGuild.guild_id } },
       });
       if (error) throw error;
@@ -48,7 +49,7 @@ export function useRecentInvites(limit = 50) {
     queryKey: ['invite-recent', selectedGuild?.guild_id, limit],
     queryFn: async (): Promise<InviteUseRow[]> => {
       if (!selectedGuild?.guild_id) return [];
-      const { data, error } = await supabase.functions.invoke('invite-tracker', {
+      const { data, error } = await invokeFunction('invite-tracker', {
         body: { action: 'getRecent', data: { guildId: selectedGuild.guild_id, limit } },
       });
       if (error) throw error;

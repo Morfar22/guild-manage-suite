@@ -52,7 +52,7 @@ export function useAIChatSettings() {
       if (!selectedGuild?.id) return [];
       
       const response = await fetch(
-        `${import.meta.env['VITE_SUPABASE_URL']}/functions/v1/ai-chat`,
+        `/api/public/ai-chat`,
         {
           method: 'POST',
           headers: {
@@ -81,7 +81,7 @@ export function useAIChatSettings() {
       if (!selectedGuild?.id) throw new Error('No guild selected');
 
       const response = await fetch(
-        `${import.meta.env['VITE_SUPABASE_URL']}/functions/v1/ai-chat`,
+        `/api/public/ai-chat`,
         {
           method: 'POST',
           headers: {
@@ -117,7 +117,7 @@ export function useAIChatSettings() {
       if (!selectedGuild?.id) throw new Error('No guild selected');
 
       const response = await fetch(
-        `${import.meta.env['VITE_SUPABASE_URL']}/functions/v1/ai-chat`,
+        `/api/public/ai-chat`,
         {
           method: 'POST',
           headers: {

@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { invokeFunction } from '@/lib/functions-client';
 
 export function useIsAdmin() {
   const { user } = useAuth();
@@ -34,7 +35,7 @@ export function useAllUsers() {
     queryKey: ['all-users'],
     queryFn: async () => {
       // This requires admin role - the edge function will verify
-      const { data, error } = await supabase.functions.invoke('admin-users', {
+      const { data, error } = await invokeFunction('admin-users', {
         body: { action: 'list' },
       });
 

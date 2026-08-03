@@ -40,7 +40,7 @@ export function useCloneWithProgress() {
       }
 
       const projectUrl = import.meta.env['VITE_SUPABASE_URL'];
-      const response = await fetch(`${projectUrl}/functions/v1/server-clone`, {
+      const response = await fetch(`/api/public/server-clone`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

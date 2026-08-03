@@ -1,7 +1,8 @@
 import { supabase } from '@/integrations/supabase/client';
+import { invokeFunction } from '@/lib/functions-client';
 
 /**
- * Drop-in replacement for `supabase.functions.invoke()` that calls the
+ * Drop-in replacement for `invokeFunction()` that calls the
  * migrated TanStack server routes under `/api/public/*` instead of
  * Supabase Edge Functions.
  */

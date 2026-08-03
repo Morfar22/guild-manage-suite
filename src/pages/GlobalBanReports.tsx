@@ -62,7 +62,7 @@ function useGlobalBanStats() {
       const { data: session } = await supabase.auth.getSession();
       if (!session?.session?.access_token) throw new Error('Not authenticated');
       const res = await fetch(
-        `${import.meta.env['VITE_SUPABASE_URL']}/functions/v1/global-ban-handler?action=stats`,
+        `/api/public/global-ban-handler?action=stats`,
         { headers: { Authorization: `Bearer ${session.session.access_token}`, 'Content-Type': 'application/json' } }
       );
       if (!res.ok) throw new Error('Failed');

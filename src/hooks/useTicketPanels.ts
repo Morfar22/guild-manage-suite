@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useGuild } from '@/contexts/GuildContext';
+import { invokeFunction } from '@/lib/functions-client';
 
 export interface OperatingHoursDay {
   enabled: boolean;
@@ -119,7 +120,7 @@ export function useSendPanel() {
   return useMutation({
     mutationFn: async (panelId: string) => {
       if (!selectedGuild?.id) throw new Error('No guild');
-      const { data, error } = await supabase.functions.invoke('send-ticket-panel', {
+      const { data, error } = await invokeFunction('send-ticket-panel', {
         body: { guild_id: selectedGuild.id, panel_id: panelId },
       });
       if (error) throw error;

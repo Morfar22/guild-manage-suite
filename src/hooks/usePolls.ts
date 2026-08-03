@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useGuild } from '@/contexts/GuildContext';
 import { useToast } from '@/hooks/use-toast';
 import type { Json } from '@/integrations/supabase/types';
+import { invokeFunction } from '@/lib/functions-client';
 
 export interface PollOption {
   label: string;
@@ -89,7 +90,7 @@ export function usePolls() {
       if (error) throw error;
 
       // Send the poll to Discord via edge function
-      const { error: sendError } = await supabase.functions.invoke('send-poll', {
+      const { error: sendError } = await invokeFunction('send-poll', {
         body: { pollId: data.id },
       });
 

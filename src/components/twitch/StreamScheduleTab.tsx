@@ -92,7 +92,7 @@ export function StreamScheduleTab({ streamers, textChannels }: StreamScheduleTab
       }
 
       const res = await fetch(
-        `${import.meta.env['VITE_SUPABASE_URL']}/functions/v1/twitch-handler?action=schedule_post_manual`,
+        `/api/public/twitch-handler?action=schedule_post_manual`,
         {
           method: 'POST',
           headers: {

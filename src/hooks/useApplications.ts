@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useGuild } from '@/contexts/GuildContext';
 import { useAuth } from '@/contexts/AuthContext';
+import { invokeFunction } from '@/lib/functions-client';
 
 export type ApplicationStatus = 'pending' | 'approved' | 'denied';
 
@@ -123,7 +124,7 @@ export function useUpdateApplicationStatus() {
       roleId?: string;
     }) => {
       // Use backend function so we can also sync Discord actions (whitelist role / DM)
-      const { data, error } = await supabase.functions.invoke('review-application', {
+      const { data, error } = await invokeFunction('review-application', {
         body: {
           applicationId: id,
           status,

@@ -560,7 +560,7 @@ function SettingsTab({
   handleSave: () => void; saving: boolean; guildId: string;
 }) {
   const { data: channelsData } = useDiscordChannels();
-  const webhookUrl = `${import.meta.env['VITE_SUPABASE_URL']}/functions/v1/tebex-webhook?guild_id=${guildId}`;
+  const webhookUrl = `/api/public/tebex-webhook?guild_id=${guildId}`;
 
   return (
     <div className="space-y-6">

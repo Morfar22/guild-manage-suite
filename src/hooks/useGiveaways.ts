@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useGuild } from '@/contexts/GuildContext';
 import { useToast } from '@/hooks/use-toast';
+import { invokeFunction } from '@/lib/functions-client';
 
 export interface Giveaway {
   id: string;
@@ -58,7 +59,7 @@ export function useGiveaways() {
       if (!selectedGuild?.id) throw new Error('No guild selected');
 
       // Use edge function to create giveaway AND send embed to Discord
-      const { data, error } = await supabase.functions.invoke('giveaway-handler', {
+      const { data, error } = await invokeFunction('giveaway-handler', {
         body: {
           action: 'create',
           giveawayData: {
@@ -109,7 +110,7 @@ export function useGiveaways() {
     mutationFn: async (giveawayId: string) => {
       if (!selectedGuild?.id) throw new Error('No guild selected');
 
-      const { data, error } = await supabase.functions.invoke('giveaway-handler', {
+      const { data, error } = await invokeFunction('giveaway-handler', {
         body: {
           action: 'end',
           guildId: selectedGuild.id,
@@ -144,7 +145,7 @@ export function useGiveaways() {
     mutationFn: async (giveawayId: string) => {
       if (!selectedGuild?.id) throw new Error('No guild selected');
 
-      const { data, error } = await supabase.functions.invoke('giveaway-handler', {
+      const { data, error } = await invokeFunction('giveaway-handler', {
         body: {
           action: 'reroll',
           guildId: selectedGuild.id,
@@ -176,7 +177,7 @@ export function useGiveaways() {
     mutationFn: async (giveawayId: string) => {
       if (!selectedGuild?.id) throw new Error('No guild selected');
 
-      const { data, error } = await supabase.functions.invoke('giveaway-handler', {
+      const { data, error } = await invokeFunction('giveaway-handler', {
         body: {
           action: 'delete',
           guildId: selectedGuild.id,

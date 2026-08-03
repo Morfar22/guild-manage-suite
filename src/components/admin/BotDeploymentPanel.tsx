@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import {
+import { invokeFunction } from '@/lib/functions-client';
   RefreshCw, Play, Square, RotateCw, Download, Rocket, Terminal, GitBranch, AlertTriangle,
 } from 'lucide-react';
 
@@ -20,7 +21,7 @@ interface AgentResponse {
 }
 
 async function callAgent(action: Action, lines?: number): Promise<AgentResponse> {
-  const { data, error } = await supabase.functions.invoke('bot-deploy', {
+  const { data, error } = await invokeFunction('bot-deploy', {
     body: { action, ...(lines ? { lines } : {}) },
   });
   if (error) throw error;

@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useGuild } from '@/contexts/GuildContext';
 import { toast } from 'sonner';
+import { invokeFunction } from '@/lib/functions-client';
 
 export interface ServerTemplate {
   id: string;
@@ -61,7 +62,7 @@ export function useServerTemplates() {
   return useQuery({
     queryKey: ['server-templates'],
     queryFn: async () => {
-      const { data, error } = await supabase.functions.invoke('server-clone', {
+      const { data, error } = await invokeFunction('server-clone', {
         body: { action: 'list-templates' },
       });
 
@@ -88,7 +89,7 @@ export function useExportTemplate() {
       isPublic?: boolean;
       options?: ExportOptions;
     }) => {
-      const { data, error } = await supabase.functions.invoke('server-clone', {
+      const { data, error } = await invokeFunction('server-clone', {
         body: {
           action: 'export',
           sourceGuildId,
@@ -140,7 +141,7 @@ export function useCloneServer() {
       templateId?: string;
       loadOptions?: LoadOptions;
     }) => {
-      const { data, error } = await supabase.functions.invoke('server-clone', {
+      const { data, error } = await invokeFunction('server-clone', {
         body: {
           action: 'clone',
           sourceGuildId,
@@ -179,7 +180,7 @@ export function useDeleteTemplate() {
 
   return useMutation({
     mutationFn: async (templateId: string) => {
-      const { data, error } = await supabase.functions.invoke('server-clone', {
+      const { data, error } = await invokeFunction('server-clone', {
         body: {
           action: 'delete-template',
           templateId,

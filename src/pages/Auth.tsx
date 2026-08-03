@@ -11,6 +11,7 @@ import { Bot, Loader2, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { Helmet } from 'react-helmet-async';
 import { z } from 'zod';
+import { invokeFunction } from '@/lib/functions-client';
 
 const authSchema = z.object({
   email: z.string().email('Please enter a valid email address'),
@@ -52,7 +53,7 @@ export default function Auth() {
     setError(null);
     try {
       const redirectUri = `${window.location.origin}/auth`;
-      const response = await supabase.functions.invoke('discord-oauth?action=callback', {
+      const response = await invokeFunction('discord-oauth?action=callback', {
         body: { code, redirectUri },
         headers: { 'Content-Type': 'application/json' },
       });
@@ -85,7 +86,7 @@ export default function Auth() {
     setError(null);
     try {
       const redirectUri = `${window.location.origin}/auth`;
-      const response = await supabase.functions.invoke('discord-oauth?action=authorize', {
+      const response = await invokeFunction('discord-oauth?action=authorize', {
         body: { redirectUri },
         headers: { 'Content-Type': 'application/json' },
       });

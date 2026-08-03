@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useGuild } from '@/contexts/GuildContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { invokeFunction } from '@/lib/functions-client';
 
 export interface TwitchStreamer {
   id: string;
@@ -148,7 +149,7 @@ export function useTwitchStreamers() {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) throw new Error('Not authenticated');
 
-      const response = await supabase.functions.invoke('twitch-handler', {
+      const response = await invokeFunction('twitch-handler', {
         body: { username },
         headers: { Authorization: `Bearer ${session.access_token}` },
       });

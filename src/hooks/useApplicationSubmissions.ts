@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useGuild } from '@/contexts/GuildContext';
 import { toast } from 'sonner';
+import { invokeFunction } from '@/lib/functions-client';
 
 export interface ApplicationSubmission {
   id: string;
@@ -100,7 +101,7 @@ export function useReviewApplication() {
       if (!selectedGuild?.id) throw new Error('No guild selected');
 
       // Call edge function to handle the review (includes role assignment, DM, channel post)
-      const { data, error } = await supabase.functions.invoke('application-handler', {
+      const { data, error } = await invokeFunction('application-handler', {
         body: {
           action: 'review',
           submission_id: submissionId,
@@ -132,7 +133,7 @@ export function useSendApplicationPanel() {
     mutationFn: async () => {
       if (!selectedGuild?.id) throw new Error('No guild selected');
 
-      const { data, error } = await supabase.functions.invoke('application-handler', {
+      const { data, error } = await invokeFunction('application-handler', {
         body: {
           action: 'send_panel',
           guild_id: selectedGuild.id,

@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { Rocket, Loader2, CheckCircle2, Trash2, AlertTriangle } from 'lucide-react';
+import { invokeFunction } from '@/lib/functions-client';
 
 export function GuildCommandDeployer() {
   const { toast } = useToast();
@@ -29,7 +30,7 @@ export function GuildCommandDeployer() {
     setDeploying(true);
     setLastResult(null);
     try {
-      const { data, error } = await supabase.functions.invoke('deploy-guild-commands', {
+      const { data, error } = await invokeFunction('deploy-guild-commands', {
         body: { discordGuildId: trimmed, mode: 'deploy' },
       });
       if (error) throw error;
@@ -48,7 +49,7 @@ export function GuildCommandDeployer() {
   const handleClearGlobal = async () => {
     setClearing(true);
     try {
-      const { data, error } = await supabase.functions.invoke('deploy-guild-commands', {
+      const { data, error } = await invokeFunction('deploy-guild-commands', {
         body: { mode: 'clear-global' },
       });
       if (error) throw error;
