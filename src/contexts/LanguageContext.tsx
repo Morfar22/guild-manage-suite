@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useCallback, useEffect, ReactNode } from 'react';
 import { translations, Language, TranslationKey } from '@/lib/translations';
 
 interface LanguageContextType {
@@ -10,14 +10,24 @@ interface LanguageContextType {
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
 
 export function LanguageProvider({ children }: { children: ReactNode }) {
-  const [language, setLanguageState] = useState<Language>(() => {
-    const stored = localStorage.getItem('app-language');
-    return (stored === 'en' || stored === 'da') ? stored : 'da';
-  });
+  const [language, setLanguageState] = useState<Language>('da');
+
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem('app-language');
+      if (stored === 'en' || stored === 'da') setLanguageState(stored);
+    } catch {
+      // Browser storage can be unavailable in restricted browsing modes.
+    }
+  }, []);
 
   const setLanguage = useCallback((lang: Language) => {
     setLanguageState(lang);
-    localStorage.setItem('app-language', lang);
+    try {
+      localStorage.setItem('app-language', lang);
+    } catch {
+      // Keep the in-memory preference when browser storage is unavailable.
+    }
   }, []);
 
   const t = useCallback((key: TranslationKey, vars?: Record<string, string | number>): string => {
