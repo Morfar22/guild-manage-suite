@@ -7,9 +7,9 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import {
-import { invokeFunction } from '@/lib/functions-client';
   RefreshCw, Play, Square, RotateCw, Download, Rocket, Terminal, GitBranch, AlertTriangle,
 } from 'lucide-react';
+import { invokeFunction } from '@/lib/functions-client';
 
 type Action = 'status' | 'logs' | 'pull' | 'restart' | 'start' | 'stop' | 'deploy';
 type AgentPayload = Record<string, unknown>;
