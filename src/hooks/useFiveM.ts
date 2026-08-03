@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useGuild } from '@/contexts/GuildContext';
+import { invokeFunction } from '@/lib/functions-client';
 
 export interface FiveMSettings {
   id: string;
@@ -514,7 +515,7 @@ export function useRegisterFiveMCommands() {
       const { data: session } = await supabase.auth.getSession();
       if (!session?.session) throw new Error('Not authenticated');
 
-      const response = await supabase.functions.invoke('register-fivem-commands', {
+      const response = await invokeFunction('register-fivem-commands', {
         body: { guild_id: selectedGuild.id, action },
       });
 
@@ -575,7 +576,7 @@ export function useExecuteFiveMCommand() {
       const moderatorDiscordId = session.session.user.user_metadata?.provider_id || 'dashboard';
 
       // Execute command via FiveM handler
-      const response = await supabase.functions.invoke('execute-fivem-command', {
+      const response = await invokeFunction('execute-fivem-command', {
         body: { 
           guild_id: selectedGuild.id, 
           command: command.name,

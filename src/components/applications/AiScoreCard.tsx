@@ -7,6 +7,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { useQueryClient } from '@tanstack/react-query';
+import { invokeFunction } from '@/lib/functions-client';
 
 interface AiScoreCardProps {
   submissionId: string;
@@ -78,7 +79,7 @@ export function AiScoreCard({
   const runScreen = async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke('ai-screen-application', {
+      const { data, error } = await invokeFunction('ai-screen-application', {
         body: { submission_id: submissionId },
       });
       if (error) throw error;

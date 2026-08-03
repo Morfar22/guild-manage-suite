@@ -64,7 +64,7 @@ export default function TikTokSettings() {
     try {
       const session = (await supabase.auth.getSession()).data.session;
       const response = await fetch(
-        `${import.meta.env['VITE_SUPABASE_URL']}/functions/v1/tiktok-test-notify`,
+        `/api/public/tiktok-test-notify`,
         {
           method: 'POST',
           headers: {

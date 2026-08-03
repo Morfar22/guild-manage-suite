@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useGuild } from '@/contexts/GuildContext';
 import type { OperatingHours } from './useTicketPanels';
+import { invokeFunction } from '@/lib/functions-client';
 
 export interface TicketSettings {
   id: string;
@@ -91,7 +92,7 @@ export function useSendTicketPanel() {
   return useMutation({
     mutationFn: async () => {
       if (!selectedGuild?.id) throw new Error('No guild selected');
-      const { data, error } = await supabase.functions.invoke('send-ticket-panel', {
+      const { data, error } = await invokeFunction('send-ticket-panel', {
         body: { guild_id: selectedGuild.id },
       });
       if (error) throw error;

@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useGuild } from '@/contexts/GuildContext';
 import { toast } from 'sonner';
+import { invokeFunction } from '@/lib/functions-client';
 
 export interface GuildBotSettings {
   id: string;
@@ -77,7 +78,7 @@ export function useGuildBotSettings() {
       }
 
       const response = await fetch(
-        `${import.meta.env['VITE_SUPABASE_URL']}/functions/v1/guild-bot-config?guild_id=${selectedGuild.id}`,
+        `/api/public/guild-bot-config?guild_id=${selectedGuild.id}`,
         {
           method: 'GET',
           headers: {
@@ -108,7 +109,7 @@ export function useGuildBotSettings() {
       }
 
       const response = await fetch(
-        `${import.meta.env['VITE_SUPABASE_URL']}/functions/v1/guild-bot-config?guild_id=${selectedGuild.id}`,
+        `/api/public/guild-bot-config?guild_id=${selectedGuild.id}`,
         {
           method: 'POST',
           headers: {
@@ -147,7 +148,7 @@ export function useGuildBotSettings() {
       }
 
       const response = await fetch(
-        `${import.meta.env['VITE_SUPABASE_URL']}/functions/v1/guild-bot-config?guild_id=${selectedGuild.id}`,
+        `/api/public/guild-bot-config?guild_id=${selectedGuild.id}`,
         {
           method: 'DELETE',
           headers: {
@@ -176,7 +177,7 @@ export function useGuildBotSettings() {
 
   const testTokenMutation = useMutation({
     mutationFn: async (token: string): Promise<BotTestResult> => {
-      const { data, error } = await supabase.functions.invoke('guild-bot-config', {
+      const { data, error } = await invokeFunction('guild-bot-config', {
         body: { action: 'test_token', token },
       });
 
@@ -209,7 +210,7 @@ export function useActiveBots() {
         throw new Error('Not authenticated');
       }
 
-      const response = await fetch(`${import.meta.env['VITE_SUPABASE_URL']}/functions/v1/guild-bot-config`, {
+      const response = await fetch(`/api/public/guild-bot-config`, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${session.session.access_token}`,
@@ -259,7 +260,7 @@ export function useAdminAllBots() {
         throw new Error('Not authenticated');
       }
 
-      const response = await fetch(`${import.meta.env['VITE_SUPABASE_URL']}/functions/v1/guild-bot-config`, {
+      const response = await fetch(`/api/public/guild-bot-config`, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${session.session.access_token}`,
@@ -298,7 +299,7 @@ export function useAdminLeaveGuild() {
       const { data: session } = await supabase.auth.getSession();
       if (!session?.session?.access_token) throw new Error('Not authenticated');
 
-      const response = await fetch(`${import.meta.env['VITE_SUPABASE_URL']}/functions/v1/guild-bot-config`, {
+      const response = await fetch(`/api/public/guild-bot-config`, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${session.session.access_token}`,

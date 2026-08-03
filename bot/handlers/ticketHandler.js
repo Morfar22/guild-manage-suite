@@ -22,13 +22,14 @@ const {
   StringSelectMenuBuilder,
 } = require('discord.js');
 
-const API_URL = process.env.API_URL || 'https://sleiplyixaxuvydzudxn.supabase.co/functions/v1/bot-tickets';
+const API_URL = process.env.API_URL || '${APP_API_BASE}/api/public/bot-tickets';
 const BOT_SECRET = process.env.BOT_SECRET_KEY;
 
 // In-memory state for multi-step ticket creation flows (rich select-menu questions).
 // Key: `${userId}:${categoryId}`  Value: { answers: [{question, answer}], panelId, expires }
 const pendingFlows = new Map();
 const FLOW_TTL_MS = 10 * 60 * 1000;
+const APP_API_BASE = process.env.APP_API_BASE || 'https://bot.nethost-solutions.dk';
 
 function flowKey(userId, categoryId) {
   return `${userId}:${categoryId}`;
@@ -732,7 +733,7 @@ async function handleCloseTicket(interaction, threadId, deleteThread = false) {
 
   // Trigger AI summary asynchronously (fire-and-forget)
   if (result?.ticket_id) {
-    const SUMMARY_URL = 'https://sleiplyixaxuvydzudxn.supabase.co/functions/v1/ai-ticket-summary';
+    const SUMMARY_URL = '${APP_API_BASE}/api/public/ai-ticket-summary';
     fetch(SUMMARY_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-bot-secret': BOT_SECRET },
@@ -740,7 +741,7 @@ async function handleCloseTicket(interaction, threadId, deleteThread = false) {
     }).catch(err => console.error('[Tickets] AI summary error:', err.message));
 
     // Trigger HTML transcript generation + DM (fire-and-forget)
-    const TRANSCRIPT_URL = 'https://sleiplyixaxuvydzudxn.supabase.co/functions/v1/generate-ticket-transcript';
+    const TRANSCRIPT_URL = '${APP_API_BASE}/api/public/generate-ticket-transcript';
     fetch(TRANSCRIPT_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-bot-secret': BOT_SECRET },
@@ -869,7 +870,7 @@ async function handleRateTicket(interaction) {
   const rating = parseInt(raw.slice(lastUnderscore + 1), 10);
   if (!ticketId || !rating || rating < 1 || rating > 5) return;
 
-  const RATE_URL = 'https://sleiplyixaxuvydzudxn.supabase.co/functions/v1/submit-ticket-rating';
+  const RATE_URL = '${APP_API_BASE}/api/public/submit-ticket-rating';
   const resp = await fetch(RATE_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'x-bot-secret': BOT_SECRET },

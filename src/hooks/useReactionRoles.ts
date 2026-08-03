@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useGuild } from '@/contexts/GuildContext';
 import { useToast } from '@/hooks/use-toast';
+import { invokeFunction } from '@/lib/functions-client';
 
 export interface ReactionRole {
   id: string;
@@ -196,7 +197,7 @@ export function useReactionRolePanels() {
 
   const sendPanel = useMutation({
     mutationFn: async ({ panelId, channelId }: { panelId: string; channelId: string }) => {
-      const { data, error } = await supabase.functions.invoke('reaction-role-handler', {
+      const { data, error } = await invokeFunction('reaction-role-handler', {
         body: {
           action: 'send_panel',
           panel_id: panelId,

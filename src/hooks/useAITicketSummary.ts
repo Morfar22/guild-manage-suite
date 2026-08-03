@@ -1,13 +1,14 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { invokeFunction } from '@/lib/functions-client';
 
 export function useAITicketSummary() {
   const queryClient = useQueryClient();
 
   const generateSummary = useMutation({
     mutationFn: async (ticketId: string) => {
-      const { data, error } = await supabase.functions.invoke('ai-ticket-summary', {
+      const { data, error } = await invokeFunction('ai-ticket-summary', {
         body: { action: 'summarize', data: { ticket_id: ticketId } },
       });
       if (error) throw error;

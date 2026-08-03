@@ -210,7 +210,7 @@ export default function TwitchSettings() {
       });
 
       const result = await fetch(
-        `${import.meta.env['VITE_SUPABASE_URL']}/functions/v1/twitch-handler?action=test`,
+        `/api/public/twitch-handler?action=test`,
         {
           method: 'POST',
           headers: {

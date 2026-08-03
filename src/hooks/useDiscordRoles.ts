@@ -17,7 +17,7 @@ export function useDiscordRoles() {
       if (!selectedGuild?.id) return [];
 
       const response = await fetch(
-        `${import.meta.env['VITE_SUPABASE_URL']}/functions/v1/discord-roles?guildId=${selectedGuild.id}`,
+        `/api/public/discord-roles?guildId=${selectedGuild.id}`,
         {
           headers: {
             Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,

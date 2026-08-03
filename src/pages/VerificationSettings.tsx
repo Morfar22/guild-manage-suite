@@ -17,6 +17,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
+import { invokeFunction } from '@/lib/functions-client';
 
 export default function VerificationSettings() {
   const { settings, isLoading, logs, updateSettings } = useVerificationSettings();
@@ -32,7 +33,7 @@ export default function VerificationSettings() {
     if (!selectedGuild?.id) return;
     setSendingPanel(true);
     try {
-      const { data, error } = await supabase.functions.invoke('send-verification-panel', {
+      const { data, error } = await invokeFunction('send-verification-panel', {
         body: { guildId: selectedGuild.id },
       });
       if (error) throw error;

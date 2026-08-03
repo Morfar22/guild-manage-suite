@@ -7,6 +7,7 @@
  */
 
 const { Events, EmbedBuilder } = require('discord.js');
+const APP_API_BASE = process.env.APP_API_BASE || 'https://bot.nethost-solutions.dk';
 
 function setupAutoResponderHandler(client, supabase, options = {}) {
   const { shouldHandleGuild } = options;
@@ -76,7 +77,7 @@ function setupAutoResponderHandler(client, supabase, options = {}) {
         let responseText = responder.response_content;
         if (responder.use_ai) {
           try {
-            const API_URL = process.env.API_URL || 'https://sleiplyixaxuvydzudxn.supabase.co/functions/v1/ai-auto-respond';
+            const API_URL = process.env.API_URL || '${APP_API_BASE}/api/public/ai-auto-respond';
             const BOT_SECRET = process.env.BOT_SECRET_KEY;
             const aiResponse = await fetch(API_URL, {
               method: 'POST',

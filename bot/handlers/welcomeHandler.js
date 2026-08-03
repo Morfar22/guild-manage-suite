@@ -14,12 +14,13 @@
  * - GatewayIntentBits.Guilds
  */
 
-const API_URL = process.env.WELCOME_API_URL || 'https://sleiplyixaxuvydzudxn.supabase.co/functions/v1/bot-welcome';
+const API_URL = process.env.WELCOME_API_URL || '${APP_API_BASE}/api/public/bot-welcome';
 const BOT_SECRET = process.env.BOT_SECRET_KEY;
 
 // Deduplication: track recently processed events to prevent double handling
 const recentEvents = new Map();
 const DEDUP_WINDOW_MS = 5000; // 5 second window
+const APP_API_BASE = process.env.APP_API_BASE || 'https://bot.nethost-solutions.dk';
 
 function isDuplicateEvent(key) {
   const now = Date.now();

@@ -7,6 +7,7 @@ const BOT_SECRET_KEY = process.env.BOT_SECRET_KEY;
 // Deduplication: prevent double replies if multiple bot instances receive same message event
 const recentEvents = new Map();
 const DEDUP_WINDOW_MS = 5000; // 5 second window
+const APP_API_BASE = process.env.APP_API_BASE || 'https://bot.nethost-solutions.dk';
 
 function isDuplicateEvent(key) {
   const now = Date.now();
@@ -33,7 +34,7 @@ function isDuplicateEvent(key) {
 
 async function callAIChatHandler(action, data) {
   try {
-    const response = await fetch(`${SUPABASE_URL}/functions/v1/ai-chat`, {
+    const response = await fetch(`${APP_API_BASE}/api/public/ai-chat`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

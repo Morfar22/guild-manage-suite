@@ -9,6 +9,7 @@ import { useToast } from '@/hooks/use-toast';
 import {
   RefreshCw, Play, Square, RotateCw, Download, Rocket, Terminal, GitBranch, AlertTriangle,
 } from 'lucide-react';
+import { invokeFunction } from '@/lib/functions-client';
 
 type Action = 'status' | 'logs' | 'pull' | 'restart' | 'start' | 'stop' | 'deploy';
 type AgentPayload = Record<string, unknown>;
@@ -20,7 +21,7 @@ interface AgentResponse {
 }
 
 async function callAgent(action: Action, lines?: number): Promise<AgentResponse> {
-  const { data, error } = await supabase.functions.invoke('bot-deploy', {
+  const { data, error } = await invokeFunction('bot-deploy', {
     body: { action, ...(lines ? { lines } : {}) },
   });
   if (error) throw error;

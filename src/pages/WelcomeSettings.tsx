@@ -18,6 +18,7 @@ import { DiscordEmbedPreview, DiscordMessagePreview } from '@/components/discord
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
+import { invokeFunction } from '@/lib/functions-client';
 
 export default function WelcomeSettings() {
   const { data: settings, isLoading } = useWelcomeSettings();
@@ -96,7 +97,7 @@ export default function WelcomeSettings() {
     }
     setIsTesting(true);
     try {
-      const { data, error } = await supabase.functions.invoke('bot-welcome', {
+      const { data, error } = await invokeFunction('bot-welcome', {
         body: { action: 'testWelcome', data: { guildId: selectedGuild.id, username: 'TestUser' } },
       });
       if (error) throw error;
@@ -121,7 +122,7 @@ export default function WelcomeSettings() {
     }
     setIsTestingLeave(true);
     try {
-      const { data, error } = await supabase.functions.invoke('bot-welcome', {
+      const { data, error } = await invokeFunction('bot-welcome', {
         body: { action: 'testLeave', data: { guildId: selectedGuild.id, username: 'TestUser' } },
       });
       if (error) throw error;

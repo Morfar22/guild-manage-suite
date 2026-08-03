@@ -20,6 +20,7 @@ import { useGuildPremium } from '@/hooks/useGuildPremium';
 import { PremiumBadge } from '@/components/applications/PremiumLock';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { invokeFunction } from '@/lib/functions-client';
 
 const statusConfig = {
   pending: { label: 'Pending', variant: 'default' as const, icon: Clock },
@@ -51,7 +52,7 @@ export default function ApplicationReview() {
       const ctx = submission?.answers
         ?.map((a) => `Q: ${a.question}\nA: ${a.answer}`)
         .join('\n\n') || '';
-      const { data, error } = await supabase.functions.invoke('ai-polish-text', {
+      const { data, error } = await invokeFunction('ai-polish-text', {
         body: { text: notes, tone: aiTone, decision, context: ctx, language: 'da' },
       });
       if (error) throw error;

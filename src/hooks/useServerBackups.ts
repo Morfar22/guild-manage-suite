@@ -36,7 +36,7 @@ export function useServerBackups() {
     mutationFn: async (description?: string) => {
       if (!selectedGuild?.id) throw new Error('No guild');
       const response = await fetch(
-        `${import.meta.env['VITE_SUPABASE_URL']}/functions/v1/server-backup`,
+        `/api/public/server-backup`,
         {
           method: 'POST',
           headers: {
@@ -60,7 +60,7 @@ export function useServerBackups() {
     mutationFn: async (backupId: string) => {
       if (!selectedGuild?.id) throw new Error('No guild');
       const response = await fetch(
-        `${import.meta.env['VITE_SUPABASE_URL']}/functions/v1/server-backup`,
+        `/api/public/server-backup`,
         {
           method: 'POST',
           headers: {

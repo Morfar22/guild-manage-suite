@@ -11,13 +11,14 @@ const { botLog } = require('../consoleLogger');
 const { isAutomodBypassed } = require('./automodBypass');
 
 const AUTOMOD_URL = process.env.SUPABASE_URL
-  ? `${process.env.SUPABASE_URL}/functions/v1/automod-handler`
-  : 'https://sleiplyixaxuvydzudxn.supabase.co/functions/v1/automod-handler';
+  ? `${APP_API_BASE}/api/public/automod-handler`
+  : '${APP_API_BASE}/api/public/automod-handler';
 const BOT_SECRET = process.env.BOT_SECRET_KEY;
 
 // Cache which guilds have automod enabled (avoid calling edge fn for every msg in guilds without rules)
 const guildRuleCache = new Map();
 const CACHE_TTL = 120_000; // 2 minutes
+const APP_API_BASE = process.env.APP_API_BASE || 'https://bot.nethost-solutions.dk';
 
 function setupAutomodRuleHandler(client, supabase, options = {}) {
   const { shouldHandleGuild } = options;

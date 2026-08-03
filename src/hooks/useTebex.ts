@@ -17,7 +17,7 @@ async function getAuthHeaders() {
 async function tebexGet(guildId: string, action: string, extra = '') {
   const headers = await getAuthHeaders();
   const res = await fetch(
-    `${SUPABASE_URL}/functions/v1/tebex-handler?guild_id=${guildId}&action=${action}${extra}`,
+    `/api/public/tebex-handler?guild_id=${guildId}&action=${action}${extra}`,
     { headers }
   );
   if (!res.ok) {
@@ -30,7 +30,7 @@ async function tebexGet(guildId: string, action: string, extra = '') {
 async function tebexPost(guildId: string, body: Record<string, unknown>) {
   const headers = await getAuthHeaders();
   const res = await fetch(
-    `${SUPABASE_URL}/functions/v1/tebex-handler?guild_id=${guildId}`,
+    `/api/public/tebex-handler?guild_id=${guildId}`,
     { method: 'POST', headers, body: JSON.stringify(body) }
   );
   if (!res.ok) {

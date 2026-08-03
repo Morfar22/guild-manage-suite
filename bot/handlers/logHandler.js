@@ -13,6 +13,7 @@ const { Events, AuditLogEvent } = require('discord.js');
 // Deduplication cache to prevent duplicate log events
 const recentEvents = new Map();
 const DEDUPE_WINDOW_MS = 5000;
+const APP_API_BASE = process.env.APP_API_BASE || 'https://bot.nethost-solutions.dk';
 
 function getEventKey(guildId, eventType, data) {
   const keyParts = [guildId, eventType];
@@ -56,7 +57,7 @@ async function sendLogEvent(config, guildId, eventType, data) {
     return;
   }
   try {
-    const response = await fetch(`${config.supabaseUrl}/functions/v1/bot-log-events`, {
+    const response = await fetch(`${APP_API_BASE}/api/public/bot-log-events`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

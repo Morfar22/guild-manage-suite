@@ -29,6 +29,7 @@ const CONFIG_CHECK_INTERVAL = 60000;
 
 // How often to send heartbeats (30 seconds)
 const HEARTBEAT_INTERVAL = 30000;
+const APP_API_BASE = process.env.APP_API_BASE || 'https://bot.nethost-solutions.dk';
 
 class CustomBotManager {
   // Set of application IDs that already had commands deployed this session
@@ -505,7 +506,7 @@ class CustomBotManager {
     }
 
     try {
-      const response = await fetch(`${SUPABASE_URL}/functions/v1/guild-bot-config`, {
+      const response = await fetch(`${APP_API_BASE}/api/public/guild-bot-config`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -546,7 +547,7 @@ class CustomBotManager {
         is_custom_bot: isCustom
       };
 
-      await fetch(`${SUPABASE_URL}/functions/v1/guild-bot-config`, {
+      await fetch(`${APP_API_BASE}/api/public/guild-bot-config`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -783,7 +784,7 @@ class CustomBotManager {
     if (!BOT_SECRET_KEY) return;
 
     try {
-      await fetch(`${SUPABASE_URL}/functions/v1/guild-bot-config`, {
+      await fetch(`${APP_API_BASE}/api/public/guild-bot-config`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
