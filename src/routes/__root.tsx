@@ -1,4 +1,5 @@
-import { createRootRoute, Outlet } from "@tanstack/react-router";
+import { createRootRouteWithContext, Outlet } from "@tanstack/react-router";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { HelmetProvider } from "react-helmet-async";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -10,7 +11,7 @@ import { LanguageProvider } from "@/contexts/LanguageContext";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { reportLovableError } from "@/lib/lovable-error-reporting";
 
-export const Route = createRootRoute({
+export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
   component: RootComponent,
   errorComponent: ErrorFallback,
   head: () => ({
@@ -83,28 +84,32 @@ export const Route = createRootRoute({
 });
 
 function RootComponent() {
+  const { queryClient } = Route.useRouteContext();
   return (
-    <HelmetProvider>
-      <ErrorBoundary>
-        <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
-          <TooltipProvider>
-            <Toaster />
-            <Sonner />
-            <AuthProvider>
-              <GuildProvider>
-                <LanguageProvider>
-                  <main className="min-h-screen">
-                    <Outlet />
-                  </main>
-                </LanguageProvider>
-              </GuildProvider>
-            </AuthProvider>
-          </TooltipProvider>
-        </ThemeProvider>
-      </ErrorBoundary>
-    </HelmetProvider>
+    <QueryClientProvider client={queryClient}>
+      <HelmetProvider>
+        <ErrorBoundary>
+          <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
+            <TooltipProvider>
+              <Toaster />
+              <Sonner />
+              <AuthProvider>
+                <GuildProvider>
+                  <LanguageProvider>
+                    <main className="min-h-screen">
+                      <Outlet />
+                    </main>
+                  </LanguageProvider>
+                </GuildProvider>
+              </AuthProvider>
+            </TooltipProvider>
+          </ThemeProvider>
+        </ErrorBoundary>
+      </HelmetProvider>
+    </QueryClientProvider>
   );
 }
+
 
 function ErrorFallback({ error }: { error: Error }) {
   reportLovableError(error, { route: "/" });
