@@ -32,11 +32,13 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="relative min-h-screen bg-background">
+      <div className="pointer-events-none fixed inset-0 grid-backdrop opacity-60" aria-hidden />
+      <div className="pointer-events-none fixed left-1/3 top-0 h-96 w-96 -translate-x-1/2 rounded-full bg-primary/10 blur-[140px]" aria-hidden />
       <DashboardSidebar />
       <MobileSidebarTrigger />
-      <main className="lg:pl-64">
-        <div className="p-4 pt-16 lg:p-8 lg:pt-8">
+      <main className="relative lg:pl-64">
+        <div className="mx-auto w-full max-w-[1600px] p-4 pt-16 lg:p-8 lg:pt-8">
           <Breadcrumbs />
           {children || <Outlet />}
         </div>
@@ -44,3 +46,4 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
     </div>
   );
 }
+
