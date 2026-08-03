@@ -2625,7 +2625,15 @@ __serve(async (req) => {
           const first = options[0];
           if (first.type === 2) {
             const nested = first.options?.[0];
-            if (!nested) break;
+            if (!nested) {
+              return new Response(
+                JSON.stringify({
+                  type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
+                  data: { content: "❌ Invalid command format.", flags: 64 },
+                }),
+                { headers: { "Content-Type": "application/json" } }
+              );
+            }
             return handleFiveMSlashCommand(interaction, first.name, nested.name, nested.options || []);
           }
 
