@@ -1,7 +1,20 @@
 import { createStart, createCsrfMiddleware, createMiddleware } from "@tanstack/react-start";
 
 import { renderErrorPage } from "./lib/error-page";
-import { attachSupabaseAuth } from "@/integrations/supabase/auth-attacher";
+
+
+// Local replacement for the generated `attachSupabaseAuth`: the generated one
+// imports the browser Supabase client at module scope, which touches
+// localStorage during SSR. This one loads it lazily in the browser only.
+const attachSupabaseAuth = createMiddleware({ type: "function" }).client(
+  async ({ next }) => {
+    if (typeof window === "undefined") return next();
+    const { supabase } = await import("@/integrations/supabase/client");
+    const { data } = await supabase.auth.getSession();
+    const token = data.session?.access_token;
+    return next({ headers: token ? { Authorization: `Bearer ${token}` } : {} });
+  },
+);
 
 const errorMiddleware = createMiddleware().server(async ({ next }) => {
   try {
