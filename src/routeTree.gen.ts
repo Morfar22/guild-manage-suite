@@ -21,7 +21,6 @@ import { Route as DashboardActivityHeatmapRouteImport } from './routes/dashboard
 import { Route as DashboardAiAutomodRouteImport } from './routes/dashboard/ai-automod'
 import { Route as DashboardAiChatRouteImport } from './routes/dashboard/ai-chat'
 import { Route as DashboardAnalyticsRouteImport } from './routes/dashboard/analytics'
-import { Route as DashboardApplicationsRouteImport } from './routes/dashboard/applications'
 import { Route as DashboardAutoReportsRouteImport } from './routes/dashboard/auto-reports'
 import { Route as DashboardAutoRespondersRouteImport } from './routes/dashboard/auto-responders'
 import { Route as DashboardAutomodRouteImport } from './routes/dashboard/automod'
@@ -70,7 +69,6 @@ import { Route as DashboardStatsChannelsRouteImport } from './routes/dashboard/s
 import { Route as DashboardSuggestionsRouteImport } from './routes/dashboard/suggestions'
 import { Route as DashboardTebexRouteImport } from './routes/dashboard/tebex'
 import { Route as DashboardTestPanelRouteImport } from './routes/dashboard/test-panel'
-import { Route as DashboardTicketsRouteImport } from './routes/dashboard/tickets'
 import { Route as DashboardTiktokRouteImport } from './routes/dashboard/tiktok'
 import { Route as DashboardTwitchRouteImport } from './routes/dashboard/twitch'
 import { Route as DashboardVerificationRouteImport } from './routes/dashboard/verification'
@@ -132,9 +130,11 @@ import { Route as ApiPublicTebexWebhookRouteImport } from './routes/api/public/t
 import { Route as ApiPublicTiktokTestNotifyRouteImport } from './routes/api/public/tiktok-test-notify'
 import { Route as ApiPublicTwitchHandlerRouteImport } from './routes/api/public/twitch-handler'
 import { Route as ApiPublicXpHandlerRouteImport } from './routes/api/public/xp-handler'
+import { Route as DashboardApplicationsIndexRouteImport } from './routes/dashboard/applications.index'
 import { Route as DashboardApplicationsSubmissionIdRouteImport } from './routes/dashboard/applications.$submissionId'
 import { Route as DashboardApplicationsAnalyticsRouteImport } from './routes/dashboard/applications.analytics'
 import { Route as DashboardApplicationsSettingsRouteImport } from './routes/dashboard/applications.settings'
+import { Route as DashboardTicketsIndexRouteImport } from './routes/dashboard/tickets.index'
 import { Route as DashboardTicketsTicketIdRouteImport } from './routes/dashboard/tickets.$ticketId'
 import { Route as DashboardTicketsSettingsRouteImport } from './routes/dashboard/tickets.settings'
 import { Route as DocsCategorySlugRouteImport } from './routes/docs/$category.$slug'
@@ -199,11 +199,6 @@ const DashboardAiChatRoute = DashboardAiChatRouteImport.update({
 const DashboardAnalyticsRoute = DashboardAnalyticsRouteImport.update({
   id: '/analytics',
   path: '/analytics',
-  getParentRoute: () => DashboardRoute,
-} as any)
-const DashboardApplicationsRoute = DashboardApplicationsRouteImport.update({
-  id: '/applications',
-  path: '/applications',
   getParentRoute: () => DashboardRoute,
 } as any)
 const DashboardAutoReportsRoute = DashboardAutoReportsRouteImport.update({
@@ -446,11 +441,6 @@ const DashboardTebexRoute = DashboardTebexRouteImport.update({
 const DashboardTestPanelRoute = DashboardTestPanelRouteImport.update({
   id: '/test-panel',
   path: '/test-panel',
-  getParentRoute: () => DashboardRoute,
-} as any)
-const DashboardTicketsRoute = DashboardTicketsRouteImport.update({
-  id: '/tickets',
-  path: '/tickets',
   getParentRoute: () => DashboardRoute,
 } as any)
 const DashboardTiktokRoute = DashboardTiktokRouteImport.update({
@@ -777,35 +767,46 @@ const ApiPublicXpHandlerRoute = ApiPublicXpHandlerRouteImport.update({
   path: '/api/public/xp-handler',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DashboardApplicationsIndexRoute =
+  DashboardApplicationsIndexRouteImport.update({
+    id: '/applications/',
+    path: '/applications/',
+    getParentRoute: () => DashboardRoute,
+  } as any)
 const DashboardApplicationsSubmissionIdRoute =
   DashboardApplicationsSubmissionIdRouteImport.update({
-    id: '/$submissionId',
-    path: '/$submissionId',
-    getParentRoute: () => DashboardApplicationsRoute,
+    id: '/applications/$submissionId',
+    path: '/applications/$submissionId',
+    getParentRoute: () => DashboardRoute,
   } as any)
 const DashboardApplicationsAnalyticsRoute =
   DashboardApplicationsAnalyticsRouteImport.update({
-    id: '/analytics',
-    path: '/analytics',
-    getParentRoute: () => DashboardApplicationsRoute,
+    id: '/applications/analytics',
+    path: '/applications/analytics',
+    getParentRoute: () => DashboardRoute,
   } as any)
 const DashboardApplicationsSettingsRoute =
   DashboardApplicationsSettingsRouteImport.update({
-    id: '/settings',
-    path: '/settings',
-    getParentRoute: () => DashboardApplicationsRoute,
+    id: '/applications/settings',
+    path: '/applications/settings',
+    getParentRoute: () => DashboardRoute,
   } as any)
+const DashboardTicketsIndexRoute = DashboardTicketsIndexRouteImport.update({
+  id: '/tickets/',
+  path: '/tickets/',
+  getParentRoute: () => DashboardRoute,
+} as any)
 const DashboardTicketsTicketIdRoute =
   DashboardTicketsTicketIdRouteImport.update({
-    id: '/$ticketId',
-    path: '/$ticketId',
-    getParentRoute: () => DashboardTicketsRoute,
+    id: '/tickets/$ticketId',
+    path: '/tickets/$ticketId',
+    getParentRoute: () => DashboardRoute,
   } as any)
 const DashboardTicketsSettingsRoute =
   DashboardTicketsSettingsRouteImport.update({
-    id: '/settings',
-    path: '/settings',
-    getParentRoute: () => DashboardTicketsRoute,
+    id: '/tickets/settings',
+    path: '/tickets/settings',
+    getParentRoute: () => DashboardRoute,
   } as any)
 const DocsCategorySlugRoute = DocsCategorySlugRouteImport.update({
   id: '/docs/$category/$slug',
@@ -814,9 +815,9 @@ const DocsCategorySlugRoute = DocsCategorySlugRouteImport.update({
 } as any)
 const DashboardApplicationsFormsFormIdRoute =
   DashboardApplicationsFormsFormIdRouteImport.update({
-    id: '/forms/$formId',
-    path: '/forms/$formId',
-    getParentRoute: () => DashboardApplicationsRoute,
+    id: '/applications/forms/$formId',
+    path: '/applications/forms/$formId',
+    getParentRoute: () => DashboardRoute,
   } as any)
 
 export interface FileRoutesByFullPath {
@@ -831,7 +832,6 @@ export interface FileRoutesByFullPath {
   '/dashboard/ai-automod': typeof DashboardAiAutomodRoute
   '/dashboard/ai-chat': typeof DashboardAiChatRoute
   '/dashboard/analytics': typeof DashboardAnalyticsRoute
-  '/dashboard/applications': typeof DashboardApplicationsRouteWithChildren
   '/dashboard/auto-reports': typeof DashboardAutoReportsRoute
   '/dashboard/auto-responders': typeof DashboardAutoRespondersRoute
   '/dashboard/automod': typeof DashboardAutomodRoute
@@ -880,7 +880,6 @@ export interface FileRoutesByFullPath {
   '/dashboard/suggestions': typeof DashboardSuggestionsRoute
   '/dashboard/tebex': typeof DashboardTebexRoute
   '/dashboard/test-panel': typeof DashboardTestPanelRoute
-  '/dashboard/tickets': typeof DashboardTicketsRouteWithChildren
   '/dashboard/tiktok': typeof DashboardTiktokRoute
   '/dashboard/twitch': typeof DashboardTwitchRoute
   '/dashboard/verification': typeof DashboardVerificationRoute
@@ -949,6 +948,8 @@ export interface FileRoutesByFullPath {
   '/dashboard/tickets/$ticketId': typeof DashboardTicketsTicketIdRoute
   '/dashboard/tickets/settings': typeof DashboardTicketsSettingsRoute
   '/docs/$category/$slug': typeof DocsCategorySlugRoute
+  '/dashboard/applications/': typeof DashboardApplicationsIndexRoute
+  '/dashboard/tickets/': typeof DashboardTicketsIndexRoute
   '/dashboard/applications/forms/$formId': typeof DashboardApplicationsFormsFormIdRoute
 }
 export interface FileRoutesByTo {
@@ -962,7 +963,6 @@ export interface FileRoutesByTo {
   '/dashboard/ai-automod': typeof DashboardAiAutomodRoute
   '/dashboard/ai-chat': typeof DashboardAiChatRoute
   '/dashboard/analytics': typeof DashboardAnalyticsRoute
-  '/dashboard/applications': typeof DashboardApplicationsRouteWithChildren
   '/dashboard/auto-reports': typeof DashboardAutoReportsRoute
   '/dashboard/auto-responders': typeof DashboardAutoRespondersRoute
   '/dashboard/automod': typeof DashboardAutomodRoute
@@ -1011,7 +1011,6 @@ export interface FileRoutesByTo {
   '/dashboard/suggestions': typeof DashboardSuggestionsRoute
   '/dashboard/tebex': typeof DashboardTebexRoute
   '/dashboard/test-panel': typeof DashboardTestPanelRoute
-  '/dashboard/tickets': typeof DashboardTicketsRouteWithChildren
   '/dashboard/tiktok': typeof DashboardTiktokRoute
   '/dashboard/twitch': typeof DashboardTwitchRoute
   '/dashboard/verification': typeof DashboardVerificationRoute
@@ -1079,6 +1078,8 @@ export interface FileRoutesByTo {
   '/dashboard/tickets/$ticketId': typeof DashboardTicketsTicketIdRoute
   '/dashboard/tickets/settings': typeof DashboardTicketsSettingsRoute
   '/docs/$category/$slug': typeof DocsCategorySlugRoute
+  '/dashboard/applications': typeof DashboardApplicationsIndexRoute
+  '/dashboard/tickets': typeof DashboardTicketsIndexRoute
   '/dashboard/applications/forms/$formId': typeof DashboardApplicationsFormsFormIdRoute
 }
 export interface FileRoutesById {
@@ -1094,7 +1095,6 @@ export interface FileRoutesById {
   '/dashboard/ai-automod': typeof DashboardAiAutomodRoute
   '/dashboard/ai-chat': typeof DashboardAiChatRoute
   '/dashboard/analytics': typeof DashboardAnalyticsRoute
-  '/dashboard/applications': typeof DashboardApplicationsRouteWithChildren
   '/dashboard/auto-reports': typeof DashboardAutoReportsRoute
   '/dashboard/auto-responders': typeof DashboardAutoRespondersRoute
   '/dashboard/automod': typeof DashboardAutomodRoute
@@ -1143,7 +1143,6 @@ export interface FileRoutesById {
   '/dashboard/suggestions': typeof DashboardSuggestionsRoute
   '/dashboard/tebex': typeof DashboardTebexRoute
   '/dashboard/test-panel': typeof DashboardTestPanelRoute
-  '/dashboard/tickets': typeof DashboardTicketsRouteWithChildren
   '/dashboard/tiktok': typeof DashboardTiktokRoute
   '/dashboard/twitch': typeof DashboardTwitchRoute
   '/dashboard/verification': typeof DashboardVerificationRoute
@@ -1212,6 +1211,8 @@ export interface FileRoutesById {
   '/dashboard/tickets/$ticketId': typeof DashboardTicketsTicketIdRoute
   '/dashboard/tickets/settings': typeof DashboardTicketsSettingsRoute
   '/docs/$category/$slug': typeof DocsCategorySlugRoute
+  '/dashboard/applications/': typeof DashboardApplicationsIndexRoute
+  '/dashboard/tickets/': typeof DashboardTicketsIndexRoute
   '/dashboard/applications/forms/$formId': typeof DashboardApplicationsFormsFormIdRoute
 }
 export interface FileRouteTypes {
@@ -1228,7 +1229,6 @@ export interface FileRouteTypes {
     | '/dashboard/ai-automod'
     | '/dashboard/ai-chat'
     | '/dashboard/analytics'
-    | '/dashboard/applications'
     | '/dashboard/auto-reports'
     | '/dashboard/auto-responders'
     | '/dashboard/automod'
@@ -1277,7 +1277,6 @@ export interface FileRouteTypes {
     | '/dashboard/suggestions'
     | '/dashboard/tebex'
     | '/dashboard/test-panel'
-    | '/dashboard/tickets'
     | '/dashboard/tiktok'
     | '/dashboard/twitch'
     | '/dashboard/verification'
@@ -1346,6 +1345,8 @@ export interface FileRouteTypes {
     | '/dashboard/tickets/$ticketId'
     | '/dashboard/tickets/settings'
     | '/docs/$category/$slug'
+    | '/dashboard/applications/'
+    | '/dashboard/tickets/'
     | '/dashboard/applications/forms/$formId'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -1359,7 +1360,6 @@ export interface FileRouteTypes {
     | '/dashboard/ai-automod'
     | '/dashboard/ai-chat'
     | '/dashboard/analytics'
-    | '/dashboard/applications'
     | '/dashboard/auto-reports'
     | '/dashboard/auto-responders'
     | '/dashboard/automod'
@@ -1408,7 +1408,6 @@ export interface FileRouteTypes {
     | '/dashboard/suggestions'
     | '/dashboard/tebex'
     | '/dashboard/test-panel'
-    | '/dashboard/tickets'
     | '/dashboard/tiktok'
     | '/dashboard/twitch'
     | '/dashboard/verification'
@@ -1476,6 +1475,8 @@ export interface FileRouteTypes {
     | '/dashboard/tickets/$ticketId'
     | '/dashboard/tickets/settings'
     | '/docs/$category/$slug'
+    | '/dashboard/applications'
+    | '/dashboard/tickets'
     | '/dashboard/applications/forms/$formId'
   id:
     | '__root__'
@@ -1490,7 +1491,6 @@ export interface FileRouteTypes {
     | '/dashboard/ai-automod'
     | '/dashboard/ai-chat'
     | '/dashboard/analytics'
-    | '/dashboard/applications'
     | '/dashboard/auto-reports'
     | '/dashboard/auto-responders'
     | '/dashboard/automod'
@@ -1539,7 +1539,6 @@ export interface FileRouteTypes {
     | '/dashboard/suggestions'
     | '/dashboard/tebex'
     | '/dashboard/test-panel'
-    | '/dashboard/tickets'
     | '/dashboard/tiktok'
     | '/dashboard/twitch'
     | '/dashboard/verification'
@@ -1608,6 +1607,8 @@ export interface FileRouteTypes {
     | '/dashboard/tickets/$ticketId'
     | '/dashboard/tickets/settings'
     | '/docs/$category/$slug'
+    | '/dashboard/applications/'
+    | '/dashboard/tickets/'
     | '/dashboard/applications/forms/$formId'
   fileRoutesById: FileRoutesById
 }
@@ -1759,13 +1760,6 @@ declare module '@tanstack/react-router' {
       path: '/analytics'
       fullPath: '/dashboard/analytics'
       preLoaderRoute: typeof DashboardAnalyticsRouteImport
-      parentRoute: typeof DashboardRoute
-    }
-    '/dashboard/applications': {
-      id: '/dashboard/applications'
-      path: '/applications'
-      fullPath: '/dashboard/applications'
-      preLoaderRoute: typeof DashboardApplicationsRouteImport
       parentRoute: typeof DashboardRoute
     }
     '/dashboard/auto-reports': {
@@ -2102,13 +2096,6 @@ declare module '@tanstack/react-router' {
       path: '/test-panel'
       fullPath: '/dashboard/test-panel'
       preLoaderRoute: typeof DashboardTestPanelRouteImport
-      parentRoute: typeof DashboardRoute
-    }
-    '/dashboard/tickets': {
-      id: '/dashboard/tickets'
-      path: '/tickets'
-      fullPath: '/dashboard/tickets'
-      preLoaderRoute: typeof DashboardTicketsRouteImport
       parentRoute: typeof DashboardRoute
     }
     '/dashboard/tiktok': {
@@ -2538,40 +2525,54 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicXpHandlerRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/dashboard/applications/': {
+      id: '/dashboard/applications/'
+      path: '/applications'
+      fullPath: '/dashboard/applications/'
+      preLoaderRoute: typeof DashboardApplicationsIndexRouteImport
+      parentRoute: typeof DashboardRoute
+    }
     '/dashboard/applications/$submissionId': {
       id: '/dashboard/applications/$submissionId'
-      path: '/$submissionId'
+      path: '/applications/$submissionId'
       fullPath: '/dashboard/applications/$submissionId'
       preLoaderRoute: typeof DashboardApplicationsSubmissionIdRouteImport
-      parentRoute: typeof DashboardApplicationsRoute
+      parentRoute: typeof DashboardRoute
     }
     '/dashboard/applications/analytics': {
       id: '/dashboard/applications/analytics'
-      path: '/analytics'
+      path: '/applications/analytics'
       fullPath: '/dashboard/applications/analytics'
       preLoaderRoute: typeof DashboardApplicationsAnalyticsRouteImport
-      parentRoute: typeof DashboardApplicationsRoute
+      parentRoute: typeof DashboardRoute
     }
     '/dashboard/applications/settings': {
       id: '/dashboard/applications/settings'
-      path: '/settings'
+      path: '/applications/settings'
       fullPath: '/dashboard/applications/settings'
       preLoaderRoute: typeof DashboardApplicationsSettingsRouteImport
-      parentRoute: typeof DashboardApplicationsRoute
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/tickets/': {
+      id: '/dashboard/tickets/'
+      path: '/tickets'
+      fullPath: '/dashboard/tickets/'
+      preLoaderRoute: typeof DashboardTicketsIndexRouteImport
+      parentRoute: typeof DashboardRoute
     }
     '/dashboard/tickets/$ticketId': {
       id: '/dashboard/tickets/$ticketId'
-      path: '/$ticketId'
+      path: '/tickets/$ticketId'
       fullPath: '/dashboard/tickets/$ticketId'
       preLoaderRoute: typeof DashboardTicketsTicketIdRouteImport
-      parentRoute: typeof DashboardTicketsRoute
+      parentRoute: typeof DashboardRoute
     }
     '/dashboard/tickets/settings': {
       id: '/dashboard/tickets/settings'
-      path: '/settings'
+      path: '/tickets/settings'
       fullPath: '/dashboard/tickets/settings'
       preLoaderRoute: typeof DashboardTicketsSettingsRouteImport
-      parentRoute: typeof DashboardTicketsRoute
+      parentRoute: typeof DashboardRoute
     }
     '/docs/$category/$slug': {
       id: '/docs/$category/$slug'
@@ -2582,10 +2583,10 @@ declare module '@tanstack/react-router' {
     }
     '/dashboard/applications/forms/$formId': {
       id: '/dashboard/applications/forms/$formId'
-      path: '/forms/$formId'
+      path: '/applications/forms/$formId'
       fullPath: '/dashboard/applications/forms/$formId'
       preLoaderRoute: typeof DashboardApplicationsFormsFormIdRouteImport
-      parentRoute: typeof DashboardApplicationsRoute
+      parentRoute: typeof DashboardRoute
     }
   }
 }
@@ -2600,45 +2601,11 @@ const AdminRouteChildren: AdminRouteChildren = {
 
 const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
 
-interface DashboardApplicationsRouteChildren {
-  DashboardApplicationsSubmissionIdRoute: typeof DashboardApplicationsSubmissionIdRoute
-  DashboardApplicationsAnalyticsRoute: typeof DashboardApplicationsAnalyticsRoute
-  DashboardApplicationsSettingsRoute: typeof DashboardApplicationsSettingsRoute
-  DashboardApplicationsFormsFormIdRoute: typeof DashboardApplicationsFormsFormIdRoute
-}
-
-const DashboardApplicationsRouteChildren: DashboardApplicationsRouteChildren = {
-  DashboardApplicationsSubmissionIdRoute:
-    DashboardApplicationsSubmissionIdRoute,
-  DashboardApplicationsAnalyticsRoute: DashboardApplicationsAnalyticsRoute,
-  DashboardApplicationsSettingsRoute: DashboardApplicationsSettingsRoute,
-  DashboardApplicationsFormsFormIdRoute: DashboardApplicationsFormsFormIdRoute,
-}
-
-const DashboardApplicationsRouteWithChildren =
-  DashboardApplicationsRoute._addFileChildren(
-    DashboardApplicationsRouteChildren,
-  )
-
-interface DashboardTicketsRouteChildren {
-  DashboardTicketsTicketIdRoute: typeof DashboardTicketsTicketIdRoute
-  DashboardTicketsSettingsRoute: typeof DashboardTicketsSettingsRoute
-}
-
-const DashboardTicketsRouteChildren: DashboardTicketsRouteChildren = {
-  DashboardTicketsTicketIdRoute: DashboardTicketsTicketIdRoute,
-  DashboardTicketsSettingsRoute: DashboardTicketsSettingsRoute,
-}
-
-const DashboardTicketsRouteWithChildren =
-  DashboardTicketsRoute._addFileChildren(DashboardTicketsRouteChildren)
-
 interface DashboardRouteChildren {
   DashboardActivityHeatmapRoute: typeof DashboardActivityHeatmapRoute
   DashboardAiAutomodRoute: typeof DashboardAiAutomodRoute
   DashboardAiChatRoute: typeof DashboardAiChatRoute
   DashboardAnalyticsRoute: typeof DashboardAnalyticsRoute
-  DashboardApplicationsRoute: typeof DashboardApplicationsRouteWithChildren
   DashboardAutoReportsRoute: typeof DashboardAutoReportsRoute
   DashboardAutoRespondersRoute: typeof DashboardAutoRespondersRoute
   DashboardAutomodRoute: typeof DashboardAutomodRoute
@@ -2687,7 +2654,6 @@ interface DashboardRouteChildren {
   DashboardSuggestionsRoute: typeof DashboardSuggestionsRoute
   DashboardTebexRoute: typeof DashboardTebexRoute
   DashboardTestPanelRoute: typeof DashboardTestPanelRoute
-  DashboardTicketsRoute: typeof DashboardTicketsRouteWithChildren
   DashboardTiktokRoute: typeof DashboardTiktokRoute
   DashboardTwitchRoute: typeof DashboardTwitchRoute
   DashboardVerificationRoute: typeof DashboardVerificationRoute
@@ -2696,6 +2662,14 @@ interface DashboardRouteChildren {
   DashboardWelcomeRoute: typeof DashboardWelcomeRoute
   DashboardYoutubeRoute: typeof DashboardYoutubeRoute
   DashboardIndexRoute: typeof DashboardIndexRoute
+  DashboardApplicationsSubmissionIdRoute: typeof DashboardApplicationsSubmissionIdRoute
+  DashboardApplicationsAnalyticsRoute: typeof DashboardApplicationsAnalyticsRoute
+  DashboardApplicationsSettingsRoute: typeof DashboardApplicationsSettingsRoute
+  DashboardTicketsTicketIdRoute: typeof DashboardTicketsTicketIdRoute
+  DashboardTicketsSettingsRoute: typeof DashboardTicketsSettingsRoute
+  DashboardApplicationsIndexRoute: typeof DashboardApplicationsIndexRoute
+  DashboardTicketsIndexRoute: typeof DashboardTicketsIndexRoute
+  DashboardApplicationsFormsFormIdRoute: typeof DashboardApplicationsFormsFormIdRoute
 }
 
 const DashboardRouteChildren: DashboardRouteChildren = {
@@ -2703,7 +2677,6 @@ const DashboardRouteChildren: DashboardRouteChildren = {
   DashboardAiAutomodRoute: DashboardAiAutomodRoute,
   DashboardAiChatRoute: DashboardAiChatRoute,
   DashboardAnalyticsRoute: DashboardAnalyticsRoute,
-  DashboardApplicationsRoute: DashboardApplicationsRouteWithChildren,
   DashboardAutoReportsRoute: DashboardAutoReportsRoute,
   DashboardAutoRespondersRoute: DashboardAutoRespondersRoute,
   DashboardAutomodRoute: DashboardAutomodRoute,
@@ -2752,7 +2725,6 @@ const DashboardRouteChildren: DashboardRouteChildren = {
   DashboardSuggestionsRoute: DashboardSuggestionsRoute,
   DashboardTebexRoute: DashboardTebexRoute,
   DashboardTestPanelRoute: DashboardTestPanelRoute,
-  DashboardTicketsRoute: DashboardTicketsRouteWithChildren,
   DashboardTiktokRoute: DashboardTiktokRoute,
   DashboardTwitchRoute: DashboardTwitchRoute,
   DashboardVerificationRoute: DashboardVerificationRoute,
@@ -2761,6 +2733,15 @@ const DashboardRouteChildren: DashboardRouteChildren = {
   DashboardWelcomeRoute: DashboardWelcomeRoute,
   DashboardYoutubeRoute: DashboardYoutubeRoute,
   DashboardIndexRoute: DashboardIndexRoute,
+  DashboardApplicationsSubmissionIdRoute:
+    DashboardApplicationsSubmissionIdRoute,
+  DashboardApplicationsAnalyticsRoute: DashboardApplicationsAnalyticsRoute,
+  DashboardApplicationsSettingsRoute: DashboardApplicationsSettingsRoute,
+  DashboardTicketsTicketIdRoute: DashboardTicketsTicketIdRoute,
+  DashboardTicketsSettingsRoute: DashboardTicketsSettingsRoute,
+  DashboardApplicationsIndexRoute: DashboardApplicationsIndexRoute,
+  DashboardTicketsIndexRoute: DashboardTicketsIndexRoute,
+  DashboardApplicationsFormsFormIdRoute: DashboardApplicationsFormsFormIdRoute,
 }
 
 const DashboardRouteWithChildren = DashboardRoute._addFileChildren(
@@ -2834,3 +2815,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
