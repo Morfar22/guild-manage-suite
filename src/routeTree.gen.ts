@@ -17,7 +17,6 @@ import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as GuildsRouteImport } from './routes/guilds'
 import { Route as AdminGlobalBansRouteImport } from './routes/admin.global-bans'
 import { Route as DashboardIndexRouteImport } from './routes/dashboard/index'
-import { Route as DashboardLayoutRouteImport } from './routes/dashboard/_layout'
 import { Route as DashboardActivityHeatmapRouteImport } from './routes/dashboard/activity-heatmap'
 import { Route as DashboardAiAutomodRouteImport } from './routes/dashboard/ai-automod'
 import { Route as DashboardAiChatRouteImport } from './routes/dashboard/ai-chat'
@@ -179,10 +178,6 @@ const AdminGlobalBansRoute = AdminGlobalBansRouteImport.update({
 const DashboardIndexRoute = DashboardIndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => DashboardRoute,
-} as any)
-const DashboardLayoutRoute = DashboardLayoutRouteImport.update({
-  id: '/_layout',
   getParentRoute: () => DashboardRoute,
 } as any)
 const DashboardActivityHeatmapRoute =
@@ -963,7 +958,6 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/guilds': typeof GuildsRoute
   '/admin/global-bans': typeof AdminGlobalBansRoute
-  '/dashboard': typeof DashboardIndexRoute
   '/dashboard/activity-heatmap': typeof DashboardActivityHeatmapRoute
   '/dashboard/ai-automod': typeof DashboardAiAutomodRoute
   '/dashboard/ai-chat': typeof DashboardAiChatRoute
@@ -1026,6 +1020,7 @@ export interface FileRoutesByTo {
   '/dashboard/welcome': typeof DashboardWelcomeRoute
   '/dashboard/youtube': typeof DashboardYoutubeRoute
   '/docs': typeof DocsIndexRoute
+  '/dashboard': typeof DashboardIndexRoute
   '/api/public/admin-check-ip': typeof ApiPublicAdminCheckIpRoute
   '/api/public/admin-users': typeof ApiPublicAdminUsersRoute
   '/api/public/ai-auto-respond': typeof ApiPublicAiAutoRespondRoute
@@ -1095,7 +1090,6 @@ export interface FileRoutesById {
   '/dashboard': typeof DashboardRouteWithChildren
   '/guilds': typeof GuildsRoute
   '/admin/global-bans': typeof AdminGlobalBansRoute
-  '/dashboard/_layout': typeof DashboardLayoutRoute
   '/dashboard/activity-heatmap': typeof DashboardActivityHeatmapRoute
   '/dashboard/ai-automod': typeof DashboardAiAutomodRoute
   '/dashboard/ai-chat': typeof DashboardAiChatRoute
@@ -1361,7 +1355,6 @@ export interface FileRouteTypes {
     | '/auth'
     | '/guilds'
     | '/admin/global-bans'
-    | '/dashboard'
     | '/dashboard/activity-heatmap'
     | '/dashboard/ai-automod'
     | '/dashboard/ai-chat'
@@ -1424,6 +1417,7 @@ export interface FileRouteTypes {
     | '/dashboard/welcome'
     | '/dashboard/youtube'
     | '/docs'
+    | '/dashboard'
     | '/api/public/admin-check-ip'
     | '/api/public/admin-users'
     | '/api/public/ai-auto-respond'
@@ -1492,7 +1486,6 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/guilds'
     | '/admin/global-bans'
-    | '/dashboard/_layout'
     | '/dashboard/activity-heatmap'
     | '/dashboard/ai-automod'
     | '/dashboard/ai-chat'
@@ -1738,13 +1731,6 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/dashboard/'
       preLoaderRoute: typeof DashboardIndexRouteImport
-      parentRoute: typeof DashboardRoute
-    }
-    '/dashboard/_layout': {
-      id: '/dashboard/_layout'
-      path: ''
-      fullPath: '/dashboard'
-      preLoaderRoute: typeof DashboardLayoutRouteImport
       parentRoute: typeof DashboardRoute
     }
     '/dashboard/activity-heatmap': {
@@ -2648,7 +2634,6 @@ const DashboardTicketsRouteWithChildren =
   DashboardTicketsRoute._addFileChildren(DashboardTicketsRouteChildren)
 
 interface DashboardRouteChildren {
-  DashboardLayoutRoute: typeof DashboardLayoutRoute
   DashboardActivityHeatmapRoute: typeof DashboardActivityHeatmapRoute
   DashboardAiAutomodRoute: typeof DashboardAiAutomodRoute
   DashboardAiChatRoute: typeof DashboardAiChatRoute
@@ -2714,7 +2699,6 @@ interface DashboardRouteChildren {
 }
 
 const DashboardRouteChildren: DashboardRouteChildren = {
-  DashboardLayoutRoute: DashboardLayoutRoute,
   DashboardActivityHeatmapRoute: DashboardActivityHeatmapRoute,
   DashboardAiAutomodRoute: DashboardAiAutomodRoute,
   DashboardAiChatRoute: DashboardAiChatRoute,
