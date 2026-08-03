@@ -227,7 +227,7 @@ export default function Dashboard() {
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="lg:col-span-2 space-y-6">
           <div>
-            <h2 className="mb-4 text-xl font-semibold text-foreground">{t('dashboard.serverStats')}</h2>
+            <h2 className="mb-4 font-display text-xl font-semibold text-foreground">{t('dashboard.serverStats')}</h2>
             <div className="grid gap-4 sm:grid-cols-2">
               <StatusCard title={t('dashboard.members')} value={status?.member_count?.toLocaleString() || 'N/A'} icon={Users} />
               <StatusCard title={t('dashboard.messagesToday')} value={status?.message_count_today?.toLocaleString() || 'N/A'} icon={MessageSquare} />
