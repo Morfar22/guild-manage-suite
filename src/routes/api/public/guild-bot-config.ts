@@ -628,7 +628,7 @@ __serve(async (req) => {
         console.log(`[Admin] Cleaned up DB for guild ${targetGuildId}`)
 
         return new Response(
-          JSON.stringify({ success: true }),
+          JSON.stringify({ success: true, warning: discordWarning }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         )
       }
