@@ -1,5 +1,9 @@
 import "./lib/error-capture";
-import "./lib/ssr-storage-shim";
+import { installSsrStorageShim } from "./lib/ssr-storage-shim";
+
+// Must run before any module that touches `localStorage` at import time
+// (e.g. the generated Supabase browser client, loaded via dynamic import below).
+installSsrStorageShim();
 
 
 import { consumeLastCapturedError } from "./lib/error-capture";
