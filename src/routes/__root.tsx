@@ -84,28 +84,32 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 });
 
 function RootComponent() {
+  const { queryClient } = Route.useRouteContext();
   return (
-    <HelmetProvider>
-      <ErrorBoundary>
-        <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
-          <TooltipProvider>
-            <Toaster />
-            <Sonner />
-            <AuthProvider>
-              <GuildProvider>
-                <LanguageProvider>
-                  <main className="min-h-screen">
-                    <Outlet />
-                  </main>
-                </LanguageProvider>
-              </GuildProvider>
-            </AuthProvider>
-          </TooltipProvider>
-        </ThemeProvider>
-      </ErrorBoundary>
-    </HelmetProvider>
+    <QueryClientProvider client={queryClient}>
+      <HelmetProvider>
+        <ErrorBoundary>
+          <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
+            <TooltipProvider>
+              <Toaster />
+              <Sonner />
+              <AuthProvider>
+                <GuildProvider>
+                  <LanguageProvider>
+                    <main className="min-h-screen">
+                      <Outlet />
+                    </main>
+                  </LanguageProvider>
+                </GuildProvider>
+              </AuthProvider>
+            </TooltipProvider>
+          </ThemeProvider>
+        </ErrorBoundary>
+      </HelmetProvider>
+    </QueryClientProvider>
   );
 }
+
 
 function ErrorFallback({ error }: { error: Error }) {
   reportLovableError(error, { route: "/" });
