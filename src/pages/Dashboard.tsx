@@ -271,8 +271,9 @@ export default function Dashboard() {
           </div>
         </div>
 
-        <div className="rounded-xl border border-border bg-card p-6">
-          <h3 className="font-semibold text-foreground">{t('dashboard.recentActivity')}</h3>
+        <div className="surface-card rounded-xl p-6">
+          <h3 className="font-display font-semibold text-foreground">{t('dashboard.recentActivity')}</h3>
+
           <div className="mt-4 space-y-3">
             {logsLoading ? (
               <p className="text-muted-foreground text-sm">{t('common.loading')}</p>
