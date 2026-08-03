@@ -11,7 +11,7 @@ const { botLog } = require('../consoleLogger');
 const { isAutomodBypassed } = require('./automodBypass');
 
 const AUTOMOD_URL = process.env.SUPABASE_URL
-  ? `${process.env.SUPABASE_URL}/functions/v1/automod-handler`
+  ? `${APP_API_BASE}/api/public/automod-handler`
   : '${APP_API_BASE}/api/public/automod-handler';
 const BOT_SECRET = process.env.BOT_SECRET_KEY;
 

@@ -7,6 +7,7 @@ const processingDMs = new Set();
 // Global set to track recently processed DMs with content hash
 const recentlyProcessedDMs = new Map();
 const DM_DEDUP_WINDOW_MS = 5000; // 5 second window for deduplication
+const APP_API_BASE = process.env.APP_API_BASE || 'https://bot.nethost-solutions.dk';
 
 class ModmailHandler {
   constructor(client, supabaseUrl, botSecretKey, config = {}) {
@@ -30,7 +31,7 @@ class ModmailHandler {
   // Helper method to call the edge function
   async callEdgeFunction(action, params = {}) {
     try {
-      const response = await fetch(`${this.supabaseUrl}/functions/v1/modmail-handler`, {
+      const response = await fetch(`${APP_API_BASE}/api/public/modmail-handler`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
