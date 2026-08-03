@@ -12,13 +12,14 @@ const BOT_SECRET_KEY = process.env.BOT_SECRET_KEY;
 
 // Track users in voice channels for voice XP
 const voiceSessionTracker = new Map(); // Map<`${guildId}-${userId}`, { joinedAt: Date, channelId: string }>
+const APP_API_BASE = process.env.APP_API_BASE || 'https://bot.nethost-solutions.dk';
 
 /**
  * Call the xp-handler edge function
  */
 async function grantXP({ guildId, userId, username, channelId, userRoles, isVoice }) {
   try {
-    const response = await fetch(`${SUPABASE_URL}/functions/v1/xp-handler`, {
+    const response = await fetch(`${APP_API_BASE}/api/public/xp-handler`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

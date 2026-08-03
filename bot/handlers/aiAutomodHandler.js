@@ -8,12 +8,13 @@
 const { Events, EmbedBuilder } = require('discord.js');
 const { isAutomodBypassed } = require('./automodBypass');
 
-const AI_AUTOMOD_URL = 'https://sleiplyixaxuvydzudxn.supabase.co/functions/v1/ai-automod';
+const AI_AUTOMOD_URL = '${APP_API_BASE}/api/public/ai-automod';
 const BOT_SECRET = process.env.BOT_SECRET_KEY;
 
 // Cache settings per guild (refresh every 5 minutes)
 const settingsCache = new Map();
 const CACHE_TTL = 300_000;
+const APP_API_BASE = process.env.APP_API_BASE || 'https://bot.nethost-solutions.dk';
 
 function setupAIAutomodHandler(client, supabase, options = {}) {
   const { shouldHandleGuild } = options;

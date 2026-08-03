@@ -8,7 +8,7 @@
  * Bot Permission: ManageGuild (for at læse invites)
  */
 
-const API_URL = process.env.WELCOME_API_URL || 'https://sleiplyixaxuvydzudxn.supabase.co/functions/v1/bot-welcome';
+const API_URL = process.env.WELCOME_API_URL || '${APP_API_BASE}/api/public/bot-welcome';
 const BOT_SECRET = process.env.BOT_SECRET_KEY;
 
 // Map<guildId, Map<inviteCode, { uses, inviterId, inviterName, channelId, maxUses, expiresAt }>>
@@ -17,6 +17,7 @@ const inviteCache = new Map();
 const vanityCache = new Map();
 
 const FAKE_ACCOUNT_DAYS = 7;
+const APP_API_BASE = process.env.APP_API_BASE || 'https://bot.nethost-solutions.dk';
 
 async function callApi(action, data) {
   try {

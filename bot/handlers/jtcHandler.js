@@ -18,6 +18,7 @@ let botSecretKey = '';
 // Deduplication: track recently processed events to prevent double handling
 const recentEvents = new Map();
 const DEDUP_WINDOW_MS = 5000; // 5 second window
+const APP_API_BASE = process.env.APP_API_BASE || 'https://bot.nethost-solutions.dk';
 
 function isDuplicateEvent(key) {
   const now = Date.now();
@@ -43,7 +44,7 @@ function isDuplicateEvent(key) {
 }
 
 async function callJTCHandler(action, data) {
-  const response = await fetch(`${supabaseUrl}/functions/v1/jtc-handler`, {
+  const response = await fetch(`${APP_API_BASE}/api/public/jtc-handler`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',

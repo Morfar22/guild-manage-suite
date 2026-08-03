@@ -38,6 +38,7 @@ const jtcButtonHandler = require('./handlers/jtcButtonHandler');
 const { setupAIChatHandler } = require('./handlers/aiChatHandler');
 const { initXPHandler } = require('./handlers/xpHandler');
 const { setupApplicationHandler } = require('./handlers/applicationHandler');
+const APP_API_BASE = process.env.APP_API_BASE || 'https://bot.nethost-solutions.dk';
 
 // NEW: Import new feature handlers
 const { setupStarboardHandler } = require('./handlers/starboardHandler');
@@ -186,7 +187,7 @@ function formatDuration(seconds) {
 }
 
 async function callGiveawayHandler(payload) {
-  const response = await fetch(`${SUPABASE_URL}/functions/v1/giveaway-handler`, {
+  const response = await fetch(`${APP_API_BASE}/api/public/giveaway-handler`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',

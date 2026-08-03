@@ -23,6 +23,7 @@ const BOT_SECRET_KEY = process.env.BOT_SECRET_KEY;
 // ----- Form cache (60s TTL) -----
 const formCache = new Map();
 const CACHE_TTL = 60_000;
+const APP_API_BASE = process.env.APP_API_BASE || 'https://bot.nethost-solutions.dk';
 
 function getCachedForm(formId) {
   const entry = formCache.get(formId);
@@ -87,7 +88,7 @@ function refreshSessionTimer(userId) {
 
 // ----- Edge function call -----
 async function callApplicationAPI(action, data) {
-  const response = await fetch(`${SUPABASE_URL}/functions/v1/application-handler`, {
+  const response = await fetch(`${APP_API_BASE}/api/public/application-handler`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',

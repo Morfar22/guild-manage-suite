@@ -10,6 +10,7 @@ const BOT_SECRET_KEY = process.env.BOT_SECRET_KEY;
 
 // Check interval i millisekunder (60 sekunder)
 const CHECK_INTERVAL = 60000;
+const APP_API_BASE = process.env.APP_API_BASE || 'https://bot.nethost-solutions.dk';
 let twitchCheckerStartupTimeout = null;
 let twitchCheckerInterval = null;
 
@@ -25,8 +26,8 @@ async function checkTwitchStreamers(guildId = null) {
 
   try {
     const url = guildId 
-      ? `${SUPABASE_URL}/functions/v1/twitch-handler?action=check&guild_id=${guildId}`
-      : `${SUPABASE_URL}/functions/v1/twitch-handler?action=check`;
+      ? `${APP_API_BASE}/api/public/twitch-handler?action=check&guild_id=${guildId}`
+      : `${APP_API_BASE}/api/public/twitch-handler?action=check`;
 
     const response = await fetch(url, {
       method: 'GET',
@@ -63,7 +64,7 @@ async function postWeeklySchedule() {
 
   try {
     const response = await fetch(
-      `${SUPABASE_URL}/functions/v1/twitch-handler?action=schedule_post`,
+      `${APP_API_BASE}/api/public/twitch-handler?action=schedule_post`,
       {
         method: 'GET',
         headers: {

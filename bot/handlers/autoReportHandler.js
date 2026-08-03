@@ -1,4 +1,5 @@
 /**
+const APP_API_BASE = process.env.APP_API_BASE || 'https://bot.nethost-solutions.dk';
  * Auto-Report Handler
  * 
  * Checks every 5 minutes whether any guild's auto-report is due,
@@ -66,7 +67,7 @@ function setupAutoReportHandler(client, supabase, options = {}) {
       // Call the edge function to send reports
       console.log('[AutoReport] Triggering auto-report edge function...');
 
-      const res = await fetch(`${SUPABASE_URL}/functions/v1/auto-report`, {
+      const res = await fetch(`${APP_API_BASE}/api/public/auto-report`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

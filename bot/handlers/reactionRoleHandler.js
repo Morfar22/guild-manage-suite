@@ -19,8 +19,9 @@
  * - Partials.User
  */
 
-const API_URL = process.env.REACTION_ROLE_API_URL || 'https://sleiplyixaxuvydzudxn.supabase.co/functions/v1/reaction-role-handler';
+const API_URL = process.env.REACTION_ROLE_API_URL || '${APP_API_BASE}/api/public/reaction-role-handler';
 const BOT_SECRET = process.env.BOT_SECRET_KEY;
+const APP_API_BASE = process.env.APP_API_BASE || 'https://bot.nethost-solutions.dk';
 
 /**
  * Call the Lovable API for reaction roles

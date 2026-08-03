@@ -13,6 +13,7 @@ const HEARTBEAT_INTERVAL = 30000;
 
 // Tracker for daglige beskeder per guild
 const dailyMessageCount = new Map();
+const APP_API_BASE = process.env.APP_API_BASE || 'https://bot.nethost-solutions.dk';
 
 /**
  * Nulstil besked tæller ved midnat
@@ -58,7 +59,7 @@ async function sendHeartbeat(client, guild) {
       message_count_today: dailyMessageCount.get(guild.id) || 0
     };
 
-    const response = await fetch(`${SUPABASE_URL}/functions/v1/bot-heartbeat`, {
+    const response = await fetch(`${APP_API_BASE}/api/public/bot-heartbeat`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -138,7 +139,7 @@ async function sendOfflineStatus(client) {
   
   for (const [, guild] of client.guilds.cache) {
     try {
-      await fetch(`${SUPABASE_URL}/functions/v1/bot-heartbeat`, {
+      await fetch(`${APP_API_BASE}/api/public/bot-heartbeat`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
