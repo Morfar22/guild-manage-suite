@@ -4,7 +4,7 @@ import { createFileRoute } from '@tanstack/react-router'
 import { createClient } from '@supabase/supabase-js'
 import nacl from 'tweetnacl'
 
-const __env = (k: string) => process.env[k]
+const __env = (k: string) => process.env[k] ?? (k === 'SUPABASE_ANON_KEY' ? process.env['SUPABASE_PUBLISHABLE_KEY'] : undefined)
 let __handler: (req: Request) => Response | Promise<Response>
 const __serve = (fn: any, _opts?: any) => { __handler = fn }
 
