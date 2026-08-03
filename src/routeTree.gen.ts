@@ -13,15 +13,14 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as SplatRouteImport } from './routes/$'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as AuthRouteImport } from './routes/auth'
+import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as GuildsRouteImport } from './routes/guilds'
 import { Route as AdminGlobalBansRouteImport } from './routes/admin.global-bans'
 import { Route as DashboardIndexRouteImport } from './routes/dashboard/index'
-import { Route as DashboardLayoutRouteImport } from './routes/dashboard/_layout'
 import { Route as DashboardActivityHeatmapRouteImport } from './routes/dashboard/activity-heatmap'
 import { Route as DashboardAiAutomodRouteImport } from './routes/dashboard/ai-automod'
 import { Route as DashboardAiChatRouteImport } from './routes/dashboard/ai-chat'
 import { Route as DashboardAnalyticsRouteImport } from './routes/dashboard/analytics'
-import { Route as DashboardApplicationsRouteImport } from './routes/dashboard/applications'
 import { Route as DashboardAutoReportsRouteImport } from './routes/dashboard/auto-reports'
 import { Route as DashboardAutoRespondersRouteImport } from './routes/dashboard/auto-responders'
 import { Route as DashboardAutomodRouteImport } from './routes/dashboard/automod'
@@ -70,7 +69,6 @@ import { Route as DashboardStatsChannelsRouteImport } from './routes/dashboard/s
 import { Route as DashboardSuggestionsRouteImport } from './routes/dashboard/suggestions'
 import { Route as DashboardTebexRouteImport } from './routes/dashboard/tebex'
 import { Route as DashboardTestPanelRouteImport } from './routes/dashboard/test-panel'
-import { Route as DashboardTicketsRouteImport } from './routes/dashboard/tickets'
 import { Route as DashboardTiktokRouteImport } from './routes/dashboard/tiktok'
 import { Route as DashboardTwitchRouteImport } from './routes/dashboard/twitch'
 import { Route as DashboardVerificationRouteImport } from './routes/dashboard/verification'
@@ -132,9 +130,11 @@ import { Route as ApiPublicTebexWebhookRouteImport } from './routes/api/public/t
 import { Route as ApiPublicTiktokTestNotifyRouteImport } from './routes/api/public/tiktok-test-notify'
 import { Route as ApiPublicTwitchHandlerRouteImport } from './routes/api/public/twitch-handler'
 import { Route as ApiPublicXpHandlerRouteImport } from './routes/api/public/xp-handler'
+import { Route as DashboardApplicationsIndexRouteImport } from './routes/dashboard/applications.index'
 import { Route as DashboardApplicationsSubmissionIdRouteImport } from './routes/dashboard/applications.$submissionId'
 import { Route as DashboardApplicationsAnalyticsRouteImport } from './routes/dashboard/applications.analytics'
 import { Route as DashboardApplicationsSettingsRouteImport } from './routes/dashboard/applications.settings'
+import { Route as DashboardTicketsIndexRouteImport } from './routes/dashboard/tickets.index'
 import { Route as DashboardTicketsTicketIdRouteImport } from './routes/dashboard/tickets.$ticketId'
 import { Route as DashboardTicketsSettingsRouteImport } from './routes/dashboard/tickets.settings'
 import { Route as DocsCategorySlugRouteImport } from './routes/docs/$category.$slug'
@@ -160,6 +160,11 @@ const AuthRoute = AuthRouteImport.update({
   path: '/auth',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DashboardRoute = DashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const GuildsRoute = GuildsRouteImport.update({
   id: '/guilds',
   path: '/guilds',
@@ -171,322 +176,307 @@ const AdminGlobalBansRoute = AdminGlobalBansRouteImport.update({
   getParentRoute: () => AdminRoute,
 } as any)
 const DashboardIndexRoute = DashboardIndexRouteImport.update({
-  id: '/dashboard/',
-  path: '/dashboard/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const DashboardLayoutRoute = DashboardLayoutRouteImport.update({
-  id: '/dashboard/_layout',
-  path: '/dashboard',
-  getParentRoute: () => rootRouteImport,
+  id: '/',
+  path: '/',
+  getParentRoute: () => DashboardRoute,
 } as any)
 const DashboardActivityHeatmapRoute =
   DashboardActivityHeatmapRouteImport.update({
-    id: '/dashboard/activity-heatmap',
-    path: '/dashboard/activity-heatmap',
-    getParentRoute: () => rootRouteImport,
+    id: '/activity-heatmap',
+    path: '/activity-heatmap',
+    getParentRoute: () => DashboardRoute,
   } as any)
 const DashboardAiAutomodRoute = DashboardAiAutomodRouteImport.update({
-  id: '/dashboard/ai-automod',
-  path: '/dashboard/ai-automod',
-  getParentRoute: () => rootRouteImport,
+  id: '/ai-automod',
+  path: '/ai-automod',
+  getParentRoute: () => DashboardRoute,
 } as any)
 const DashboardAiChatRoute = DashboardAiChatRouteImport.update({
-  id: '/dashboard/ai-chat',
-  path: '/dashboard/ai-chat',
-  getParentRoute: () => rootRouteImport,
+  id: '/ai-chat',
+  path: '/ai-chat',
+  getParentRoute: () => DashboardRoute,
 } as any)
 const DashboardAnalyticsRoute = DashboardAnalyticsRouteImport.update({
-  id: '/dashboard/analytics',
-  path: '/dashboard/analytics',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const DashboardApplicationsRoute = DashboardApplicationsRouteImport.update({
-  id: '/dashboard/applications',
-  path: '/dashboard/applications',
-  getParentRoute: () => rootRouteImport,
+  id: '/analytics',
+  path: '/analytics',
+  getParentRoute: () => DashboardRoute,
 } as any)
 const DashboardAutoReportsRoute = DashboardAutoReportsRouteImport.update({
-  id: '/dashboard/auto-reports',
-  path: '/dashboard/auto-reports',
-  getParentRoute: () => rootRouteImport,
+  id: '/auto-reports',
+  path: '/auto-reports',
+  getParentRoute: () => DashboardRoute,
 } as any)
 const DashboardAutoRespondersRoute = DashboardAutoRespondersRouteImport.update({
-  id: '/dashboard/auto-responders',
-  path: '/dashboard/auto-responders',
-  getParentRoute: () => rootRouteImport,
+  id: '/auto-responders',
+  path: '/auto-responders',
+  getParentRoute: () => DashboardRoute,
 } as any)
 const DashboardAutomodRoute = DashboardAutomodRouteImport.update({
-  id: '/dashboard/automod',
-  path: '/dashboard/automod',
-  getParentRoute: () => rootRouteImport,
+  id: '/automod',
+  path: '/automod',
+  getParentRoute: () => DashboardRoute,
 } as any)
 const DashboardBackupsRoute = DashboardBackupsRouteImport.update({
-  id: '/dashboard/backups',
-  path: '/dashboard/backups',
-  getParentRoute: () => rootRouteImport,
+  id: '/backups',
+  path: '/backups',
+  getParentRoute: () => DashboardRoute,
 } as any)
 const DashboardBirthdaysRoute = DashboardBirthdaysRouteImport.update({
-  id: '/dashboard/birthdays',
-  path: '/dashboard/birthdays',
-  getParentRoute: () => rootRouteImport,
+  id: '/birthdays',
+  path: '/birthdays',
+  getParentRoute: () => DashboardRoute,
 } as any)
 const DashboardBotHealthRoute = DashboardBotHealthRouteImport.update({
-  id: '/dashboard/bot-health',
-  path: '/dashboard/bot-health',
-  getParentRoute: () => rootRouteImport,
+  id: '/bot-health',
+  path: '/bot-health',
+  getParentRoute: () => DashboardRoute,
 } as any)
 const DashboardBotSettingsRoute = DashboardBotSettingsRouteImport.update({
-  id: '/dashboard/bot-settings',
-  path: '/dashboard/bot-settings',
-  getParentRoute: () => rootRouteImport,
+  id: '/bot-settings',
+  path: '/bot-settings',
+  getParentRoute: () => DashboardRoute,
 } as any)
 const DashboardChangelogRoute = DashboardChangelogRouteImport.update({
-  id: '/dashboard/changelog',
-  path: '/dashboard/changelog',
-  getParentRoute: () => rootRouteImport,
+  id: '/changelog',
+  path: '/changelog',
+  getParentRoute: () => DashboardRoute,
 } as any)
 const DashboardCharactersRoute = DashboardCharactersRouteImport.update({
-  id: '/dashboard/characters',
-  path: '/dashboard/characters',
-  getParentRoute: () => rootRouteImport,
+  id: '/characters',
+  path: '/characters',
+  getParentRoute: () => DashboardRoute,
 } as any)
 const DashboardCommandsRoute = DashboardCommandsRouteImport.update({
-  id: '/dashboard/commands',
-  path: '/dashboard/commands',
-  getParentRoute: () => rootRouteImport,
+  id: '/commands',
+  path: '/commands',
+  getParentRoute: () => DashboardRoute,
 } as any)
 const DashboardConfessionsRoute = DashboardConfessionsRouteImport.update({
-  id: '/dashboard/confessions',
-  path: '/dashboard/confessions',
-  getParentRoute: () => rootRouteImport,
+  id: '/confessions',
+  path: '/confessions',
+  getParentRoute: () => DashboardRoute,
 } as any)
 const DashboardCountingRoute = DashboardCountingRouteImport.update({
-  id: '/dashboard/counting',
-  path: '/dashboard/counting',
-  getParentRoute: () => rootRouteImport,
+  id: '/counting',
+  path: '/counting',
+  getParentRoute: () => DashboardRoute,
 } as any)
 const DashboardCurrencyShopRoute = DashboardCurrencyShopRouteImport.update({
-  id: '/dashboard/currency-shop',
-  path: '/dashboard/currency-shop',
-  getParentRoute: () => rootRouteImport,
+  id: '/currency-shop',
+  path: '/currency-shop',
+  getParentRoute: () => DashboardRoute,
 } as any)
 const DashboardCustomCommandsRoute = DashboardCustomCommandsRouteImport.update({
-  id: '/dashboard/custom-commands',
-  path: '/dashboard/custom-commands',
-  getParentRoute: () => rootRouteImport,
+  id: '/custom-commands',
+  path: '/custom-commands',
+  getParentRoute: () => DashboardRoute,
 } as any)
 const DashboardEconomyRoute = DashboardEconomyRouteImport.update({
-  id: '/dashboard/economy',
-  path: '/dashboard/economy',
-  getParentRoute: () => rootRouteImport,
+  id: '/economy',
+  path: '/economy',
+  getParentRoute: () => DashboardRoute,
 } as any)
 const DashboardEmbedBuilderRoute = DashboardEmbedBuilderRouteImport.update({
-  id: '/dashboard/embed-builder',
-  path: '/dashboard/embed-builder',
-  getParentRoute: () => rootRouteImport,
+  id: '/embed-builder',
+  path: '/embed-builder',
+  getParentRoute: () => DashboardRoute,
 } as any)
 const DashboardFeaturesRoute = DashboardFeaturesRouteImport.update({
-  id: '/dashboard/features',
-  path: '/dashboard/features',
-  getParentRoute: () => rootRouteImport,
+  id: '/features',
+  path: '/features',
+  getParentRoute: () => DashboardRoute,
 } as any)
 const DashboardFivemRoute = DashboardFivemRouteImport.update({
-  id: '/dashboard/fivem',
-  path: '/dashboard/fivem',
-  getParentRoute: () => rootRouteImport,
+  id: '/fivem',
+  path: '/fivem',
+  getParentRoute: () => DashboardRoute,
 } as any)
 const DashboardGiveawaysRoute = DashboardGiveawaysRouteImport.update({
-  id: '/dashboard/giveaways',
-  path: '/dashboard/giveaways',
-  getParentRoute: () => rootRouteImport,
+  id: '/giveaways',
+  path: '/giveaways',
+  getParentRoute: () => DashboardRoute,
 } as any)
 const DashboardGlobalBansRoute = DashboardGlobalBansRouteImport.update({
-  id: '/dashboard/global-bans',
-  path: '/dashboard/global-bans',
-  getParentRoute: () => rootRouteImport,
+  id: '/global-bans',
+  path: '/global-bans',
+  getParentRoute: () => DashboardRoute,
 } as any)
 const DashboardInviteTrackerRoute = DashboardInviteTrackerRouteImport.update({
-  id: '/dashboard/invite-tracker',
-  path: '/dashboard/invite-tracker',
-  getParentRoute: () => rootRouteImport,
+  id: '/invite-tracker',
+  path: '/invite-tracker',
+  getParentRoute: () => DashboardRoute,
 } as any)
 const DashboardJtcRoute = DashboardJtcRouteImport.update({
-  id: '/dashboard/jtc',
-  path: '/dashboard/jtc',
-  getParentRoute: () => rootRouteImport,
+  id: '/jtc',
+  path: '/jtc',
+  getParentRoute: () => DashboardRoute,
 } as any)
 const DashboardLeaderboardRoute = DashboardLeaderboardRouteImport.update({
-  id: '/dashboard/leaderboard',
-  path: '/dashboard/leaderboard',
-  getParentRoute: () => rootRouteImport,
+  id: '/leaderboard',
+  path: '/leaderboard',
+  getParentRoute: () => DashboardRoute,
 } as any)
 const DashboardLevelingRoute = DashboardLevelingRouteImport.update({
-  id: '/dashboard/leveling',
-  path: '/dashboard/leveling',
-  getParentRoute: () => rootRouteImport,
+  id: '/leveling',
+  path: '/leveling',
+  getParentRoute: () => DashboardRoute,
 } as any)
 const DashboardLiveEventsRoute = DashboardLiveEventsRouteImport.update({
-  id: '/dashboard/live-events',
-  path: '/dashboard/live-events',
-  getParentRoute: () => rootRouteImport,
+  id: '/live-events',
+  path: '/live-events',
+  getParentRoute: () => DashboardRoute,
 } as any)
 const DashboardLogSettingsRoute = DashboardLogSettingsRouteImport.update({
-  id: '/dashboard/log-settings',
-  path: '/dashboard/log-settings',
-  getParentRoute: () => rootRouteImport,
+  id: '/log-settings',
+  path: '/log-settings',
+  getParentRoute: () => DashboardRoute,
 } as any)
 const DashboardLogsRoute = DashboardLogsRouteImport.update({
-  id: '/dashboard/logs',
-  path: '/dashboard/logs',
-  getParentRoute: () => rootRouteImport,
+  id: '/logs',
+  path: '/logs',
+  getParentRoute: () => DashboardRoute,
 } as any)
 const DashboardMembersRoute = DashboardMembersRouteImport.update({
-  id: '/dashboard/members',
-  path: '/dashboard/members',
-  getParentRoute: () => rootRouteImport,
+  id: '/members',
+  path: '/members',
+  getParentRoute: () => DashboardRoute,
 } as any)
 const DashboardModerationRoute = DashboardModerationRouteImport.update({
-  id: '/dashboard/moderation',
-  path: '/dashboard/moderation',
-  getParentRoute: () => rootRouteImport,
+  id: '/moderation',
+  path: '/moderation',
+  getParentRoute: () => DashboardRoute,
 } as any)
 const DashboardModmailRoute = DashboardModmailRouteImport.update({
-  id: '/dashboard/modmail',
-  path: '/dashboard/modmail',
-  getParentRoute: () => rootRouteImport,
+  id: '/modmail',
+  path: '/modmail',
+  getParentRoute: () => DashboardRoute,
 } as any)
 const DashboardModulesRoute = DashboardModulesRouteImport.update({
-  id: '/dashboard/modules',
-  path: '/dashboard/modules',
-  getParentRoute: () => rootRouteImport,
+  id: '/modules',
+  path: '/modules',
+  getParentRoute: () => DashboardRoute,
 } as any)
 const DashboardMusicQuizRoute = DashboardMusicQuizRouteImport.update({
-  id: '/dashboard/music-quiz',
-  path: '/dashboard/music-quiz',
-  getParentRoute: () => rootRouteImport,
+  id: '/music-quiz',
+  path: '/music-quiz',
+  getParentRoute: () => DashboardRoute,
 } as any)
 const DashboardNotificationsRoute = DashboardNotificationsRouteImport.update({
-  id: '/dashboard/notifications',
-  path: '/dashboard/notifications',
-  getParentRoute: () => rootRouteImport,
+  id: '/notifications',
+  path: '/notifications',
+  getParentRoute: () => DashboardRoute,
 } as any)
 const DashboardPollsRoute = DashboardPollsRouteImport.update({
-  id: '/dashboard/polls',
-  path: '/dashboard/polls',
-  getParentRoute: () => rootRouteImport,
+  id: '/polls',
+  path: '/polls',
+  getParentRoute: () => DashboardRoute,
 } as any)
 const DashboardQuarantineRoute = DashboardQuarantineRouteImport.update({
-  id: '/dashboard/quarantine',
-  path: '/dashboard/quarantine',
-  getParentRoute: () => rootRouteImport,
+  id: '/quarantine',
+  path: '/quarantine',
+  getParentRoute: () => DashboardRoute,
 } as any)
 const DashboardRaidProtectionRoute = DashboardRaidProtectionRouteImport.update({
-  id: '/dashboard/raid-protection',
-  path: '/dashboard/raid-protection',
-  getParentRoute: () => rootRouteImport,
+  id: '/raid-protection',
+  path: '/raid-protection',
+  getParentRoute: () => DashboardRoute,
 } as any)
 const DashboardReactionRolesRoute = DashboardReactionRolesRouteImport.update({
-  id: '/dashboard/reaction-roles',
-  path: '/dashboard/reaction-roles',
-  getParentRoute: () => rootRouteImport,
+  id: '/reaction-roles',
+  path: '/reaction-roles',
+  getParentRoute: () => DashboardRoute,
 } as any)
 const DashboardRemindersRoute = DashboardRemindersRouteImport.update({
-  id: '/dashboard/reminders',
-  path: '/dashboard/reminders',
-  getParentRoute: () => rootRouteImport,
+  id: '/reminders',
+  path: '/reminders',
+  getParentRoute: () => DashboardRoute,
 } as any)
 const DashboardRoleAnalyticsRoute = DashboardRoleAnalyticsRouteImport.update({
-  id: '/dashboard/role-analytics',
-  path: '/dashboard/role-analytics',
-  getParentRoute: () => rootRouteImport,
+  id: '/role-analytics',
+  path: '/role-analytics',
+  getParentRoute: () => DashboardRoute,
 } as any)
 const DashboardScheduledActionsRoute =
   DashboardScheduledActionsRouteImport.update({
-    id: '/dashboard/scheduled-actions',
-    path: '/dashboard/scheduled-actions',
-    getParentRoute: () => rootRouteImport,
+    id: '/scheduled-actions',
+    path: '/scheduled-actions',
+    getParentRoute: () => DashboardRoute,
   } as any)
 const DashboardSchedulerRoute = DashboardSchedulerRouteImport.update({
-  id: '/dashboard/scheduler',
-  path: '/dashboard/scheduler',
-  getParentRoute: () => rootRouteImport,
+  id: '/scheduler',
+  path: '/scheduler',
+  getParentRoute: () => DashboardRoute,
 } as any)
 const DashboardServerCloneRoute = DashboardServerCloneRouteImport.update({
-  id: '/dashboard/server-clone',
-  path: '/dashboard/server-clone',
-  getParentRoute: () => rootRouteImport,
+  id: '/server-clone',
+  path: '/server-clone',
+  getParentRoute: () => DashboardRoute,
 } as any)
 const DashboardSlowmodeSchedulerRoute =
   DashboardSlowmodeSchedulerRouteImport.update({
-    id: '/dashboard/slowmode-scheduler',
-    path: '/dashboard/slowmode-scheduler',
-    getParentRoute: () => rootRouteImport,
+    id: '/slowmode-scheduler',
+    path: '/slowmode-scheduler',
+    getParentRoute: () => DashboardRoute,
   } as any)
 const DashboardStarboardRoute = DashboardStarboardRouteImport.update({
-  id: '/dashboard/starboard',
-  path: '/dashboard/starboard',
-  getParentRoute: () => rootRouteImport,
+  id: '/starboard',
+  path: '/starboard',
+  getParentRoute: () => DashboardRoute,
 } as any)
 const DashboardStatsChannelsRoute = DashboardStatsChannelsRouteImport.update({
-  id: '/dashboard/stats-channels',
-  path: '/dashboard/stats-channels',
-  getParentRoute: () => rootRouteImport,
+  id: '/stats-channels',
+  path: '/stats-channels',
+  getParentRoute: () => DashboardRoute,
 } as any)
 const DashboardSuggestionsRoute = DashboardSuggestionsRouteImport.update({
-  id: '/dashboard/suggestions',
-  path: '/dashboard/suggestions',
-  getParentRoute: () => rootRouteImport,
+  id: '/suggestions',
+  path: '/suggestions',
+  getParentRoute: () => DashboardRoute,
 } as any)
 const DashboardTebexRoute = DashboardTebexRouteImport.update({
-  id: '/dashboard/tebex',
-  path: '/dashboard/tebex',
-  getParentRoute: () => rootRouteImport,
+  id: '/tebex',
+  path: '/tebex',
+  getParentRoute: () => DashboardRoute,
 } as any)
 const DashboardTestPanelRoute = DashboardTestPanelRouteImport.update({
-  id: '/dashboard/test-panel',
-  path: '/dashboard/test-panel',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const DashboardTicketsRoute = DashboardTicketsRouteImport.update({
-  id: '/dashboard/tickets',
-  path: '/dashboard/tickets',
-  getParentRoute: () => rootRouteImport,
+  id: '/test-panel',
+  path: '/test-panel',
+  getParentRoute: () => DashboardRoute,
 } as any)
 const DashboardTiktokRoute = DashboardTiktokRouteImport.update({
-  id: '/dashboard/tiktok',
-  path: '/dashboard/tiktok',
-  getParentRoute: () => rootRouteImport,
+  id: '/tiktok',
+  path: '/tiktok',
+  getParentRoute: () => DashboardRoute,
 } as any)
 const DashboardTwitchRoute = DashboardTwitchRouteImport.update({
-  id: '/dashboard/twitch',
-  path: '/dashboard/twitch',
-  getParentRoute: () => rootRouteImport,
+  id: '/twitch',
+  path: '/twitch',
+  getParentRoute: () => DashboardRoute,
 } as any)
 const DashboardVerificationRoute = DashboardVerificationRouteImport.update({
-  id: '/dashboard/verification',
-  path: '/dashboard/verification',
-  getParentRoute: () => rootRouteImport,
+  id: '/verification',
+  path: '/verification',
+  getParentRoute: () => DashboardRoute,
 } as any)
 const DashboardWarningsRoute = DashboardWarningsRouteImport.update({
-  id: '/dashboard/warnings',
-  path: '/dashboard/warnings',
-  getParentRoute: () => rootRouteImport,
+  id: '/warnings',
+  path: '/warnings',
+  getParentRoute: () => DashboardRoute,
 } as any)
 const DashboardWebhooksRoute = DashboardWebhooksRouteImport.update({
-  id: '/dashboard/webhooks',
-  path: '/dashboard/webhooks',
-  getParentRoute: () => rootRouteImport,
+  id: '/webhooks',
+  path: '/webhooks',
+  getParentRoute: () => DashboardRoute,
 } as any)
 const DashboardWelcomeRoute = DashboardWelcomeRouteImport.update({
-  id: '/dashboard/welcome',
-  path: '/dashboard/welcome',
-  getParentRoute: () => rootRouteImport,
+  id: '/welcome',
+  path: '/welcome',
+  getParentRoute: () => DashboardRoute,
 } as any)
 const DashboardYoutubeRoute = DashboardYoutubeRouteImport.update({
-  id: '/dashboard/youtube',
-  path: '/dashboard/youtube',
-  getParentRoute: () => rootRouteImport,
+  id: '/youtube',
+  path: '/youtube',
+  getParentRoute: () => DashboardRoute,
 } as any)
 const DocsIndexRoute = DocsIndexRouteImport.update({
   id: '/docs/',
@@ -777,35 +767,46 @@ const ApiPublicXpHandlerRoute = ApiPublicXpHandlerRouteImport.update({
   path: '/api/public/xp-handler',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DashboardApplicationsIndexRoute =
+  DashboardApplicationsIndexRouteImport.update({
+    id: '/applications/',
+    path: '/applications/',
+    getParentRoute: () => DashboardRoute,
+  } as any)
 const DashboardApplicationsSubmissionIdRoute =
   DashboardApplicationsSubmissionIdRouteImport.update({
-    id: '/$submissionId',
-    path: '/$submissionId',
-    getParentRoute: () => DashboardApplicationsRoute,
+    id: '/applications/$submissionId',
+    path: '/applications/$submissionId',
+    getParentRoute: () => DashboardRoute,
   } as any)
 const DashboardApplicationsAnalyticsRoute =
   DashboardApplicationsAnalyticsRouteImport.update({
-    id: '/analytics',
-    path: '/analytics',
-    getParentRoute: () => DashboardApplicationsRoute,
+    id: '/applications/analytics',
+    path: '/applications/analytics',
+    getParentRoute: () => DashboardRoute,
   } as any)
 const DashboardApplicationsSettingsRoute =
   DashboardApplicationsSettingsRouteImport.update({
-    id: '/settings',
-    path: '/settings',
-    getParentRoute: () => DashboardApplicationsRoute,
+    id: '/applications/settings',
+    path: '/applications/settings',
+    getParentRoute: () => DashboardRoute,
   } as any)
+const DashboardTicketsIndexRoute = DashboardTicketsIndexRouteImport.update({
+  id: '/tickets/',
+  path: '/tickets/',
+  getParentRoute: () => DashboardRoute,
+} as any)
 const DashboardTicketsTicketIdRoute =
   DashboardTicketsTicketIdRouteImport.update({
-    id: '/$ticketId',
-    path: '/$ticketId',
-    getParentRoute: () => DashboardTicketsRoute,
+    id: '/tickets/$ticketId',
+    path: '/tickets/$ticketId',
+    getParentRoute: () => DashboardRoute,
   } as any)
 const DashboardTicketsSettingsRoute =
   DashboardTicketsSettingsRouteImport.update({
-    id: '/settings',
-    path: '/settings',
-    getParentRoute: () => DashboardTicketsRoute,
+    id: '/tickets/settings',
+    path: '/tickets/settings',
+    getParentRoute: () => DashboardRoute,
   } as any)
 const DocsCategorySlugRoute = DocsCategorySlugRouteImport.update({
   id: '/docs/$category/$slug',
@@ -814,9 +815,9 @@ const DocsCategorySlugRoute = DocsCategorySlugRouteImport.update({
 } as any)
 const DashboardApplicationsFormsFormIdRoute =
   DashboardApplicationsFormsFormIdRouteImport.update({
-    id: '/forms/$formId',
-    path: '/forms/$formId',
-    getParentRoute: () => DashboardApplicationsRoute,
+    id: '/applications/forms/$formId',
+    path: '/applications/forms/$formId',
+    getParentRoute: () => DashboardRoute,
   } as any)
 
 export interface FileRoutesByFullPath {
@@ -824,14 +825,13 @@ export interface FileRoutesByFullPath {
   '/$': typeof SplatRoute
   '/admin': typeof AdminRouteWithChildren
   '/auth': typeof AuthRoute
+  '/dashboard': typeof DashboardRouteWithChildren
   '/guilds': typeof GuildsRoute
   '/admin/global-bans': typeof AdminGlobalBansRoute
-  '/dashboard': typeof DashboardLayoutRoute
   '/dashboard/activity-heatmap': typeof DashboardActivityHeatmapRoute
   '/dashboard/ai-automod': typeof DashboardAiAutomodRoute
   '/dashboard/ai-chat': typeof DashboardAiChatRoute
   '/dashboard/analytics': typeof DashboardAnalyticsRoute
-  '/dashboard/applications': typeof DashboardApplicationsRouteWithChildren
   '/dashboard/auto-reports': typeof DashboardAutoReportsRoute
   '/dashboard/auto-responders': typeof DashboardAutoRespondersRoute
   '/dashboard/automod': typeof DashboardAutomodRoute
@@ -880,7 +880,6 @@ export interface FileRoutesByFullPath {
   '/dashboard/suggestions': typeof DashboardSuggestionsRoute
   '/dashboard/tebex': typeof DashboardTebexRoute
   '/dashboard/test-panel': typeof DashboardTestPanelRoute
-  '/dashboard/tickets': typeof DashboardTicketsRouteWithChildren
   '/dashboard/tiktok': typeof DashboardTiktokRoute
   '/dashboard/twitch': typeof DashboardTwitchRoute
   '/dashboard/verification': typeof DashboardVerificationRoute
@@ -949,6 +948,8 @@ export interface FileRoutesByFullPath {
   '/dashboard/tickets/$ticketId': typeof DashboardTicketsTicketIdRoute
   '/dashboard/tickets/settings': typeof DashboardTicketsSettingsRoute
   '/docs/$category/$slug': typeof DocsCategorySlugRoute
+  '/dashboard/applications/': typeof DashboardApplicationsIndexRoute
+  '/dashboard/tickets/': typeof DashboardTicketsIndexRoute
   '/dashboard/applications/forms/$formId': typeof DashboardApplicationsFormsFormIdRoute
 }
 export interface FileRoutesByTo {
@@ -958,12 +959,10 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/guilds': typeof GuildsRoute
   '/admin/global-bans': typeof AdminGlobalBansRoute
-  '/dashboard': typeof DashboardIndexRoute
   '/dashboard/activity-heatmap': typeof DashboardActivityHeatmapRoute
   '/dashboard/ai-automod': typeof DashboardAiAutomodRoute
   '/dashboard/ai-chat': typeof DashboardAiChatRoute
   '/dashboard/analytics': typeof DashboardAnalyticsRoute
-  '/dashboard/applications': typeof DashboardApplicationsRouteWithChildren
   '/dashboard/auto-reports': typeof DashboardAutoReportsRoute
   '/dashboard/auto-responders': typeof DashboardAutoRespondersRoute
   '/dashboard/automod': typeof DashboardAutomodRoute
@@ -1012,7 +1011,6 @@ export interface FileRoutesByTo {
   '/dashboard/suggestions': typeof DashboardSuggestionsRoute
   '/dashboard/tebex': typeof DashboardTebexRoute
   '/dashboard/test-panel': typeof DashboardTestPanelRoute
-  '/dashboard/tickets': typeof DashboardTicketsRouteWithChildren
   '/dashboard/tiktok': typeof DashboardTiktokRoute
   '/dashboard/twitch': typeof DashboardTwitchRoute
   '/dashboard/verification': typeof DashboardVerificationRoute
@@ -1021,6 +1019,7 @@ export interface FileRoutesByTo {
   '/dashboard/welcome': typeof DashboardWelcomeRoute
   '/dashboard/youtube': typeof DashboardYoutubeRoute
   '/docs': typeof DocsIndexRoute
+  '/dashboard': typeof DashboardIndexRoute
   '/api/public/admin-check-ip': typeof ApiPublicAdminCheckIpRoute
   '/api/public/admin-users': typeof ApiPublicAdminUsersRoute
   '/api/public/ai-auto-respond': typeof ApiPublicAiAutoRespondRoute
@@ -1079,6 +1078,8 @@ export interface FileRoutesByTo {
   '/dashboard/tickets/$ticketId': typeof DashboardTicketsTicketIdRoute
   '/dashboard/tickets/settings': typeof DashboardTicketsSettingsRoute
   '/docs/$category/$slug': typeof DocsCategorySlugRoute
+  '/dashboard/applications': typeof DashboardApplicationsIndexRoute
+  '/dashboard/tickets': typeof DashboardTicketsIndexRoute
   '/dashboard/applications/forms/$formId': typeof DashboardApplicationsFormsFormIdRoute
 }
 export interface FileRoutesById {
@@ -1087,14 +1088,13 @@ export interface FileRoutesById {
   '/$': typeof SplatRoute
   '/admin': typeof AdminRouteWithChildren
   '/auth': typeof AuthRoute
+  '/dashboard': typeof DashboardRouteWithChildren
   '/guilds': typeof GuildsRoute
   '/admin/global-bans': typeof AdminGlobalBansRoute
-  '/dashboard/_layout': typeof DashboardLayoutRoute
   '/dashboard/activity-heatmap': typeof DashboardActivityHeatmapRoute
   '/dashboard/ai-automod': typeof DashboardAiAutomodRoute
   '/dashboard/ai-chat': typeof DashboardAiChatRoute
   '/dashboard/analytics': typeof DashboardAnalyticsRoute
-  '/dashboard/applications': typeof DashboardApplicationsRouteWithChildren
   '/dashboard/auto-reports': typeof DashboardAutoReportsRoute
   '/dashboard/auto-responders': typeof DashboardAutoRespondersRoute
   '/dashboard/automod': typeof DashboardAutomodRoute
@@ -1143,7 +1143,6 @@ export interface FileRoutesById {
   '/dashboard/suggestions': typeof DashboardSuggestionsRoute
   '/dashboard/tebex': typeof DashboardTebexRoute
   '/dashboard/test-panel': typeof DashboardTestPanelRoute
-  '/dashboard/tickets': typeof DashboardTicketsRouteWithChildren
   '/dashboard/tiktok': typeof DashboardTiktokRoute
   '/dashboard/twitch': typeof DashboardTwitchRoute
   '/dashboard/verification': typeof DashboardVerificationRoute
@@ -1212,6 +1211,8 @@ export interface FileRoutesById {
   '/dashboard/tickets/$ticketId': typeof DashboardTicketsTicketIdRoute
   '/dashboard/tickets/settings': typeof DashboardTicketsSettingsRoute
   '/docs/$category/$slug': typeof DocsCategorySlugRoute
+  '/dashboard/applications/': typeof DashboardApplicationsIndexRoute
+  '/dashboard/tickets/': typeof DashboardTicketsIndexRoute
   '/dashboard/applications/forms/$formId': typeof DashboardApplicationsFormsFormIdRoute
 }
 export interface FileRouteTypes {
@@ -1221,14 +1222,13 @@ export interface FileRouteTypes {
     | '/$'
     | '/admin'
     | '/auth'
+    | '/dashboard'
     | '/guilds'
     | '/admin/global-bans'
-    | '/dashboard'
     | '/dashboard/activity-heatmap'
     | '/dashboard/ai-automod'
     | '/dashboard/ai-chat'
     | '/dashboard/analytics'
-    | '/dashboard/applications'
     | '/dashboard/auto-reports'
     | '/dashboard/auto-responders'
     | '/dashboard/automod'
@@ -1277,7 +1277,6 @@ export interface FileRouteTypes {
     | '/dashboard/suggestions'
     | '/dashboard/tebex'
     | '/dashboard/test-panel'
-    | '/dashboard/tickets'
     | '/dashboard/tiktok'
     | '/dashboard/twitch'
     | '/dashboard/verification'
@@ -1346,6 +1345,8 @@ export interface FileRouteTypes {
     | '/dashboard/tickets/$ticketId'
     | '/dashboard/tickets/settings'
     | '/docs/$category/$slug'
+    | '/dashboard/applications/'
+    | '/dashboard/tickets/'
     | '/dashboard/applications/forms/$formId'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -1355,12 +1356,10 @@ export interface FileRouteTypes {
     | '/auth'
     | '/guilds'
     | '/admin/global-bans'
-    | '/dashboard'
     | '/dashboard/activity-heatmap'
     | '/dashboard/ai-automod'
     | '/dashboard/ai-chat'
     | '/dashboard/analytics'
-    | '/dashboard/applications'
     | '/dashboard/auto-reports'
     | '/dashboard/auto-responders'
     | '/dashboard/automod'
@@ -1409,7 +1408,6 @@ export interface FileRouteTypes {
     | '/dashboard/suggestions'
     | '/dashboard/tebex'
     | '/dashboard/test-panel'
-    | '/dashboard/tickets'
     | '/dashboard/tiktok'
     | '/dashboard/twitch'
     | '/dashboard/verification'
@@ -1418,6 +1416,7 @@ export interface FileRouteTypes {
     | '/dashboard/welcome'
     | '/dashboard/youtube'
     | '/docs'
+    | '/dashboard'
     | '/api/public/admin-check-ip'
     | '/api/public/admin-users'
     | '/api/public/ai-auto-respond'
@@ -1476,6 +1475,8 @@ export interface FileRouteTypes {
     | '/dashboard/tickets/$ticketId'
     | '/dashboard/tickets/settings'
     | '/docs/$category/$slug'
+    | '/dashboard/applications'
+    | '/dashboard/tickets'
     | '/dashboard/applications/forms/$formId'
   id:
     | '__root__'
@@ -1483,14 +1484,13 @@ export interface FileRouteTypes {
     | '/$'
     | '/admin'
     | '/auth'
+    | '/dashboard'
     | '/guilds'
     | '/admin/global-bans'
-    | '/dashboard/_layout'
     | '/dashboard/activity-heatmap'
     | '/dashboard/ai-automod'
     | '/dashboard/ai-chat'
     | '/dashboard/analytics'
-    | '/dashboard/applications'
     | '/dashboard/auto-reports'
     | '/dashboard/auto-responders'
     | '/dashboard/automod'
@@ -1539,7 +1539,6 @@ export interface FileRouteTypes {
     | '/dashboard/suggestions'
     | '/dashboard/tebex'
     | '/dashboard/test-panel'
-    | '/dashboard/tickets'
     | '/dashboard/tiktok'
     | '/dashboard/twitch'
     | '/dashboard/verification'
@@ -1608,6 +1607,8 @@ export interface FileRouteTypes {
     | '/dashboard/tickets/$ticketId'
     | '/dashboard/tickets/settings'
     | '/docs/$category/$slug'
+    | '/dashboard/applications/'
+    | '/dashboard/tickets/'
     | '/dashboard/applications/forms/$formId'
   fileRoutesById: FileRoutesById
 }
@@ -1616,71 +1617,9 @@ export interface RootRouteChildren {
   SplatRoute: typeof SplatRoute
   AdminRoute: typeof AdminRouteWithChildren
   AuthRoute: typeof AuthRoute
+  DashboardRoute: typeof DashboardRouteWithChildren
   GuildsRoute: typeof GuildsRoute
-  DashboardLayoutRoute: typeof DashboardLayoutRoute
-  DashboardActivityHeatmapRoute: typeof DashboardActivityHeatmapRoute
-  DashboardAiAutomodRoute: typeof DashboardAiAutomodRoute
-  DashboardAiChatRoute: typeof DashboardAiChatRoute
-  DashboardAnalyticsRoute: typeof DashboardAnalyticsRoute
-  DashboardApplicationsRoute: typeof DashboardApplicationsRouteWithChildren
-  DashboardAutoReportsRoute: typeof DashboardAutoReportsRoute
-  DashboardAutoRespondersRoute: typeof DashboardAutoRespondersRoute
-  DashboardAutomodRoute: typeof DashboardAutomodRoute
-  DashboardBackupsRoute: typeof DashboardBackupsRoute
-  DashboardBirthdaysRoute: typeof DashboardBirthdaysRoute
-  DashboardBotHealthRoute: typeof DashboardBotHealthRoute
-  DashboardBotSettingsRoute: typeof DashboardBotSettingsRoute
-  DashboardChangelogRoute: typeof DashboardChangelogRoute
-  DashboardCharactersRoute: typeof DashboardCharactersRoute
-  DashboardCommandsRoute: typeof DashboardCommandsRoute
-  DashboardConfessionsRoute: typeof DashboardConfessionsRoute
-  DashboardCountingRoute: typeof DashboardCountingRoute
-  DashboardCurrencyShopRoute: typeof DashboardCurrencyShopRoute
-  DashboardCustomCommandsRoute: typeof DashboardCustomCommandsRoute
-  DashboardEconomyRoute: typeof DashboardEconomyRoute
-  DashboardEmbedBuilderRoute: typeof DashboardEmbedBuilderRoute
-  DashboardFeaturesRoute: typeof DashboardFeaturesRoute
-  DashboardFivemRoute: typeof DashboardFivemRoute
-  DashboardGiveawaysRoute: typeof DashboardGiveawaysRoute
-  DashboardGlobalBansRoute: typeof DashboardGlobalBansRoute
-  DashboardInviteTrackerRoute: typeof DashboardInviteTrackerRoute
-  DashboardJtcRoute: typeof DashboardJtcRoute
-  DashboardLeaderboardRoute: typeof DashboardLeaderboardRoute
-  DashboardLevelingRoute: typeof DashboardLevelingRoute
-  DashboardLiveEventsRoute: typeof DashboardLiveEventsRoute
-  DashboardLogSettingsRoute: typeof DashboardLogSettingsRoute
-  DashboardLogsRoute: typeof DashboardLogsRoute
-  DashboardMembersRoute: typeof DashboardMembersRoute
-  DashboardModerationRoute: typeof DashboardModerationRoute
-  DashboardModmailRoute: typeof DashboardModmailRoute
-  DashboardModulesRoute: typeof DashboardModulesRoute
-  DashboardMusicQuizRoute: typeof DashboardMusicQuizRoute
-  DashboardNotificationsRoute: typeof DashboardNotificationsRoute
-  DashboardPollsRoute: typeof DashboardPollsRoute
-  DashboardQuarantineRoute: typeof DashboardQuarantineRoute
-  DashboardRaidProtectionRoute: typeof DashboardRaidProtectionRoute
-  DashboardReactionRolesRoute: typeof DashboardReactionRolesRoute
-  DashboardRemindersRoute: typeof DashboardRemindersRoute
-  DashboardRoleAnalyticsRoute: typeof DashboardRoleAnalyticsRoute
-  DashboardScheduledActionsRoute: typeof DashboardScheduledActionsRoute
-  DashboardSchedulerRoute: typeof DashboardSchedulerRoute
-  DashboardServerCloneRoute: typeof DashboardServerCloneRoute
-  DashboardSlowmodeSchedulerRoute: typeof DashboardSlowmodeSchedulerRoute
-  DashboardStarboardRoute: typeof DashboardStarboardRoute
-  DashboardStatsChannelsRoute: typeof DashboardStatsChannelsRoute
-  DashboardSuggestionsRoute: typeof DashboardSuggestionsRoute
-  DashboardTebexRoute: typeof DashboardTebexRoute
-  DashboardTestPanelRoute: typeof DashboardTestPanelRoute
-  DashboardTicketsRoute: typeof DashboardTicketsRouteWithChildren
-  DashboardTiktokRoute: typeof DashboardTiktokRoute
-  DashboardTwitchRoute: typeof DashboardTwitchRoute
-  DashboardVerificationRoute: typeof DashboardVerificationRoute
-  DashboardWarningsRoute: typeof DashboardWarningsRoute
-  DashboardWebhooksRoute: typeof DashboardWebhooksRoute
-  DashboardWelcomeRoute: typeof DashboardWelcomeRoute
-  DashboardYoutubeRoute: typeof DashboardYoutubeRoute
   DocsLayoutRoute: typeof DocsLayoutRoute
-  DashboardIndexRoute: typeof DashboardIndexRoute
   DocsIndexRoute: typeof DocsIndexRoute
   ApiPublicAdminCheckIpRoute: typeof ApiPublicAdminCheckIpRoute
   ApiPublicAdminUsersRoute: typeof ApiPublicAdminUsersRoute
@@ -1767,6 +1706,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/dashboard': {
+      id: '/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof DashboardRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/guilds': {
       id: '/guilds'
       path: '/guilds'
@@ -1783,444 +1729,423 @@ declare module '@tanstack/react-router' {
     }
     '/dashboard/': {
       id: '/dashboard/'
-      path: '/dashboard'
+      path: '/'
       fullPath: '/dashboard/'
       preLoaderRoute: typeof DashboardIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/dashboard/_layout': {
-      id: '/dashboard/_layout'
-      path: '/dashboard'
-      fullPath: '/dashboard'
-      preLoaderRoute: typeof DashboardLayoutRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof DashboardRoute
     }
     '/dashboard/activity-heatmap': {
       id: '/dashboard/activity-heatmap'
-      path: '/dashboard/activity-heatmap'
+      path: '/activity-heatmap'
       fullPath: '/dashboard/activity-heatmap'
       preLoaderRoute: typeof DashboardActivityHeatmapRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof DashboardRoute
     }
     '/dashboard/ai-automod': {
       id: '/dashboard/ai-automod'
-      path: '/dashboard/ai-automod'
+      path: '/ai-automod'
       fullPath: '/dashboard/ai-automod'
       preLoaderRoute: typeof DashboardAiAutomodRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof DashboardRoute
     }
     '/dashboard/ai-chat': {
       id: '/dashboard/ai-chat'
-      path: '/dashboard/ai-chat'
+      path: '/ai-chat'
       fullPath: '/dashboard/ai-chat'
       preLoaderRoute: typeof DashboardAiChatRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof DashboardRoute
     }
     '/dashboard/analytics': {
       id: '/dashboard/analytics'
-      path: '/dashboard/analytics'
+      path: '/analytics'
       fullPath: '/dashboard/analytics'
       preLoaderRoute: typeof DashboardAnalyticsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/dashboard/applications': {
-      id: '/dashboard/applications'
-      path: '/dashboard/applications'
-      fullPath: '/dashboard/applications'
-      preLoaderRoute: typeof DashboardApplicationsRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof DashboardRoute
     }
     '/dashboard/auto-reports': {
       id: '/dashboard/auto-reports'
-      path: '/dashboard/auto-reports'
+      path: '/auto-reports'
       fullPath: '/dashboard/auto-reports'
       preLoaderRoute: typeof DashboardAutoReportsRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof DashboardRoute
     }
     '/dashboard/auto-responders': {
       id: '/dashboard/auto-responders'
-      path: '/dashboard/auto-responders'
+      path: '/auto-responders'
       fullPath: '/dashboard/auto-responders'
       preLoaderRoute: typeof DashboardAutoRespondersRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof DashboardRoute
     }
     '/dashboard/automod': {
       id: '/dashboard/automod'
-      path: '/dashboard/automod'
+      path: '/automod'
       fullPath: '/dashboard/automod'
       preLoaderRoute: typeof DashboardAutomodRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof DashboardRoute
     }
     '/dashboard/backups': {
       id: '/dashboard/backups'
-      path: '/dashboard/backups'
+      path: '/backups'
       fullPath: '/dashboard/backups'
       preLoaderRoute: typeof DashboardBackupsRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof DashboardRoute
     }
     '/dashboard/birthdays': {
       id: '/dashboard/birthdays'
-      path: '/dashboard/birthdays'
+      path: '/birthdays'
       fullPath: '/dashboard/birthdays'
       preLoaderRoute: typeof DashboardBirthdaysRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof DashboardRoute
     }
     '/dashboard/bot-health': {
       id: '/dashboard/bot-health'
-      path: '/dashboard/bot-health'
+      path: '/bot-health'
       fullPath: '/dashboard/bot-health'
       preLoaderRoute: typeof DashboardBotHealthRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof DashboardRoute
     }
     '/dashboard/bot-settings': {
       id: '/dashboard/bot-settings'
-      path: '/dashboard/bot-settings'
+      path: '/bot-settings'
       fullPath: '/dashboard/bot-settings'
       preLoaderRoute: typeof DashboardBotSettingsRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof DashboardRoute
     }
     '/dashboard/changelog': {
       id: '/dashboard/changelog'
-      path: '/dashboard/changelog'
+      path: '/changelog'
       fullPath: '/dashboard/changelog'
       preLoaderRoute: typeof DashboardChangelogRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof DashboardRoute
     }
     '/dashboard/characters': {
       id: '/dashboard/characters'
-      path: '/dashboard/characters'
+      path: '/characters'
       fullPath: '/dashboard/characters'
       preLoaderRoute: typeof DashboardCharactersRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof DashboardRoute
     }
     '/dashboard/commands': {
       id: '/dashboard/commands'
-      path: '/dashboard/commands'
+      path: '/commands'
       fullPath: '/dashboard/commands'
       preLoaderRoute: typeof DashboardCommandsRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof DashboardRoute
     }
     '/dashboard/confessions': {
       id: '/dashboard/confessions'
-      path: '/dashboard/confessions'
+      path: '/confessions'
       fullPath: '/dashboard/confessions'
       preLoaderRoute: typeof DashboardConfessionsRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof DashboardRoute
     }
     '/dashboard/counting': {
       id: '/dashboard/counting'
-      path: '/dashboard/counting'
+      path: '/counting'
       fullPath: '/dashboard/counting'
       preLoaderRoute: typeof DashboardCountingRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof DashboardRoute
     }
     '/dashboard/currency-shop': {
       id: '/dashboard/currency-shop'
-      path: '/dashboard/currency-shop'
+      path: '/currency-shop'
       fullPath: '/dashboard/currency-shop'
       preLoaderRoute: typeof DashboardCurrencyShopRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof DashboardRoute
     }
     '/dashboard/custom-commands': {
       id: '/dashboard/custom-commands'
-      path: '/dashboard/custom-commands'
+      path: '/custom-commands'
       fullPath: '/dashboard/custom-commands'
       preLoaderRoute: typeof DashboardCustomCommandsRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof DashboardRoute
     }
     '/dashboard/economy': {
       id: '/dashboard/economy'
-      path: '/dashboard/economy'
+      path: '/economy'
       fullPath: '/dashboard/economy'
       preLoaderRoute: typeof DashboardEconomyRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof DashboardRoute
     }
     '/dashboard/embed-builder': {
       id: '/dashboard/embed-builder'
-      path: '/dashboard/embed-builder'
+      path: '/embed-builder'
       fullPath: '/dashboard/embed-builder'
       preLoaderRoute: typeof DashboardEmbedBuilderRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof DashboardRoute
     }
     '/dashboard/features': {
       id: '/dashboard/features'
-      path: '/dashboard/features'
+      path: '/features'
       fullPath: '/dashboard/features'
       preLoaderRoute: typeof DashboardFeaturesRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof DashboardRoute
     }
     '/dashboard/fivem': {
       id: '/dashboard/fivem'
-      path: '/dashboard/fivem'
+      path: '/fivem'
       fullPath: '/dashboard/fivem'
       preLoaderRoute: typeof DashboardFivemRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof DashboardRoute
     }
     '/dashboard/giveaways': {
       id: '/dashboard/giveaways'
-      path: '/dashboard/giveaways'
+      path: '/giveaways'
       fullPath: '/dashboard/giveaways'
       preLoaderRoute: typeof DashboardGiveawaysRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof DashboardRoute
     }
     '/dashboard/global-bans': {
       id: '/dashboard/global-bans'
-      path: '/dashboard/global-bans'
+      path: '/global-bans'
       fullPath: '/dashboard/global-bans'
       preLoaderRoute: typeof DashboardGlobalBansRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof DashboardRoute
     }
     '/dashboard/invite-tracker': {
       id: '/dashboard/invite-tracker'
-      path: '/dashboard/invite-tracker'
+      path: '/invite-tracker'
       fullPath: '/dashboard/invite-tracker'
       preLoaderRoute: typeof DashboardInviteTrackerRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof DashboardRoute
     }
     '/dashboard/jtc': {
       id: '/dashboard/jtc'
-      path: '/dashboard/jtc'
+      path: '/jtc'
       fullPath: '/dashboard/jtc'
       preLoaderRoute: typeof DashboardJtcRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof DashboardRoute
     }
     '/dashboard/leaderboard': {
       id: '/dashboard/leaderboard'
-      path: '/dashboard/leaderboard'
+      path: '/leaderboard'
       fullPath: '/dashboard/leaderboard'
       preLoaderRoute: typeof DashboardLeaderboardRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof DashboardRoute
     }
     '/dashboard/leveling': {
       id: '/dashboard/leveling'
-      path: '/dashboard/leveling'
+      path: '/leveling'
       fullPath: '/dashboard/leveling'
       preLoaderRoute: typeof DashboardLevelingRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof DashboardRoute
     }
     '/dashboard/live-events': {
       id: '/dashboard/live-events'
-      path: '/dashboard/live-events'
+      path: '/live-events'
       fullPath: '/dashboard/live-events'
       preLoaderRoute: typeof DashboardLiveEventsRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof DashboardRoute
     }
     '/dashboard/log-settings': {
       id: '/dashboard/log-settings'
-      path: '/dashboard/log-settings'
+      path: '/log-settings'
       fullPath: '/dashboard/log-settings'
       preLoaderRoute: typeof DashboardLogSettingsRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof DashboardRoute
     }
     '/dashboard/logs': {
       id: '/dashboard/logs'
-      path: '/dashboard/logs'
+      path: '/logs'
       fullPath: '/dashboard/logs'
       preLoaderRoute: typeof DashboardLogsRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof DashboardRoute
     }
     '/dashboard/members': {
       id: '/dashboard/members'
-      path: '/dashboard/members'
+      path: '/members'
       fullPath: '/dashboard/members'
       preLoaderRoute: typeof DashboardMembersRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof DashboardRoute
     }
     '/dashboard/moderation': {
       id: '/dashboard/moderation'
-      path: '/dashboard/moderation'
+      path: '/moderation'
       fullPath: '/dashboard/moderation'
       preLoaderRoute: typeof DashboardModerationRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof DashboardRoute
     }
     '/dashboard/modmail': {
       id: '/dashboard/modmail'
-      path: '/dashboard/modmail'
+      path: '/modmail'
       fullPath: '/dashboard/modmail'
       preLoaderRoute: typeof DashboardModmailRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof DashboardRoute
     }
     '/dashboard/modules': {
       id: '/dashboard/modules'
-      path: '/dashboard/modules'
+      path: '/modules'
       fullPath: '/dashboard/modules'
       preLoaderRoute: typeof DashboardModulesRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof DashboardRoute
     }
     '/dashboard/music-quiz': {
       id: '/dashboard/music-quiz'
-      path: '/dashboard/music-quiz'
+      path: '/music-quiz'
       fullPath: '/dashboard/music-quiz'
       preLoaderRoute: typeof DashboardMusicQuizRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof DashboardRoute
     }
     '/dashboard/notifications': {
       id: '/dashboard/notifications'
-      path: '/dashboard/notifications'
+      path: '/notifications'
       fullPath: '/dashboard/notifications'
       preLoaderRoute: typeof DashboardNotificationsRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof DashboardRoute
     }
     '/dashboard/polls': {
       id: '/dashboard/polls'
-      path: '/dashboard/polls'
+      path: '/polls'
       fullPath: '/dashboard/polls'
       preLoaderRoute: typeof DashboardPollsRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof DashboardRoute
     }
     '/dashboard/quarantine': {
       id: '/dashboard/quarantine'
-      path: '/dashboard/quarantine'
+      path: '/quarantine'
       fullPath: '/dashboard/quarantine'
       preLoaderRoute: typeof DashboardQuarantineRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof DashboardRoute
     }
     '/dashboard/raid-protection': {
       id: '/dashboard/raid-protection'
-      path: '/dashboard/raid-protection'
+      path: '/raid-protection'
       fullPath: '/dashboard/raid-protection'
       preLoaderRoute: typeof DashboardRaidProtectionRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof DashboardRoute
     }
     '/dashboard/reaction-roles': {
       id: '/dashboard/reaction-roles'
-      path: '/dashboard/reaction-roles'
+      path: '/reaction-roles'
       fullPath: '/dashboard/reaction-roles'
       preLoaderRoute: typeof DashboardReactionRolesRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof DashboardRoute
     }
     '/dashboard/reminders': {
       id: '/dashboard/reminders'
-      path: '/dashboard/reminders'
+      path: '/reminders'
       fullPath: '/dashboard/reminders'
       preLoaderRoute: typeof DashboardRemindersRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof DashboardRoute
     }
     '/dashboard/role-analytics': {
       id: '/dashboard/role-analytics'
-      path: '/dashboard/role-analytics'
+      path: '/role-analytics'
       fullPath: '/dashboard/role-analytics'
       preLoaderRoute: typeof DashboardRoleAnalyticsRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof DashboardRoute
     }
     '/dashboard/scheduled-actions': {
       id: '/dashboard/scheduled-actions'
-      path: '/dashboard/scheduled-actions'
+      path: '/scheduled-actions'
       fullPath: '/dashboard/scheduled-actions'
       preLoaderRoute: typeof DashboardScheduledActionsRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof DashboardRoute
     }
     '/dashboard/scheduler': {
       id: '/dashboard/scheduler'
-      path: '/dashboard/scheduler'
+      path: '/scheduler'
       fullPath: '/dashboard/scheduler'
       preLoaderRoute: typeof DashboardSchedulerRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof DashboardRoute
     }
     '/dashboard/server-clone': {
       id: '/dashboard/server-clone'
-      path: '/dashboard/server-clone'
+      path: '/server-clone'
       fullPath: '/dashboard/server-clone'
       preLoaderRoute: typeof DashboardServerCloneRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof DashboardRoute
     }
     '/dashboard/slowmode-scheduler': {
       id: '/dashboard/slowmode-scheduler'
-      path: '/dashboard/slowmode-scheduler'
+      path: '/slowmode-scheduler'
       fullPath: '/dashboard/slowmode-scheduler'
       preLoaderRoute: typeof DashboardSlowmodeSchedulerRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof DashboardRoute
     }
     '/dashboard/starboard': {
       id: '/dashboard/starboard'
-      path: '/dashboard/starboard'
+      path: '/starboard'
       fullPath: '/dashboard/starboard'
       preLoaderRoute: typeof DashboardStarboardRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof DashboardRoute
     }
     '/dashboard/stats-channels': {
       id: '/dashboard/stats-channels'
-      path: '/dashboard/stats-channels'
+      path: '/stats-channels'
       fullPath: '/dashboard/stats-channels'
       preLoaderRoute: typeof DashboardStatsChannelsRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof DashboardRoute
     }
     '/dashboard/suggestions': {
       id: '/dashboard/suggestions'
-      path: '/dashboard/suggestions'
+      path: '/suggestions'
       fullPath: '/dashboard/suggestions'
       preLoaderRoute: typeof DashboardSuggestionsRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof DashboardRoute
     }
     '/dashboard/tebex': {
       id: '/dashboard/tebex'
-      path: '/dashboard/tebex'
+      path: '/tebex'
       fullPath: '/dashboard/tebex'
       preLoaderRoute: typeof DashboardTebexRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof DashboardRoute
     }
     '/dashboard/test-panel': {
       id: '/dashboard/test-panel'
-      path: '/dashboard/test-panel'
+      path: '/test-panel'
       fullPath: '/dashboard/test-panel'
       preLoaderRoute: typeof DashboardTestPanelRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/dashboard/tickets': {
-      id: '/dashboard/tickets'
-      path: '/dashboard/tickets'
-      fullPath: '/dashboard/tickets'
-      preLoaderRoute: typeof DashboardTicketsRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof DashboardRoute
     }
     '/dashboard/tiktok': {
       id: '/dashboard/tiktok'
-      path: '/dashboard/tiktok'
+      path: '/tiktok'
       fullPath: '/dashboard/tiktok'
       preLoaderRoute: typeof DashboardTiktokRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof DashboardRoute
     }
     '/dashboard/twitch': {
       id: '/dashboard/twitch'
-      path: '/dashboard/twitch'
+      path: '/twitch'
       fullPath: '/dashboard/twitch'
       preLoaderRoute: typeof DashboardTwitchRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof DashboardRoute
     }
     '/dashboard/verification': {
       id: '/dashboard/verification'
-      path: '/dashboard/verification'
+      path: '/verification'
       fullPath: '/dashboard/verification'
       preLoaderRoute: typeof DashboardVerificationRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof DashboardRoute
     }
     '/dashboard/warnings': {
       id: '/dashboard/warnings'
-      path: '/dashboard/warnings'
+      path: '/warnings'
       fullPath: '/dashboard/warnings'
       preLoaderRoute: typeof DashboardWarningsRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof DashboardRoute
     }
     '/dashboard/webhooks': {
       id: '/dashboard/webhooks'
-      path: '/dashboard/webhooks'
+      path: '/webhooks'
       fullPath: '/dashboard/webhooks'
       preLoaderRoute: typeof DashboardWebhooksRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof DashboardRoute
     }
     '/dashboard/welcome': {
       id: '/dashboard/welcome'
-      path: '/dashboard/welcome'
+      path: '/welcome'
       fullPath: '/dashboard/welcome'
       preLoaderRoute: typeof DashboardWelcomeRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof DashboardRoute
     }
     '/dashboard/youtube': {
       id: '/dashboard/youtube'
-      path: '/dashboard/youtube'
+      path: '/youtube'
       fullPath: '/dashboard/youtube'
       preLoaderRoute: typeof DashboardYoutubeRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof DashboardRoute
     }
     '/docs/': {
       id: '/docs/'
@@ -2600,40 +2525,54 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicXpHandlerRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/dashboard/applications/': {
+      id: '/dashboard/applications/'
+      path: '/applications'
+      fullPath: '/dashboard/applications/'
+      preLoaderRoute: typeof DashboardApplicationsIndexRouteImport
+      parentRoute: typeof DashboardRoute
+    }
     '/dashboard/applications/$submissionId': {
       id: '/dashboard/applications/$submissionId'
-      path: '/$submissionId'
+      path: '/applications/$submissionId'
       fullPath: '/dashboard/applications/$submissionId'
       preLoaderRoute: typeof DashboardApplicationsSubmissionIdRouteImport
-      parentRoute: typeof DashboardApplicationsRoute
+      parentRoute: typeof DashboardRoute
     }
     '/dashboard/applications/analytics': {
       id: '/dashboard/applications/analytics'
-      path: '/analytics'
+      path: '/applications/analytics'
       fullPath: '/dashboard/applications/analytics'
       preLoaderRoute: typeof DashboardApplicationsAnalyticsRouteImport
-      parentRoute: typeof DashboardApplicationsRoute
+      parentRoute: typeof DashboardRoute
     }
     '/dashboard/applications/settings': {
       id: '/dashboard/applications/settings'
-      path: '/settings'
+      path: '/applications/settings'
       fullPath: '/dashboard/applications/settings'
       preLoaderRoute: typeof DashboardApplicationsSettingsRouteImport
-      parentRoute: typeof DashboardApplicationsRoute
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/tickets/': {
+      id: '/dashboard/tickets/'
+      path: '/tickets'
+      fullPath: '/dashboard/tickets/'
+      preLoaderRoute: typeof DashboardTicketsIndexRouteImport
+      parentRoute: typeof DashboardRoute
     }
     '/dashboard/tickets/$ticketId': {
       id: '/dashboard/tickets/$ticketId'
-      path: '/$ticketId'
+      path: '/tickets/$ticketId'
       fullPath: '/dashboard/tickets/$ticketId'
       preLoaderRoute: typeof DashboardTicketsTicketIdRouteImport
-      parentRoute: typeof DashboardTicketsRoute
+      parentRoute: typeof DashboardRoute
     }
     '/dashboard/tickets/settings': {
       id: '/dashboard/tickets/settings'
-      path: '/settings'
+      path: '/tickets/settings'
       fullPath: '/dashboard/tickets/settings'
       preLoaderRoute: typeof DashboardTicketsSettingsRouteImport
-      parentRoute: typeof DashboardTicketsRoute
+      parentRoute: typeof DashboardRoute
     }
     '/docs/$category/$slug': {
       id: '/docs/$category/$slug'
@@ -2644,10 +2583,10 @@ declare module '@tanstack/react-router' {
     }
     '/dashboard/applications/forms/$formId': {
       id: '/dashboard/applications/forms/$formId'
-      path: '/forms/$formId'
+      path: '/applications/forms/$formId'
       fullPath: '/dashboard/applications/forms/$formId'
       preLoaderRoute: typeof DashboardApplicationsFormsFormIdRouteImport
-      parentRoute: typeof DashboardApplicationsRoute
+      parentRoute: typeof DashboardRoute
     }
   }
 }
@@ -2662,51 +2601,82 @@ const AdminRouteChildren: AdminRouteChildren = {
 
 const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
 
-interface DashboardApplicationsRouteChildren {
+interface DashboardRouteChildren {
+  DashboardActivityHeatmapRoute: typeof DashboardActivityHeatmapRoute
+  DashboardAiAutomodRoute: typeof DashboardAiAutomodRoute
+  DashboardAiChatRoute: typeof DashboardAiChatRoute
+  DashboardAnalyticsRoute: typeof DashboardAnalyticsRoute
+  DashboardAutoReportsRoute: typeof DashboardAutoReportsRoute
+  DashboardAutoRespondersRoute: typeof DashboardAutoRespondersRoute
+  DashboardAutomodRoute: typeof DashboardAutomodRoute
+  DashboardBackupsRoute: typeof DashboardBackupsRoute
+  DashboardBirthdaysRoute: typeof DashboardBirthdaysRoute
+  DashboardBotHealthRoute: typeof DashboardBotHealthRoute
+  DashboardBotSettingsRoute: typeof DashboardBotSettingsRoute
+  DashboardChangelogRoute: typeof DashboardChangelogRoute
+  DashboardCharactersRoute: typeof DashboardCharactersRoute
+  DashboardCommandsRoute: typeof DashboardCommandsRoute
+  DashboardConfessionsRoute: typeof DashboardConfessionsRoute
+  DashboardCountingRoute: typeof DashboardCountingRoute
+  DashboardCurrencyShopRoute: typeof DashboardCurrencyShopRoute
+  DashboardCustomCommandsRoute: typeof DashboardCustomCommandsRoute
+  DashboardEconomyRoute: typeof DashboardEconomyRoute
+  DashboardEmbedBuilderRoute: typeof DashboardEmbedBuilderRoute
+  DashboardFeaturesRoute: typeof DashboardFeaturesRoute
+  DashboardFivemRoute: typeof DashboardFivemRoute
+  DashboardGiveawaysRoute: typeof DashboardGiveawaysRoute
+  DashboardGlobalBansRoute: typeof DashboardGlobalBansRoute
+  DashboardInviteTrackerRoute: typeof DashboardInviteTrackerRoute
+  DashboardJtcRoute: typeof DashboardJtcRoute
+  DashboardLeaderboardRoute: typeof DashboardLeaderboardRoute
+  DashboardLevelingRoute: typeof DashboardLevelingRoute
+  DashboardLiveEventsRoute: typeof DashboardLiveEventsRoute
+  DashboardLogSettingsRoute: typeof DashboardLogSettingsRoute
+  DashboardLogsRoute: typeof DashboardLogsRoute
+  DashboardMembersRoute: typeof DashboardMembersRoute
+  DashboardModerationRoute: typeof DashboardModerationRoute
+  DashboardModmailRoute: typeof DashboardModmailRoute
+  DashboardModulesRoute: typeof DashboardModulesRoute
+  DashboardMusicQuizRoute: typeof DashboardMusicQuizRoute
+  DashboardNotificationsRoute: typeof DashboardNotificationsRoute
+  DashboardPollsRoute: typeof DashboardPollsRoute
+  DashboardQuarantineRoute: typeof DashboardQuarantineRoute
+  DashboardRaidProtectionRoute: typeof DashboardRaidProtectionRoute
+  DashboardReactionRolesRoute: typeof DashboardReactionRolesRoute
+  DashboardRemindersRoute: typeof DashboardRemindersRoute
+  DashboardRoleAnalyticsRoute: typeof DashboardRoleAnalyticsRoute
+  DashboardScheduledActionsRoute: typeof DashboardScheduledActionsRoute
+  DashboardSchedulerRoute: typeof DashboardSchedulerRoute
+  DashboardServerCloneRoute: typeof DashboardServerCloneRoute
+  DashboardSlowmodeSchedulerRoute: typeof DashboardSlowmodeSchedulerRoute
+  DashboardStarboardRoute: typeof DashboardStarboardRoute
+  DashboardStatsChannelsRoute: typeof DashboardStatsChannelsRoute
+  DashboardSuggestionsRoute: typeof DashboardSuggestionsRoute
+  DashboardTebexRoute: typeof DashboardTebexRoute
+  DashboardTestPanelRoute: typeof DashboardTestPanelRoute
+  DashboardTiktokRoute: typeof DashboardTiktokRoute
+  DashboardTwitchRoute: typeof DashboardTwitchRoute
+  DashboardVerificationRoute: typeof DashboardVerificationRoute
+  DashboardWarningsRoute: typeof DashboardWarningsRoute
+  DashboardWebhooksRoute: typeof DashboardWebhooksRoute
+  DashboardWelcomeRoute: typeof DashboardWelcomeRoute
+  DashboardYoutubeRoute: typeof DashboardYoutubeRoute
+  DashboardIndexRoute: typeof DashboardIndexRoute
   DashboardApplicationsSubmissionIdRoute: typeof DashboardApplicationsSubmissionIdRoute
   DashboardApplicationsAnalyticsRoute: typeof DashboardApplicationsAnalyticsRoute
   DashboardApplicationsSettingsRoute: typeof DashboardApplicationsSettingsRoute
+  DashboardTicketsTicketIdRoute: typeof DashboardTicketsTicketIdRoute
+  DashboardTicketsSettingsRoute: typeof DashboardTicketsSettingsRoute
+  DashboardApplicationsIndexRoute: typeof DashboardApplicationsIndexRoute
+  DashboardTicketsIndexRoute: typeof DashboardTicketsIndexRoute
   DashboardApplicationsFormsFormIdRoute: typeof DashboardApplicationsFormsFormIdRoute
 }
 
-const DashboardApplicationsRouteChildren: DashboardApplicationsRouteChildren = {
-  DashboardApplicationsSubmissionIdRoute:
-    DashboardApplicationsSubmissionIdRoute,
-  DashboardApplicationsAnalyticsRoute: DashboardApplicationsAnalyticsRoute,
-  DashboardApplicationsSettingsRoute: DashboardApplicationsSettingsRoute,
-  DashboardApplicationsFormsFormIdRoute: DashboardApplicationsFormsFormIdRoute,
-}
-
-const DashboardApplicationsRouteWithChildren =
-  DashboardApplicationsRoute._addFileChildren(
-    DashboardApplicationsRouteChildren,
-  )
-
-interface DashboardTicketsRouteChildren {
-  DashboardTicketsTicketIdRoute: typeof DashboardTicketsTicketIdRoute
-  DashboardTicketsSettingsRoute: typeof DashboardTicketsSettingsRoute
-}
-
-const DashboardTicketsRouteChildren: DashboardTicketsRouteChildren = {
-  DashboardTicketsTicketIdRoute: DashboardTicketsTicketIdRoute,
-  DashboardTicketsSettingsRoute: DashboardTicketsSettingsRoute,
-}
-
-const DashboardTicketsRouteWithChildren =
-  DashboardTicketsRoute._addFileChildren(DashboardTicketsRouteChildren)
-
-const rootRouteChildren: RootRouteChildren = {
-  IndexRoute: IndexRoute,
-  SplatRoute: SplatRoute,
-  AdminRoute: AdminRouteWithChildren,
-  AuthRoute: AuthRoute,
-  GuildsRoute: GuildsRoute,
-  DashboardLayoutRoute: DashboardLayoutRoute,
+const DashboardRouteChildren: DashboardRouteChildren = {
   DashboardActivityHeatmapRoute: DashboardActivityHeatmapRoute,
   DashboardAiAutomodRoute: DashboardAiAutomodRoute,
   DashboardAiChatRoute: DashboardAiChatRoute,
   DashboardAnalyticsRoute: DashboardAnalyticsRoute,
-  DashboardApplicationsRoute: DashboardApplicationsRouteWithChildren,
   DashboardAutoReportsRoute: DashboardAutoReportsRoute,
   DashboardAutoRespondersRoute: DashboardAutoRespondersRoute,
   DashboardAutomodRoute: DashboardAutomodRoute,
@@ -2755,7 +2725,6 @@ const rootRouteChildren: RootRouteChildren = {
   DashboardSuggestionsRoute: DashboardSuggestionsRoute,
   DashboardTebexRoute: DashboardTebexRoute,
   DashboardTestPanelRoute: DashboardTestPanelRoute,
-  DashboardTicketsRoute: DashboardTicketsRouteWithChildren,
   DashboardTiktokRoute: DashboardTiktokRoute,
   DashboardTwitchRoute: DashboardTwitchRoute,
   DashboardVerificationRoute: DashboardVerificationRoute,
@@ -2763,8 +2732,30 @@ const rootRouteChildren: RootRouteChildren = {
   DashboardWebhooksRoute: DashboardWebhooksRoute,
   DashboardWelcomeRoute: DashboardWelcomeRoute,
   DashboardYoutubeRoute: DashboardYoutubeRoute,
-  DocsLayoutRoute: DocsLayoutRoute,
   DashboardIndexRoute: DashboardIndexRoute,
+  DashboardApplicationsSubmissionIdRoute:
+    DashboardApplicationsSubmissionIdRoute,
+  DashboardApplicationsAnalyticsRoute: DashboardApplicationsAnalyticsRoute,
+  DashboardApplicationsSettingsRoute: DashboardApplicationsSettingsRoute,
+  DashboardTicketsTicketIdRoute: DashboardTicketsTicketIdRoute,
+  DashboardTicketsSettingsRoute: DashboardTicketsSettingsRoute,
+  DashboardApplicationsIndexRoute: DashboardApplicationsIndexRoute,
+  DashboardTicketsIndexRoute: DashboardTicketsIndexRoute,
+  DashboardApplicationsFormsFormIdRoute: DashboardApplicationsFormsFormIdRoute,
+}
+
+const DashboardRouteWithChildren = DashboardRoute._addFileChildren(
+  DashboardRouteChildren,
+)
+
+const rootRouteChildren: RootRouteChildren = {
+  IndexRoute: IndexRoute,
+  SplatRoute: SplatRoute,
+  AdminRoute: AdminRouteWithChildren,
+  AuthRoute: AuthRoute,
+  DashboardRoute: DashboardRouteWithChildren,
+  GuildsRoute: GuildsRoute,
+  DocsLayoutRoute: DocsLayoutRoute,
   DocsIndexRoute: DocsIndexRoute,
   ApiPublicAdminCheckIpRoute: ApiPublicAdminCheckIpRoute,
   ApiPublicAdminUsersRoute: ApiPublicAdminUsersRoute,
