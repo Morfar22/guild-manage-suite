@@ -251,11 +251,11 @@ export default function Dashboard() {
           <h3 className="font-display font-semibold text-foreground">{t('dashboard.botConfig')}</h3>
 
           <div className="mt-4 space-y-3">
-            <div className="flex justify-between">
+            <div className="flex justify-between border-b border-border/50 pb-3">
               <span className="text-muted-foreground">{t('dashboard.commandPrefix')}</span>
-              <span className="font-mono text-foreground">{selectedGuild?.command_prefix || '!'}</span>
+              <span className="rounded-md bg-secondary/60 px-2 font-mono text-foreground">{selectedGuild?.command_prefix || '!'}</span>
             </div>
-            <div className="flex justify-between">
+            <div className="flex justify-between border-b border-border/50 pb-3">
               <span className="text-muted-foreground">{t('dashboard.logChannel')}</span>
               <span className="text-foreground">
                 {selectedGuild?.log_channel_id ? `#${selectedGuild.log_channel_id}` : t('common.notSet')}
@@ -263,10 +263,11 @@ export default function Dashboard() {
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">{t('dashboard.autoModeration')}</span>
-              <span className={selectedGuild?.auto_moderation_enabled ? 'text-green-500' : 'text-muted-foreground'}>
+              <span className={selectedGuild?.auto_moderation_enabled ? 'text-success' : 'text-muted-foreground'}>
                 {selectedGuild?.auto_moderation_enabled ? t('common.enabled') : t('common.disabled')}
               </span>
             </div>
+
           </div>
         </div>
 
