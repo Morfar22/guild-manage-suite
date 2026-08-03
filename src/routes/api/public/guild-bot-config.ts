@@ -559,21 +559,14 @@ __serve(async (req) => {
           )
         }
 
-        // Get discord guild id from our guilds table
+        // Get discord guild id from our guilds table (may be missing for stale rows)
         const { data: guildRow } = await adminSupabase
           .from('guilds')
           .select('id, guild_id')
           .eq('id', targetGuildId)
           .maybeSingle()
 
-        if (!guildRow) {
-          return new Response(
-            JSON.stringify({ error: 'Guild not found' }),
-            { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-          )
-        }
-
-        const discordGuildId = guildRow.guild_id
+        const discordGuildId = guildRow?.guild_id as string | undefined
 
         // Determine which bot token to use: custom bot or default
         let botToken = __env('DISCORD_BOT_TOKEN')
@@ -586,8 +579,14 @@ __serve(async (req) => {
           .maybeSingle()
 
         if (customBotSettings?.bot_token_encrypted) {
-          botToken = simpleDecrypt(customBotSettings.bot_token_encrypted, encryptionKey)
+          try {
+            botToken = simpleDecrypt(customBotSettings.bot_token_encrypted, encryptionKey)
+          } catch (err) {
+            console.error('Failed to decrypt custom bot token:', err)
+          }
         }
+
+        let discordWarning: string | null = null
 
         // Call Discord API to leave the guild
         if (botToken && discordGuildId) {
@@ -600,18 +599,26 @@ __serve(async (req) => {
               const errText = await leaveRes.text()
               console.error(`Discord leave guild failed (${leaveRes.status}):`, errText)
               return new Response(
-                JSON.stringify({ error: `Discord API error: ${leaveRes.status}` }),
-                { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+                JSON.stringify({ error: `Discord afviste anmodningen (${leaveRes.status}): ${errText.slice(0, 200)}` }),
+                { status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
               )
+            }
+            if (leaveRes.status === 404) {
+              discordWarning = 'Botten var ikke medlem af serveren – rydder kun op i databasen.'
             }
             console.log(`[Admin] Bot left Discord guild ${discordGuildId}`)
           } catch (err) {
             console.error('Error calling Discord leave guild:', err)
             return new Response(
-              JSON.stringify({ error: 'Failed to contact Discord API' }),
-              { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+              JSON.stringify({ error: 'Kunne ikke kontakte Discord API' }),
+              { status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
             )
           }
+        } else {
+          discordWarning = !discordGuildId
+            ? 'Serveren findes ikke længere i databasen – rydder kun op i bot-data.'
+            : 'Intet bot-token tilgængeligt – rydder kun op i bot-data.'
+          console.warn(`[Admin] leave_guild without Discord call: ${discordWarning}`)
         }
 
         // Clean up DB: bot_status, guild_bot_settings
