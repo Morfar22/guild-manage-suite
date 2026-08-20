@@ -172,7 +172,6 @@ const COMMAND_ARGS = {
   invite: [],
   calculate: [{ name: 'expression', type: 'string_rest', required: true }],
   channelinfo: [{ name: 'channel', type: 'channel', required: false }],
-  roleinfo: [{ name: 'role', type: 'role', required: true }],
   roles: [],
   members: [],
   emojis: [],
