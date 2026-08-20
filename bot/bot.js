@@ -73,6 +73,8 @@ const { setupConfessionHandler } = require('./handlers/confessionHandler');
 const { setupBirthdayHandler } = require('./handlers/birthdayHandler');
 const { setupMusicQuizHandler } = require('./handlers/musicQuizHandler');
 const { setupCurrencyShopHandler } = require('./handlers/currencyShopHandler');
+const { createExtraHandlers, setupSnipeTracker } = require('./handlers/extraCommands');
+
 const { setupPrefixHandler } = require('./handlers/prefixHandler');
 // Optional: Music system (comment out if not using)
 let initMusic, musicCommands, getKazagumo;
