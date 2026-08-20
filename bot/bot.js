@@ -2513,8 +2513,9 @@ manager.registerHandler((client, guildId) => {
   }
 
   // Currency Shop Handler
+  let shopApi = null;
   try {
-    setupCurrencyShopHandler(client, supabase, { shouldHandleGuild });
+    shopApi = setupCurrencyShopHandler(client, supabase, { shouldHandleGuild });
     console.log(`[Bot] ✅ Currency Shop handler for ${clientLabel}`);
   } catch (e) {
     console.error(`[Bot] ❌ Currency Shop handler fejl:`, e.message);
@@ -2537,6 +2538,19 @@ manager.registerHandler((client, guildId) => {
 
   // Create slash handlers for this client
   const slashHandlers = createSlashHandlers(client);
+
+  // Extra commands (utility, fun, economy games, leveling admin, aliaser)
+  try {
+    setupSnipeTracker(client, { shouldHandleGuild });
+    Object.assign(
+      slashHandlers,
+      createExtraHandlers(client, { supabase, handlers: slashHandlers, shopApi })
+    );
+    console.log(`[Bot] ✅ Extra commands for ${clientLabel}`);
+  } catch (e) {
+    console.error(`[Bot] ❌ Extra commands fejl:`, e.message);
+  }
+
 
   // Register prefix command handler (mirrors all slash commands)
   try {
