@@ -339,7 +339,136 @@ const COMMANDS = [
   { name: "testall", description: "Test alle bot-kommandoer og handlers (kun admin)", options: [
     { name: "verbose", description: "Vis detaljer for hver kommando", type: 5 },
   ]},
+
+  // UTILITY (nye)
+  { name: "uptime", description: "Se hvor længe botten har kørt" },
+  { name: "stats", description: "Se statistik for serveren" },
+  { name: "invite", description: "Få et invite-link til botten" },
+  { name: "calculate", description: "Beregn et matematisk udtryk", options: [
+    { name: "expression", description: "F.eks. (5+3)*2", type: 3, required: true },
+  ]},
+  { name: "channelinfo", description: "Vis info om en kanal", options: [
+    { name: "channel", description: "Kanalen (standard: denne)", type: 7 },
+  ]},
+  { name: "roleinfo", description: "Vis info om en rolle", options: [
+    { name: "role", description: "Rollen", type: 8, required: true },
+  ]},
+  { name: "roles", description: "Vis alle roller på serveren" },
+  { name: "members", description: "Vis medlemsstatistik" },
+  { name: "emojis", description: "Vis serverens emojis" },
+  { name: "banner", description: "Vis en brugers banner", options: [
+    { name: "user", description: "Bruger (valgfri)", type: 6 },
+  ]},
+  { name: "snipe", description: "Vis den senest slettede besked i kanalen" },
+  { name: "editsnipe", description: "Vis den senest redigerede besked i kanalen" },
+  { name: "embed", description: "Send en embed-besked", options: [
+    { name: "description", description: "Indhold", type: 3, required: true },
+    { name: "title", description: "Titel", type: 3 },
+    { name: "color", description: "Hex-farve, f.eks. #5865F2", type: 3 },
+    { name: "channel", description: "Kanal (standard: denne)", type: 7 },
+  ]},
+  { name: "announce", description: "Send en meddelelse", options: [
+    { name: "message", description: "Beskeden", type: 3, required: true },
+    { name: "channel", description: "Kanal (standard: denne)", type: 7 },
+    { name: "ping", description: "Ping", type: 3, choices: [
+      { name: "@everyone", value: "everyone" },
+      { name: "@here", value: "here" },
+      { name: "Ingen", value: "none" },
+    ]},
+  ]},
+  { name: "quote", description: "Citér en besked fra denne kanal", options: [
+    { name: "message_id", description: "Besked-ID", type: 3, required: true },
+  ]},
+  { name: "vote", description: "Start en hurtig ja/nej afstemning", options: [
+    { name: "question", description: "Spørgsmålet", type: 3, required: true },
+  ]},
+
+  // FUN (nye)
+  { name: "ascii", description: "Lav ASCII-tekst", options: [
+    { name: "text", description: "Tekst (maks 12 tegn)", type: 3, required: true },
+  ]},
+  { name: "mock", description: "SpOtTeNdE tEkSt", options: [
+    { name: "text", description: "Tekst", type: 3, required: true },
+  ]},
+  { name: "reverse", description: "Vend tekst om", options: [
+    { name: "text", description: "Tekst", type: 3, required: true },
+  ]},
+  { name: "fact", description: "Få en tilfældig sjov fakta" },
+
+  // ECONOMY (nye)
+  { name: "shop", description: "Se butikken" },
+  { name: "buy", description: "Køb en vare i butikken", options: [
+    { name: "item", description: "Varens navn eller nummer", type: 3, required: true },
+  ]},
+  { name: "inventory", description: "Se dine købte varer" },
+  { name: "crime", description: "Begå kriminalitet for penge (30 min cooldown)" },
+  { name: "weekly", description: "Hent din ugentlige belønning" },
+  { name: "slots", description: "Spil på enarmet tyveknægt", options: [
+    { name: "bet", description: "Indsats", type: 4, required: true },
+  ]},
+  { name: "gamble", description: "Gamble dine penge", options: [
+    { name: "bet", description: "Indsats", type: 4, required: true },
+  ]},
+  { name: "roulette", description: "Spil roulette", options: [
+    { name: "bet", description: "Indsats", type: 4, required: true },
+    { name: "choice", description: "Dit valg", type: 3, required: true, choices: [
+      { name: "Rød", value: "red" },
+      { name: "Sort", value: "black" },
+      { name: "Grøn (0)", value: "green" },
+      { name: "Lige", value: "even" },
+      { name: "Ulige", value: "odd" },
+    ]},
+  ]},
+
+  // LEVELING ADMIN (nye)
+  { name: "addxp", description: "Tilføj XP til en bruger", options: [
+    { name: "user", description: "Bruger", type: 6, required: true },
+    { name: "amount", description: "Antal XP", type: 4, required: true },
+  ]},
+  { name: "removexp", description: "Fjern XP fra en bruger", options: [
+    { name: "user", description: "Bruger", type: 6, required: true },
+    { name: "amount", description: "Antal XP", type: 4, required: true },
+  ]},
+  { name: "setxp", description: "Sæt en brugers XP", options: [
+    { name: "user", description: "Bruger", type: 6, required: true },
+    { name: "amount", description: "XP", type: 4, required: true },
+  ]},
+  { name: "setlevel", description: "Sæt en brugers level", options: [
+    { name: "user", description: "Bruger", type: 6, required: true },
+    { name: "level", description: "Level", type: 4, required: true },
+  ]},
+  { name: "resetxp", description: "Nulstil en brugers XP", options: [
+    { name: "user", description: "Bruger", type: 6, required: true },
+  ]},
+  { name: "resetleaderboard", description: "Nulstil hele XP-leaderboardet (admin)" },
+
+  // TICKET / GIVEAWAY ALIASER
+  { name: "close", description: "Luk denne ticket", options: [
+    { name: "delete", description: "Slet tråden bagefter", type: 5 },
+  ]},
+  { name: "claim", description: "Overtag denne ticket" },
+  { name: "unclaim", description: "Frigiv denne ticket" },
+  { name: "add", description: "Tilføj en bruger til denne ticket", options: [
+    { name: "user", description: "Bruger", type: 6, required: true },
+  ]},
+  { name: "rename", description: "Omdøb denne tråd", options: [
+    { name: "name", description: "Nyt navn", type: 3, required: true },
+  ]},
+  { name: "gstart", description: "Start en giveaway (alias)", options: [
+    { name: "prize", description: "Præmie", type: 3, required: true },
+    { name: "duration", description: "Varighed, f.eks. 1h", type: 3, required: true },
+    { name: "winners", description: "Antal vindere", type: 4 },
+    { name: "description", description: "Beskrivelse", type: 3 },
+  ]},
+  { name: "gend", description: "Afslut en giveaway (alias)", options: [
+    { name: "message_id", description: "Besked-ID", type: 3, required: true },
+  ]},
+  { name: "greroll", description: "Vælg nye vindere (alias)", options: [
+    { name: "message_id", description: "Besked-ID", type: 3, required: true },
+  ]},
+  { name: "glist", description: "Vis aktive giveaways" },
 ];
+
 
 __serve(async (req) => {
   if (req.method === "OPTIONS") {

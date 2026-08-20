@@ -165,7 +165,71 @@ const COMMAND_ARGS = {
   'ticket-add': [{ name: 'user', type: 'user', required: true }],
   'ticket-remove': [{ name: 'user', type: 'user', required: true }],
   'ticket-remind': [],
+
+  // Utility (nye)
+  uptime: [],
+  stats: [],
+  invite: [],
+  calculate: [{ name: 'expression', type: 'string_rest', required: true }],
+  channelinfo: [{ name: 'channel', type: 'channel', required: false }],
+  roles: [],
+  members: [],
+  emojis: [],
+  banner: [{ name: 'user', type: 'user', required: false }],
+  snipe: [],
+  editsnipe: [],
+  quote: [{ name: 'message_id', type: 'string', required: true }],
+  vote: [{ name: 'question', type: 'string_rest', required: true }],
+  announce: [{ name: 'message', type: 'string_rest', required: true }],
+
+  // Fun (nye)
+  ascii: [{ name: 'text', type: 'string_rest', required: true }],
+  mock: [{ name: 'text', type: 'string_rest', required: true }],
+  reverse: [{ name: 'text', type: 'string_rest', required: true }],
+  fact: [],
+
+  // Economy (nye)
+  shop: [],
+  buy: [{ name: 'item', type: 'string_rest', required: true }],
+  inventory: [],
+  crime: [],
+  weekly: [],
+  slots: [{ name: 'bet', type: 'integer', required: true }],
+  gamble: [{ name: 'bet', type: 'integer', required: true }],
+  roulette: [
+    { name: 'bet', type: 'integer', required: true },
+    { name: 'choice', type: 'string', required: true },
+  ],
+
+  // Leveling admin (nye)
+  addxp: [
+    { name: 'user', type: 'user', required: true },
+    { name: 'amount', type: 'integer', required: true },
+  ],
+  removexp: [
+    { name: 'user', type: 'user', required: true },
+    { name: 'amount', type: 'integer', required: true },
+  ],
+  setxp: [
+    { name: 'user', type: 'user', required: true },
+    { name: 'amount', type: 'integer', required: true },
+  ],
+  setlevel: [
+    { name: 'user', type: 'user', required: true },
+    { name: 'level', type: 'integer', required: true },
+  ],
+  resetxp: [{ name: 'user', type: 'user', required: true }],
+  resetleaderboard: [],
+
+  // Aliaser
+  close: [{ name: 'delete', type: 'boolean', required: false }],
+  claim: [],
+  unclaim: [],
+  add: [{ name: 'user', type: 'user', required: true }],
+  rename: [{ name: 'name', type: 'string_rest', required: true }],
+  glist: [],
 };
+
 
 // Subcommand-based commands need special handling
 const SUBCOMMAND_ARGS = {
