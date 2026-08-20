@@ -404,7 +404,151 @@ const commands = [
     .setName('testall')
     .setDescription('Test alle bot-kommandoer og handlers (kun admin)')
     .addBooleanOption(o => o.setName('verbose').setDescription('Vis detaljer for hver kommando')),
+
+  // ==================== UTILITY (NYE) ====================
+  new SlashCommandBuilder().setName('uptime').setDescription('Se hvor længe botten har kørt'),
+  new SlashCommandBuilder().setName('stats').setDescription('Se statistik for serveren'),
+  new SlashCommandBuilder().setName('invite').setDescription('Få et invite-link til botten'),
+  new SlashCommandBuilder()
+    .setName('calculate')
+    .setDescription('Beregn et matematisk udtryk')
+    .addStringOption(o => o.setName('expression').setDescription('F.eks. (5+3)*2').setRequired(true)),
+  new SlashCommandBuilder()
+    .setName('channelinfo')
+    .setDescription('Vis info om en kanal')
+    .addChannelOption(o => o.setName('channel').setDescription('Kanalen (standard: denne)')),
+  new SlashCommandBuilder()
+    .setName('roleinfo')
+    .setDescription('Vis info om en rolle')
+    .addRoleOption(o => o.setName('role').setDescription('Rollen').setRequired(true)),
+  new SlashCommandBuilder().setName('roles').setDescription('Vis alle roller på serveren'),
+  new SlashCommandBuilder().setName('members').setDescription('Vis medlemsstatistik'),
+  new SlashCommandBuilder().setName('emojis').setDescription('Vis serverens emojis'),
+  new SlashCommandBuilder()
+    .setName('banner')
+    .setDescription('Vis en brugers banner')
+    .addUserOption(o => o.setName('user').setDescription('Bruger (valgfri)')),
+  new SlashCommandBuilder().setName('snipe').setDescription('Vis den senest slettede besked i kanalen'),
+  new SlashCommandBuilder().setName('editsnipe').setDescription('Vis den senest redigerede besked i kanalen'),
+  new SlashCommandBuilder()
+    .setName('embed')
+    .setDescription('Send en embed-besked')
+    .addStringOption(o => o.setName('description').setDescription('Indhold').setRequired(true))
+    .addStringOption(o => o.setName('title').setDescription('Titel'))
+    .addStringOption(o => o.setName('color').setDescription('Hex-farve, f.eks. #5865F2'))
+    .addChannelOption(o => o.setName('channel').setDescription('Kanal (standard: denne)')),
+  new SlashCommandBuilder()
+    .setName('announce')
+    .setDescription('Send en meddelelse')
+    .addStringOption(o => o.setName('message').setDescription('Beskeden').setRequired(true))
+    .addChannelOption(o => o.setName('channel').setDescription('Kanal (standard: denne)'))
+    .addStringOption(o => o.setName('ping').setDescription('Ping').addChoices(
+      { name: '@everyone', value: 'everyone' },
+      { name: '@here', value: 'here' },
+      { name: 'Ingen', value: 'none' },
+    )),
+  new SlashCommandBuilder()
+    .setName('quote')
+    .setDescription('Citér en besked fra denne kanal')
+    .addStringOption(o => o.setName('message_id').setDescription('Besked-ID').setRequired(true)),
+  new SlashCommandBuilder()
+    .setName('vote')
+    .setDescription('Start en hurtig ja/nej afstemning')
+    .addStringOption(o => o.setName('question').setDescription('Spørgsmålet').setRequired(true)),
+
+  // ==================== FUN (NYE) ====================
+  new SlashCommandBuilder()
+    .setName('ascii')
+    .setDescription('Lav ASCII-tekst')
+    .addStringOption(o => o.setName('text').setDescription('Tekst (maks 12 tegn)').setRequired(true)),
+  new SlashCommandBuilder()
+    .setName('mock')
+    .setDescription('SpOtTeNdE tEkSt')
+    .addStringOption(o => o.setName('text').setDescription('Tekst').setRequired(true)),
+  new SlashCommandBuilder()
+    .setName('reverse')
+    .setDescription('Vend tekst om')
+    .addStringOption(o => o.setName('text').setDescription('Tekst').setRequired(true)),
+  new SlashCommandBuilder().setName('fact').setDescription('Få en tilfældig sjov fakta'),
+
+  // ==================== ECONOMY (NYE) ====================
+  new SlashCommandBuilder().setName('shop').setDescription('Se butikken'),
+  new SlashCommandBuilder()
+    .setName('buy')
+    .setDescription('Køb en vare i butikken')
+    .addStringOption(o => o.setName('item').setDescription('Varens navn eller nummer').setRequired(true)),
+  new SlashCommandBuilder().setName('inventory').setDescription('Se dine købte varer'),
+  new SlashCommandBuilder().setName('crime').setDescription('Begå kriminalitet for penge (30 min cooldown)'),
+  new SlashCommandBuilder().setName('weekly').setDescription('Hent din ugentlige belønning'),
+  new SlashCommandBuilder()
+    .setName('slots')
+    .setDescription('Spil på enarmet tyveknægt')
+    .addIntegerOption(o => o.setName('bet').setDescription('Indsats').setRequired(true)),
+  new SlashCommandBuilder()
+    .setName('gamble')
+    .setDescription('Gamble dine penge')
+    .addIntegerOption(o => o.setName('bet').setDescription('Indsats').setRequired(true)),
+  new SlashCommandBuilder()
+    .setName('roulette')
+    .setDescription('Spil roulette')
+    .addIntegerOption(o => o.setName('bet').setDescription('Indsats').setRequired(true))
+    .addStringOption(o => o.setName('choice').setDescription('Dit valg').setRequired(true).addChoices(
+      { name: 'Rød', value: 'red' },
+      { name: 'Sort', value: 'black' },
+      { name: 'Grøn (0)', value: 'green' },
+      { name: 'Lige', value: 'even' },
+      { name: 'Ulige', value: 'odd' },
+    )),
+
+  // ==================== LEVELING ADMIN (NYE) ====================
+  new SlashCommandBuilder()
+    .setName('addxp').setDescription('Tilføj XP til en bruger')
+    .addUserOption(o => o.setName('user').setDescription('Bruger').setRequired(true))
+    .addIntegerOption(o => o.setName('amount').setDescription('Antal XP').setRequired(true)),
+  new SlashCommandBuilder()
+    .setName('removexp').setDescription('Fjern XP fra en bruger')
+    .addUserOption(o => o.setName('user').setDescription('Bruger').setRequired(true))
+    .addIntegerOption(o => o.setName('amount').setDescription('Antal XP').setRequired(true)),
+  new SlashCommandBuilder()
+    .setName('setxp').setDescription('Sæt en brugers XP')
+    .addUserOption(o => o.setName('user').setDescription('Bruger').setRequired(true))
+    .addIntegerOption(o => o.setName('amount').setDescription('XP').setRequired(true)),
+  new SlashCommandBuilder()
+    .setName('setlevel').setDescription('Sæt en brugers level')
+    .addUserOption(o => o.setName('user').setDescription('Bruger').setRequired(true))
+    .addIntegerOption(o => o.setName('level').setDescription('Level').setRequired(true)),
+  new SlashCommandBuilder()
+    .setName('resetxp').setDescription('Nulstil en brugers XP')
+    .addUserOption(o => o.setName('user').setDescription('Bruger').setRequired(true)),
+  new SlashCommandBuilder().setName('resetleaderboard').setDescription('Nulstil hele XP-leaderboardet (admin)'),
+
+  // ==================== TICKET / GIVEAWAY ALIASER ====================
+  new SlashCommandBuilder()
+    .setName('close').setDescription('Luk denne ticket')
+    .addBooleanOption(o => o.setName('delete').setDescription('Slet tråden bagefter')),
+  new SlashCommandBuilder().setName('claim').setDescription('Overtag denne ticket'),
+  new SlashCommandBuilder().setName('unclaim').setDescription('Frigiv denne ticket'),
+  new SlashCommandBuilder()
+    .setName('add').setDescription('Tilføj en bruger til denne ticket')
+    .addUserOption(o => o.setName('user').setDescription('Bruger').setRequired(true)),
+  new SlashCommandBuilder()
+    .setName('rename').setDescription('Omdøb denne tråd')
+    .addStringOption(o => o.setName('name').setDescription('Nyt navn').setRequired(true)),
+  new SlashCommandBuilder()
+    .setName('gstart').setDescription('Start en giveaway (alias)')
+    .addStringOption(o => o.setName('prize').setDescription('Præmie').setRequired(true))
+    .addStringOption(o => o.setName('duration').setDescription('Varighed, f.eks. 1h').setRequired(true))
+    .addIntegerOption(o => o.setName('winners').setDescription('Antal vindere'))
+    .addStringOption(o => o.setName('description').setDescription('Beskrivelse')),
+  new SlashCommandBuilder()
+    .setName('gend').setDescription('Afslut en giveaway (alias)')
+    .addStringOption(o => o.setName('message_id').setDescription('Besked-ID').setRequired(true)),
+  new SlashCommandBuilder()
+    .setName('greroll').setDescription('Vælg nye vindere (alias)')
+    .addStringOption(o => o.setName('message_id').setDescription('Besked-ID').setRequired(true)),
+  new SlashCommandBuilder().setName('glist').setDescription('Vis aktive giveaways'),
 ];
+
 
 const rest = new REST({ version: '10' }).setToken(TOKEN);
 const GUILD_ID = process.env.DEPLOY_GUILD_ID;
