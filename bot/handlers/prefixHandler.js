@@ -228,6 +228,99 @@ const COMMAND_ARGS = {
   add: [{ name: 'user', type: 'user', required: true }],
   rename: [{ name: 'name', type: 'string_rest', required: true }],
   glist: [],
+
+  // Admin / config
+  setup: [],
+  config: [
+    { name: 'setting', type: 'string', required: false },
+    { name: 'value', type: 'string_rest', required: false },
+  ],
+  prefix: [{ name: 'prefix', type: 'string', required: false }],
+  setlog: [{ name: 'channel', type: 'channel', required: false }],
+  autorole: [
+    { name: 'action', type: 'string', required: false },
+    { name: 'role', type: 'role', required: false },
+  ],
+  setwelcome: [
+    { name: 'channel', type: 'channel', required: false },
+    { name: 'message', type: 'string_rest', required: false },
+  ],
+  setleave: [
+    { name: 'channel', type: 'channel', required: false },
+    { name: 'message', type: 'string_rest', required: false },
+  ],
+  automod: [
+    { name: 'action', type: 'string', required: false },
+    { name: 'rule', type: 'string', required: false },
+  ],
+  backup: [
+    { name: 'action', type: 'string', required: false },
+    { name: 'description', type: 'string_rest', required: false },
+  ],
+  restore: [
+    { name: 'backup_id', type: 'string', required: false },
+    { name: 'mode', type: 'string', required: false },
+  ],
+
+  // Reaction roles
+  reactionrole: [
+    { name: 'channel', type: 'channel', required: false },
+    { name: 'title', type: 'string', required: false },
+    { name: 'description', type: 'string_rest', required: false },
+  ],
+  'rr-add': [
+    { name: 'message_id', type: 'string', required: true },
+    { name: 'role', type: 'role', required: true },
+    { name: 'emoji', type: 'string', required: false },
+    { name: 'description', type: 'string_rest', required: false },
+  ],
+  'rr-remove': [
+    { name: 'message_id', type: 'string', required: true },
+    { name: 'role', type: 'role', required: true },
+  ],
+  'rr-list': [],
+  'rr-clear': [{ name: 'message_id', type: 'string', required: false }],
+
+  // Leveling admin
+  levelroles: [],
+  setlevelrole: [
+    { name: 'level', type: 'integer', required: true },
+    { name: 'role', type: 'role', required: false },
+    { name: 'remove', type: 'boolean', required: false },
+  ],
+  xpmultiplier: [
+    { name: 'action', type: 'string', required: false },
+    { name: 'role', type: 'role', required: false },
+    { name: 'channel', type: 'channel', required: false },
+    { name: 'multiplier', type: 'number', required: false },
+  ],
+
+  // Music extras
+  seek: [{ name: 'position', type: 'string', required: true }],
+  lyrics: [{ name: 'song', type: 'string_rest', required: false }],
+  autoplay: [],
+  filter: [{ name: 'filter', type: 'string', required: true }],
+
+  // Utility
+  support: [],
+  translate: [
+    { name: 'to', type: 'string', required: false },
+    { name: 'text', type: 'string_rest', required: true },
+  ],
+  weather: [{ name: 'location', type: 'string_rest', required: true }],
+
+  // Tickets / giveaway
+  transcript: [{ name: 'ticket_id', type: 'string', required: false }],
+  gpause: [{ name: 'message_id', type: 'string', required: true }],
+
+  // Economy / games
+  sell: [{ name: 'item', type: 'string_rest', required: true }],
+  blackjack: [{ name: 'bet', type: 'integer', required: false }],
+  trivia: [],
+  ttt: [{ name: 'opponent', type: 'user', required: true }],
+  connect4: [{ name: 'opponent', type: 'user', required: true }],
+  hangman: [],
+  wordle: [],
 };
 
 
