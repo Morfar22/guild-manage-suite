@@ -1247,7 +1247,7 @@ function createAdminHandlers(client, { supabase, handlers, getKazagumo } = {}) {
         const row = new ActionRowBuilder();
         for (const r of chunk) {
           const button = new ButtonBuilder()
-            .setCustomId(`rr_${r.role_id}`)
+            .setCustomId(`reaction_role:${r.role_id}`)
             .setLabel((r.role_name || 'Rolle').slice(0, 60))
             .setStyle(ButtonStyle.Secondary);
           if (/^\p{Emoji}/u.test(r.emoji || '') && !/^:/.test(r.emoji || '')) {
