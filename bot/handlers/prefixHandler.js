@@ -343,6 +343,26 @@ function parseArgs(client, message, args, argDefs) {
         }
         break;
       }
+      case 'role': {
+        const role = resolveRole(message.guild, args[argIndex]);
+        if (role) {
+          parsed[def.name] = role;
+          argIndex++;
+        } else if (def.required) {
+          return { error: `Kunne ikke finde rollen: \`${args[argIndex]}\`` };
+        }
+        break;
+      }
+      case 'number': {
+        const num = parseFloat(String(args[argIndex]).replace(',', '.'));
+        if (isNaN(num)) {
+          if (def.required) return { error: `\`${def.name}\` skal være et tal` };
+        } else {
+          parsed[def.name] = num;
+          argIndex++;
+        }
+        break;
+      }
       case 'string': {
         parsed[def.name] = args[argIndex];
         argIndex++;
