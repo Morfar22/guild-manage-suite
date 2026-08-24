@@ -1116,37 +1116,67 @@ export type Database = {
       }
       bot_status: {
         Row: {
+          bot_version: string | null
+          cpu_percent: number | null
           created_at: string
+          disk_total_gb: number | null
+          disk_used_gb: number | null
           guild_id: string
+          host_name: string | null
           id: string
           is_online: boolean
           last_heartbeat: string | null
           latency_ms: number | null
+          load_avg_1m: number | null
           member_count: number | null
+          memory_total_mb: number | null
+          memory_used_mb: number | null
           message_count_today: number | null
+          process_memory_mb: number | null
           updated_at: string
+          uptime_seconds: number | null
         }
         Insert: {
+          bot_version?: string | null
+          cpu_percent?: number | null
           created_at?: string
+          disk_total_gb?: number | null
+          disk_used_gb?: number | null
           guild_id: string
+          host_name?: string | null
           id?: string
           is_online?: boolean
           last_heartbeat?: string | null
           latency_ms?: number | null
+          load_avg_1m?: number | null
           member_count?: number | null
+          memory_total_mb?: number | null
+          memory_used_mb?: number | null
           message_count_today?: number | null
+          process_memory_mb?: number | null
           updated_at?: string
+          uptime_seconds?: number | null
         }
         Update: {
+          bot_version?: string | null
+          cpu_percent?: number | null
           created_at?: string
+          disk_total_gb?: number | null
+          disk_used_gb?: number | null
           guild_id?: string
+          host_name?: string | null
           id?: string
           is_online?: boolean
           last_heartbeat?: string | null
           latency_ms?: number | null
+          load_avg_1m?: number | null
           member_count?: number | null
+          memory_total_mb?: number | null
+          memory_used_mb?: number | null
           message_count_today?: number | null
+          process_memory_mb?: number | null
           updated_at?: string
+          uptime_seconds?: number | null
         }
         Relationships: [
           {

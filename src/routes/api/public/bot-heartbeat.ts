@@ -52,6 +52,16 @@ interface HeartbeatPayload {
   latency_ms: number
   member_count?: number
   message_count_today?: number
+  cpu_percent?: number | null
+  load_avg_1m?: number | null
+  memory_used_mb?: number | null
+  memory_total_mb?: number | null
+  process_memory_mb?: number | null
+  disk_used_gb?: number | null
+  disk_total_gb?: number | null
+  uptime_seconds?: number | null
+  host_name?: string | null
+  bot_version?: string | null
 }
 
 __serve(async (req) => {
@@ -135,6 +145,16 @@ __serve(async (req) => {
         latency_ms: payload.latency_ms,
         member_count: payload.member_count ?? 0,
         message_count_today: payload.message_count_today ?? 0,
+        cpu_percent: payload.cpu_percent ?? null,
+        load_avg_1m: payload.load_avg_1m ?? null,
+        memory_used_mb: payload.memory_used_mb ?? null,
+        memory_total_mb: payload.memory_total_mb ?? null,
+        process_memory_mb: payload.process_memory_mb ?? null,
+        disk_used_gb: payload.disk_used_gb ?? null,
+        disk_total_gb: payload.disk_total_gb ?? null,
+        uptime_seconds: payload.uptime_seconds ?? null,
+        host_name: payload.host_name ?? null,
+        bot_version: payload.bot_version ?? null,
         last_heartbeat: new Date().toISOString(),
       }, {
         onConflict: 'guild_id'

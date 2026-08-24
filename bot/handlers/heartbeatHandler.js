@@ -5,6 +5,9 @@
  * Importér denne fil i din bot's main fil og kald startHeartbeat(client).
  */
 
+const os = require('os');
+const fs = require('fs');
+
 const SUPABASE_URL = process.env.SUPABASE_URL || 'https://sleiplyixaxuvydzudxn.supabase.co';
 const BOT_SECRET_KEY = process.env.BOT_SECRET_KEY;
 
@@ -39,12 +42,70 @@ function countMessage(guildId) {
   dailyMessageCount.set(guildId, current + 1);
 }
 
+
+/**
+ * Beregn CPU-forbrug i procent over et kort interval
+ */
+let lastCpu = os.cpus().reduce((acc, c) => {
+  const total = Object.values(c.times).reduce((a, b) => a + b, 0);
+  return { idle: acc.idle + c.times.idle, total: acc.total + total };
+}, { idle: 0, total: 0 });
+
+function getCpuPercent() {
+  const now = os.cpus().reduce((acc, c) => {
+    const total = Object.values(c.times).reduce((a, b) => a + b, 0);
+    return { idle: acc.idle + c.times.idle, total: acc.total + total };
+  }, { idle: 0, total: 0 });
+
+  const idleDiff = now.idle - lastCpu.idle;
+  const totalDiff = now.total - lastCpu.total;
+  lastCpu = now;
+  if (totalDiff <= 0) return null;
+  return Math.max(0, Math.min(100, Math.round((1 - idleDiff / totalDiff) * 1000) / 10));
+}
+
+/**
+ * Læs diskforbrug for rod-filsystemet (statfs findes i Node 18.15+)
+ */
+function getDiskUsage() {
+  try {
+    if (typeof fs.statfsSync !== 'function') return { used: null, total: null };
+    const st = fs.statfsSync('/');
+    const totalBytes = st.blocks * st.bsize;
+    const freeBytes = st.bavail * st.bsize;
+    const gb = (b) => Math.round((b / 1024 ** 3) * 10) / 10;
+    return { used: gb(totalBytes - freeBytes), total: gb(totalBytes) };
+  } catch {
+    return { used: null, total: null };
+  }
+}
+
+function getSystemMetrics() {
+  const totalMem = os.totalmem();
+  const freeMem = os.freemem();
+  const disk = getDiskUsage();
+  const mb = (b) => Math.round(b / 1024 / 1024);
+
+  return {
+    cpu_percent: getCpuPercent(),
+    load_avg_1m: Math.round(os.loadavg()[0] * 100) / 100,
+    memory_used_mb: mb(totalMem - freeMem),
+    memory_total_mb: mb(totalMem),
+    process_memory_mb: mb(process.memoryUsage().rss),
+    disk_used_gb: disk.used,
+    disk_total_gb: disk.total,
+    uptime_seconds: Math.round(process.uptime()),
+    host_name: os.hostname(),
+    bot_version: process.env.BOT_VERSION || null,
+  };
+}
+
 /**
  * Send heartbeat for en enkelt guild
  * @param {object} client - Discord.js client
  * @param {object} guild - Discord.js guild
  */
-async function sendHeartbeat(client, guild) {
+async function sendHeartbeat(client, guild, metrics) {
   if (!BOT_SECRET_KEY) {
     console.error('[Heartbeat] BOT_SECRET_KEY er ikke sat i environment variables');
     return;
@@ -56,7 +117,8 @@ async function sendHeartbeat(client, guild) {
       is_online: true,
       latency_ms: client.ws.ping,
       member_count: guild.memberCount,
-      message_count_today: dailyMessageCount.get(guild.id) || 0
+      message_count_today: dailyMessageCount.get(guild.id) || 0,
+      ...(metrics || {})
     };
 
     const response = await fetch(`${APP_API_BASE}/api/public/bot-heartbeat`, {
@@ -85,11 +147,13 @@ async function sendHeartbeat(client, guild) {
  */
 async function sendAllHeartbeats(client, shouldHandleGuild) {
   const guilds = client.guilds.cache;
+  // Beregn systemmetrikker én gang pr. runde
+  const metrics = getSystemMetrics();
   
   for (const [, guild] of guilds) {
     // Only send heartbeats for guilds this bot instance handles
     if (shouldHandleGuild && !shouldHandleGuild(guild.id)) continue;
-    await sendHeartbeat(client, guild);
+    await sendHeartbeat(client, guild, metrics);
   }
 }
 
@@ -161,6 +225,7 @@ async function sendOfflineStatus(client) {
 
 module.exports = {
   startHeartbeat,
+  getSystemMetrics,
   sendOfflineStatus,
   countMessage
 };
