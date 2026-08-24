@@ -74,6 +74,8 @@ const { setupBirthdayHandler } = require('./handlers/birthdayHandler');
 const { setupMusicQuizHandler } = require('./handlers/musicQuizHandler');
 const { setupCurrencyShopHandler } = require('./handlers/currencyShopHandler');
 const { createExtraHandlers, setupSnipeTracker } = require('./handlers/extraCommands');
+const { createAdminHandlers } = require('./handlers/adminCommands');
+const { createGameHandlers } = require('./handlers/gameCommands');
 
 const { setupPrefixHandler } = require('./handlers/prefixHandler');
 // Optional: Music system (comment out if not using)
@@ -220,6 +222,7 @@ function startGiveawayAutoEnd(shouldHandleGuild) {
         .from('giveaways')
         .select('id, guild_id, guilds!inner(guild_id)')
         .eq('ended', false)
+        .eq('paused', false)
         .lte('ends_at', new Date().toISOString())
         .limit(20);
 
@@ -2552,6 +2555,27 @@ manager.registerHandler((client, guildId) => {
   } catch (e) {
     console.error(`[Bot] ❌ Extra commands fejl:`, e.message);
   }
+
+  // Admin/config, reaction roles, leveling admin, musik-ekstra, utility
+  try {
+    Object.assign(
+      slashHandlers,
+      createAdminHandlers(client, { supabase, handlers: slashHandlers, getKazagumo })
+    );
+    console.log(`[Bot] ✅ Admin commands for ${clientLabel}`);
+  } catch (e) {
+    console.error(`[Bot] ❌ Admin commands fejl:`, e.message);
+  }
+
+  // Spil (trivia, ttt, connect4, hangman, wordle, blackjack)
+  try {
+    Object.assign(slashHandlers, createGameHandlers(client, { supabase }));
+    console.log(`[Bot] ✅ Game commands for ${clientLabel}`);
+  } catch (e) {
+    console.error(`[Bot] ❌ Game commands fejl:`, e.message);
+  }
+
+
 
 
   // Register prefix command handler (mirrors all slash commands)

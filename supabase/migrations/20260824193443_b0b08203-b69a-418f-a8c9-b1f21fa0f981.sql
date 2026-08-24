@@ -1,0 +1,1 @@
+ALTER TABLE public.giveaways ADD COLUMN IF NOT EXISTS paused boolean NOT NULL DEFAULT false;

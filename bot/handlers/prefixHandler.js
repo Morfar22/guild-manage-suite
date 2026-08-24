@@ -228,6 +228,99 @@ const COMMAND_ARGS = {
   add: [{ name: 'user', type: 'user', required: true }],
   rename: [{ name: 'name', type: 'string_rest', required: true }],
   glist: [],
+
+  // Admin / config
+  setup: [],
+  config: [
+    { name: 'setting', type: 'string', required: false },
+    { name: 'value', type: 'string_rest', required: false },
+  ],
+  prefix: [{ name: 'prefix', type: 'string', required: false }],
+  setlog: [{ name: 'channel', type: 'channel', required: false }],
+  autorole: [
+    { name: 'action', type: 'string', required: false },
+    { name: 'role', type: 'role', required: false },
+  ],
+  setwelcome: [
+    { name: 'channel', type: 'channel', required: false },
+    { name: 'message', type: 'string_rest', required: false },
+  ],
+  setleave: [
+    { name: 'channel', type: 'channel', required: false },
+    { name: 'message', type: 'string_rest', required: false },
+  ],
+  automod: [
+    { name: 'action', type: 'string', required: false },
+    { name: 'rule', type: 'string', required: false },
+  ],
+  backup: [
+    { name: 'action', type: 'string', required: false },
+    { name: 'description', type: 'string_rest', required: false },
+  ],
+  restore: [
+    { name: 'backup_id', type: 'string', required: false },
+    { name: 'mode', type: 'string', required: false },
+  ],
+
+  // Reaction roles
+  reactionrole: [
+    { name: 'channel', type: 'channel', required: false },
+    { name: 'title', type: 'string', required: false },
+    { name: 'description', type: 'string_rest', required: false },
+  ],
+  'rr-add': [
+    { name: 'message_id', type: 'string', required: true },
+    { name: 'role', type: 'role', required: true },
+    { name: 'emoji', type: 'string', required: false },
+    { name: 'description', type: 'string_rest', required: false },
+  ],
+  'rr-remove': [
+    { name: 'message_id', type: 'string', required: true },
+    { name: 'role', type: 'role', required: true },
+  ],
+  'rr-list': [],
+  'rr-clear': [{ name: 'message_id', type: 'string', required: false }],
+
+  // Leveling admin
+  levelroles: [],
+  setlevelrole: [
+    { name: 'level', type: 'integer', required: true },
+    { name: 'role', type: 'role', required: false },
+    { name: 'remove', type: 'boolean', required: false },
+  ],
+  xpmultiplier: [
+    { name: 'action', type: 'string', required: false },
+    { name: 'role', type: 'role', required: false },
+    { name: 'channel', type: 'channel', required: false },
+    { name: 'multiplier', type: 'number', required: false },
+  ],
+
+  // Music extras
+  seek: [{ name: 'position', type: 'string', required: true }],
+  lyrics: [{ name: 'song', type: 'string_rest', required: false }],
+  autoplay: [],
+  filter: [{ name: 'filter', type: 'string', required: true }],
+
+  // Utility
+  support: [],
+  translate: [
+    { name: 'to', type: 'string', required: false },
+    { name: 'text', type: 'string_rest', required: true },
+  ],
+  weather: [{ name: 'location', type: 'string_rest', required: true }],
+
+  // Tickets / giveaway
+  transcript: [{ name: 'ticket_id', type: 'string', required: false }],
+  gpause: [{ name: 'message_id', type: 'string', required: true }],
+
+  // Economy / games
+  sell: [{ name: 'item', type: 'string_rest', required: true }],
+  blackjack: [{ name: 'bet', type: 'integer', required: false }],
+  trivia: [],
+  ttt: [{ name: 'opponent', type: 'user', required: true }],
+  connect4: [{ name: 'opponent', type: 'user', required: true }],
+  hangman: [],
+  wordle: [],
 };
 
 
@@ -260,6 +353,14 @@ function resolveUser(client, guild, arg) {
     return client.users.cache.get(arg) || null;
   }
   return null;
+}
+
+function resolveRole(guild, arg) {
+  if (!arg || !guild) return null;
+  const mentionMatch = arg.match(/^<@&(\d+)>$/);
+  if (mentionMatch) return guild.roles.cache.get(mentionMatch[1]) || null;
+  if (/^\d{17,20}$/.test(arg)) return guild.roles.cache.get(arg) || null;
+  return guild.roles.cache.find(r => r.name.toLowerCase() === arg.toLowerCase()) || null;
 }
 
 function resolveChannel(guild, arg) {
@@ -335,6 +436,26 @@ function parseArgs(client, message, args, argDefs) {
         }
         break;
       }
+      case 'role': {
+        const role = resolveRole(message.guild, args[argIndex]);
+        if (role) {
+          parsed[def.name] = role;
+          argIndex++;
+        } else if (def.required) {
+          return { error: `Kunne ikke finde rollen: \`${args[argIndex]}\`` };
+        }
+        break;
+      }
+      case 'number': {
+        const num = parseFloat(String(args[argIndex]).replace(',', '.'));
+        if (isNaN(num)) {
+          if (def.required) return { error: `\`${def.name}\` skal være et tal` };
+        } else {
+          parsed[def.name] = num;
+          argIndex++;
+        }
+        break;
+      }
       case 'string': {
         parsed[def.name] = args[argIndex];
         argIndex++;
@@ -378,6 +499,9 @@ function createFakeInteraction(client, message, commandName, parsedArgs, subcomm
       getInteger: (name) => parsedArgs[name] != null ? parseInt(parsedArgs[name], 10) : null,
       getBoolean: (name) => parsedArgs[name] != null ? Boolean(parsedArgs[name]) : null,
       getChannel: (name) => parsedArgs[name] || null,
+      getRole: (name) => parsedArgs[name] || null,
+      getNumber: (name) => parsedArgs[name] != null ? parseFloat(parsedArgs[name]) : null,
+      getMentionable: (name) => parsedArgs[name] || null,
       getSubcommand: () => subcommand,
       getSubcommandGroup: () => null,
       data: subcommand ? [{ options: [{ options: [] }] }] : undefined,

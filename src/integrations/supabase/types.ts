@@ -2320,6 +2320,7 @@ export type Database = {
           host_username: string | null
           id: string
           message_id: string | null
+          paused: boolean
           prize: string
           required_role_id: string | null
           updated_at: string
@@ -2338,6 +2339,7 @@ export type Database = {
           host_username?: string | null
           id?: string
           message_id?: string | null
+          paused?: boolean
           prize: string
           required_role_id?: string | null
           updated_at?: string
@@ -2356,6 +2358,7 @@ export type Database = {
           host_username?: string | null
           id?: string
           message_id?: string | null
+          paused?: boolean
           prize?: string
           required_role_id?: string | null
           updated_at?: string

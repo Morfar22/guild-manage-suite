@@ -467,6 +467,146 @@ const COMMANDS = [
     { name: "message_id", description: "Besked-ID", type: 3, required: true },
   ]},
   { name: "glist", description: "Vis aktive giveaways" },
+
+  // ADMIN / CONFIG
+  { name: "setup", description: "Vis serverens opsætning og status" },
+  { name: "config", description: "Vis eller ændr serverindstillinger", options: [
+    { name: "setting", description: "Indstilling", type: 3, choices: [
+      { name: "prefix", value: "prefix" },
+      { name: "staff_role", value: "staff_role" },
+      { name: "whitelist_role", value: "whitelist_role" },
+      { name: "automod", value: "automod" },
+    ]},
+    { name: "value", description: "Ny værdi", type: 3 },
+  ]},
+  { name: "prefix", description: "Vis eller sæt serverens kommando-prefix", options: [
+    { name: "prefix", description: "Nyt prefix (maks 5 tegn)", type: 3 },
+  ]},
+  { name: "setlog", description: "Sæt log-kanalen", options: [
+    { name: "channel", description: "Log-kanal", type: 7, channel_types: [0] },
+  ]},
+  { name: "autorole", description: "Administrér roller som nye medlemmer får automatisk", options: [
+    { name: "action", description: "Handling", type: 3, choices: [
+      { name: "list", value: "list" }, { name: "add", value: "add" },
+      { name: "remove", value: "remove" }, { name: "clear", value: "clear" },
+    ]},
+    { name: "role", description: "Rollen", type: 8 },
+  ]},
+  { name: "setwelcome", description: "Sæt velkomstkanal og -besked", options: [
+    { name: "channel", description: "Velkomstkanal", type: 7, channel_types: [0] },
+    { name: "message", description: "Besked ({user}, {server}, {membercount})", type: 3 },
+  ]},
+  { name: "setleave", description: "Sæt farvel-kanal og -besked", options: [
+    { name: "channel", description: "Farvel-kanal", type: 7, channel_types: [0] },
+    { name: "message", description: "Besked ({user}, {server}, {membercount})", type: 3 },
+  ]},
+  { name: "automod", description: "Styr automod", options: [
+    { name: "action", description: "Handling", type: 3, choices: [
+      { name: "status", value: "status" }, { name: "on", value: "on" }, { name: "off", value: "off" },
+    ]},
+    { name: "rule", description: "Specifik regel (valgfri)", type: 3 },
+  ]},
+  { name: "backup", description: "Opret eller vis backups af serveren", options: [
+    { name: "action", description: "Handling", type: 3, choices: [
+      { name: "create", value: "create" }, { name: "list", value: "list" },
+    ]},
+    { name: "description", description: "Beskrivelse af backuppen", type: 3 },
+  ]},
+  { name: "restore", description: "Gendan roller/kanaler fra en backup (kun serverejer)", options: [
+    { name: "backup_id", description: "Backup-ID", type: 3 },
+    { name: "mode", description: "Hvad skal gendannes", type: 3, choices: [
+      { name: "roles", value: "roles" }, { name: "channels", value: "channels" }, { name: "all", value: "all" },
+    ]},
+  ]},
+
+  // REACTION ROLES
+  { name: "reactionrole", description: "Opret et reaction role-panel", options: [
+    { name: "channel", description: "Kanal til panelet", type: 7, channel_types: [0] },
+    { name: "title", description: "Titel", type: 3 },
+    { name: "description", description: "Beskrivelse", type: 3 },
+  ]},
+  { name: "rr-add", description: "Tilføj en rolle til et reaction role-panel", options: [
+    { name: "message_id", description: "Panelets besked-ID", type: 3, required: true },
+    { name: "role", description: "Rollen", type: 8, required: true },
+    { name: "emoji", description: "Emoji", type: 3 },
+    { name: "description", description: "Kort beskrivelse", type: 3 },
+  ]},
+  { name: "rr-remove", description: "Fjern en rolle fra et reaction role-panel", options: [
+    { name: "message_id", description: "Panelets besked-ID", type: 3, required: true },
+    { name: "role", description: "Rollen", type: 8, required: true },
+  ]},
+  { name: "rr-list", description: "Vis alle reaction role-paneler" },
+  { name: "rr-clear", description: "Ryd roller fra et panel (eller alle paneler)", options: [
+    { name: "message_id", description: "Panelets besked-ID", type: 3 },
+  ]},
+
+  // LEVELING ADMIN
+  { name: "levelroles", description: "Vis level-roller" },
+  { name: "setlevelrole", description: "Sæt en rolle der gives ved et bestemt level", options: [
+    { name: "level", description: "Level", type: 4, required: true },
+    { name: "role", description: "Rollen", type: 8 },
+    { name: "remove", description: "Fjern level-rollen i stedet", type: 5 },
+  ]},
+  { name: "xpmultiplier", description: "Styr XP-multipliers for roller/kanaler", options: [
+    { name: "action", description: "Handling", type: 3, choices: [
+      { name: "list", value: "list" }, { name: "set", value: "set" }, { name: "remove", value: "remove" },
+    ]},
+    { name: "role", description: "Rolle", type: 8 },
+    { name: "channel", description: "Kanal", type: 7 },
+    { name: "multiplier", description: "Multiplier (0.1-10)", type: 10 },
+  ]},
+
+  // MUSIC EXTRAS
+  { name: "seek", description: "Spol til et tidspunkt i sangen", options: [
+    { name: "position", description: "F.eks. 90, 1:30 eller 1:02:30", type: 3, required: true },
+  ]},
+  { name: "lyrics", description: "Hent sangtekst", options: [
+    { name: "song", description: "Kunstner - Titel (valgfri)", type: 3 },
+  ]},
+  { name: "autoplay", description: "Slå autoplay til/fra" },
+  { name: "filter", description: "Anvend et lydfilter", options: [
+    { name: "filter", description: "Filter", type: 3, required: true, choices: [
+      { name: "clear", value: "clear" }, { name: "bassboost", value: "bassboost" },
+      { name: "nightcore", value: "nightcore" }, { name: "vaporwave", value: "vaporwave" },
+      { name: "8d", value: "8d" }, { name: "karaoke", value: "karaoke" },
+      { name: "tremolo", value: "tremolo" }, { name: "vibrato", value: "vibrato" },
+    ]},
+  ]},
+
+  // UTILITY
+  { name: "support", description: "Opret en supportticket" },
+  { name: "translate", description: "Oversæt tekst", options: [
+    { name: "text", description: "Tekst der skal oversættes", type: 3, required: true },
+    { name: "to", description: "Målsprog (da, en, de, ...)", type: 3 },
+  ]},
+  { name: "weather", description: "Vis vejret for en by", options: [
+    { name: "location", description: "By eller postnummer", type: 3, required: true },
+  ]},
+
+  // TICKETS / GIVEAWAY
+  { name: "transcript", description: "Hent transkript for en ticket", options: [
+    { name: "ticket_id", description: "Ticket-ID eller kanal-ID", type: 3 },
+  ]},
+  { name: "gpause", description: "Sæt en giveaway på pause / genoptag den", options: [
+    { name: "message_id", description: "Giveawayens besked-ID", type: 3, required: true },
+  ]},
+
+  // ECONOMY / GAMES
+  { name: "sell", description: "Sælg en vare tilbage til shoppen (50% refusion)", options: [
+    { name: "item", description: "Varens navn", type: 3, required: true },
+  ]},
+  { name: "blackjack", description: "Spil blackjack mod dealeren", options: [
+    { name: "bet", description: "Indsats (0 = uden penge)", type: 4 },
+  ]},
+  { name: "trivia", description: "Svar på et trivia-spørgsmål" },
+  { name: "ttt", description: "Spil kryds og bolle mod en anden", options: [
+    { name: "opponent", description: "Modstander", type: 6, required: true },
+  ]},
+  { name: "connect4", description: "Spil fire på stribe mod en anden", options: [
+    { name: "opponent", description: "Modstander", type: 6, required: true },
+  ]},
+  { name: "hangman", description: "Spil galgeleg" },
+  { name: "wordle", description: "Spil wordle på dansk" },
 ];
 
 
