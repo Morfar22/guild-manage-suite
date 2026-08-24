@@ -69,8 +69,12 @@ function MetricBar({
           <Icon className="h-4 w-4" /> {label}
         </span>
         <span className="font-medium tabular-nums">{value === null ? '—' : `${value}%`}</span>
+      <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
+        <div
+          className={`h-full rounded-full transition-all ${barTone(value)}`}
+          style={{ width: `${value ?? 0}%` }}
+        />
       </div>
-      <Progress value={value ?? 0} className="h-2" indicatorClassName={barTone(value)} />
       <p className="text-xs text-muted-foreground">{detail}</p>
     </div>
   );
