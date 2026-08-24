@@ -59,6 +59,7 @@ import { Route as DashboardQuarantineRouteImport } from './routes/dashboard/quar
 import { Route as DashboardRaidProtectionRouteImport } from './routes/dashboard/raid-protection'
 import { Route as DashboardReactionRolesRouteImport } from './routes/dashboard/reaction-roles'
 import { Route as DashboardRemindersRouteImport } from './routes/dashboard/reminders'
+import { Route as DashboardResourcesRouteImport } from './routes/dashboard/resources'
 import { Route as DashboardRoleAnalyticsRouteImport } from './routes/dashboard/role-analytics'
 import { Route as DashboardScheduledActionsRouteImport } from './routes/dashboard/scheduled-actions'
 import { Route as DashboardSchedulerRouteImport } from './routes/dashboard/scheduler'
@@ -389,6 +390,11 @@ const DashboardReactionRolesRoute = DashboardReactionRolesRouteImport.update({
 const DashboardRemindersRoute = DashboardRemindersRouteImport.update({
   id: '/reminders',
   path: '/reminders',
+  getParentRoute: () => DashboardRoute,
+} as any)
+const DashboardResourcesRoute = DashboardResourcesRouteImport.update({
+  id: '/resources',
+  path: '/resources',
   getParentRoute: () => DashboardRoute,
 } as any)
 const DashboardRoleAnalyticsRoute = DashboardRoleAnalyticsRouteImport.update({
@@ -870,6 +876,7 @@ export interface FileRoutesByFullPath {
   '/dashboard/raid-protection': typeof DashboardRaidProtectionRoute
   '/dashboard/reaction-roles': typeof DashboardReactionRolesRoute
   '/dashboard/reminders': typeof DashboardRemindersRoute
+  '/dashboard/resources': typeof DashboardResourcesRoute
   '/dashboard/role-analytics': typeof DashboardRoleAnalyticsRoute
   '/dashboard/scheduled-actions': typeof DashboardScheduledActionsRoute
   '/dashboard/scheduler': typeof DashboardSchedulerRoute
@@ -1001,6 +1008,7 @@ export interface FileRoutesByTo {
   '/dashboard/raid-protection': typeof DashboardRaidProtectionRoute
   '/dashboard/reaction-roles': typeof DashboardReactionRolesRoute
   '/dashboard/reminders': typeof DashboardRemindersRoute
+  '/dashboard/resources': typeof DashboardResourcesRoute
   '/dashboard/role-analytics': typeof DashboardRoleAnalyticsRoute
   '/dashboard/scheduled-actions': typeof DashboardScheduledActionsRoute
   '/dashboard/scheduler': typeof DashboardSchedulerRoute
@@ -1133,6 +1141,7 @@ export interface FileRoutesById {
   '/dashboard/raid-protection': typeof DashboardRaidProtectionRoute
   '/dashboard/reaction-roles': typeof DashboardReactionRolesRoute
   '/dashboard/reminders': typeof DashboardRemindersRoute
+  '/dashboard/resources': typeof DashboardResourcesRoute
   '/dashboard/role-analytics': typeof DashboardRoleAnalyticsRoute
   '/dashboard/scheduled-actions': typeof DashboardScheduledActionsRoute
   '/dashboard/scheduler': typeof DashboardSchedulerRoute
@@ -1267,6 +1276,7 @@ export interface FileRouteTypes {
     | '/dashboard/raid-protection'
     | '/dashboard/reaction-roles'
     | '/dashboard/reminders'
+    | '/dashboard/resources'
     | '/dashboard/role-analytics'
     | '/dashboard/scheduled-actions'
     | '/dashboard/scheduler'
@@ -1398,6 +1408,7 @@ export interface FileRouteTypes {
     | '/dashboard/raid-protection'
     | '/dashboard/reaction-roles'
     | '/dashboard/reminders'
+    | '/dashboard/resources'
     | '/dashboard/role-analytics'
     | '/dashboard/scheduled-actions'
     | '/dashboard/scheduler'
@@ -1529,6 +1540,7 @@ export interface FileRouteTypes {
     | '/dashboard/raid-protection'
     | '/dashboard/reaction-roles'
     | '/dashboard/reminders'
+    | '/dashboard/resources'
     | '/dashboard/role-analytics'
     | '/dashboard/scheduled-actions'
     | '/dashboard/scheduler'
@@ -2026,6 +2038,13 @@ declare module '@tanstack/react-router' {
       path: '/reminders'
       fullPath: '/dashboard/reminders'
       preLoaderRoute: typeof DashboardRemindersRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/resources': {
+      id: '/dashboard/resources'
+      path: '/resources'
+      fullPath: '/dashboard/resources'
+      preLoaderRoute: typeof DashboardResourcesRouteImport
       parentRoute: typeof DashboardRoute
     }
     '/dashboard/role-analytics': {
@@ -2644,6 +2663,7 @@ interface DashboardRouteChildren {
   DashboardRaidProtectionRoute: typeof DashboardRaidProtectionRoute
   DashboardReactionRolesRoute: typeof DashboardReactionRolesRoute
   DashboardRemindersRoute: typeof DashboardRemindersRoute
+  DashboardResourcesRoute: typeof DashboardResourcesRoute
   DashboardRoleAnalyticsRoute: typeof DashboardRoleAnalyticsRoute
   DashboardScheduledActionsRoute: typeof DashboardScheduledActionsRoute
   DashboardSchedulerRoute: typeof DashboardSchedulerRoute
@@ -2715,6 +2735,7 @@ const DashboardRouteChildren: DashboardRouteChildren = {
   DashboardRaidProtectionRoute: DashboardRaidProtectionRoute,
   DashboardReactionRolesRoute: DashboardReactionRolesRoute,
   DashboardRemindersRoute: DashboardRemindersRoute,
+  DashboardResourcesRoute: DashboardResourcesRoute,
   DashboardRoleAnalyticsRoute: DashboardRoleAnalyticsRoute,
   DashboardScheduledActionsRoute: DashboardScheduledActionsRoute,
   DashboardSchedulerRoute: DashboardSchedulerRoute,

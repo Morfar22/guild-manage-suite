@@ -6,7 +6,7 @@ import {
   Bell, History, FileBarChart, Brain,
   Calendar, Mail, AlertTriangle, ShoppingCart, Timer, Palette,
   Lightbulb, ShieldCheck, Archive, BarChart3, Vote, MessageSquare,
-  Globe, Activity, Bot, Crown, Hash, Cake, Music, type LucideIcon,
+  Globe, Activity, Bot, Crown, Hash, Cake, Music, Server, type LucideIcon,
 } from 'lucide-react';
 
 export interface NavItem {
@@ -34,6 +34,7 @@ export const navGroups: NavGroup[] = [
       { to: '/dashboard/leaderboard', icon: TrendingUp, labelKey: 'nav.leaderboard' },
       { to: '/dashboard/live-events', icon: Activity, labelKey: 'nav.liveEvents' },
       { to: '/dashboard/bot-health', icon: Heart, labelKey: 'nav.botHealth' },
+      { to: '/dashboard/resources', icon: Server, labelKey: 'nav.resources' },
       { to: '/dashboard/notifications', icon: Bell, labelKey: 'nav.notifications' },
     ],
   },
