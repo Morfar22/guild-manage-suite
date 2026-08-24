@@ -222,6 +222,7 @@ function startGiveawayAutoEnd(shouldHandleGuild) {
         .from('giveaways')
         .select('id, guild_id, guilds!inner(guild_id)')
         .eq('ended', false)
+        .eq('paused', false)
         .lte('ends_at', new Date().toISOString())
         .limit(20);
 
