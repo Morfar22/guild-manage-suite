@@ -2556,6 +2556,27 @@ manager.registerHandler((client, guildId) => {
     console.error(`[Bot] ❌ Extra commands fejl:`, e.message);
   }
 
+  // Admin/config, reaction roles, leveling admin, musik-ekstra, utility
+  try {
+    Object.assign(
+      slashHandlers,
+      createAdminHandlers(client, { supabase, handlers: slashHandlers, getKazagumo })
+    );
+    console.log(`[Bot] ✅ Admin commands for ${clientLabel}`);
+  } catch (e) {
+    console.error(`[Bot] ❌ Admin commands fejl:`, e.message);
+  }
+
+  // Spil (trivia, ttt, connect4, hangman, wordle, blackjack)
+  try {
+    Object.assign(slashHandlers, createGameHandlers(client, { supabase }));
+    console.log(`[Bot] ✅ Game commands for ${clientLabel}`);
+  } catch (e) {
+    console.error(`[Bot] ❌ Game commands fejl:`, e.message);
+  }
+
+
+
 
   // Register prefix command handler (mirrors all slash commands)
   try {
