@@ -547,6 +547,174 @@ const commands = [
     .setName('greroll').setDescription('Vælg nye vindere (alias)')
     .addStringOption(o => o.setName('message_id').setDescription('Besked-ID').setRequired(true)),
   new SlashCommandBuilder().setName('glist').setDescription('Vis aktive giveaways'),
+
+  // ==================== ADMIN / CONFIG ====================
+  new SlashCommandBuilder().setName('setup').setDescription('Vis serverens opsætning og status'),
+
+  new SlashCommandBuilder()
+    .setName('config').setDescription('Vis eller ændr serverindstillinger')
+    .addStringOption(o => o.setName('setting').setDescription('Indstilling').addChoices(
+      { name: 'prefix', value: 'prefix' },
+      { name: 'staff_role', value: 'staff_role' },
+      { name: 'whitelist_role', value: 'whitelist_role' },
+      { name: 'automod', value: 'automod' },
+    ))
+    .addStringOption(o => o.setName('value').setDescription('Ny værdi')),
+
+  new SlashCommandBuilder()
+    .setName('prefix').setDescription('Vis eller sæt serverens kommando-prefix')
+    .addStringOption(o => o.setName('prefix').setDescription('Nyt prefix (maks 5 tegn)')),
+
+  new SlashCommandBuilder()
+    .setName('setlog').setDescription('Sæt log-kanalen')
+    .addChannelOption(o => o.setName('channel').setDescription('Log-kanal').addChannelTypes(ChannelType.GuildText)),
+
+  new SlashCommandBuilder()
+    .setName('autorole').setDescription('Administrér roller som nye medlemmer får automatisk')
+    .addStringOption(o => o.setName('action').setDescription('Handling').addChoices(
+      { name: 'list', value: 'list' }, { name: 'add', value: 'add' },
+      { name: 'remove', value: 'remove' }, { name: 'clear', value: 'clear' },
+    ))
+    .addRoleOption(o => o.setName('role').setDescription('Rollen')),
+
+  new SlashCommandBuilder()
+    .setName('setwelcome').setDescription('Sæt velkomstkanal og -besked')
+    .addChannelOption(o => o.setName('channel').setDescription('Velkomstkanal').addChannelTypes(ChannelType.GuildText))
+    .addStringOption(o => o.setName('message').setDescription('Besked ({user}, {server}, {membercount})')),
+
+  new SlashCommandBuilder()
+    .setName('setleave').setDescription('Sæt farvel-kanal og -besked')
+    .addChannelOption(o => o.setName('channel').setDescription('Farvel-kanal').addChannelTypes(ChannelType.GuildText))
+    .addStringOption(o => o.setName('message').setDescription('Besked ({user}, {server}, {membercount})')),
+
+  new SlashCommandBuilder()
+    .setName('automod').setDescription('Styr automod')
+    .addStringOption(o => o.setName('action').setDescription('Handling').addChoices(
+      { name: 'status', value: 'status' }, { name: 'on', value: 'on' }, { name: 'off', value: 'off' },
+    ))
+    .addStringOption(o => o.setName('rule').setDescription('Specifik regel (valgfri)')),
+
+  new SlashCommandBuilder()
+    .setName('backup').setDescription('Opret eller vis backups af serveren')
+    .addStringOption(o => o.setName('action').setDescription('Handling').addChoices(
+      { name: 'create', value: 'create' }, { name: 'list', value: 'list' },
+    ))
+    .addStringOption(o => o.setName('description').setDescription('Beskrivelse af backuppen')),
+
+  new SlashCommandBuilder()
+    .setName('restore').setDescription('Gendan roller/kanaler fra en backup (kun serverejer)')
+    .addStringOption(o => o.setName('backup_id').setDescription('Backup-ID (se /backup action:list)'))
+    .addStringOption(o => o.setName('mode').setDescription('Hvad skal gendannes').addChoices(
+      { name: 'roles', value: 'roles' }, { name: 'channels', value: 'channels' }, { name: 'all', value: 'all' },
+    )),
+
+  // ==================== REACTION ROLES ====================
+  new SlashCommandBuilder()
+    .setName('reactionrole').setDescription('Opret et reaction role-panel')
+    .addChannelOption(o => o.setName('channel').setDescription('Kanal til panelet').addChannelTypes(ChannelType.GuildText))
+    .addStringOption(o => o.setName('title').setDescription('Titel'))
+    .addStringOption(o => o.setName('description').setDescription('Beskrivelse')),
+
+  new SlashCommandBuilder()
+    .setName('rr-add').setDescription('Tilføj en rolle til et reaction role-panel')
+    .addStringOption(o => o.setName('message_id').setDescription('Panelets besked-ID').setRequired(true))
+    .addRoleOption(o => o.setName('role').setDescription('Rollen').setRequired(true))
+    .addStringOption(o => o.setName('emoji').setDescription('Emoji'))
+    .addStringOption(o => o.setName('description').setDescription('Kort beskrivelse')),
+
+  new SlashCommandBuilder()
+    .setName('rr-remove').setDescription('Fjern en rolle fra et reaction role-panel')
+    .addStringOption(o => o.setName('message_id').setDescription('Panelets besked-ID').setRequired(true))
+    .addRoleOption(o => o.setName('role').setDescription('Rollen').setRequired(true)),
+
+  new SlashCommandBuilder().setName('rr-list').setDescription('Vis alle reaction role-paneler'),
+
+  new SlashCommandBuilder()
+    .setName('rr-clear').setDescription('Ryd roller fra et panel (eller alle paneler)')
+    .addStringOption(o => o.setName('message_id').setDescription('Panelets besked-ID')),
+
+  // ==================== LEVELING ADMIN ====================
+  new SlashCommandBuilder().setName('levelroles').setDescription('Vis level-roller'),
+
+  new SlashCommandBuilder()
+    .setName('setlevelrole').setDescription('Sæt en rolle der gives ved et bestemt level')
+    .addIntegerOption(o => o.setName('level').setDescription('Level').setRequired(true))
+    .addRoleOption(o => o.setName('role').setDescription('Rollen'))
+    .addBooleanOption(o => o.setName('remove').setDescription('Fjern level-rollen i stedet')),
+
+  new SlashCommandBuilder()
+    .setName('xpmultiplier').setDescription('Styr XP-multipliers for roller/kanaler')
+    .addStringOption(o => o.setName('action').setDescription('Handling').addChoices(
+      { name: 'list', value: 'list' }, { name: 'set', value: 'set' }, { name: 'remove', value: 'remove' },
+    ))
+    .addRoleOption(o => o.setName('role').setDescription('Rolle'))
+    .addChannelOption(o => o.setName('channel').setDescription('Kanal'))
+    .addNumberOption(o => o.setName('multiplier').setDescription('Multiplier (0.1-10)')),
+
+  // ==================== MUSIC EXTRAS ====================
+  new SlashCommandBuilder()
+    .setName('seek').setDescription('Spol til et tidspunkt i sangen')
+    .addStringOption(o => o.setName('position').setDescription('F.eks. 90, 1:30 eller 1:02:30').setRequired(true)),
+
+  new SlashCommandBuilder()
+    .setName('lyrics').setDescription('Hent sangtekst')
+    .addStringOption(o => o.setName('song').setDescription('Kunstner - Titel (valgfri)')),
+
+  new SlashCommandBuilder().setName('autoplay').setDescription('Slå autoplay til/fra'),
+
+  new SlashCommandBuilder()
+    .setName('filter').setDescription('Anvend et lydfilter')
+    .addStringOption(o => o.setName('filter').setDescription('Filter').setRequired(true).addChoices(
+      { name: 'clear', value: 'clear' }, { name: 'bassboost', value: 'bassboost' },
+      { name: 'nightcore', value: 'nightcore' }, { name: 'vaporwave', value: 'vaporwave' },
+      { name: '8d', value: '8d' }, { name: 'karaoke', value: 'karaoke' },
+      { name: 'tremolo', value: 'tremolo' }, { name: 'vibrato', value: 'vibrato' },
+    )),
+
+  // ==================== UTILITY ====================
+  new SlashCommandBuilder().setName('support').setDescription('Opret en supportticket'),
+
+  new SlashCommandBuilder()
+    .setName('translate').setDescription('Oversæt tekst')
+    .addStringOption(o => o.setName('text').setDescription('Tekst der skal oversættes').setRequired(true))
+    .addStringOption(o => o.setName('to').setDescription('Målsprog (da, en, de, ...)')),
+
+  new SlashCommandBuilder()
+    .setName('weather').setDescription('Vis vejret for en by')
+    .addStringOption(o => o.setName('location').setDescription('By eller postnummer').setRequired(true)),
+
+  // ==================== TICKETS / GIVEAWAY ====================
+  new SlashCommandBuilder()
+    .setName('transcript').setDescription('Hent transkript for en ticket')
+    .addStringOption(o => o.setName('ticket_id').setDescription('Ticket-ID eller kanal-ID')),
+
+  new SlashCommandBuilder()
+    .setName('gpause').setDescription('Sæt en giveaway på pause / genoptag den')
+    .addStringOption(o => o.setName('message_id').setDescription('Giveawayens besked-ID').setRequired(true)),
+
+  // ==================== ECONOMY ====================
+  new SlashCommandBuilder()
+    .setName('sell').setDescription('Sælg en vare tilbage til shoppen (50% refusion)')
+    .addStringOption(o => o.setName('item').setDescription('Varens navn').setRequired(true)),
+
+  new SlashCommandBuilder()
+    .setName('blackjack').setDescription('Spil blackjack mod dealeren')
+    .addIntegerOption(o => o.setName('bet').setDescription('Indsats (0 = uden penge)')),
+
+  // ==================== FUN GAMES ====================
+  new SlashCommandBuilder().setName('trivia').setDescription('Svar på et trivia-spørgsmål'),
+
+  new SlashCommandBuilder()
+    .setName('ttt').setDescription('Spil kryds og bolle mod en anden')
+    .addUserOption(o => o.setName('opponent').setDescription('Modstander').setRequired(true)),
+
+  new SlashCommandBuilder()
+    .setName('connect4').setDescription('Spil fire på stribe mod en anden')
+    .addUserOption(o => o.setName('opponent').setDescription('Modstander').setRequired(true)),
+
+  new SlashCommandBuilder().setName('hangman').setDescription('Spil galgeleg'),
+
+  new SlashCommandBuilder().setName('wordle').setDescription('Spil wordle på dansk'),
 ];
 
 
