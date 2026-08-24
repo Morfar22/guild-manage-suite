@@ -74,6 +74,8 @@ const { setupBirthdayHandler } = require('./handlers/birthdayHandler');
 const { setupMusicQuizHandler } = require('./handlers/musicQuizHandler');
 const { setupCurrencyShopHandler } = require('./handlers/currencyShopHandler');
 const { createExtraHandlers, setupSnipeTracker } = require('./handlers/extraCommands');
+const { createAdminHandlers } = require('./handlers/adminCommands');
+const { createGameHandlers } = require('./handlers/gameCommands');
 
 const { setupPrefixHandler } = require('./handlers/prefixHandler');
 // Optional: Music system (comment out if not using)
