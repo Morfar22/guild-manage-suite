@@ -69,6 +69,7 @@ function MetricBar({
           <Icon className="h-4 w-4" /> {label}
         </span>
         <span className="font-medium tabular-nums">{value === null ? '—' : `${value}%`}</span>
+      </div>
       <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
         <div
           className={`h-full rounded-full transition-all ${barTone(value)}`}
