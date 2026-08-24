@@ -262,6 +262,14 @@ function resolveUser(client, guild, arg) {
   return null;
 }
 
+function resolveRole(guild, arg) {
+  if (!arg || !guild) return null;
+  const mentionMatch = arg.match(/^<@&(\d+)>$/);
+  if (mentionMatch) return guild.roles.cache.get(mentionMatch[1]) || null;
+  if (/^\d{17,20}$/.test(arg)) return guild.roles.cache.get(arg) || null;
+  return guild.roles.cache.find(r => r.name.toLowerCase() === arg.toLowerCase()) || null;
+}
+
 function resolveChannel(guild, arg) {
   if (!arg) return null;
   const mentionMatch = arg.match(/^<#(\d+)>$/);
