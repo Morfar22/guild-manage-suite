@@ -34,7 +34,7 @@ export function IPWhitelistManager() {
   };
 
   const handleAddCurrentIP = () => {
-    if (!ipCheck?.ip || ipCheck.ip === 'unknown') return;
+    if (!ipCheck?.ip || ipCheck.ip === 'unknown' || ipCheck.ip === 'account-bypass') return;
     
     addIP.mutate({
       ip_address: ipCheck.ip,
