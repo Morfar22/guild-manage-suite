@@ -6,7 +6,7 @@ import {
   Bell, History, FileBarChart, Brain,
   Calendar, Mail, AlertTriangle, ShoppingCart, Timer, Palette,
   Lightbulb, ShieldCheck, Archive, BarChart3, Vote, MessageSquare,
-  Globe, Activity, Bot, Crown, Hash, Cake, Music, Server, type LucideIcon,
+  Globe, Activity, Bot, Crown, Hash, Cake, Music, Server, Bug, type LucideIcon,
 } from 'lucide-react';
 
 export interface NavItem {
@@ -72,6 +72,7 @@ export const navGroups: NavGroup[] = [
       { to: '/dashboard/raid-protection', icon: ShieldAlert, labelKey: 'nav.raidProtection' },
       { to: '/dashboard/slowmode-scheduler', icon: Timer, labelKey: 'nav.slowmodeScheduler' },
       { to: '/dashboard/quarantine', icon: ShieldCheck, labelKey: 'nav.quarantine' },
+      { to: '/dashboard/honeypot', icon: Bug, labelKey: 'nav.honeypot' },
     ],
   },
   {

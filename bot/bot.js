@@ -68,6 +68,7 @@ const { setupRaidProtectionHandler } = require('./handlers/raidProtectionHandler
 const { setupQuarantineHandler } = require('./handlers/quarantineHandler');
 const { setupSlowmodeScheduler } = require('./slowmodeScheduler');
 const { setupAltDetectionHandler } = require('./handlers/altDetectionHandler');
+const { setupHoneypotHandler } = require('./handlers/honeypotHandler');
 const { setupCountingHandler } = require('./handlers/countingHandler');
 const { setupConfessionHandler } = require('./handlers/confessionHandler');
 const { setupBirthdayHandler } = require('./handlers/birthdayHandler');
@@ -2467,6 +2468,14 @@ manager.registerHandler((client, guildId) => {
     console.log(`[Bot] ✅ Quarantine handler for ${clientLabel}`);
   } catch (e) {
     console.error(`[Bot] ❌ Quarantine handler fejl:`, e.message);
+  }
+
+  // Honeypot Handler
+  try {
+    setupHoneypotHandler(client, supabase, { shouldHandleGuild });
+    console.log(`[Bot] ✅ Honeypot handler for ${clientLabel}`);
+  } catch (e) {
+    console.error(`[Bot] ❌ Honeypot handler fejl:`, e.message);
   }
 
   // Slowmode Scheduler
