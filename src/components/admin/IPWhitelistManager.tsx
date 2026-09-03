@@ -52,7 +52,7 @@ export function IPWhitelistManager() {
               IP Whitelist
             </CardTitle>
             <CardDescription>
-              Administrer hvilke IP-adresser der har adgang til admin-panelet
+              Administrer hvilke IP-adresser der har adgang til admin-panelet. Brugere med admin-rollen har altid adgang via deres konto — IP-whitelist gælder kun for staff.
             </CardDescription>
           </div>
           {ipCheck && (
