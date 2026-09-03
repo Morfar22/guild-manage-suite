@@ -41,6 +41,7 @@ import { Route as DashboardFeaturesRouteImport } from './routes/dashboard/featur
 import { Route as DashboardFivemRouteImport } from './routes/dashboard/fivem'
 import { Route as DashboardGiveawaysRouteImport } from './routes/dashboard/giveaways'
 import { Route as DashboardGlobalBansRouteImport } from './routes/dashboard/global-bans'
+import { Route as DashboardHoneypotRouteImport } from './routes/dashboard/honeypot'
 import { Route as DashboardInviteTrackerRouteImport } from './routes/dashboard/invite-tracker'
 import { Route as DashboardJtcRouteImport } from './routes/dashboard/jtc'
 import { Route as DashboardLeaderboardRouteImport } from './routes/dashboard/leaderboard'
@@ -300,6 +301,11 @@ const DashboardGiveawaysRoute = DashboardGiveawaysRouteImport.update({
 const DashboardGlobalBansRoute = DashboardGlobalBansRouteImport.update({
   id: '/global-bans',
   path: '/global-bans',
+  getParentRoute: () => DashboardRoute,
+} as any)
+const DashboardHoneypotRoute = DashboardHoneypotRouteImport.update({
+  id: '/honeypot',
+  path: '/honeypot',
   getParentRoute: () => DashboardRoute,
 } as any)
 const DashboardInviteTrackerRoute = DashboardInviteTrackerRouteImport.update({
@@ -858,6 +864,7 @@ export interface FileRoutesByFullPath {
   '/dashboard/fivem': typeof DashboardFivemRoute
   '/dashboard/giveaways': typeof DashboardGiveawaysRoute
   '/dashboard/global-bans': typeof DashboardGlobalBansRoute
+  '/dashboard/honeypot': typeof DashboardHoneypotRoute
   '/dashboard/invite-tracker': typeof DashboardInviteTrackerRoute
   '/dashboard/jtc': typeof DashboardJtcRoute
   '/dashboard/leaderboard': typeof DashboardLeaderboardRoute
@@ -990,6 +997,7 @@ export interface FileRoutesByTo {
   '/dashboard/fivem': typeof DashboardFivemRoute
   '/dashboard/giveaways': typeof DashboardGiveawaysRoute
   '/dashboard/global-bans': typeof DashboardGlobalBansRoute
+  '/dashboard/honeypot': typeof DashboardHoneypotRoute
   '/dashboard/invite-tracker': typeof DashboardInviteTrackerRoute
   '/dashboard/jtc': typeof DashboardJtcRoute
   '/dashboard/leaderboard': typeof DashboardLeaderboardRoute
@@ -1123,6 +1131,7 @@ export interface FileRoutesById {
   '/dashboard/fivem': typeof DashboardFivemRoute
   '/dashboard/giveaways': typeof DashboardGiveawaysRoute
   '/dashboard/global-bans': typeof DashboardGlobalBansRoute
+  '/dashboard/honeypot': typeof DashboardHoneypotRoute
   '/dashboard/invite-tracker': typeof DashboardInviteTrackerRoute
   '/dashboard/jtc': typeof DashboardJtcRoute
   '/dashboard/leaderboard': typeof DashboardLeaderboardRoute
@@ -1258,6 +1267,7 @@ export interface FileRouteTypes {
     | '/dashboard/fivem'
     | '/dashboard/giveaways'
     | '/dashboard/global-bans'
+    | '/dashboard/honeypot'
     | '/dashboard/invite-tracker'
     | '/dashboard/jtc'
     | '/dashboard/leaderboard'
@@ -1390,6 +1400,7 @@ export interface FileRouteTypes {
     | '/dashboard/fivem'
     | '/dashboard/giveaways'
     | '/dashboard/global-bans'
+    | '/dashboard/honeypot'
     | '/dashboard/invite-tracker'
     | '/dashboard/jtc'
     | '/dashboard/leaderboard'
@@ -1522,6 +1533,7 @@ export interface FileRouteTypes {
     | '/dashboard/fivem'
     | '/dashboard/giveaways'
     | '/dashboard/global-bans'
+    | '/dashboard/honeypot'
     | '/dashboard/invite-tracker'
     | '/dashboard/jtc'
     | '/dashboard/leaderboard'
@@ -1912,6 +1924,13 @@ declare module '@tanstack/react-router' {
       path: '/global-bans'
       fullPath: '/dashboard/global-bans'
       preLoaderRoute: typeof DashboardGlobalBansRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/honeypot': {
+      id: '/dashboard/honeypot'
+      path: '/honeypot'
+      fullPath: '/dashboard/honeypot'
+      preLoaderRoute: typeof DashboardHoneypotRouteImport
       parentRoute: typeof DashboardRoute
     }
     '/dashboard/invite-tracker': {
@@ -2645,6 +2664,7 @@ interface DashboardRouteChildren {
   DashboardFivemRoute: typeof DashboardFivemRoute
   DashboardGiveawaysRoute: typeof DashboardGiveawaysRoute
   DashboardGlobalBansRoute: typeof DashboardGlobalBansRoute
+  DashboardHoneypotRoute: typeof DashboardHoneypotRoute
   DashboardInviteTrackerRoute: typeof DashboardInviteTrackerRoute
   DashboardJtcRoute: typeof DashboardJtcRoute
   DashboardLeaderboardRoute: typeof DashboardLeaderboardRoute
@@ -2717,6 +2737,7 @@ const DashboardRouteChildren: DashboardRouteChildren = {
   DashboardFivemRoute: DashboardFivemRoute,
   DashboardGiveawaysRoute: DashboardGiveawaysRoute,
   DashboardGlobalBansRoute: DashboardGlobalBansRoute,
+  DashboardHoneypotRoute: DashboardHoneypotRoute,
   DashboardInviteTrackerRoute: DashboardInviteTrackerRoute,
   DashboardJtcRoute: DashboardJtcRoute,
   DashboardLeaderboardRoute: DashboardLeaderboardRoute,
