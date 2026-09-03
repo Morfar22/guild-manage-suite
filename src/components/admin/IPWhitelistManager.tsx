@@ -34,7 +34,7 @@ export function IPWhitelistManager() {
   };
 
   const handleAddCurrentIP = () => {
-    if (!ipCheck?.ip || ipCheck.ip === 'unknown') return;
+    if (!ipCheck?.ip || ipCheck.ip === 'unknown' || ipCheck.ip === 'account-bypass') return;
     
     addIP.mutate({
       ip_address: ipCheck.ip,
@@ -52,14 +52,14 @@ export function IPWhitelistManager() {
               IP Whitelist
             </CardTitle>
             <CardDescription>
-              Administrer hvilke IP-adresser der har adgang til admin-panelet
+              Administrer hvilke IP-adresser der har adgang til admin-panelet. Brugere med admin-rollen har altid adgang via deres konto — IP-whitelist gælder kun for staff.
             </CardDescription>
           </div>
           {ipCheck && (
             <div className="text-right">
               <p className="text-sm text-muted-foreground">Din nuværende IP:</p>
               <Badge variant={ipCheck.allowed ? 'default' : 'destructive'} className="font-mono">
-                {ipCheck.ip}
+                {ipCheck.ip === 'account-bypass' ? 'Admin-konto (IP frigået)' : ipCheck.ip}
               </Badge>
             </div>
           )}

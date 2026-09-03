@@ -17,6 +17,7 @@ interface IPCheckResult {
   allowed: boolean;
   ip: string;
   whitelistEmpty: boolean;
+  bypassedBy?: 'admin_role';
   message: string;
 }
 
