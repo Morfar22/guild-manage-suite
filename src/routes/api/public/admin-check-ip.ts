@@ -73,6 +73,24 @@ __serve(async (req) => {
       });
     }
 
+    // Account-based bypass: full admins are allowed regardless of IP.
+    // The 'staff' role still requires a whitelisted IP.
+    const { data: isFullAdmin } = await supabaseAdmin
+      .rpc('has_role', { _user_id: userId, _role: 'admin' });
+
+    if (isFullAdmin) {
+      return new Response(
+        JSON.stringify({
+          allowed: true,
+          ip: "account-bypass",
+          whitelistEmpty: false,
+          bypassedBy: "admin_role",
+          message: "Access granted via admin account",
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     // Get the client's IP address from headers
     // Try multiple headers as different proxies use different headers
     const clientIp = 
