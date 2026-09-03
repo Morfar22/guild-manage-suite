@@ -2210,6 +2210,18 @@ manager.registerHandler((client, guildId) => {
   }
 
   try {
+    const honeypot = setupHoneypotHandler(client, supabase, { shouldHandleGuild });
+    // Post/refresh warning message in all enabled honeypot channels on startup
+    client.guilds.cache.forEach(g => {
+      if (!shouldHandleGuild || shouldHandleGuild(g.id)) honeypot.ensureWarningMessage(g.id).catch(() => {});
+    });
+    console.log(`[Bot] ✅ Honeypot handler for ${clientLabel}`);
+  } catch (e) {
+    console.error(`[Bot] ❌ Honeypot handler fejl:`, e.message);
+  }
+
+
+  try {
     initXPHandler(client, SUPABASE_URL, BOT_SECRET_KEY, { shouldHandleGuild });
     console.log(`[Bot] ✅ XP handler for ${clientLabel}`);
   } catch (e) {
