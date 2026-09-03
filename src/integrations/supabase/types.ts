@@ -2882,6 +2882,113 @@ export type Database = {
         }
         Relationships: []
       }
+      honeypot_catches: {
+        Row: {
+          action_taken: string
+          created_at: string
+          error_message: string | null
+          global_ban_report_id: string | null
+          guild_id: string
+          id: string
+          message_content: string | null
+          user_id: string
+          user_name: string | null
+        }
+        Insert: {
+          action_taken?: string
+          created_at?: string
+          error_message?: string | null
+          global_ban_report_id?: string | null
+          guild_id: string
+          id?: string
+          message_content?: string | null
+          user_id: string
+          user_name?: string | null
+        }
+        Update: {
+          action_taken?: string
+          created_at?: string
+          error_message?: string | null
+          global_ban_report_id?: string | null
+          guild_id?: string
+          id?: string
+          message_content?: string | null
+          user_id?: string
+          user_name?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "honeypot_catches_global_ban_report_id_fkey"
+            columns: ["global_ban_report_id"]
+            isOneToOne: false
+            referencedRelation: "global_ban_reports"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "honeypot_catches_guild_id_fkey"
+            columns: ["guild_id"]
+            isOneToOne: false
+            referencedRelation: "guilds"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      honeypot_settings: {
+        Row: {
+          action: string
+          channel_id: string | null
+          created_at: string
+          delete_message: boolean
+          enabled: boolean
+          guild_id: string
+          id: string
+          ignore_roles: string[]
+          log_channel_id: string | null
+          report_global_ban: boolean
+          report_severity: string
+          updated_at: string
+          warning_message: string | null
+        }
+        Insert: {
+          action?: string
+          channel_id?: string | null
+          created_at?: string
+          delete_message?: boolean
+          enabled?: boolean
+          guild_id: string
+          id?: string
+          ignore_roles?: string[]
+          log_channel_id?: string | null
+          report_global_ban?: boolean
+          report_severity?: string
+          updated_at?: string
+          warning_message?: string | null
+        }
+        Update: {
+          action?: string
+          channel_id?: string | null
+          created_at?: string
+          delete_message?: boolean
+          enabled?: boolean
+          guild_id?: string
+          id?: string
+          ignore_roles?: string[]
+          log_channel_id?: string | null
+          report_global_ban?: boolean
+          report_severity?: string
+          updated_at?: string
+          warning_message?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "honeypot_settings_guild_id_fkey"
+            columns: ["guild_id"]
+            isOneToOne: true
+            referencedRelation: "guilds"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       invite_tracker: {
         Row: {
           channel_id: string | null
