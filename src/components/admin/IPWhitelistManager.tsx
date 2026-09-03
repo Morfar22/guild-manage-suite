@@ -59,7 +59,7 @@ export function IPWhitelistManager() {
             <div className="text-right">
               <p className="text-sm text-muted-foreground">Din nuværende IP:</p>
               <Badge variant={ipCheck.allowed ? 'default' : 'destructive'} className="font-mono">
-                {ipCheck.ip}
+                {ipCheck.ip === 'account-bypass' ? 'Admin-konto (IP frigået)' : ipCheck.ip}
               </Badge>
             </div>
           )}
