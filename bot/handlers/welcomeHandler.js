@@ -3,7 +3,7 @@
  * 
  * Environment variables required:
  * - BOT_SECRET_KEY: (same as in Lovable Cloud secrets)
- * - WELCOME_API_URL: https://sleiplyixaxuvydzudxn.supabase.co/functions/v1/bot-welcome
+ * - WELCOME_API_URL: https://rkdqunnttcyuybbofkvz.supabase.co/functions/v1/bot-welcome
  * 
  * Usage in your main bot file:
  * const { setupWelcomeHandler } = require('./welcomeHandler');

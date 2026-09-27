@@ -6,7 +6,7 @@
  * 
  * Environment variables required:
  * - BOT_SECRET_KEY: (same as in Lovable Cloud secrets)
- * - SUPABASE_URL: https://sleiplyixaxuvydzudxn.supabase.co
+ * - SUPABASE_URL: https://rkdqunnttcyuybbofkvz.supabase.co
  * - DEFAULT_BOT_TOKEN: Fallback token for guilds without custom bot
  * 
  * Usage in your main bot file:
@@ -20,7 +20,7 @@
 
 const { Client, GatewayIntentBits, Partials, ActivityType, REST, Routes, SlashCommandBuilder, ChannelType } = require('discord.js');
 
-const SUPABASE_URL = process.env.SUPABASE_URL || 'https://sleiplyixaxuvydzudxn.supabase.co';
+const SUPABASE_URL = process.env.SUPABASE_URL || 'https://rkdqunnttcyuybbofkvz.supabase.co';
 const BOT_SECRET_KEY = process.env.BOT_SECRET_KEY;
 const DEFAULT_BOT_TOKEN = process.env.DEFAULT_BOT_TOKEN;
 

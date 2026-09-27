@@ -8,7 +8,7 @@ const APP_API_BASE = process.env.APP_API_BASE || 'https://bot.nethost-solutions.
 
 function setupAutoReportHandler(client, supabase, options = {}) {
   const { shouldHandleGuild } = options;
-  const SUPABASE_URL = process.env.SUPABASE_URL || 'https://sleiplyixaxuvydzudxn.supabase.co';
+  const SUPABASE_URL = process.env.SUPABASE_URL || 'https://rkdqunnttcyuybbofkvz.supabase.co';
   const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY;
 
   console.log('[AutoReport] Handler initialized');
