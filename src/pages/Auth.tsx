@@ -13,6 +13,8 @@ import { Helmet } from 'react-helmet-async';
 import { z } from 'zod';
 import { invokeFunction } from '@/lib/functions-client';
 
+const DISCORD_REDIRECT_URI = 'https://bot.nethost-solutions.dk/auth';
+
 const authSchema = z.object({
   email: z.string().email('Please enter a valid email address'),
   password: z.string().min(6, 'Password must be at least 6 characters'),
@@ -52,7 +54,7 @@ export default function Auth() {
     setDiscordLoading(true);
     setError(null);
     try {
-      const redirectUri = `${window.location.origin}/auth`;
+      const redirectUri = DISCORD_REDIRECT_URI;
       const response = await invokeFunction('discord-oauth?action=callback', {
         body: { code, redirectUri },
         headers: { 'Content-Type': 'application/json' },
@@ -85,11 +87,15 @@ export default function Auth() {
     setDiscordLoading(true);
     setError(null);
     try {
-      const redirectUri = `${window.location.origin}/auth`;
+      const redirectUri = DISCORD_REDIRECT_URI;
       const response = await invokeFunction('discord-oauth?action=authorize', {
         body: { redirectUri },
         headers: { 'Content-Type': 'application/json' },
       });
+      if (response.error && window.location.origin !== 'https://bot.nethost-solutions.dk') {
+        window.location.assign(`${DISCORD_REDIRECT_URI}?startDiscord=true`);
+        return;
+      }
       if (response.error) throw new Error(response.error.message || 'Failed to start Discord login');
       const data = response.data;
       if (data.error) throw new Error(data.error);
