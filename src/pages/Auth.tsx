@@ -47,6 +47,12 @@ export default function Auth() {
       processingCodeRef.current = true;
       window.history.replaceState({}, document.title, '/auth');
       handleDiscordCallback(code);
+      return;
+    }
+
+    if (searchParams.get('startDiscord') === 'true') {
+      window.history.replaceState({}, document.title, '/auth');
+      handleDiscordLogin();
     }
   }, [searchParams]);
 
