@@ -8,7 +8,7 @@
 const os = require('os');
 const fs = require('fs');
 
-const SUPABASE_URL = process.env.SUPABASE_URL || 'https://sleiplyixaxuvydzudxn.supabase.co';
+const SUPABASE_URL = process.env.SUPABASE_URL || 'https://rkdqunnttcyuybbofkvz.supabase.co';
 const BOT_SECRET_KEY = process.env.BOT_SECRET_KEY;
 
 // Heartbeat interval i millisekunder (30 sekunder)

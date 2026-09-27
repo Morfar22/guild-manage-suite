@@ -154,7 +154,7 @@ cp -r fivem/ /path/to/fxserver/resources/fivem-discord-integration/
 Tilføj til `server.cfg`:
 ```
 ensure fivem-discord-integration
-set zdiscord_api_url "https://sleiplyixaxuvydzudxn.supabase.co/functions/v1"
+set zdiscord_api_url "https://rkdqunnttcyuybbofkvz.supabase.co/functions/v1"
 set zdiscord_secret "DIN_BOT_SECRET_KEY"
 set zdiscord_guild_id "DIT_GUILD_UUID"
 ```

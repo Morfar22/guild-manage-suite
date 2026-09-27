@@ -3,7 +3,7 @@
  * 
  * Environment variables required:
  * - BOT_SECRET_KEY: (samme som i Lovable Cloud secrets)
- * - API_URL: https://sleiplyixaxuvydzudxn.supabase.co/functions/v1/bot-tickets
+ * - API_URL: https://rkdqunnttcyuybbofkvz.supabase.co/functions/v1/bot-tickets
  * 
  * Usage in your main bot file:
  * const { setupTicketHandler } = require('./ticketHandler');

@@ -3,7 +3,7 @@
  * 
  * Environment variables required:
  * - BOT_SECRET_KEY: (samme som i Lovable Cloud secrets)
- * - REACTION_ROLE_API_URL: https://sleiplyixaxuvydzudxn.supabase.co/functions/v1/reaction-role-handler
+ * - REACTION_ROLE_API_URL: https://rkdqunnttcyuybbofkvz.supabase.co/functions/v1/reaction-role-handler
  * 
  * Usage in your main bot file:
  * const { setupReactionRoleHandler } = require('./reactionRoleHandler');

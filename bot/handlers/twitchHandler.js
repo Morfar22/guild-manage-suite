@@ -5,7 +5,7 @@
  * Importér denne fil i din bot's main fil og kald startTwitchChecker().
  */
 
-const SUPABASE_URL = process.env.SUPABASE_URL || 'https://sleiplyixaxuvydzudxn.supabase.co';
+const SUPABASE_URL = process.env.SUPABASE_URL || 'https://rkdqunnttcyuybbofkvz.supabase.co';
 const BOT_SECRET_KEY = process.env.BOT_SECRET_KEY;
 
 // Check interval i millisekunder (60 sekunder)
