@@ -82,7 +82,11 @@ function setupAIAutomodHandler(client, supabase, options = {}) {
         })
       });
 
-      if (!response.ok) return;
+      if (!response.ok) {
+        const errorBody = await response.text().catch(() => '');
+        console.error(`[AI-AutoMod] API error ${response.status}: ${errorBody.slice(0, 500)}`);
+        return;
+      }
 
       const result = await response.json();
       const analysis = result.analysis;
