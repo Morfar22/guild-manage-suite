@@ -38,7 +38,7 @@ serve(async (req) => {
     }
 
     const { action, data } = await req.json();
-    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+    const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
 
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL')!,
@@ -75,14 +75,15 @@ serve(async (req) => {
 
       const transcript = messages.map(m => `${m.author_name || m.author_id}: ${m.content}`).join('\n');
 
-      const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+      const response = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${LOVABLE_API_KEY}`,
+          'Authorization': `Bearer ${OPENAI_API_KEY}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: 'google/gemini-2.5-flash-lite',
+          model: 'gpt-5.6-luna',
+          reasoning_effort: 'none',
           messages: [
             {
               role: 'system',
@@ -100,9 +101,8 @@ Keep it under 200 words. Be factual and clear. Respond in the same language as t
 
       if (!response.ok) {
         const status = response.status;
-        if (status === 429) return new Response(JSON.stringify({ error: 'Rate limited' }), { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
-        if (status === 402) return new Response(JSON.stringify({ error: 'Credits exhausted' }), { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
-        throw new Error(`AI gateway error: ${status}`);
+        if (status === 429) return new Response(JSON.stringify({ error: 'OpenAI rate limited' }), { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+        throw new Error(`OpenAI API error: ${status}`);
       }
 
       const aiResult = await response.json();
