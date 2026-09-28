@@ -61,7 +61,8 @@ Projektet bygger med Nitro mod Cloudflare (allerede konfigureret i `vite.config.
 AI-screening, AI-chat, AI-automod, AI auto-responder, tekstforbedring og ticket summaries bruger nu OpenAI direkte fra server-ruterne.
 - Opret en OpenAI API-nøgle.
 - Tilføj `OPENAI_API_KEY` som en hemmelig Cloudflare Secret.
-- De aktive filer under `src/routes/api/public/ai-*.ts` bruger `https://api.openai.com/v1/chat/completions` med modellen `gpt-5.6-luna`.
+- Valgfrit: sæt `OPENAI_MODEL` for at overskrive standardmodellen (`gpt-5.6-luna`).
+- De aktive AI-ruter bruger én fælles server-side OpenAI-klient med `gpt-5.6-luna` som standardmodel, timeout og ens fejlbehandling.
 - OpenAI-nøglen må aldrig bruge `VITE_`-prefix og må aldrig sendes til browseren.
 
 ## 6. Tjekliste efter deploy
