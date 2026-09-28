@@ -9,8 +9,8 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const GATEWAY_URL = 'https://api.openai.com/v1/chat/completions';
-const DEFAULT_MODEL = 'gpt-5.6-luna';
+const OPENAI_URL = 'https://api.openai.com/v1/chat/completions';
+const DEFAULT_MODEL = 'gpt-6-luna';
 
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -91,7 +91,7 @@ Du skal returnere en struktureret vurdering via tool call.
 
     const userPrompt = `Form: ${form.name}\nBeskrivelse: ${form.description || '(ingen)'}\n\nAnsøgers svar:\n${answersText}`;
 
-    const aiResp = await fetch(GATEWAY_URL, {
+    const aiResp = await fetch(OPENAI_URL, {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${OPENAI_API_KEY}`,
