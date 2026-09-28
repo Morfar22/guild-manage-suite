@@ -410,7 +410,7 @@ export default function AIChatSettings() {
                 <div>
                   <p className="font-medium">AI genererer svar</p>
                   <p className="text-sm text-muted-foreground">
-                    Gemini AI analyserer samtalen og genererer et svar
+                    OpenAI analyserer samtalen og genererer et svar
                   </p>
                 </div>
               </div>
