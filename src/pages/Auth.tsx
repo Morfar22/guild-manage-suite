@@ -13,7 +13,8 @@ import { Helmet } from 'react-helmet-async';
 import { z } from 'zod';
 import { invokeFunction } from '@/lib/functions-client';
 
-const DISCORD_REDIRECT_URI = typeof window !== 'undefined' ? `${window.location.origin}/auth` : 'https://bot.nethost-solutions.dk/auth';
+const DISCORD_ORIGIN = 'https://bot.nethost-solutions.dk';
+const DISCORD_REDIRECT_URI = `${DISCORD_ORIGIN}/auth`;
 
 const authSchema = z.object({
   email: z.string().email('Please enter a valid email address'),
@@ -90,7 +91,7 @@ export default function Auth() {
   };
 
   const handleDiscordLogin = async () => {
-    if (window.location.origin !== 'https://bot.nethost-solutions.dk') {
+    if (window.location.origin !== DISCORD_ORIGIN) {
       window.location.assign(`${DISCORD_REDIRECT_URI}?startDiscord=true`);
       return;
     }
@@ -106,8 +107,7 @@ export default function Auth() {
       if (response.error) throw new Error(response.error.message || 'Failed to start Discord login');
       const data = response.data;
       if (data.error) throw new Error(data.error);
-      const opened = window.open(data.url, '_blank', 'noopener,noreferrer');
-      if (!opened) window.location.href = data.url;
+      window.location.assign(data.url);
     } catch (err: any) {
       console.error('Discord login error:', err);
       setError(err.message || 'Failed to start Discord login');
