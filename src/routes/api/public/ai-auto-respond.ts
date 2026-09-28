@@ -2,6 +2,7 @@
 // Migrated from Supabase Edge Function `ai-auto-respond` to a TanStack server route.
 import { createFileRoute } from '@tanstack/react-router'
 import { createClient } from '@supabase/supabase-js'
+import { openAIChatCompletion, openAIErrorResponse } from '@/lib/server/openai'
 
 const __env = (k: string) => process.env[k] ?? (k === 'SUPABASE_ANON_KEY' ? process.env['SUPABASE_PUBLISHABLE_KEY'] : undefined)
 let __handler: (req: Request) => Response | Promise<Response>
@@ -24,7 +25,6 @@ __serve(async (req) => {
     }
 
     const { action, data } = await req.json();
-    const OPENAI_API_KEY = __env('OPENAI_API_KEY');
 
     if (action === 'generate_response') {
       const { message_content, trigger_text, ai_instructions, response_content } = data;
@@ -46,30 +46,14 @@ Rules:
 - If the base response template is provided, use it as a guide but adapt to the specific message
 - Respond in the same language as the user's message`;
 
-      const response = await fetch('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${OPENAI_API_KEY}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          model: 'gpt-5.6-luna',
-          reasoning_effort: 'none',
-          messages: [
-            { role: 'system', content: systemPrompt },
-            { role: 'user', content: message_content },
-          ],
-        }),
+      const aiResult = await openAIChatCompletion({
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: message_content },
+        ],
+        max_completion_tokens: 300,
       });
 
-      if (!response.ok) {
-        const status = response.status;
-        if (status === 429) return new Response(JSON.stringify({ error: 'Rate limited' }), { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
-        if (status === 402) return new Response(JSON.stringify({ error: 'Credits exhausted' }), { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
-        throw new Error(`OpenAI API error: ${status}`);
-      }
-
-      const aiResult = await response.json();
       const generatedResponse = aiResult.choices?.[0]?.message?.content || response_content;
 
       return new Response(JSON.stringify({ success: true, response: generatedResponse }), {
@@ -80,7 +64,9 @@ Rules:
     return new Response(JSON.stringify({ error: 'Unknown action' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
   } catch (error) {
     console.error('AI Auto-Respond error:', error);
-    return new Response(JSON.stringify({ error: error.message }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    const aiError = openAIErrorResponse(error, corsHeaders);
+    if (aiError) return aiError;
+    return new Response(JSON.stringify({ error: error instanceof Error ? error.message : 'Unknown error' }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
   }
 });
 
