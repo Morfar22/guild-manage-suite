@@ -5,7 +5,13 @@ export const DEFAULT_OPENAI_MODEL = 'gpt-6-luna';
 
 type RuntimeEnv = Record<string, unknown>;
 
+function readStringBinding(env: RuntimeEnv | undefined, key: string): string | undefined {
+  const value = env?.[key];
+  return typeof value === 'string' && value.trim() ? value.trim() : undefined;
+}
+
 function readRuntimeEnv(key: string): string | undefined {
+  // Node/local runtime and Cloudflare Workers with process-env population enabled.
   const processValue =
     typeof process !== 'undefined' && process.env
       ? process.env[key]
@@ -15,14 +21,21 @@ function readRuntimeEnv(key: string): string | undefined {
     return processValue.trim();
   }
 
-  const runtimeEnv = (globalThis as typeof globalThis & {
+  const globals = globalThis as typeof globalThis & {
+    // Nitro's Cloudflare preset exposes Worker bindings here on each request.
+    __env__?: RuntimeEnv;
+    // Kept as a compatibility fallback for our custom server bridge.
     __GUILD_MANAGE_RUNTIME_ENV__?: RuntimeEnv;
-  }).__GUILD_MANAGE_RUNTIME_ENV__;
+  };
 
-  const runtimeValue = runtimeEnv?.[key];
-  if (typeof runtimeValue === 'string' && runtimeValue.trim()) {
-    return runtimeValue.trim();
-  }
+  const nitroBinding = readStringBinding(globals.__env__, key);
+  if (nitroBinding) return nitroBinding;
+
+  const bridgedBinding = readStringBinding(
+    globals.__GUILD_MANAGE_RUNTIME_ENV__,
+    key,
+  );
+  if (bridgedBinding) return bridgedBinding;
 
   return undefined;
 }
