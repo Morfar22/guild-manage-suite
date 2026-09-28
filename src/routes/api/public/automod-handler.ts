@@ -279,7 +279,6 @@ __serve(async (req) => {
           }
           break;
         }
-        }
       }
 
       if (violated) {
