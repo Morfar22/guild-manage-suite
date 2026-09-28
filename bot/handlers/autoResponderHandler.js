@@ -95,6 +95,9 @@ function setupAutoResponderHandler(client, supabase, options = {}) {
             if (aiResponse.ok) {
               const aiData = await aiResponse.json();
               if (aiData.response) responseText = aiData.response;
+            } else {
+              const errorBody = await aiResponse.text().catch(() => '');
+              console.error(`[AutoResponder] AI API error ${aiResponse.status}: ${errorBody.slice(0, 500)}`);
             }
           } catch (aiErr) {
             console.error('[AutoResponder] AI error, using fallback:', aiErr.message);
