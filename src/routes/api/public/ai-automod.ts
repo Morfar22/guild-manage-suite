@@ -24,7 +24,7 @@ __serve(async (req) => {
     }
 
     const { action, data } = await req.json();
-    const LOVABLE_API_KEY = __env('LOVABLE_API_KEY');
+    const OPENAI_API_KEY = __env('OPENAI_API_KEY');
 
     if (action === 'analyze') {
       const { message_content, guild_id, user_id, user_name, channel_id, settings } = data;
@@ -56,14 +56,15 @@ Respond ONLY with a JSON object (no markdown):
 
 Flag the message if confidence exceeds ${sensitivity}%.`;
 
-      const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+      const response = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${LOVABLE_API_KEY}`,
+          'Authorization': `Bearer ${OPENAI_API_KEY}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: 'google/gemini-2.5-flash-lite',
+          model: 'gpt-5.6-luna',
+          reasoning_effort: 'none',
           messages: [
             { role: 'system', content: systemPrompt },
             { role: 'user', content: `Analyze this Discord message:\n"${message_content}"` },
@@ -75,7 +76,7 @@ Flag the message if confidence exceeds ${sensitivity}%.`;
         const status = response.status;
         if (status === 429) return new Response(JSON.stringify({ error: 'Rate limited' }), { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
         if (status === 402) return new Response(JSON.stringify({ error: 'Credits exhausted' }), { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
-        throw new Error(`AI gateway error: ${status}`);
+        throw new Error(`OpenAI API error: ${status}`);
       }
 
       const aiResult = await response.json();
