@@ -314,7 +314,7 @@ __serve(async (req) => {
       if (sessionError) {
         console.error("Failed to generate session:", sessionError);
         return new Response(
-          JSON.stringify({ error: "Failed to create session" }),
+          JSON.stringify({ error: `Failed to create session: ${sessionError.message}` }),
           { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
