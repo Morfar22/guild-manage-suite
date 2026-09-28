@@ -2,6 +2,7 @@
 // Migrated from Supabase Edge Function `ai-chat` to a TanStack server route.
 import { createFileRoute } from '@tanstack/react-router'
 import { createClient } from '@supabase/supabase-js'
+import { openAIChatCompletion, openAIErrorResponse } from '@/lib/server/openai'
 
 const __env = (k: string) => process.env[k] ?? (k === 'SUPABASE_ANON_KEY' ? process.env['SUPABASE_PUBLISHABLE_KEY'] : undefined)
 let __handler: (req: Request) => Response | Promise<Response>
@@ -251,7 +252,6 @@ __serve(async (req) => {
     const supabaseUrl = __env('SUPABASE_URL')!;
     const supabaseServiceKey = __env('SUPABASE_SERVICE_ROLE_KEY')!;
     const botSecretKey = __env('BOT_SECRET_KEY');
-    const openaiApiKey = __env('OPENAI_API_KEY');
     
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
@@ -365,14 +365,6 @@ __serve(async (req) => {
           });
         }
 
-        if (!openaiApiKey) {
-          console.error('OPENAI_API_KEY is not configured');
-          return new Response(JSON.stringify({ error: 'AI not configured' }), {
-            status: 500,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-          });
-        }
-
         const { data: settings } = await supabase
           .from('ai_chat_settings')
           .select('*')
@@ -459,41 +451,12 @@ __serve(async (req) => {
 
         console.log(`Sending ${messages.length} messages to AI for user ${userName}`);
 
-        const aiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${openaiApiKey}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            model: 'gpt-5.6-luna',
-            messages,
-            max_completion_tokens: 500,
-            reasoning_effort: 'none',
-          }),
+        const aiData = await openAIChatCompletion({
+          messages,
+          max_completion_tokens: 500,
         });
 
-        if (!aiResponse.ok) {
-          const errorText = await aiResponse.text();
-          console.error('OpenAI API error:', aiResponse.status, errorText);
-          
-          if (aiResponse.status === 429) {
-            return new Response(JSON.stringify({ error: 'Rate limit exceeded, please try again later' }), {
-              status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-            });
-          }
-          if (aiResponse.status === 402) {
-            return new Response(JSON.stringify({ error: 'AI credits exhausted' }), {
-              status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-            });
-          }
-          
-          return new Response(JSON.stringify({ error: 'AI request failed' }), {
-            status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-          });
-        }
 
-        const aiData = await aiResponse.json();
         let assistantMessage = aiData.choices?.[0]?.message?.content || 'Sorry, I could not generate a response.';
 
         // Content safety: scan AI output for harmful content
@@ -582,6 +545,8 @@ __serve(async (req) => {
     }
   } catch (error) {
     console.error('AI Chat Handler error:', error);
+    const aiError = openAIErrorResponse(error, corsHeaders);
+    if (aiError) return aiError;
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return new Response(JSON.stringify({ error: errorMessage }), {
       status: 500,
