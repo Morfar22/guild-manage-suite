@@ -2,6 +2,7 @@
 // Migrated from Supabase Edge Function `ai-automod` to a TanStack server route.
 import { createFileRoute } from '@tanstack/react-router'
 import { createClient } from '@supabase/supabase-js'
+import { openAIChatCompletion, openAIErrorResponse } from '@/lib/server/openai'
 
 const __env = (k: string) => process.env[k] ?? (k === 'SUPABASE_ANON_KEY' ? process.env['SUPABASE_PUBLISHABLE_KEY'] : undefined)
 let __handler: (req: Request) => Response | Promise<Response>
@@ -24,7 +25,6 @@ __serve(async (req) => {
     }
 
     const { action, data } = await req.json();
-    const OPENAI_API_KEY = __env('OPENAI_API_KEY');
 
     if (action === 'analyze') {
       const { message_content, guild_id, user_id, user_name, channel_id, settings } = data;
@@ -56,30 +56,32 @@ Respond ONLY with a JSON object (no markdown):
 
 Flag the message if confidence exceeds ${sensitivity}%.`;
 
-      const response = await fetch('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${OPENAI_API_KEY}`,
-          'Content-Type': 'application/json',
+      const aiResult = await openAIChatCompletion({
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: `Analyze this Discord message:\n"${message_content}"` },
+        ],
+        response_format: {
+          type: 'json_schema',
+          json_schema: {
+            name: 'discord_moderation_result',
+            strict: true,
+            schema: {
+              type: 'object',
+              additionalProperties: false,
+              properties: {
+                flagged: { type: 'boolean' },
+                reason: { type: 'string' },
+                category: { type: 'string', enum: ['toxicity', 'spam', 'nsfw', 'hate_speech', 'clean'] },
+                confidence: { type: 'integer', minimum: 0, maximum: 100 },
+                severity: { type: 'string', enum: ['low', 'medium', 'high'] },
+              },
+              required: ['flagged', 'reason', 'category', 'confidence', 'severity'],
+            },
+          },
         },
-        body: JSON.stringify({
-          model: 'gpt-5.6-luna',
-          reasoning_effort: 'none',
-          messages: [
-            { role: 'system', content: systemPrompt },
-            { role: 'user', content: `Analyze this Discord message:\n"${message_content}"` },
-          ],
-        }),
       });
 
-      if (!response.ok) {
-        const status = response.status;
-        if (status === 429) return new Response(JSON.stringify({ error: 'Rate limited' }), { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
-        if (status === 402) return new Response(JSON.stringify({ error: 'Credits exhausted' }), { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
-        throw new Error(`OpenAI API error: ${status}`);
-      }
-
-      const aiResult = await response.json();
       let content = aiResult.choices?.[0]?.message?.content || '';
       // Strip markdown code fences if present
       content = content.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
@@ -99,7 +101,9 @@ Flag the message if confidence exceeds ${sensitivity}%.`;
     return new Response(JSON.stringify({ error: 'Unknown action' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
   } catch (error) {
     console.error('AI Automod error:', error);
-    return new Response(JSON.stringify({ error: error.message }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    const aiError = openAIErrorResponse(error, corsHeaders);
+    if (aiError) return aiError;
+    return new Response(JSON.stringify({ error: error instanceof Error ? error.message : 'Unknown error' }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
   }
 });
 
