@@ -3,12 +3,8 @@
   "name": "guild-manage-suite",
   "compatibility_date": "2026-09-28",
   "compatibility_flags": [
+    "nodejs_compat",
     "nodejs_compat_populate_process_env"
   ],
-  "keep_vars": true,
-  "secrets": {
-    "required": [
-      "OPENAI_API_KEY"
-    ]
-  }
+  "keep_vars": true
 }
