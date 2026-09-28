@@ -2482,14 +2482,6 @@ manager.registerHandler((client, guildId) => {
     console.error(`[Bot] ❌ Quarantine handler fejl:`, e.message);
   }
 
-  // Honeypot Handler
-  try {
-    setupHoneypotHandler(client, supabase, { shouldHandleGuild });
-    console.log(`[Bot] ✅ Honeypot handler for ${clientLabel}`);
-  } catch (e) {
-    console.error(`[Bot] ❌ Honeypot handler fejl:`, e.message);
-  }
-
   // Slowmode Scheduler
   try {
     setupSlowmodeScheduler(client, supabase, { shouldHandleGuild });
