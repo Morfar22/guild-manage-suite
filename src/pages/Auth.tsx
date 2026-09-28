@@ -90,6 +90,11 @@ export default function Auth() {
   };
 
   const handleDiscordLogin = async () => {
+    if (window.location.origin !== 'https://bot.nethost-solutions.dk') {
+      window.location.assign(`${DISCORD_REDIRECT_URI}?startDiscord=true`);
+      return;
+    }
+
     setDiscordLoading(true);
     setError(null);
     try {
@@ -98,10 +103,6 @@ export default function Auth() {
         body: { redirectUri },
         headers: { 'Content-Type': 'application/json' },
       });
-      if (response.error && window.location.origin !== 'https://bot.nethost-solutions.dk') {
-        window.location.assign(`${DISCORD_REDIRECT_URI}?startDiscord=true`);
-        return;
-      }
       if (response.error) throw new Error(response.error.message || 'Failed to start Discord login');
       const data = response.data;
       if (data.error) throw new Error(data.error);

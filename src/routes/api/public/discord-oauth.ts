@@ -38,8 +38,8 @@ __serve(async (req) => {
   const url = new URL(req.url);
   const action = url.searchParams.get("action");
 
-  const DISCORD_CLIENT_ID = __env("DISCORD_CLIENT_ID");
-  const DISCORD_CLIENT_SECRET = __env("DISCORD_CLIENT_SECRET");
+  const DISCORD_CLIENT_ID = __env("DISCORD_CLIENT_ID")?.trim();
+  const DISCORD_CLIENT_SECRET = __env("DISCORD_CLIENT_SECRET")?.trim();
   const SUPABASE_URL = __env("SUPABASE_URL");
   const SUPABASE_SERVICE_ROLE_KEY = __env("SUPABASE_SERVICE_ROLE_KEY");
 
