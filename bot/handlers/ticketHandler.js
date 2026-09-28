@@ -738,7 +738,12 @@ async function handleCloseTicket(interaction, threadId, deleteThread = false) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-bot-secret': BOT_SECRET },
       body: JSON.stringify({ action: 'summarize', data: { ticket_id: result.ticket_id } })
-    }).catch(err => console.error('[Tickets] AI summary error:', err.message));
+    }).then(async (response) => {
+      if (!response.ok) {
+        const errorBody = await response.text().catch(() => '');
+        console.error(`[Tickets] AI summary API error ${response.status}: ${errorBody.slice(0, 500)}`);
+      }
+    }).catch(err => console.error('[Tickets] AI summary network error:', err.message));
 
     // Trigger HTML transcript generation + DM (fire-and-forget)
     const TRANSCRIPT_URL = `${APP_API_BASE}/api/public/generate-ticket-transcript`;
