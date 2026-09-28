@@ -13,7 +13,7 @@ import { Helmet } from 'react-helmet-async';
 import { z } from 'zod';
 import { invokeFunction } from '@/lib/functions-client';
 
-const DISCORD_REDIRECT_URI = 'https://bot.nethost-solutions.dk/auth';
+const DISCORD_REDIRECT_URI = typeof window !== 'undefined' ? `${window.location.origin}/auth` : 'https://bot.nethost-solutions.dk/auth';
 
 const authSchema = z.object({
   email: z.string().email('Please enter a valid email address'),
