@@ -1,3 +1,5 @@
+import { env as cloudflareEnv } from 'cloudflare:workers';
+
 // Server-only OpenAI helper shared by all self-hosted AI routes.
 
 export const OPENAI_CHAT_COMPLETIONS_URL = 'https://api.openai.com/v1/chat/completions';
@@ -10,36 +12,50 @@ function readStringBinding(env: RuntimeEnv | undefined, key: string): string | u
   return typeof value === 'string' && value.trim() ? value.trim() : undefined;
 }
 
-function readRuntimeEnv(key: string): string | undefined {
-  // Node/local runtime and Cloudflare Workers with process-env population enabled.
+export type RuntimeEnvSource =
+  | 'cloudflare:workers'
+  | 'process.env'
+  | 'nitro-global'
+  | 'server-bridge'
+  | 'missing';
+
+export function readRuntimeEnvWithSource(key: string): { value?: string; source: RuntimeEnvSource } {
+  const cloudflareValue = readStringBinding(cloudflareEnv as unknown as RuntimeEnv, key);
+  if (cloudflareValue) {
+    return { value: cloudflareValue, source: 'cloudflare:workers' };
+  }
+
   const processValue =
     typeof process !== 'undefined' && process.env
       ? process.env[key]
       : undefined;
 
   if (typeof processValue === 'string' && processValue.trim()) {
-    return processValue.trim();
+    return { value: processValue.trim(), source: 'process.env' };
   }
 
   const globals = globalThis as typeof globalThis & {
-    // Nitro's Cloudflare preset exposes Worker bindings here on each request.
     __env__?: RuntimeEnv;
-    // Kept as a compatibility fallback for our custom server bridge.
     __GUILD_MANAGE_RUNTIME_ENV__?: RuntimeEnv;
   };
 
   const nitroBinding = readStringBinding(globals.__env__, key);
-  if (nitroBinding) return nitroBinding;
+  if (nitroBinding) return { value: nitroBinding, source: 'nitro-global' };
 
   const bridgedBinding = readStringBinding(
     globals.__GUILD_MANAGE_RUNTIME_ENV__,
     key,
   );
-  if (bridgedBinding) return bridgedBinding;
+  if (bridgedBinding) return { value: bridgedBinding, source: 'server-bridge' };
 
-  return undefined;
+  return { source: 'missing' };
 }
 
+function readRuntimeEnv(key: string): string | undefined {
+  return readRuntimeEnvWithSource(key).value;
+}
+
+/* legacy body removed */
 export function getOpenAIModel(): string {
   const configured = readRuntimeEnv('OPENAI_MODEL');
   // Automatically migrate the old model id used by the first OpenAI migration.
