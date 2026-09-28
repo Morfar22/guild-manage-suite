@@ -56,7 +56,7 @@ Flag the message if confidence exceeds ${sensitivity}%.`;
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: 'gpt-5.6-luna',
+          model: 'gpt-6-luna',
           reasoning_effort: 'none',
           messages: [
             { role: 'system', content: systemPrompt },
