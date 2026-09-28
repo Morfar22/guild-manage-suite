@@ -39,7 +39,17 @@ export async function invokeFunction<T = any>(
       const message =
         (parsed && typeof parsed === 'object' && (parsed.error || parsed.message)) ||
         `Function ${name} failed with status ${res.status}`;
-      return { data: null, error: new Error(String(message)) };
+      const error = new Error(String(message)) as Error & {
+        code?: string;
+        status?: number;
+        requestId?: string;
+      };
+      if (parsed && typeof parsed === 'object') {
+        if (typeof parsed.code === 'string') error.code = parsed.code;
+        if (typeof parsed.request_id === 'string') error.requestId = parsed.request_id;
+      }
+      error.status = res.status;
+      return { data: null, error };
     }
 
     return { data: parsed as T, error: null };
