@@ -2,12 +2,12 @@
 import { createFileRoute } from '@tanstack/react-router'
 import {
   getOpenAIModel,
-  readRuntimeEnvWithSource,
+  readRuntimeEnvWithSourceAsync,
 } from '@/lib/server/openai'
 
 const handler = async () => {
-  const key = readRuntimeEnvWithSource('OPENAI_API_KEY')
-  const model = readRuntimeEnvWithSource('OPENAI_MODEL')
+  const key = await readRuntimeEnvWithSourceAsync('OPENAI_API_KEY')
+  const model = await readRuntimeEnvWithSourceAsync('OPENAI_MODEL')
 
   return new Response(JSON.stringify({
     ok: Boolean(key.value),
