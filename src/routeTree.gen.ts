@@ -11,10 +11,10 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as SplatRouteImport } from './routes/$'
-import { Route as AdminRouteImport } from './routes/admin'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as GuildsRouteImport } from './routes/guilds'
+import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as AdminGlobalBansRouteImport } from './routes/admin.global-bans'
 import { Route as DashboardIndexRouteImport } from './routes/dashboard/index'
 import { Route as DashboardActivityHeatmapRouteImport } from './routes/dashboard/activity-heatmap'
@@ -152,11 +152,6 @@ const SplatRoute = SplatRouteImport.update({
   path: '/$',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AdminRoute = AdminRouteImport.update({
-  id: '/admin',
-  path: '/admin',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
   path: '/auth',
@@ -172,10 +167,15 @@ const GuildsRoute = GuildsRouteImport.update({
   path: '/guilds',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminIndexRoute = AdminIndexRouteImport.update({
+  id: '/admin/',
+  path: '/admin/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminGlobalBansRoute = AdminGlobalBansRouteImport.update({
-  id: '/global-bans',
-  path: '/global-bans',
-  getParentRoute: () => AdminRoute,
+  id: '/admin/global-bans',
+  path: '/admin/global-bans',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const DashboardIndexRoute = DashboardIndexRouteImport.update({
   id: '/',
@@ -835,7 +835,6 @@ const DashboardApplicationsFormsFormIdRoute =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/$': typeof SplatRoute
-  '/admin': typeof AdminRouteWithChildren
   '/auth': typeof AuthRoute
   '/dashboard': typeof DashboardRouteWithChildren
   '/guilds': typeof GuildsRoute
@@ -902,6 +901,7 @@ export interface FileRoutesByFullPath {
   '/dashboard/welcome': typeof DashboardWelcomeRoute
   '/dashboard/youtube': typeof DashboardYoutubeRoute
   '/docs': typeof DocsLayoutRoute
+  '/admin/': typeof AdminIndexRoute
   '/dashboard/': typeof DashboardIndexRoute
   '/docs/': typeof DocsIndexRoute
   '/api/public/admin-check-ip': typeof ApiPublicAdminCheckIpRoute
@@ -969,7 +969,6 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/$': typeof SplatRoute
-  '/admin': typeof AdminRouteWithChildren
   '/auth': typeof AuthRoute
   '/guilds': typeof GuildsRoute
   '/admin/global-bans': typeof AdminGlobalBansRoute
@@ -1035,6 +1034,7 @@ export interface FileRoutesByTo {
   '/dashboard/welcome': typeof DashboardWelcomeRoute
   '/dashboard/youtube': typeof DashboardYoutubeRoute
   '/docs': typeof DocsIndexRoute
+  '/admin': typeof AdminIndexRoute
   '/dashboard': typeof DashboardIndexRoute
   '/api/public/admin-check-ip': typeof ApiPublicAdminCheckIpRoute
   '/api/public/admin-users': typeof ApiPublicAdminUsersRoute
@@ -1102,7 +1102,6 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/$': typeof SplatRoute
-  '/admin': typeof AdminRouteWithChildren
   '/auth': typeof AuthRoute
   '/dashboard': typeof DashboardRouteWithChildren
   '/guilds': typeof GuildsRoute
@@ -1169,6 +1168,7 @@ export interface FileRoutesById {
   '/dashboard/welcome': typeof DashboardWelcomeRoute
   '/dashboard/youtube': typeof DashboardYoutubeRoute
   '/docs/_layout': typeof DocsLayoutRoute
+  '/admin/': typeof AdminIndexRoute
   '/dashboard/': typeof DashboardIndexRoute
   '/docs/': typeof DocsIndexRoute
   '/api/public/admin-check-ip': typeof ApiPublicAdminCheckIpRoute
@@ -1238,7 +1238,6 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/$'
-    | '/admin'
     | '/auth'
     | '/dashboard'
     | '/guilds'
@@ -1305,6 +1304,7 @@ export interface FileRouteTypes {
     | '/dashboard/welcome'
     | '/dashboard/youtube'
     | '/docs'
+    | '/admin/'
     | '/dashboard/'
     | '/docs/'
     | '/api/public/admin-check-ip'
@@ -1372,7 +1372,6 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/$'
-    | '/admin'
     | '/auth'
     | '/guilds'
     | '/admin/global-bans'
@@ -1438,6 +1437,7 @@ export interface FileRouteTypes {
     | '/dashboard/welcome'
     | '/dashboard/youtube'
     | '/docs'
+    | '/admin'
     | '/dashboard'
     | '/api/public/admin-check-ip'
     | '/api/public/admin-users'
@@ -1504,7 +1504,6 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/$'
-    | '/admin'
     | '/auth'
     | '/dashboard'
     | '/guilds'
@@ -1571,6 +1570,7 @@ export interface FileRouteTypes {
     | '/dashboard/welcome'
     | '/dashboard/youtube'
     | '/docs/_layout'
+    | '/admin/'
     | '/dashboard/'
     | '/docs/'
     | '/api/public/admin-check-ip'
@@ -1639,11 +1639,12 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   SplatRoute: typeof SplatRoute
-  AdminRoute: typeof AdminRouteWithChildren
   AuthRoute: typeof AuthRoute
   DashboardRoute: typeof DashboardRouteWithChildren
   GuildsRoute: typeof GuildsRoute
+  AdminGlobalBansRoute: typeof AdminGlobalBansRoute
   DocsLayoutRoute: typeof DocsLayoutRoute
+  AdminIndexRoute: typeof AdminIndexRoute
   DocsIndexRoute: typeof DocsIndexRoute
   ApiPublicAdminCheckIpRoute: typeof ApiPublicAdminCheckIpRoute
   ApiPublicAdminUsersRoute: typeof ApiPublicAdminUsersRoute
@@ -1716,13 +1717,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SplatRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/admin': {
-      id: '/admin'
-      path: '/admin'
-      fullPath: '/admin'
-      preLoaderRoute: typeof AdminRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/auth': {
       id: '/auth'
       path: '/auth'
@@ -1744,12 +1738,19 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof GuildsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/': {
+      id: '/admin/'
+      path: '/admin'
+      fullPath: '/admin/'
+      preLoaderRoute: typeof AdminIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin/global-bans': {
       id: '/admin/global-bans'
-      path: '/global-bans'
+      path: '/admin/global-bans'
       fullPath: '/admin/global-bans'
       preLoaderRoute: typeof AdminGlobalBansRouteImport
-      parentRoute: typeof AdminRoute
+      parentRoute: typeof rootRouteImport
     }
     '/dashboard/': {
       id: '/dashboard/'
@@ -2629,16 +2630,6 @@ declare module '@tanstack/react-router' {
   }
 }
 
-interface AdminRouteChildren {
-  AdminGlobalBansRoute: typeof AdminGlobalBansRoute
-}
-
-const AdminRouteChildren: AdminRouteChildren = {
-  AdminGlobalBansRoute: AdminGlobalBansRoute,
-}
-
-const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
-
 interface DashboardRouteChildren {
   DashboardActivityHeatmapRoute: typeof DashboardActivityHeatmapRoute
   DashboardAiAutomodRoute: typeof DashboardAiAutomodRoute
@@ -2793,11 +2784,12 @@ const DashboardRouteWithChildren = DashboardRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   SplatRoute: SplatRoute,
-  AdminRoute: AdminRouteWithChildren,
   AuthRoute: AuthRoute,
   DashboardRoute: DashboardRouteWithChildren,
   GuildsRoute: GuildsRoute,
+  AdminGlobalBansRoute: AdminGlobalBansRoute,
   DocsLayoutRoute: DocsLayoutRoute,
+  AdminIndexRoute: AdminIndexRoute,
   DocsIndexRoute: DocsIndexRoute,
   ApiPublicAdminCheckIpRoute: ApiPublicAdminCheckIpRoute,
   ApiPublicAdminUsersRoute: ApiPublicAdminUsersRoute,
