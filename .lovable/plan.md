@@ -120,7 +120,7 @@ Free-tier-limits enforces via DB-trigger:
 
 ## Teknisk
 
-- AI: OpenAI via server-side `OPENAI_API_KEY` (standardmodel `gpt-5.6-luna`)
+- AI: OpenAI via server-side `OPENAI_API_KEY` (standardmodel `gpt-6-luna`)
 - Realtime: subscribe på `application_submissions` i review-siden så nye ansøgninger popper ind live
 - Notifikationer: bot DM'er ansøger ved hver status-ændring
 - Sikkerhed: RLS opdateres så `application_audit_log` kun læses af guild-admins; AI-felter kun skrivbare af service_role
