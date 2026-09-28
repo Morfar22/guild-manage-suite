@@ -1,5 +1,5 @@
 // AI Screening for Applications
-// Bruger Lovable AI Gateway (Gemini) til at score og opsummere ansøgninger.
+// Bruger OpenAI API til at score og opsummere ansøgninger.
 // Hvis form har auto-approve/deny tærskler, kører action automatisk.
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
@@ -9,8 +9,8 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const GATEWAY_URL = 'https://ai.gateway.lovable.dev/v1/chat/completions';
-const DEFAULT_MODEL = 'google/gemini-2.5-flash';
+const GATEWAY_URL = 'https://api.openai.com/v1/chat/completions';
+const DEFAULT_MODEL = 'gpt-5.6-luna';
 
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -37,11 +37,11 @@ Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
 
   try {
-    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+    const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
     const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
     const SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
-    if (!LOVABLE_API_KEY) return json({ error: 'AI not configured' }, 500);
+    if (!OPENAI_API_KEY) return json({ error: 'AI not configured' }, 500);
 
     const { submission_id } = (await req.json()) as ScreenRequest;
     if (!submission_id) return json({ error: 'submission_id required' }, 400);
@@ -94,11 +94,12 @@ Du skal returnere en struktureret vurdering via tool call.
     const aiResp = await fetch(GATEWAY_URL, {
       method: 'POST',
       headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        Authorization: `Bearer ${OPENAI_API_KEY}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
         model: DEFAULT_MODEL,
+        reasoning_effort: 'none',
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt },
@@ -132,9 +133,8 @@ Du skal returnere en struktureret vurdering via tool call.
     if (!aiResp.ok) {
       const errText = await aiResp.text();
       if (aiResp.status === 429) return json({ error: 'AI rate limit, prøv igen senere' }, 429);
-      if (aiResp.status === 402) return json({ error: 'AI credits opbrugt' }, 402);
       console.error('AI error:', aiResp.status, errText);
-      return json({ error: 'AI gateway error' }, 500);
+      return json({ error: 'OpenAI API error' }, 500);
     }
 
     const aiJson = await aiResp.json();
