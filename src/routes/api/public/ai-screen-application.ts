@@ -2,6 +2,7 @@
 // Migrated from Supabase Edge Function `ai-screen-application` to a TanStack server route.
 import { createFileRoute } from '@tanstack/react-router'
 import { createClient } from '@supabase/supabase-js'
+import { openAIChatCompletion, openAIErrorResponse } from '@/lib/server/openai'
 
 const __env = (k: string) => process.env[k] ?? (k === 'SUPABASE_ANON_KEY' ? process.env['SUPABASE_PUBLISHABLE_KEY'] : undefined)
 let __handler: (req: Request) => Response | Promise<Response>
@@ -16,9 +17,6 @@ const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
-
-const OPENAI_URL = 'https://api.openai.com/v1/chat/completions';
-const DEFAULT_MODEL = 'gpt-5.6-luna';
 
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -45,11 +43,8 @@ __serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
 
   try {
-    const OPENAI_API_KEY = __env('OPENAI_API_KEY');
     const SUPABASE_URL = __env('SUPABASE_URL')!;
     const SERVICE_KEY = __env('SUPABASE_SERVICE_ROLE_KEY')!;
-
-    if (!OPENAI_API_KEY) return json({ error: 'AI not configured' }, 500);
 
     const { submission_id } = (await req.json()) as ScreenRequest;
     if (!submission_id) return json({ error: 'submission_id required' }, 400);
@@ -99,54 +94,40 @@ Du skal returnere en struktureret vurdering via tool call.
 
     const userPrompt = `Form: ${form.name}\nBeskrivelse: ${form.description || '(ingen)'}\n\nAnsøgers svar:\n${answersText}`;
 
-    const aiResp = await fetch(OPENAI_URL, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${OPENAI_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: DEFAULT_MODEL,
-        reasoning_effort: 'none',
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: userPrompt },
-        ],
-        tools: [
-          {
-            type: 'function',
-            function: {
-              name: 'submit_evaluation',
-              description: 'Returnér din vurdering af ansøgningen',
-              parameters: {
-                type: 'object',
-                properties: {
-                  score: { type: 'integer', minimum: 0, maximum: 100 },
-                  summary: { type: 'string' },
-                  flags: { type: 'array', items: { type: 'string' } },
-                  reasoning: { type: 'string' },
-                  recommendation: { type: 'string', enum: ['approve', 'deny', 'review'] },
-                  ai_generated_likelihood: { type: 'integer', minimum: 0, maximum: 100 },
-                  ai_generated_reasoning: { type: 'string' },
-                },
-                required: ['score', 'summary', 'flags', 'reasoning', 'recommendation', 'ai_generated_likelihood', 'ai_generated_reasoning'],
+    const aiJson = await openAIChatCompletion({
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userPrompt },
+      ],
+      tools: [
+        {
+          type: 'function',
+          function: {
+            name: 'submit_evaluation',
+            description: 'Returnér din vurdering af ansøgningen',
+            strict: true,
+            parameters: {
+              type: 'object',
+              additionalProperties: false,
+              properties: {
+                score: { type: 'integer', minimum: 0, maximum: 100 },
+                summary: { type: 'string' },
+                flags: { type: 'array', items: { type: 'string' } },
+                reasoning: { type: 'string' },
+                recommendation: { type: 'string', enum: ['approve', 'deny', 'review'] },
+                ai_generated_likelihood: { type: 'integer', minimum: 0, maximum: 100 },
+                ai_generated_reasoning: { type: 'string' },
               },
+              required: ['score', 'summary', 'flags', 'reasoning', 'recommendation', 'ai_generated_likelihood', 'ai_generated_reasoning'],
             },
           },
-        ],
-        tool_choice: { type: 'function', function: { name: 'submit_evaluation' } },
-      }),
+        },
+      ],
+      tool_choice: { type: 'function', function: { name: 'submit_evaluation' } },
+      max_completion_tokens: 1200,
     });
 
-    if (!aiResp.ok) {
-      const errText = await aiResp.text();
-      if (aiResp.status === 429) return json({ error: 'AI rate limit, prøv igen senere' }, 429);
-      if (aiResp.status === 402) return json({ error: 'AI credits opbrugt' }, 402);
-      console.error('AI error:', aiResp.status, errText);
-      return json({ error: 'OpenAI API error' }, 500);
-    }
 
-    const aiJson = await aiResp.json();
     const toolCall = aiJson.choices?.[0]?.message?.tool_calls?.[0];
     if (!toolCall) return json({ error: 'No tool call in AI response' }, 500);
 
@@ -209,6 +190,8 @@ Du skal returnere en struktureret vurdering via tool call.
     return json({ success: true, result, auto_action: autoAction });
   } catch (err) {
     console.error('ai-screen-application error:', err);
+    const aiError = openAIErrorResponse(err, corsHeaders);
+    if (aiError) return aiError;
     return json({ error: err instanceof Error ? err.message : 'Unknown error' }, 500);
   }
 });
