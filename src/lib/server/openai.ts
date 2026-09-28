@@ -1,7 +1,7 @@
 // Server-only OpenAI helper shared by all self-hosted AI routes.
 
 export const OPENAI_CHAT_COMPLETIONS_URL = 'https://api.openai.com/v1/chat/completions';
-export const DEFAULT_OPENAI_MODEL = 'gpt-5.6-luna';
+export const DEFAULT_OPENAI_MODEL = 'gpt-6-luna';
 
 type RuntimeEnv = Record<string, unknown>;
 
@@ -28,7 +28,12 @@ function readRuntimeEnv(key: string): string | undefined {
 }
 
 export function getOpenAIModel(): string {
-  return readRuntimeEnv('OPENAI_MODEL') || DEFAULT_OPENAI_MODEL;
+  const configured = readRuntimeEnv('OPENAI_MODEL');
+  // Automatically migrate the old model id used by the first OpenAI migration.
+  if (!configured || configured === 'gpt-5.6-luna') {
+    return DEFAULT_OPENAI_MODEL;
+  }
+  return configured;
 }
 
 export function isOpenAIConfigured(): boolean {
