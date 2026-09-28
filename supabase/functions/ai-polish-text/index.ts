@@ -25,19 +25,20 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: 'Missing text' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
-    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
-    if (!LOVABLE_API_KEY) {
+    const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
+    if (!OPENAI_API_KEY) {
       return new Response(JSON.stringify({ error: 'AI not configured' }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
     const langName = language === 'da' ? 'Danish' : 'English';
     const systemPrompt = `You polish short staff responses to applications. Rewrite the user's draft into a clear, ${tone}, well-structured message in ${langName}. The decision context is: ${decision}. Keep the original intent. Be concise (max ~120 words). Do NOT add greetings like "Hi {name}" unless present. Do NOT invent facts. Return ONLY the polished text, no quotes, no explanations.${context ? `\n\nApplication context:\n${context.slice(0, 2000)}` : ''}`;
 
-    const resp = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+    const resp = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${LOVABLE_API_KEY}` },
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${OPENAI_API_KEY}` },
       body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
+        model: 'gpt-5.6-luna',
+        reasoning_effort: 'none',
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: text },
@@ -46,10 +47,7 @@ serve(async (req) => {
     });
 
     if (resp.status === 429) {
-      return new Response(JSON.stringify({ error: 'Rate limit exceeded, please try again shortly.' }), { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
-    }
-    if (resp.status === 402) {
-      return new Response(JSON.stringify({ error: 'AI credits exhausted. Add credits in workspace settings.' }), { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      return new Response(JSON.stringify({ error: 'OpenAI rate limit exceeded, please try again shortly.' }), { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
     if (!resp.ok) {
       const err = await resp.text();
