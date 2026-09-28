@@ -2,6 +2,7 @@
 // Migrated from Supabase Edge Function `automod-handler` to a TanStack server route.
 import { createFileRoute } from '@tanstack/react-router'
 import { createClient } from '@supabase/supabase-js'
+import { openAIChatCompletion, openAIErrorResponse } from '@/lib/server/openai'
 
 const __env = (k: string) => process.env[k] ?? (k === 'SUPABASE_ANON_KEY' ? process.env['SUPABASE_PUBLISHABLE_KEY'] : undefined)
 let __handler: (req: Request) => Response | Promise<Response>
@@ -240,50 +241,44 @@ __serve(async (req) => {
 
         case 'ai_toxicity': {
           const sensitivity = (config.sensitivity as number) || 70;
-          const LOVABLE_API_KEY = __env('LOVABLE_API_KEY');
-          
-          if (LOVABLE_API_KEY && message_content.length > 3) {
-            try {
-              const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-                method: 'POST',
-                headers: {
-                  'Authorization': `Bearer ${LOVABLE_API_KEY}`,
-                  'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                  model: 'google/gemini-2.5-flash-lite',
-                  messages: [
-                    {
-                      role: 'system',
-                      content: `You are a content moderation AI. Analyze the following message for toxicity, hate speech, harassment, NSFW content, or spam. Respond ONLY with a JSON object: {"toxic": true/false, "score": 0-100, "reason": "brief reason"}. Score represents toxicity level (0=safe, 100=extremely toxic). Threshold is ${sensitivity}.`
-                    },
-                    { role: 'user', content: message_content }
-                  ],
-                }),
-              });
 
-              if (aiResponse.ok) {
-                const aiData = await aiResponse.json();
-                const content = aiData.choices?.[0]?.message?.content || '';
-                
-                try {
-                  const jsonMatch = content.match(/\{[\s\S]*\}/);
-                  if (jsonMatch) {
-                    const result = JSON.parse(jsonMatch[0]);
-                    if (result.toxic && result.score >= sensitivity) {
-                      violated = true;
-                      reason = `AI Toxicity (${result.score}%): ${result.reason || 'Toxic content detected'}`;
-                    }
-                  }
-                } catch {
-                  console.error('Failed to parse AI response:', content);
-                }
-              }
-            } catch (aiError) {
-              console.error('AI toxicity check error:', aiError);
+          if (message_content.length > 3) {
+            const aiData = await openAIChatCompletion({
+              messages: [
+                {
+                  role: 'system',
+                  content: `You are a content moderation AI. Analyze the following message for toxicity, hate speech, harassment, NSFW content, or spam. Threshold is ${sensitivity}/100.`
+                },
+                { role: 'user', content: message_content }
+              ],
+              response_format: {
+                type: 'json_schema',
+                json_schema: {
+                  name: 'toxicity_result',
+                  strict: true,
+                  schema: {
+                    type: 'object',
+                    additionalProperties: false,
+                    properties: {
+                      toxic: { type: 'boolean' },
+                      score: { type: 'integer', minimum: 0, maximum: 100 },
+                      reason: { type: 'string' },
+                    },
+                    required: ['toxic', 'score', 'reason'],
+                  },
+                },
+              },
+            });
+
+            const content = aiData.choices?.[0]?.message?.content || '{}';
+            const result = JSON.parse(content);
+            if (result.toxic && result.score >= sensitivity) {
+              violated = true;
+              reason = `AI Toxicity (${result.score}%): ${result.reason || 'Toxic content detected'}`;
             }
           }
           break;
+        }
         }
       }
 
