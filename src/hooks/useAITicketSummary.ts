@@ -20,12 +20,16 @@ export function useAITicketSummary() {
       toast.success('AI-opsummering genereret');
     },
     onError: (err: any) => {
-      if (err.message?.includes('Rate limited')) {
-        toast.error('AI er rate limited. Prøv igen om lidt.');
-      } else if (err.message?.includes('Credits')) {
-        toast.error('AI-credits opbrugt. Tilføj flere credits.');
+      if (err.code === 'openai_rate_limited') {
+        toast.error('OpenAI er rate limited. Prøv igen om lidt.');
+      } else if (err.code === 'openai_quota_exceeded') {
+        toast.error('OpenAI-projektet mangler quota eller billing.');
+      } else if (err.code === 'openai_not_configured') {
+        toast.error('OPENAI_API_KEY mangler i serverens runtime.');
+      } else if (err.code === 'openai_invalid_key') {
+        toast.error('OpenAI API-nøglen er ugyldig eller ikke aktiv.');
       } else {
-        toast.error('Kunne ikke generere opsummering');
+        toast.error(err.message || 'Kunne ikke generere opsummering');
       }
     },
   });
