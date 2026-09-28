@@ -25,11 +25,12 @@ export function useHoneypot() {
     queryKey: settingsKey,
     queryFn: async () => {
       if (!selectedGuild?.id) return null;
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('honeypot_settings')
         .select('*')
         .eq('guild_id', selectedGuild.id)
         .maybeSingle();
+      if (error) throw error;
       return data;
     },
     enabled: !!selectedGuild?.id,
@@ -39,12 +40,13 @@ export function useHoneypot() {
     queryKey: catchesKey,
     queryFn: async () => {
       if (!selectedGuild?.id) return [];
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('honeypot_catches')
         .select('*')
         .eq('guild_id', selectedGuild.id)
         .order('created_at', { ascending: false })
         .limit(100);
+      if (error) throw error;
       return data ?? [];
     },
     enabled: !!selectedGuild?.id,
