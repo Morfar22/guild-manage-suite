@@ -2,6 +2,7 @@
 // Migrated from Supabase Edge Function `ai-ticket-summary` to a TanStack server route.
 import { createFileRoute } from '@tanstack/react-router'
 import { createClient } from '@supabase/supabase-js'
+import { openAIChatCompletion, openAIErrorResponse } from '@/lib/server/openai'
 
 const __env = (k: string) => process.env[k] ?? (k === 'SUPABASE_ANON_KEY' ? process.env['SUPABASE_PUBLISHABLE_KEY'] : undefined)
 let __handler: (req: Request) => Response | Promise<Response>
@@ -45,7 +46,6 @@ __serve(async (req) => {
     }
 
     const { action, data } = await req.json();
-    const OPENAI_API_KEY = __env('OPENAI_API_KEY');
 
     const supabase = createClient(
       __env('SUPABASE_URL')!,
@@ -82,38 +82,22 @@ __serve(async (req) => {
 
       const transcript = messages.map(m => `${m.author_name || m.author_id}: ${m.content}`).join('\n');
 
-      const response = await fetch('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${OPENAI_API_KEY}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          model: 'gpt-5.6-luna',
-          reasoning_effort: 'none',
-          messages: [
-            {
-              role: 'system',
-              content: `You are a support ticket summarizer. Create a concise summary of the ticket conversation.
+      const aiResult = await openAIChatCompletion({
+        messages: [
+          {
+            role: 'system',
+            content: `You are a support ticket summarizer. Create a concise summary of the ticket conversation.
 Include: main issue, key actions taken, resolution (if any), and outcome.
 Keep it under 200 words. Be factual and clear. Respond in the same language as the conversation.`
-            },
-            {
-              role: 'user',
-              content: `Ticket subject: ${ticket.subject || 'No subject'}\nCreated by: ${ticket.creator_name || 'Unknown'}\nStatus: ${ticket.status}\n\nConversation:\n${transcript}`
-            },
-          ],
-        }),
+          },
+          {
+            role: 'user',
+            content: `Ticket subject: ${ticket.subject || 'No subject'}\nCreated by: ${ticket.creator_name || 'Unknown'}\nStatus: ${ticket.status}\n\nConversation:\n${transcript}`
+          },
+        ],
+        max_completion_tokens: 600,
       });
 
-      if (!response.ok) {
-        const status = response.status;
-        if (status === 429) return new Response(JSON.stringify({ error: 'Rate limited' }), { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
-        if (status === 402) return new Response(JSON.stringify({ error: 'Credits exhausted' }), { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
-        throw new Error(`OpenAI API error: ${status}`);
-      }
-
-      const aiResult = await response.json();
       const summary = aiResult.choices?.[0]?.message?.content || 'Could not generate summary';
 
       // Save summary to ticket
@@ -130,7 +114,9 @@ Keep it under 200 words. Be factual and clear. Respond in the same language as t
     return new Response(JSON.stringify({ error: 'Unknown action' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
   } catch (error) {
     console.error('AI Ticket Summary error:', error);
-    return new Response(JSON.stringify({ error: error.message }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    const aiError = openAIErrorResponse(error, corsHeaders);
+    if (aiError) return aiError;
+    return new Response(JSON.stringify({ error: error instanceof Error ? error.message : 'Unknown error' }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
   }
 });
 
