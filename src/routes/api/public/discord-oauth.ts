@@ -250,58 +250,71 @@ __serve(async (req) => {
         console.log(`Removed ${toRemove.length} stale guild links for user`);
       }
 
-      // Sync guilds to database
-      for (const guild of adminGuilds) {
-        // Upsert guild
-        const { data: guildData, error: guildError } = await supabase
+      // Sync guilds to database — batched to stay under Cloudflare's subrequest limit.
+      // 1) Upsert all guilds in ONE call.
+      let guildRows = currentGuildRows || [];
+      if (adminGuilds.length > 0) {
+        const { data: upserted, error: guildError } = await supabase
           .from("guilds")
           .upsert(
-            {
+            adminGuilds.map((guild) => ({
               guild_id: guild.id,
               guild_name: guild.name,
               guild_icon: guild.icon,
               owner_id: guild.owner ? discordUser.id : guild.id,
-            },
+            })),
             { onConflict: "guild_id" }
           )
-          .select()
-          .single();
+          .select("id, guild_id");
 
         if (guildError) {
-          console.error("Failed to upsert guild:", guildError);
-          continue;
+          console.error("Failed to upsert guilds:", guildError);
+        } else if (upserted) {
+          guildRows = upserted;
         }
+      }
 
-        // Link user to guild
+      const internalIdByDiscordId = new Map(guildRows.map((g) => [g.guild_id, g.id]));
+
+      // 2) Link user to all guilds in ONE call.
+      const linkRows = adminGuilds
+        .map((guild) => internalIdByDiscordId.get(guild.id))
+        .filter(Boolean)
+        .map((internalId) => ({
+          user_id: userId,
+          guild_id: internalId,
+          discord_user_id: discordUser.id,
+          has_admin_permission: true,
+        }));
+      if (linkRows.length > 0) {
         const { error: linkError } = await supabase
           .from("user_guilds")
-          .upsert(
-            {
-              user_id: userId,
-              guild_id: guildData.id,
-              discord_user_id: discordUser.id,
-              has_admin_permission: true,
-            },
-            { onConflict: "user_id,guild_id" }
-          );
-
+          .upsert(linkRows, { onConflict: "user_id,guild_id" });
         if (linkError) {
-          console.error("Failed to link user to guild:", linkError);
+          console.error("Failed to link user to guilds:", linkError);
         }
+      }
 
-        // Initialize default modules if not exist
-        const modules = ["moderation", "music", "leveling", "utility", "fun"];
-        for (const module of modules) {
-          await supabase
-            .from("guild_modules")
-            .upsert(
-              {
-                guild_id: guildData.id,
-                module_type: module,
-                enabled: true,
-              },
-              { onConflict: "guild_id,module_type" }
-            );
+      // 3) Initialize default modules ONLY for guilds that didn't exist before, in ONE call.
+      const existingDiscordIds = new Set((currentGuildRows || []).map((g) => g.guild_id));
+      const modules = ["moderation", "music", "leveling", "utility", "fun"];
+      const moduleRows = adminGuilds
+        .filter((guild) => !existingDiscordIds.has(guild.id))
+        .flatMap((guild) => {
+          const internalId = internalIdByDiscordId.get(guild.id);
+          if (!internalId) return [];
+          return modules.map((module) => ({
+            guild_id: internalId,
+            module_type: module,
+            enabled: true,
+          }));
+        });
+      if (moduleRows.length > 0) {
+        const { error: moduleError } = await supabase
+          .from("guild_modules")
+          .upsert(moduleRows, { onConflict: "guild_id,module_type" });
+        if (moduleError) {
+          console.error("Failed to init guild modules:", moduleError);
         }
       }
 
