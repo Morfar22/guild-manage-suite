@@ -2,19 +2,19 @@
  * AI Auto-Moderation Handler
  * 
  * Uses AI to analyze messages for toxicity, spam, NSFW, and hate speech.
- * Integrates with the ai-automod edge function via Lovable AI.
+ * Integrates with the self-hosted ai-automod API route.
  */
 
 const { Events, EmbedBuilder } = require('discord.js');
 const { isAutomodBypassed } = require('./automodBypass');
 
-const AI_AUTOMOD_URL = '${APP_API_BASE}/api/public/ai-automod';
+const APP_API_BASE = process.env.APP_API_BASE || 'https://bot.nethost-solutions.dk';
+const AI_AUTOMOD_URL = `${APP_API_BASE}/api/public/ai-automod`;
 const BOT_SECRET = process.env.BOT_SECRET_KEY;
 
 // Cache settings per guild (refresh every 5 minutes)
 const settingsCache = new Map();
 const CACHE_TTL = 300_000;
-const APP_API_BASE = process.env.APP_API_BASE || 'https://bot.nethost-solutions.dk';
 
 function setupAIAutomodHandler(client, supabase, options = {}) {
   const { shouldHandleGuild } = options;

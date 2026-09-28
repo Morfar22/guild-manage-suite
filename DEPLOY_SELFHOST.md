@@ -42,7 +42,7 @@ Projektet bygger med Nitro mod Cloudflare (allerede konfigureret i `vite.config.
    - `VITE_SUPABASE_PUBLISHABLE_KEY` = din anon key
    - `SUPABASE_URL` = samme URL
    - `SUPABASE_SERVICE_ROLE_KEY` = din NYE service role key (fra nyt projekt)
-   - `LOVABLE_API_KEY` — virker KUN på Lovable. Se afsnit 5.
+   - `OPENAI_API_KEY` = din OpenAI API-nøgle (gem som Cloudflare Secret, aldrig som `VITE_`-variabel).
    - `BOT_SECRET_KEY` = `Z_!ZyMb4fw_gDxZ` (samme som botten bruger)
    - `DISCORD_CLIENT_ID`, `DISCORD_CLIENT_SECRET`, `TWITCH_CLIENT_ID`, `TWITCH_CLIENT_SECRET`
 5. Peg dit domæne (bot.nethost-solutions.dk) på Cloudflare-projektet.
@@ -58,9 +58,11 @@ Projektet bygger med Nitro mod Cloudflare (allerede konfigureret i `vite.config.
 
 ## 5. AI-funktioner (vigtigt!)
 
-AI-screening, AI-chat, AI-automod osv. bruger Lovable AI Gateway, som KUN virker på Lovable. På egen hosting skal du:
-- Oprette en OpenAI- eller Google AI-nøgle.
-- I filerne under `src/routes/api/public/ai-*.ts`: udskift `GATEWAY_URL` med `https://api.openai.com/v1/chat/completions` (eller Gemini-endpoint), brug din egen nøgle fra env, og ret modelnavnet (fx `gpt-4o-mini`).
+AI-screening, AI-chat, AI-automod, AI auto-responder, tekstforbedring og ticket summaries bruger nu OpenAI direkte fra server-ruterne.
+- Opret en OpenAI API-nøgle.
+- Tilføj `OPENAI_API_KEY` som en hemmelig Cloudflare Secret.
+- De aktive filer under `src/routes/api/public/ai-*.ts` bruger `https://api.openai.com/v1/chat/completions` med modellen `gpt-5.6-luna`.
+- OpenAI-nøglen må aldrig bruge `VITE_`-prefix og må aldrig sendes til browseren.
 
 ## 6. Tjekliste efter deploy
 

@@ -24,7 +24,7 @@ __serve(async (req) => {
     }
 
     const { action, data } = await req.json();
-    const LOVABLE_API_KEY = __env('LOVABLE_API_KEY');
+    const OPENAI_API_KEY = __env('OPENAI_API_KEY');
 
     if (action === 'generate_response') {
       const { message_content, trigger_text, ai_instructions, response_content } = data;
@@ -46,14 +46,15 @@ Rules:
 - If the base response template is provided, use it as a guide but adapt to the specific message
 - Respond in the same language as the user's message`;
 
-      const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+      const response = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${LOVABLE_API_KEY}`,
+          'Authorization': `Bearer ${OPENAI_API_KEY}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: 'google/gemini-2.5-flash-lite',
+          model: 'gpt-5.6-luna',
+          reasoning_effort: 'none',
           messages: [
             { role: 'system', content: systemPrompt },
             { role: 'user', content: message_content },
@@ -65,7 +66,7 @@ Rules:
         const status = response.status;
         if (status === 429) return new Response(JSON.stringify({ error: 'Rate limited' }), { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
         if (status === 402) return new Response(JSON.stringify({ error: 'Credits exhausted' }), { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
-        throw new Error(`AI gateway error: ${status}`);
+        throw new Error(`OpenAI API error: ${status}`);
       }
 
       const aiResult = await response.json();

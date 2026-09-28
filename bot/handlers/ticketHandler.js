@@ -733,7 +733,7 @@ async function handleCloseTicket(interaction, threadId, deleteThread = false) {
 
   // Trigger AI summary asynchronously (fire-and-forget)
   if (result?.ticket_id) {
-    const SUMMARY_URL = '${APP_API_BASE}/api/public/ai-ticket-summary';
+    const SUMMARY_URL = `${APP_API_BASE}/api/public/ai-ticket-summary`;
     fetch(SUMMARY_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-bot-secret': BOT_SECRET },
@@ -741,7 +741,7 @@ async function handleCloseTicket(interaction, threadId, deleteThread = false) {
     }).catch(err => console.error('[Tickets] AI summary error:', err.message));
 
     // Trigger HTML transcript generation + DM (fire-and-forget)
-    const TRANSCRIPT_URL = '${APP_API_BASE}/api/public/generate-ticket-transcript';
+    const TRANSCRIPT_URL = `${APP_API_BASE}/api/public/generate-ticket-transcript`;
     fetch(TRANSCRIPT_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-bot-secret': BOT_SECRET },
@@ -870,7 +870,7 @@ async function handleRateTicket(interaction) {
   const rating = parseInt(raw.slice(lastUnderscore + 1), 10);
   if (!ticketId || !rating || rating < 1 || rating > 5) return;
 
-  const RATE_URL = '${APP_API_BASE}/api/public/submit-ticket-rating';
+  const RATE_URL = `${APP_API_BASE}/api/public/submit-ticket-rating`;
   const resp = await fetch(RATE_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'x-bot-secret': BOT_SECRET },
