@@ -1,5 +1,3 @@
-import { env as cloudflareEnv } from 'cloudflare:workers';
-
 // Server-only OpenAI helper shared by all self-hosted AI routes.
 
 export const OPENAI_CHAT_COMPLETIONS_URL = 'https://api.openai.com/v1/chat/completions';
@@ -20,11 +18,6 @@ export type RuntimeEnvSource =
   | 'missing';
 
 export function readRuntimeEnvWithSource(key: string): { value?: string; source: RuntimeEnvSource } {
-  const cloudflareValue = readStringBinding(cloudflareEnv as unknown as RuntimeEnv, key);
-  if (cloudflareValue) {
-    return { value: cloudflareValue, source: 'cloudflare:workers' };
-  }
-
   const processValue =
     typeof process !== 'undefined' && process.env
       ? process.env[key]
@@ -47,6 +40,31 @@ export function readRuntimeEnvWithSource(key: string): { value?: string; source:
     key,
   );
   if (bridgedBinding) return { value: bridgedBinding, source: 'server-bridge' };
+
+  return { source: 'missing' };
+}
+
+export async function readRuntimeEnvWithSourceAsync(
+  key: string,
+): Promise<{ value?: string; source: RuntimeEnvSource }> {
+  const syncValue = readRuntimeEnvWithSource(key);
+  if (syncValue.value) return syncValue;
+
+  try {
+    // Runtime-only import. @vite-ignore prevents the client/SSR build from
+    // trying to resolve the Cloudflare virtual module.
+    const moduleName = 'cloudflare:workers';
+    const mod = await import(/* @vite-ignore */ moduleName);
+    const cloudflareValue = readStringBinding(
+      mod?.env as RuntimeEnv | undefined,
+      key,
+    );
+    if (cloudflareValue) {
+      return { value: cloudflareValue, source: 'cloudflare:workers' };
+    }
+  } catch {
+    // Not running inside Cloudflare Workers, continue as unconfigured.
+  }
 
   return { source: 'missing' };
 }
@@ -160,7 +178,7 @@ export async function openAIChatCompletion(
   payload: Record<string, unknown>,
   options: { timeoutMs?: number } = {},
 ): Promise<any> {
-  const apiKey = readRuntimeEnv('OPENAI_API_KEY');
+  const apiKey = (await readRuntimeEnvWithSourceAsync('OPENAI_API_KEY')).value;
   if (!apiKey) {
     throw new OpenAIRequestError(
       'OPENAI_API_KEY mangler i serverens runtime bindings.',
