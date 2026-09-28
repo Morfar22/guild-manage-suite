@@ -20,15 +20,27 @@ function setupHoneypotHandler(client, supabase, options = {}) {
     const cached = settingsCache.get(guildDiscordId);
     if (cached && Date.now() - cached._ts < CACHE_TTL) return cached.data;
 
-    const { data: guild } = await supabase
+    const { data: guild, error: guildError } = await supabase
       .from('guilds').select('id').eq('guild_id', guildDiscordId).maybeSingle();
+    if (guildError) {
+      console.error(`[Honeypot] Failed to resolve guild ${guildDiscordId}:`, guildError.message);
+      settingsCache.set(guildDiscordId, { data: null, _ts: Date.now() });
+      return null;
+    }
     if (!guild) {
+      console.warn(`[Honeypot] Guild ${guildDiscordId} is not registered in the database`);
       settingsCache.set(guildDiscordId, { data: null, _ts: Date.now() });
       return null;
     }
 
-    const { data } = await supabase
+    const { data, error: settingsError } = await supabase
       .from('honeypot_settings').select('*').eq('guild_id', guild.id).maybeSingle();
+
+    if (settingsError) {
+      console.error(`[Honeypot] Failed to load settings for ${guildDiscordId}:`, settingsError.message);
+      settingsCache.set(guildDiscordId, { data: null, _ts: Date.now() });
+      return null;
+    }
 
     const result = data && data.enabled && data.channel_id ? { ...data, _guildUuid: guild.id } : null;
     settingsCache.set(guildDiscordId, { data: result, _ts: Date.now() });
@@ -42,7 +54,11 @@ function setupHoneypotHandler(client, supabase, options = {}) {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'honeypot_settings' }, () => {
         settingsCache.clear();
       })
-      .subscribe();
+      .subscribe((status) => {
+        if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+          console.error(`[Honeypot] Settings realtime subscription status: ${status}`);
+        }
+      });
   } catch { /* realtime optional */ }
 
   async function onMessage(message) {
@@ -53,14 +69,27 @@ function setupHoneypotHandler(client, supabase, options = {}) {
       const settings = await getSettings(message.guild.id);
       if (!settings || message.channel.id !== settings.channel_id) return;
 
+      console.log(`[Honeypot] Message detected in trap channel ${message.channel.id} from ${message.author.tag} (${message.author.id})`);
+
       const member = message.member || await message.guild.members.fetch(message.author.id).catch(() => null);
       if (!member) return;
 
-      // Never act on server owner / admins / ignored roles
-      if (member.id === message.guild.ownerId) return;
-      if (member.permissions.has(PermissionFlagsBits.Administrator)) return;
+      // Never act on server owner / admins / ignored roles.
+      // Log bypasses so testing does not look like a broken honeypot.
+      if (member.id === message.guild.ownerId) {
+        console.log(`[Honeypot] Bypassed server owner ${message.author.tag}`);
+        return;
+      }
+      if (member.permissions.has(PermissionFlagsBits.Administrator)) {
+        console.log(`[Honeypot] Bypassed administrator ${message.author.tag}`);
+        return;
+      }
       const ignore = settings.ignore_roles || [];
-      if (ignore.length && member.roles.cache.some(r => ignore.includes(r.id))) return;
+      const ignoredRole = member.roles.cache.find(r => ignore.includes(r.id));
+      if (ignoredRole) {
+        console.log(`[Honeypot] Bypassed ${message.author.tag} because of ignored role ${ignoredRole.name} (${ignoredRole.id})`);
+        return;
+      }
 
       const key = `${message.guild.id}:${member.id}`;
       const last = recentlyHandled.get(key);
@@ -108,9 +137,17 @@ function setupHoneypotHandler(client, supabase, options = {}) {
 
       const reason = `[Honeypot] Skrev i honeypot-kanal`;
       if (action === 'ban') {
-        await member.ban({ reason, deleteMessageSeconds: 3600 }).catch(e => errors.push(`ban: ${e.message}`));
+        if (!member.bannable) {
+          errors.push('ban: botten kan ikke banne brugeren (manglende Ban Members eller rollehierarki)');
+        } else {
+          await member.ban({ reason, deleteMessageSeconds: 3600 }).catch(e => errors.push(`ban: ${e.message}`));
+        }
       } else if (action === 'kick') {
-        await member.kick(reason).catch(e => errors.push(`kick: ${e.message}`));
+        if (!member.kickable) {
+          errors.push('kick: botten kan ikke kicke brugeren (manglende Kick Members eller rollehierarki)');
+        } else {
+          await member.kick(reason).catch(e => errors.push(`kick: ${e.message}`));
+        }
       }
 
       await supabase.from('honeypot_catches').insert({
@@ -167,7 +204,14 @@ function setupHoneypotHandler(client, supabase, options = {}) {
       if (!settings || !settings.warning_message) return;
       const guild = client.guilds.cache.get(guildDiscordId);
       const channel = guild?.channels.cache.get(settings.channel_id);
-      if (!channel || !channel.isTextBased()) return;
+      if (!guild) {
+        console.warn(`[Honeypot] Cannot post warning: guild ${guildDiscordId} is not in this bot client's cache`);
+        return;
+      }
+      if (!channel || !channel.isTextBased()) {
+        console.warn(`[Honeypot] Cannot post warning: channel ${settings.channel_id} was not found or is not text based`);
+        return;
+      }
 
       const recent = await channel.messages.fetch({ limit: 20 }).catch(() => null);
       const existing = recent?.find(m => m.author.id === client.user.id && m.embeds[0]?.footer?.text === 'honeypot');
@@ -195,7 +239,11 @@ function setupHoneypotHandler(client, supabase, options = {}) {
           await ensureWarningMessage(g.guild_id);
         }
       })
-      .subscribe();
+      .subscribe((status) => {
+        if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+          console.error(`[Honeypot] Warning realtime subscription status: ${status}`);
+        }
+      });
   } catch { /* realtime optional */ }
 
   console.log('[Honeypot] Handler initialized');
