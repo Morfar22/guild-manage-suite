@@ -2,6 +2,7 @@
 // Migrated from Supabase Edge Function `ai-polish-text` to a TanStack server route.
 import { createFileRoute } from '@tanstack/react-router'
 import { createClient } from '@supabase/supabase-js'
+import { openAIChatCompletion, openAIErrorResponse } from '@/lib/server/openai'
 
 const __env = (k: string) => process.env[k] ?? (k === 'SUPABASE_ANON_KEY' ? process.env['SUPABASE_PUBLISHABLE_KEY'] : undefined)
 let __handler: (req: Request) => Response | Promise<Response>
@@ -32,44 +33,24 @@ __serve(async (req) => {
       return new Response(JSON.stringify({ error: 'Missing text' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
-    const OPENAI_API_KEY = __env('OPENAI_API_KEY');
-    if (!OPENAI_API_KEY) {
-      return new Response(JSON.stringify({ error: 'AI not configured' }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
-    }
-
     const langName = language === 'da' ? 'Danish' : 'English';
     const systemPrompt = `You polish short staff responses to applications. Rewrite the user's draft into a clear, ${tone}, well-structured message in ${langName}. The decision context is: ${decision}. Keep the original intent. Be concise (max ~120 words). Do NOT add greetings like "Hi {name}" unless present. Do NOT invent facts. Return ONLY the polished text, no quotes, no explanations.${context ? `\n\nApplication context:\n${context.slice(0, 2000)}` : ''}`;
 
-    const resp = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${OPENAI_API_KEY}` },
-      body: JSON.stringify({
-        model: 'gpt-5.6-luna',
-        reasoning_effort: 'none',
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: text },
-        ],
-      }),
+    const json = await openAIChatCompletion({
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: text },
+      ],
+      max_completion_tokens: 400,
     });
 
-    if (resp.status === 429) {
-      return new Response(JSON.stringify({ error: 'Rate limit exceeded, please try again shortly.' }), { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
-    }
-    if (resp.status === 402) {
-      return new Response(JSON.stringify({ error: 'AI credits exhausted. Add credits in workspace settings.' }), { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
-    }
-    if (!resp.ok) {
-      const err = await resp.text();
-      return new Response(JSON.stringify({ error: `AI error: ${err}` }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
-    }
-
-    const json = await resp.json();
     const polished = json.choices?.[0]?.message?.content?.trim() || text;
 
     return new Response(JSON.stringify({ polished }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
   } catch (e) {
-    return new Response(JSON.stringify({ error: (e as Error).message }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    const aiError = openAIErrorResponse(e, corsHeaders);
+    if (aiError) return aiError;
+    return new Response(JSON.stringify({ error: e instanceof Error ? e.message : 'Unknown error' }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
   }
 });
 
