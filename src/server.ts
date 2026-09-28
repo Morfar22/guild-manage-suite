@@ -52,9 +52,17 @@ function isH3SwallowedErrorBody(body: string): boolean {
 
 export default {
   async fetch(request: Request, env: unknown, ctx: unknown) {
-    // Inject Cloudflare bindings into process.env for compatibility with handlers
+    // Keep the raw runtime bindings available even if process.env population
+    // differs between local Node/Nitro and Cloudflare Workers.
     if (env && typeof env === "object") {
-      Object.assign(process.env, env);
+      const runtimeEnv = env as Record<string, unknown>;
+      (globalThis as typeof globalThis & {
+        __GUILD_MANAGE_RUNTIME_ENV__?: Record<string, unknown>;
+      }).__GUILD_MANAGE_RUNTIME_ENV__ = runtimeEnv;
+
+      for (const [key, value] of Object.entries(runtimeEnv)) {
+        if (typeof value === "string") process.env[key] = value;
+      }
     }
     
     try {
