@@ -232,18 +232,19 @@ Deno.serve(async (req) => {
 
         case 'ai_toxicity': {
           const sensitivity = (config.sensitivity as number) || 70;
-          const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+          const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
           
-          if (LOVABLE_API_KEY && message_content.length > 3) {
+          if (OPENAI_API_KEY && message_content.length > 3) {
             try {
-              const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+              const aiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
                 method: 'POST',
                 headers: {
-                  'Authorization': `Bearer ${LOVABLE_API_KEY}`,
+                  'Authorization': `Bearer ${OPENAI_API_KEY}`,
                   'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                  model: 'google/gemini-2.5-flash-lite',
+                  model: 'gpt-5.6-luna',
+                  reasoning_effort: 'none',
                   messages: [
                     {
                       role: 'system',
