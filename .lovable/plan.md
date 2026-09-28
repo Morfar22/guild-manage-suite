@@ -17,7 +17,7 @@ Forvandle det eksisterende ansøgningssystem (5 sider, 4 tabeller, 2 edge functi
 application_forms:
   + panel_style          ('buttons' | 'dropdown' | 'both')   default 'buttons'
   + ai_screening_enabled boolean default false
-  + ai_screening_prompt  text    (custom instruktion til Gemini)
+  + ai_screening_prompt  text    (custom instruktion til AI)
   + ai_auto_threshold    int     (auto-approve hvis score >= X, null = manuel)
   + interview_enabled    boolean default false
   + interview_questions  jsonb   (spørgsmål stillet i interview-tråd)
@@ -52,9 +52,9 @@ Free-tier-limits enforces via DB-trigger:
 - Tjek account-age, blacklist-roles, max-pending før modal vises
 - Skab interview-tråd hvis `interview_enabled` ved submit
 
-**Ny edge function: `ai-screen-application`** (Lovable AI / Gemini)
+**AI-function: `ai-screen-application`** (OpenAI)
 - Trigger ved submit
-- Sender svar + `ai_screening_prompt` til Gemini
+- Sender svar + `ai_screening_prompt` til OpenAI
 - Returnerer `{score, summary, flags}` → opdaterer submission
 - Hvis score ≥ `ai_auto_threshold` → auto-approve via `review-application`
 
@@ -120,7 +120,7 @@ Free-tier-limits enforces via DB-trigger:
 
 ## Teknisk
 
-- AI: `google/gemini-2.5-flash` via Lovable AI gateway (gratis tier OK til screening)
+- AI: OpenAI via server-side `OPENAI_API_KEY` (standardmodel `gpt-5.6-luna`)
 - Realtime: subscribe på `application_submissions` i review-siden så nye ansøgninger popper ind live
 - Notifikationer: bot DM'er ansøger ved hver status-ændring
 - Sikkerhed: RLS opdateres så `application_audit_log` kun læses af guild-admins; AI-felter kun skrivbare af service_role
