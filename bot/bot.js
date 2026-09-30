@@ -142,7 +142,11 @@ async function logModerationAction(guildId, action, moderator, target, reason, d
 
 const commandSettingsCache = new Map();
 const commandCooldowns = new Map();
+const commandGuildIdCache = new Map();
+const commandExecutionQueue = [];
+let commandExecutionFlushInProgress = false;
 const COMMAND_SETTINGS_CACHE_TTL = Number(process.env.COMMAND_SETTINGS_CACHE_TTL || 10000);
+const COMMAND_ANALYTICS_FLUSH_MS = Number(process.env.COMMAND_ANALYTICS_FLUSH_MS || 5000);
 
 async function getGuildCommandSettings(guildId) {
   const cached = commandSettingsCache.get(guildId);
@@ -162,6 +166,8 @@ async function getGuildCommandSettings(guildId) {
       commandSettingsCache.set(guildId, { fetchedAt: Date.now(), commands: empty });
       return empty;
     }
+
+    commandGuildIdCache.set(guildId, guild.id);
 
     const { data: rows, error: commandError } = await supabase
       .from('guild_commands')
@@ -252,6 +258,87 @@ async function isCommandEnabled(guildId, commandName) {
   const commands = await getGuildCommandSettings(guildId);
   return commands.get(commandName)?.enabled !== false;
 }
+
+async function getInternalGuildIdForCommandAnalytics(discordGuildId) {
+  if (!discordGuildId) return null;
+  if (commandGuildIdCache.has(discordGuildId)) return commandGuildIdCache.get(discordGuildId);
+
+  try {
+    const { data, error } = await supabase
+      .from('guilds')
+      .select('id')
+      .eq('guild_id', discordGuildId)
+      .maybeSingle();
+
+    if (error || !data?.id) return null;
+    commandGuildIdCache.set(discordGuildId, data.id);
+    return data.id;
+  } catch {
+    return null;
+  }
+}
+
+function getCommandErrorMessage(error) {
+  const message = error?.message || String(error || 'Ukendt fejl');
+  return message.slice(0, 500);
+}
+
+async function queueCommandExecution({
+  guildId,
+  commandName,
+  userId = null,
+  channelId = null,
+  source = 'slash',
+  status,
+  latencyMs = 0,
+  blockedReason = null,
+  error = null,
+}) {
+  try {
+    const internalGuildId = await getInternalGuildIdForCommandAnalytics(guildId);
+    if (!internalGuildId) return;
+
+    commandExecutionQueue.push({
+      guild_id: internalGuildId,
+      command_name: String(commandName || 'unknown').slice(0, 100),
+      user_id: userId || null,
+      channel_id: channelId || null,
+      source: source === 'prefix' ? 'prefix' : 'slash',
+      status,
+      latency_ms: Math.max(0, Math.min(3600000, Math.round(Number(latencyMs) || 0))),
+      blocked_reason: blockedReason ? String(blockedReason).slice(0, 100) : null,
+      error_message: error ? getCommandErrorMessage(error) : null,
+    });
+
+    if (commandExecutionQueue.length >= 50) {
+      void flushCommandExecutionEvents();
+    }
+  } catch (error) {
+    console.warn('[Commands] Kunne ikke queue command analytics:', error?.message || error);
+  }
+}
+
+async function flushCommandExecutionEvents() {
+  if (commandExecutionFlushInProgress || commandExecutionQueue.length === 0) return;
+  commandExecutionFlushInProgress = true;
+
+  const batch = commandExecutionQueue.splice(0, 100);
+  try {
+    const { error } = await supabase.from('command_execution_events').insert(batch);
+    if (error) throw error;
+  } catch (error) {
+    console.warn('[Commands] Command analytics flush fejlede:', error?.message || error);
+    if (commandExecutionQueue.length < 1000) {
+      commandExecutionQueue.unshift(...batch);
+    }
+  } finally {
+    commandExecutionFlushInProgress = false;
+  }
+}
+
+const commandExecutionFlushInterval = setInterval(() => {
+  void flushCommandExecutionEvents();
+}, COMMAND_ANALYTICS_FLUSH_MS);
 
 async function isModuleEnabled(guildId, moduleType) {
   try {
@@ -2750,7 +2837,7 @@ manager.registerHandler((client, guildId, assignedDiscordGuildId) => {
 
   // Register prefix command handler (mirrors all slash commands)
   try {
-    setupPrefixHandler(client, slashHandlers, { shouldHandleGuild, isCommandEnabled, checkCommandAccess });
+    setupPrefixHandler(client, slashHandlers, { shouldHandleGuild, isCommandEnabled, checkCommandAccess, queueCommandExecution });
     console.log(`[Bot] ✅ Prefix handler for ${clientLabel}`);
   } catch (e) {
     console.error(`[Bot] ❌ Prefix handler fejl:`, e.message);
@@ -2769,6 +2856,7 @@ manager.registerHandler((client, guildId, assignedDiscordGuildId) => {
     if (interaction.guild && !shouldHandleGuild(interaction.guild.id)) return;
 
     const commandName = interaction.commandName;
+    const commandStartedAt = Date.now();
 
     const access = await checkCommandAccess({
       guildId: interaction.guild.id,
@@ -2780,6 +2868,16 @@ manager.registerHandler((client, guildId, assignedDiscordGuildId) => {
     });
 
     if (!access.allowed) {
+      void queueCommandExecution({
+        guildId: interaction.guild.id,
+        commandName,
+        userId: interaction.user.id,
+        channelId: interaction.channelId,
+        source: 'slash',
+        status: 'blocked',
+        latencyMs: Date.now() - commandStartedAt,
+        blockedReason: access.reason || 'access',
+      });
       return interaction.reply({ content: access.message || '🚫 Du har ikke adgang til denne command.', flags: 64 });
     }
 
@@ -2787,7 +2885,27 @@ manager.registerHandler((client, guildId, assignedDiscordGuildId) => {
     if (handler) {
       try {
         await handler(interaction);
+        void queueCommandExecution({
+          guildId: interaction.guild.id,
+          commandName,
+          userId: interaction.user.id,
+          channelId: interaction.channelId,
+          source: 'slash',
+          status: 'success',
+          latencyMs: Date.now() - commandStartedAt,
+        });
       } catch (error) {
+        void queueCommandExecution({
+          guildId: interaction.guild.id,
+          commandName,
+          userId: interaction.user.id,
+          channelId: interaction.channelId,
+          source: 'slash',
+          status: 'error',
+          latencyMs: Date.now() - commandStartedAt,
+          error,
+        });
+
         console.error(`[Bot] Fejl i command ${commandName}:`, error);
         const reply = { content: '❌ Der skete en fejl under udførelse af kommandoen.', flags: 64 };
         if (interaction.deferred || interaction.replied) {
@@ -2841,6 +2959,8 @@ process.on('SIGINT', async () => {
     }
     handlerInstances.clear();
 
+    clearInterval(commandExecutionFlushInterval);
+    await flushCommandExecutionEvents();
     await manager.stop();
     console.log('[Bot] ✅ Bot Manager stoppet');
   } catch (error) {
@@ -2864,6 +2984,8 @@ process.on('SIGTERM', async () => {
     }
     handlerInstances.clear();
 
+    clearInterval(commandExecutionFlushInterval);
+    await flushCommandExecutionEvents();
     await manager.stop();
     console.log('[Bot] ✅ Bot Manager stoppet');
   } catch (error) {
