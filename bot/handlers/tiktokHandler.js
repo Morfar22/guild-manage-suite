@@ -462,7 +462,7 @@ function startTikTokChecker(client, config = {}) {
   console.log('[TikTok] Starter TikTok checker service...');
 
   if (client) {
-    client.once('ready', () => {
+    client.once('clientReady', () => {
       console.log('[TikTok] Bot er klar - starter periodisk check');
 
       // First check after 30 seconds
