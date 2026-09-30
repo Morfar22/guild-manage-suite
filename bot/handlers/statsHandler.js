@@ -31,9 +31,8 @@ function setupStatsHandler(client, supabase, options = {}) {
         return;
       }
 
-      console.log(`[Stats] Processing ${statsChannels.length} stat channel(s)`);
-
-      // Group by guild to only fetch members once per guild
+      // Group by guild to only fetch members once per guild and only keep
+      // rows this specific bot instance is responsible for.
       const byGuild = {};
       for (const stat of statsChannels) {
         const discordGuildId = stat.guilds?.guild_id;
@@ -42,6 +41,11 @@ function setupStatsHandler(client, supabase, options = {}) {
         if (!byGuild[discordGuildId]) byGuild[discordGuildId] = [];
         byGuild[discordGuildId].push(stat);
       }
+
+      const eligibleCount = Object.values(byGuild).reduce((sum, rows) => sum + rows.length, 0);
+      if (eligibleCount === 0) return;
+
+      console.log(`[Stats] Processing ${eligibleCount} stat channel(s) for ${Object.keys(byGuild).length} guild(s)`);
 
       for (const [discordGuildId, stats] of Object.entries(byGuild)) {
         const guild = client.guilds.cache.get(discordGuildId);
