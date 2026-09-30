@@ -107,6 +107,18 @@ function setupGlobalBanHandler(client, supabase, options = {}) {
             continue;
           }
 
+          const me = guild.members.me || await guild.members.fetchMe().catch(() => null);
+          if (!me?.permissions?.has('BanMembers')) {
+            const permissionError = 'Missing BanMembers permission';
+            console.warn(`[GlobalBan] Skipping ${guild.name}: ${permissionError}`);
+            await supabase.from('global_ban_executions').update({
+              executed: true,
+              error_message: permissionError,
+              executed_at: new Date().toISOString(),
+            }).eq('id', execution.id);
+            continue;
+          }
+
           await guild.members.ban(ban.target_discord_id, {
             reason: `[Global Ban] ${ban.reason}`,
           });
@@ -123,8 +135,11 @@ function setupGlobalBanHandler(client, supabase, options = {}) {
           const errorMsg = banError.message || String(banError);
           console.error(`[GlobalBan] ❌ Failed to ban in ${discordGuildId}:`, errorMsg);
 
+          const permanentPermissionFailure =
+            /missing permissions|missing access|missing banmembers/i.test(errorMsg);
+
           await supabase.from('global_ban_executions').update({
-            executed: false,
+            executed: permanentPermissionFailure,
             error_message: errorMsg,
             executed_at: new Date().toISOString(),
           }).eq('id', execution.id);
