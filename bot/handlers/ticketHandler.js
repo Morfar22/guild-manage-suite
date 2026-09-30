@@ -97,8 +97,11 @@ async function callAPI(action, data) {
 
 async function replyPrivate(interaction, content) {
   const payload = { content, ephemeral: true };
-  if (interaction.deferred || interaction.replied) {
-    return interaction.followUp(payload).catch(() => interaction.editReply({ content }));
+  if (interaction.deferred) {
+    return interaction.editReply({ content, components: [] }).catch(() => interaction.followUp(payload));
+  }
+  if (interaction.replied) {
+    return interaction.followUp(payload);
   }
   return interaction.reply(payload);
 }
