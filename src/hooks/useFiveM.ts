@@ -719,6 +719,8 @@ export function useFiveMCommandList() {
 export interface FiveMBridgeStatus {
   configured: boolean;
   enabled: boolean;
+  schemaReady: boolean;
+  schemaError: string | null;
   tokenCreatedAt: string | null;
   lastSeenAt: string | null;
   bridgeVersion: string | null;
