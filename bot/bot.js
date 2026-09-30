@@ -2122,6 +2122,10 @@ async function handleMusicCommand(interaction, command, args) {
  * This prevents duplicate processing when both default + custom bots are in the same guild.
  */
 function hasCustomBotForDiscordGuild(discordGuildId) {
+  if (manager.customDiscordGuildIds?.has(discordGuildId)) {
+    return true;
+  }
+
   for (const [, bot] of manager.bots) {
     if (
       bot?.client?.isReady?.()
