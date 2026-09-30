@@ -1,6 +1,6 @@
 Config = {}
 
-Config.Version = '1.0.0'
+Config.Version = '1.1.0'
 Config.ApiBase = GetConvar('gms_api_base', 'https://bot.nethost-solutions.dk')
 Config.GuildId = GetConvar('gms_guild_id', '')
 Config.ApiKey = GetConvar('gms_api_key', '')
@@ -11,6 +11,15 @@ Config.CommandPollMs = tonumber(GetConvar('gms_command_poll_ms', '1500')) or 150
 Config.PlayerSyncMs = tonumber(GetConvar('gms_player_sync_ms', '15000')) or 15000
 Config.HeartbeatMs = tonumber(GetConvar('gms_heartbeat_ms', '30000')) or 30000
 Config.SettingsRefreshMs = tonumber(GetConvar('gms_settings_refresh_ms', '60000')) or 60000
+Config.ClientActionTimeoutMs = tonumber(GetConvar('gms_client_action_timeout_ms', '8000')) or 8000
+Config.Debug = GetConvar('gms_debug', 'false') == 'true'
+
+-- Protect the API and FXServer from accidental 0ms/too-fast loops in server.cfg.
+Config.CommandPollMs = math.max(750, Config.CommandPollMs)
+Config.PlayerSyncMs = math.max(5000, Config.PlayerSyncMs)
+Config.HeartbeatMs = math.max(10000, Config.HeartbeatMs)
+Config.SettingsRefreshMs = math.max(15000, Config.SettingsRefreshMs)
+Config.ClientActionTimeoutMs = math.max(2000, Config.ClientActionTimeoutMs)
 
 -- false = deny joins when the dashboard cannot be reached while whitelist is enabled.
 Config.FailOpen = GetConvar('gms_fail_open', 'false') == 'true'
