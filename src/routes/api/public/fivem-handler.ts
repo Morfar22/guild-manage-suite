@@ -840,6 +840,7 @@ __serve(async (req) => {
 
       case "sessionEnd": {
         const { discordId } = data;
+        const serverId = String(data.serverId || "main");
 
         const { data: whitelistEntry } = await supabase
           .from("fivem_whitelist")
@@ -855,6 +856,7 @@ __serve(async (req) => {
             .from("fivem_sessions")
             .select("id, session_start")
             .eq("whitelist_id", whitelistEntry.id)
+            .eq("server_id", serverId)
             .is("session_end", null)
             .order("session_start", { ascending: false })
             .limit(1)
@@ -1454,21 +1456,23 @@ __serve(async (req) => {
 
       // ==================== COMMAND QUEUE (Dashboard -> FiveM) ====================
       case "getPendingCommands": {
-        // Recover commands that were claimed by a bridge that disappeared before
-        // reporting a result. The command executor is idempotent where possible.
+        const serverId = String(data.serverId || "main");
+
+        // Recover commands that were claimed by this bridge instance and then abandoned.
         const staleClaim = new Date(Date.now() - 2 * 60 * 1000).toISOString();
         await supabase
           .from("fivem_command_queue")
           .update({ status: "pending", executed_at: null })
           .eq("guild_id", internalGuildId)
+          .eq("server_id", serverId)
           .eq("status", "processing")
           .lt("executed_at", staleClaim);
 
-        // Fetch pending commands for this guild
         const { data: commands, error } = await supabase
           .from("fivem_command_queue")
           .select("*")
           .eq("guild_id", internalGuildId)
+          .eq("server_id", serverId)
           .eq("status", "pending")
           .order("created_at", { ascending: true })
           .limit(10);
@@ -1489,6 +1493,7 @@ __serve(async (req) => {
 
       case "claimCommand": {
         const { commandId } = data;
+        const serverId = String(data.serverId || "main");
         if (!commandId) {
           return new Response(JSON.stringify({ error: "commandId is required" }), {
             status: 400,
@@ -1504,6 +1509,7 @@ __serve(async (req) => {
           })
           .eq("id", commandId)
           .eq("guild_id", internalGuildId)
+          .eq("server_id", serverId)
           .eq("status", "pending")
           .select("id")
           .maybeSingle();
@@ -1522,6 +1528,7 @@ __serve(async (req) => {
 
       case "markCommandExecuted": {
         const { commandId, result, success } = data;
+        const serverId = String(data.serverId || "main");
 
         const { error } = await supabase
           .from("fivem_command_queue")
@@ -1530,7 +1537,9 @@ __serve(async (req) => {
             executed_at: new Date().toISOString(),
             result: result || null,
           })
-          .eq("id", commandId);
+          .eq("id", commandId)
+          .eq("guild_id", internalGuildId)
+          .eq("server_id", serverId);
 
         if (error) {
           console.error("Error marking command as executed:", error);
@@ -1650,11 +1659,17 @@ __serve(async (req) => {
       }
 
       case "getServerStatus": {
-        const { data: status, error } = await supabase
+        const requestedServerId = data.serverId ? String(data.serverId) : null;
+        let query = supabase
           .from("fivem_server_status")
           .select("*")
           .eq("guild_id", internalGuildId)
-          .maybeSingle();
+          .order("updated_at", { ascending: false })
+          .limit(1);
+
+        if (requestedServerId) query = query.eq("server_id", requestedServerId);
+
+        const { data: status, error } = await query.maybeSingle();
 
         if (error) {
           console.error("Error fetching server status:", error);
