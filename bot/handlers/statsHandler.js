@@ -6,6 +6,12 @@
 const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 const { createRealtimeSubscription } = require('../realtimeRetry');
 
+// All bot clients live in the same Node process. Guard each Discord guild globally
+// so startup timers from multiple clients can never process the same guild twice.
+const guildRunLocks = new Set();
+const lastGuildRunAt = new Map();
+const STARTUP_DEDUPE_MS = 60 * 1000;
+
 function setupStatsHandler(client, supabase, options = {}) {
   const { shouldHandleGuild, isCustomBot } = options;
 
@@ -45,8 +51,6 @@ function setupStatsHandler(client, supabase, options = {}) {
       const eligibleCount = Object.values(byGuild).reduce((sum, rows) => sum + rows.length, 0);
       if (eligibleCount === 0) return;
 
-      console.log(`[Stats] Processing ${eligibleCount} stat channel(s) for ${Object.keys(byGuild).length} guild(s)`);
-
       for (const [discordGuildId, stats] of Object.entries(byGuild)) {
         const guild = client.guilds.cache.get(discordGuildId);
         if (!guild) {
@@ -54,15 +58,34 @@ function setupStatsHandler(client, supabase, options = {}) {
           continue;
         }
 
-        // Fetch fresh member data once per guild
-        try {
-          await guild.members.fetch();
-        } catch (fetchErr) {
-          console.error(`[Stats] Failed to fetch members for ${discordGuildId}:`, fetchErr.message);
+        const now = Date.now();
+        const lastRun = lastGuildRunAt.get(discordGuildId) || 0;
+
+        // Force updates are explicit and bypass the startup dedupe window.
+        if (!forceGuildId && now - lastRun < STARTUP_DEDUPE_MS) {
           continue;
         }
 
-        for (const stat of stats) {
+        if (guildRunLocks.has(discordGuildId)) {
+          console.log(`[Stats] Skipping duplicate run for ${guild.name} (${discordGuildId})`);
+          continue;
+        }
+
+        guildRunLocks.add(discordGuildId);
+        lastGuildRunAt.set(discordGuildId, now);
+
+        console.log(`[Stats] Processing ${stats.length} stat channel(s) for ${guild.name} (${discordGuildId})`);
+
+        try {
+          // Fetch fresh member data once per guild
+          try {
+            await guild.members.fetch();
+          } catch (fetchErr) {
+            console.error(`[Stats] Failed to fetch members for ${discordGuildId}:`, fetchErr.message);
+            continue;
+          }
+
+          for (const stat of stats) {
           try {
             let count = 0;
 
@@ -138,6 +161,9 @@ function setupStatsHandler(client, supabase, options = {}) {
           } catch (err) {
             console.error(`[Stats] Update error for ${stat.id}:`, err.message);
           }
+          }
+        } finally {
+          guildRunLocks.delete(discordGuildId);
         }
       }
     } catch (err) {
