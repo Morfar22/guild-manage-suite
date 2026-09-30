@@ -106,7 +106,6 @@ function startTwitchChecker(client = null, config = {}) {
   // Twitch checks are server-side and do not depend on a specific bot client.
   // We only want ONE periodic loop per process, regardless of default/custom bots.
   if (twitchCheckerStartupTimeout || twitchCheckerInterval) {
-    console.log('[Twitch] Checker allerede initialiseret - skipper duplicate start');
     return;
   }
 
