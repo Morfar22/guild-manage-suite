@@ -19,6 +19,7 @@
  */
 
 const { Client, GatewayIntentBits, Partials, ActivityType, REST, Routes, SlashCommandBuilder, ChannelType } = require('discord.js');
+const { buildFiveMCommand } = require('./fivem/commands');
 
 const SUPABASE_URL = process.env.SUPABASE_URL || 'https://rkdqunnttcyuybbofkvz.supabase.co';
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -340,36 +341,7 @@ class CustomBotManager {
         .setDescription('Test alle bot-kommandoer og handlers (kun admin)')
         .addBooleanOption(o => o.setName('verbose').setDescription('Vis detaljer for hver kommando')),
       // ==================== FIVEM ====================
-      new SlashCommandBuilder()
-        .setName('fivem')
-        .setDescription('FiveM server kommandoer')
-        .addSubcommand(sub => sub.setName('status').setDescription('Se FiveM server status'))
-        .addSubcommand(sub => sub.setName('players').setDescription('Se online spillere'))
-        .addSubcommand(sub => sub
-          .setName('player')
-          .setDescription('Udfør en spiller-handling')
-          .addStringOption(o => o.setName('action').setDescription('Handling').setRequired(true)
-            .addChoices(
-              { name: 'Kick', value: 'kick' },
-              { name: 'Ban', value: 'ban' },
-              { name: 'Warn', value: 'warn' },
-              { name: 'Kill', value: 'kill' },
-              { name: 'Revive', value: 'revive' },
-              { name: 'Revive All', value: 'revive-all' },
-            ))
-          .addStringOption(o => o.setName('target').setDescription('Spiller ID'))
-          .addStringOption(o => o.setName('reason').setDescription('Årsag'))
-        )
-        .addSubcommand(sub => sub
-          .setName('server')
-          .setDescription('Udfør en server-handling')
-          .addStringOption(o => o.setName('action').setDescription('Handling').setRequired(true)
-            .addChoices(
-              { name: 'Restart', value: 'restart' },
-              { name: 'Announce', value: 'announce' },
-            ))
-          .addStringOption(o => o.setName('message').setDescription('Besked'))
-        ),
+      buildFiveMCommand(),
     ];
   }
 
