@@ -613,10 +613,11 @@ async function getGuildPrefix(guildDiscordId) {
 /**
  * Setup the prefix command handler
  * @param {Object} slashHandlers - The same handler object from createSlashHandlers()
- * @param {Function} isCommandEnabled - Function to check if a command is enabled
+ * @param {Function} isCommandEnabled - Backwards-compatible enabled check
+ * @param {Function} checkCommandAccess - Full command access/cooldown check
  * @param {Function} shouldHandleGuild - Guild filter function
  */
-function setupPrefixHandler(client, slashHandlers, { shouldHandleGuild, isCommandEnabled }) {
+function setupPrefixHandler(client, slashHandlers, { shouldHandleGuild, isCommandEnabled, checkCommandAccess }) {
   client.on('messageCreate', async (message) => {
     // Ignore bots and DMs
     if (message.author.bot || !message.guild) return;
@@ -651,8 +652,21 @@ function setupPrefixHandler(client, slashHandlers, { shouldHandleGuild, isComman
     // Check if we have a handler for this command
     if (!slashHandlers[commandName]) return;
 
-    // Check if command is enabled
-    if (isCommandEnabled) {
+    if (checkCommandAccess) {
+      const access = await checkCommandAccess({
+        guildId: message.guild.id,
+        commandName,
+        userId: message.author.id,
+        roleIds: message.member?.roles?.cache ? [...message.member.roles.cache.keys()] : [],
+        channelId: message.channel.id,
+        isAdmin: Boolean(message.member?.permissions?.has?.('Administrator')),
+      });
+
+      if (!access.allowed) {
+        await message.reply(access.message || '🚫 Du har ikke adgang til denne command.');
+        return;
+      }
+    } else if (isCommandEnabled) {
       const enabled = await isCommandEnabled(message.guild.id, commandName);
       if (!enabled) {
         await message.reply('❌ Denne kommando er deaktiveret.');
