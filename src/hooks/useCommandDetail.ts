@@ -95,20 +95,24 @@ export function useCommandDetail(commandName: string | null, days: number, enabl
     let handledLatency = 0;
     let handledCount = 0;
 
+    for (const row of daily) {
+      const rowSuccesses = Number(row.successes ?? 0);
+      const rowErrors = Number(row.errors ?? 0);
+      const rowBlocked = Number(row.blocked ?? 0);
+      const rowHandled = rowSuccesses + rowErrors;
+
+      successes += rowSuccesses;
+      errors += rowErrors;
+      blocked += rowBlocked;
+      handledCount += rowHandled;
+      handledLatency += Number(row.avg_latency_ms ?? 0) * rowHandled;
+    }
+
     const channelCounts = new Map<string, number>();
     const userCounts = new Map<string, number>();
     const blockedCounts = new Map<string, number>();
 
     for (const event of events) {
-      if (event.status === 'success') successes += 1;
-      if (event.status === 'error') errors += 1;
-      if (event.status === 'blocked') blocked += 1;
-
-      if (event.status === 'success' || event.status === 'error') {
-        handledLatency += Number(event.latency_ms || 0);
-        handledCount += 1;
-      }
-
       if (event.channel_id) channelCounts.set(event.channel_id, (channelCounts.get(event.channel_id) || 0) + 1);
       if (event.user_id) userCounts.set(event.user_id, (userCounts.get(event.user_id) || 0) + 1);
       if (event.blocked_reason) blockedCounts.set(event.blocked_reason, (blockedCounts.get(event.blocked_reason) || 0) + 1);
