@@ -732,6 +732,9 @@ local function buildPlayerList()
     for _, source in ipairs(GetPlayers()) do
         local numericSource = tonumber(source)
         local ids = identifiers(numericSource)
+        local ped = GetPlayerPed(numericSource)
+        local coords = ped ~= 0 and GetEntityCoords(ped) or nil
+
         rows[#rows + 1] = {
             playerId = numericSource,
             discordId = ids.discordId,
@@ -740,6 +743,7 @@ local function buildPlayerList()
             license = ids.license,
             characterName = characterName(numericSource),
             ping = GetPlayerPing(numericSource),
+            coords = coords and { x = coords.x, y = coords.y, z = coords.z } or nil,
         }
     end
     return rows
