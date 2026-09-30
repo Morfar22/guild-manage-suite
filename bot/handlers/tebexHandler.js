@@ -32,7 +32,7 @@ function setupTebexHandler(client, supabaseInstance, { shouldHandleGuild } = {})
   if (client.isReady()) {
     startPolling();
   } else {
-    client.once('ready', startPolling);
+    client.once('clientReady', startPolling);
   }
 
   return {
