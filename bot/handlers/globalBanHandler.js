@@ -14,6 +14,8 @@ function setupGlobalBanHandler(client, supabase, options = {}) {
   let isProcessingQueue = false;
   const permissionWarnings = new Set();
   const banFailureWarnings = new Set();
+  const blockedExecutionUntil = new Map();
+  const BLOCKED_RETRY_MS = 10 * 60 * 1000;
 
   async function getManagedGuildRows() {
     const managedDiscordGuildIds = client.guilds.cache
@@ -77,6 +79,10 @@ function setupGlobalBanHandler(client, supabase, options = {}) {
       let executedCount = 0;
 
       for (const execution of executions) {
+        const blockedUntil = blockedExecutionUntil.get(execution.id) || 0;
+        if (blockedUntil > Date.now()) continue;
+        if (blockedUntil) blockedExecutionUntil.delete(execution.id);
+
         const discordGuildId = guildIdByDbId.get(execution.guild_id);
         const ban = bansById.get(execution.global_ban_id);
 
@@ -112,8 +118,9 @@ function setupGlobalBanHandler(client, supabase, options = {}) {
           const me = guild.members.me || await guild.members.fetchMe().catch(() => null);
           if (!me?.permissions?.has('BanMembers')) {
             const permissionError = 'Missing BanMembers permission';
+            blockedExecutionUntil.set(execution.id, Date.now() + BLOCKED_RETRY_MS);
             if (!permissionWarnings.has(discordGuildId)) {
-              console.warn(`[GlobalBan] Skipping ${guild.name}: ${permissionError}`);
+              console.warn(`[GlobalBan] Skipping ${guild.name}: ${permissionError} (retry om 10 min)`);
               permissionWarnings.add(discordGuildId);
             }
             await supabase.from('global_ban_executions').update({
@@ -125,6 +132,27 @@ function setupGlobalBanHandler(client, supabase, options = {}) {
           }
 
           permissionWarnings.delete(discordGuildId);
+
+          // If the target is currently a member, Discord role hierarchy may make
+          // them unbannable even when the bot has BanMembers.
+          const targetMember = await guild.members.fetch(ban.target_discord_id).catch(() => null);
+          if (targetMember && !targetMember.bannable) {
+            const hierarchyError = 'Target is not bannable (role hierarchy or guild owner)';
+            const failureKey = `${discordGuildId}:${ban.target_discord_id}:hierarchy`;
+            blockedExecutionUntil.set(execution.id, Date.now() + BLOCKED_RETRY_MS);
+
+            if (!banFailureWarnings.has(failureKey)) {
+              console.warn(`[GlobalBan] Skipping ${ban.target_discord_id} in ${guild.name}: ${hierarchyError} (retry om 10 min)`);
+              banFailureWarnings.add(failureKey);
+            }
+
+            await supabase.from('global_ban_executions').update({
+              executed: false,
+              error_message: hierarchyError,
+              executed_at: new Date().toISOString(),
+            }).eq('id', execution.id);
+            continue;
+          }
 
           await guild.members.ban(ban.target_discord_id, {
             reason: `[Global Ban] ${ban.reason}`,
@@ -141,8 +169,14 @@ function setupGlobalBanHandler(client, supabase, options = {}) {
         } catch (banError) {
           const errorMsg = banError.message || String(banError);
           const failureKey = `${discordGuildId}:${ban.target_discord_id}:${errorMsg}`;
+
+          if (banError.code === 50013 || /missing permissions/i.test(errorMsg)) {
+            blockedExecutionUntil.set(execution.id, Date.now() + BLOCKED_RETRY_MS);
+          }
+
           if (!banFailureWarnings.has(failureKey)) {
-            console.warn(`[GlobalBan] Could not ban ${ban.target_discord_id} in ${discordGuildId}: ${errorMsg}`);
+            const retryNote = blockedExecutionUntil.has(execution.id) ? ' (retry om 10 min)' : '';
+            console.warn(`[GlobalBan] Could not ban ${ban.target_discord_id} in ${discordGuildId}: ${errorMsg}${retryNote}`);
             banFailureWarnings.add(failureKey);
           }
 
