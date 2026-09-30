@@ -105,7 +105,7 @@ __serve(async (req) => {
 
     const { data: serverStatus } = await supabase
       .from("fivem_server_status")
-      .select("is_online, last_heartbeat")
+      .select("server_id, is_online, last_heartbeat")
       .eq("guild_id", guild_id)
       .order("last_heartbeat", { ascending: false })
       .limit(1)
@@ -131,12 +131,14 @@ __serve(async (req) => {
 
     const moderatorName = data.moderatorName || "Dashboard";
     const moderatorDiscordId = data.moderatorDiscordId || "dashboard";
+    const serverId = String(data.serverId || serverStatus?.server_id || "main");
 
     // Queue the command for the FiveM server to pick up (return inserted row id)
     const { data: queuedRow, error: queueError } = await supabase
       .from("fivem_command_queue")
       .insert({
         guild_id,
+        server_id: serverId,
         command_name: command,
         command_data: data,
         target_player_id: data.targetPlayerId || null,
@@ -200,6 +202,7 @@ __serve(async (req) => {
       JSON.stringify({ 
         success: true, 
         command,
+        serverId,
         commandId: queuedRow.id,
         message: `Command '${command}' queued for execution`,
         status: "queued"
