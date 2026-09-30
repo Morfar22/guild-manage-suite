@@ -10,8 +10,16 @@ const __serve = (fn: any, _opts?: any) => { __handler = fn }
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-bot-secret",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-bot-secret, x-fivem-key, x-gms-version, x-gms-framework",
 };
+
+async function sha256Hex(value: string): Promise<string> {
+  const bytes = new TextEncoder().encode(value);
+  const digest = await crypto.subtle.digest("SHA-256", bytes);
+  return Array.from(new Uint8Array(digest))
+    .map((byte) => byte.toString(16).padStart(2, "0"))
+    .join("");
+}
 
 // IP whitelist check function
 async function checkIPWhitelist(req: Request, supabaseClient: any): Promise<{ allowed: boolean; ip: string }> {
@@ -274,29 +282,16 @@ __serve(async (req) => {
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Verify bot secret
-    const requestBotSecret = req.headers.get("x-bot-secret");
-    if (requestBotSecret !== botSecret) {
+    const { action, guildId, data = {} } = await req.json();
+    if (!action || !guildId) {
       return new Response(
-        JSON.stringify({ error: "Unauthorized" }),
-        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({ error: "action and guildId are required" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // Check IP whitelist
-    const ipCheck = await checkIPWhitelist(req, supabase);
-    if (!ipCheck.allowed) {
-      console.log(`IP ${ipCheck.ip} not whitelisted for FiveM handler`);
-      return new Response(
-        JSON.stringify({ error: "Forbidden - IP not whitelisted", ip: ipCheck.ip }),
-        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    const { action, guildId, data } = await req.json();
-    console.log(`FiveM handler: action=${action}, guildId=${guildId}`);
-
-    // Get guild from Discord guild_id
+    // Resolve the Discord guild first. A per-guild bridge key can then be verified
+    // without ever exposing the platform-wide BOT_SECRET_KEY to FiveM customers.
     const { data: guild, error: guildError } = await supabase
       .from("guilds")
       .select("id")
@@ -311,6 +306,64 @@ __serve(async (req) => {
     }
 
     const internalGuildId = guild.id;
+    const requestBridgeKey = req.headers.get("x-fivem-key");
+    const requestBotSecret = req.headers.get("x-bot-secret");
+
+    let authenticatedWithBridgeKey = false;
+    let authenticatedLegacy = false;
+
+    if (requestBridgeKey) {
+      const { data: bridgeSettings } = await supabase
+        .from("fivem_settings")
+        .select("bridge_token_hash")
+        .eq("guild_id", internalGuildId)
+        .maybeSingle();
+
+      if (bridgeSettings?.bridge_token_hash) {
+        const suppliedHash = await sha256Hex(requestBridgeKey);
+        authenticatedWithBridgeKey = suppliedHash === bridgeSettings.bridge_token_hash;
+      }
+    }
+
+    // Backwards compatibility for trusted internal callers only. Never accept an
+    // empty/missing platform secret, which the old comparison could accidentally do.
+    if (!authenticatedWithBridgeKey && botSecret && requestBotSecret) {
+      authenticatedLegacy = requestBotSecret === botSecret;
+    }
+
+    if (!authenticatedWithBridgeKey && !authenticatedLegacy) {
+      return new Response(
+        JSON.stringify({ error: "Unauthorized FiveM bridge" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Legacy callers keep the old IP whitelist behaviour. Per-guild bridge keys are
+    // independently revocable and intentionally support dynamic hosting IPs.
+    if (authenticatedLegacy) {
+      const ipCheck = await checkIPWhitelist(req, supabase);
+      if (!ipCheck.allowed) {
+        console.log(`IP ${ipCheck.ip} not whitelisted for FiveM handler`);
+        return new Response(
+          JSON.stringify({ error: "Forbidden - IP not whitelisted", ip: ipCheck.ip }),
+          { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+    }
+
+    if (authenticatedWithBridgeKey) {
+      await supabase
+        .from("fivem_settings")
+        .update({
+          bridge_last_seen_at: new Date().toISOString(),
+          bridge_version: req.headers.get("x-gms-version") || null,
+          bridge_framework: req.headers.get("x-gms-framework") || null,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("guild_id", internalGuildId);
+    }
+
+    console.log(`FiveM handler: action=${action}, guildId=${guildId}, auth=${authenticatedWithBridgeKey ? "bridge" : "legacy"}`);
 
     switch (action) {
       // ==================== WHITELIST ACTIONS ====================
