@@ -8,6 +8,7 @@ import {
   toggleCategoryCommands,
   updateGuildCommandSettings,
   bulkUpdateGuildCommandSettings,
+  recordCommandAudits,
 } from '@/lib/commands';
 import { COMMANDS_BY_CATEGORY } from '@/types/discord';
 import { toast } from 'sonner';
@@ -70,6 +71,14 @@ export function useCommands() {
     try {
       setUpdating(true);
       await toggleGuildCommand(selectedGuild.id, commandName, category, enabled);
+      await recordCommandAudits(selectedGuild.id, [{
+        commandName,
+        action: 'command_enabled_changed',
+        details: {
+          before: { enabled: previous?.enabled ?? true },
+          after: { enabled },
+        },
+      }]);
       toast.success(`/${commandName} ${enabled ? 'aktiveret' : 'deaktiveret'}`);
     } catch {
       if (previous) setCommandSettings((prev) => ({ ...prev, [commandName]: previous }));
@@ -105,6 +114,18 @@ export function useCommands() {
     try {
       setUpdating(true);
       await updateGuildCommandSettings(selectedGuild.id, commandName, category, updates);
+      await recordCommandAudits(selectedGuild.id, [{
+        commandName,
+        action: 'command_settings_changed',
+        details: {
+          before: previous ?? null,
+          changes: updates,
+          after: {
+            ...(previous || {}),
+            ...updates,
+          },
+        },
+      }]);
       toast.success(`Indstillinger for /${commandName} gemt`);
     } catch (error) {
       if (previous) setCommandSettings((prev) => ({ ...prev, [commandName]: previous }));
@@ -142,6 +163,18 @@ export function useCommands() {
     try {
       setUpdating(true);
       await toggleCategoryCommands(selectedGuild.id, category, enabled);
+      await recordCommandAudits(
+        selectedGuild.id,
+        commands.map((cmd) => ({
+          commandName: cmd.name,
+          action: 'command_category_enabled_changed',
+          details: {
+            category,
+            before: { enabled: snapshot[cmd.name]?.enabled ?? true },
+            after: { enabled },
+          },
+        }))
+      );
       toast.success(`Alle ${category}-kommandoer ${enabled ? 'aktiveret' : 'deaktiveret'}`);
     } catch {
       setCommandSettings(snapshot);
@@ -185,6 +218,21 @@ export function useCommands() {
     try {
       setUpdating(true);
       await bulkUpdateGuildCommandSettings(selectedGuild.id, entries);
+      await recordCommandAudits(
+        selectedGuild.id,
+        entries.map(({ commandName, updates }) => ({
+          commandName,
+          action: 'command_bulk_settings_changed',
+          details: {
+            before: snapshot[commandName] ?? null,
+            changes: updates,
+            after: {
+              ...(snapshot[commandName] || {}),
+              ...updates,
+            },
+          },
+        }))
+      );
       toast.success(`${commandNames.length} commands opdateret`);
     } catch (error) {
       setCommandSettings(snapshot);
