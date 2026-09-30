@@ -638,23 +638,47 @@ __serve(async (req) => {
 
         const { data: whitelistEntry } = await supabase
           .from("fivem_whitelist")
-          .select("id")
+          .select("id, playtime_minutes")
           .eq("guild_id", internalGuildId)
           .eq("discord_user_id", discordId)
           .maybeSingle();
 
+        let addedMinutes = 0;
+
         if (whitelistEntry) {
-          await supabase
+          const { data: session } = await supabase
             .from("fivem_sessions")
-            .update({ session_end: new Date().toISOString() })
+            .select("id, session_start")
             .eq("whitelist_id", whitelistEntry.id)
             .is("session_end", null)
             .order("session_start", { ascending: false })
-            .limit(1);
+            .limit(1)
+            .maybeSingle();
+
+          if (session) {
+            const endedAt = new Date();
+            const startedAt = new Date(session.session_start);
+            addedMinutes = Math.max(0, Math.floor((endedAt.getTime() - startedAt.getTime()) / 60000));
+
+            await supabase
+              .from("fivem_sessions")
+              .update({ session_end: endedAt.toISOString() })
+              .eq("id", session.id);
+
+            if (addedMinutes > 0) {
+              await supabase
+                .from("fivem_whitelist")
+                .update({
+                  playtime_minutes: (whitelistEntry.playtime_minutes || 0) + addedMinutes,
+                  last_seen_at: endedAt.toISOString(),
+                })
+                .eq("id", whitelistEntry.id);
+            }
+          }
         }
 
         return new Response(
-          JSON.stringify({ success: true }),
+          JSON.stringify({ success: true, addedMinutes }),
           { headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
