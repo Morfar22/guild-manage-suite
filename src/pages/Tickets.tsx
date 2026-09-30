@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, type ReactNode } from 'react';
 import {
   useTickets,
   useTicketStats,
@@ -373,42 +373,44 @@ export default function Tickets() {
                                   </Button>
                                 )}
 
-                                <AlertDialog>
-                                  <AlertDialogTrigger asChild>
-                                    <Button
-                                      variant="ghost"
-                                      size="icon"
-                                      className="text-destructive hover:text-destructive"
-                                      title={en ? 'Delete database record' : 'Slet databasepost'}
-                                    >
-                                      <Trash2 className="h-4 w-4" />
-                                    </Button>
-                                  </AlertDialogTrigger>
-                                  <AlertDialogContent>
-                                    <AlertDialogHeader>
-                                      <AlertDialogTitle>{en ? 'Delete ticket permanently?' : 'Slet ticket permanent?'}</AlertDialogTitle>
-                                      <AlertDialogDescription>
-                                        {en
-                                          ? 'This deletes the ticket record and its saved messages from the dashboard. It does not act as a normal Discord close workflow.'
-                                          : 'Dette sletter ticket-posten og dens gemte beskeder fra dashboardet. Det er ikke det samme som den normale lukning i Discord.'}
-                                      </AlertDialogDescription>
-                                    </AlertDialogHeader>
-                                    <AlertDialogFooter>
-                                      <AlertDialogCancel>{en ? 'Cancel' : 'Annuller'}</AlertDialogCancel>
-                                      <AlertDialogAction
-                                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                                        onClick={() => {
-                                          deleteTicket.mutate(ticket.id, {
-                                            onSuccess: () => toast.success(en ? 'Ticket deleted' : 'Ticket slettet'),
-                                            onError: () => toast.error(en ? 'Could not delete ticket' : 'Kunne ikke slette ticket'),
-                                          });
-                                        }}
+                                {ticket.status === 'closed' && (
+                                  <AlertDialog>
+                                    <AlertDialogTrigger asChild>
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="text-destructive hover:text-destructive"
+                                        title={en ? 'Delete database record' : 'Slet databasepost'}
                                       >
-                                        {en ? 'Delete permanently' : 'Slet permanent'}
-                                      </AlertDialogAction>
-                                    </AlertDialogFooter>
-                                  </AlertDialogContent>
-                                </AlertDialog>
+                                        <Trash2 className="h-4 w-4" />
+                                      </Button>
+                                    </AlertDialogTrigger>
+                                    <AlertDialogContent>
+                                      <AlertDialogHeader>
+                                        <AlertDialogTitle>{en ? 'Delete ticket permanently?' : 'Slet ticket permanent?'}</AlertDialogTitle>
+                                        <AlertDialogDescription>
+                                          {en
+                                            ? 'This deletes the ticket record and its saved messages from the dashboard. It does not act as a normal Discord close workflow.'
+                                            : 'Dette sletter ticket-posten og dens gemte beskeder fra dashboardet. Det er ikke det samme som den normale lukning i Discord.'}
+                                        </AlertDialogDescription>
+                                      </AlertDialogHeader>
+                                      <AlertDialogFooter>
+                                        <AlertDialogCancel>{en ? 'Cancel' : 'Annuller'}</AlertDialogCancel>
+                                        <AlertDialogAction
+                                          className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                          onClick={() => {
+                                            deleteTicket.mutate(ticket.id, {
+                                              onSuccess: () => toast.success(en ? 'Ticket deleted' : 'Ticket slettet'),
+                                              onError: () => toast.error(en ? 'Could not delete ticket' : 'Kunne ikke slette ticket'),
+                                            });
+                                          }}
+                                        >
+                                          {en ? 'Delete permanently' : 'Slet permanent'}
+                                        </AlertDialogAction>
+                                      </AlertDialogFooter>
+                                    </AlertDialogContent>
+                                  </AlertDialog>
+                                )}
                               </div>
                             </TableCell>
                           </TableRow>
@@ -447,7 +449,7 @@ function MetricCard({
   title: string;
   value: string | number;
   subtitle: string;
-  icon: React.ReactNode;
+  icon: ReactNode;
   loading: boolean;
   danger?: boolean;
 }) {
