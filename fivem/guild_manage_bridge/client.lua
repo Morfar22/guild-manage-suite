@@ -293,8 +293,8 @@ end
 RegisterNetEvent('guild_manage_bridge:client:action', function(action, data, requestId)
     local ok, success, message = pcall(executeAction, action, data or {})
     if not ok then
-        success = false
         message = tostring(success)
+        success = false
     end
 
     if requestId then
