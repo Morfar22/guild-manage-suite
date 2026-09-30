@@ -24,7 +24,14 @@ const { buildFiveMCommand } = require('./fivem/commands');
 const SUPABASE_URL = process.env.SUPABASE_URL || 'https://rkdqunnttcyuybbofkvz.supabase.co';
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const BOT_SECRET_KEY = process.env.BOT_SECRET_KEY;
-const DEFAULT_BOT_TOKEN = process.env.DEFAULT_BOT_TOKEN || process.env.DISCORD_TOKEN || process.env.DISCORD_BOT_TOKEN;
+const DEFAULT_BOT_TOKEN_CANDIDATES = [
+  ['DEFAULT_BOT_TOKEN', process.env.DEFAULT_BOT_TOKEN],
+  ['DISCORD_TOKEN', process.env.DISCORD_TOKEN],
+  ['DISCORD_BOT_TOKEN', process.env.DISCORD_BOT_TOKEN],
+]
+  .map(([source, token]) => ({ source, token: String(token || '').trim() }))
+  .filter(entry => entry.token.length > 0)
+  .filter((entry, index, entries) => entries.findIndex(other => other.token === entry.token) === index);
 
 // How often to check for config changes (60 seconds)
 const CONFIG_CHECK_INTERVAL = 60000;
@@ -50,6 +57,7 @@ class CustomBotManager {
     
     // Default client for guilds without custom bot
     this.defaultClient = null;
+    this.defaultBotToken = null;
     
     // Registered handler factories
     this.handlerFactories = [];
@@ -985,16 +993,53 @@ class CustomBotManager {
     }
   }
 
-  /**
-   * Start the default bot
-   */
-  async startDefaultBot() {
-    if (!DEFAULT_BOT_TOKEN) {
+  async resolveDefaultBotToken() {
+    if (DEFAULT_BOT_TOKEN_CANDIDATES.length === 0) {
       console.warn('[CustomBotManager] Intet default bot-token fundet. Sætter kun custom bots i drift.');
       console.warn('[CustomBotManager] Sæt DEFAULT_BOT_TOKEN, DISCORD_TOKEN eller DISCORD_BOT_TOKEN for at aktivere default botten.');
       return null;
     }
 
+    for (const candidate of DEFAULT_BOT_TOKEN_CANDIDATES) {
+      try {
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), 6000);
+        const response = await fetch('https://discord.com/api/v10/users/@me', {
+          headers: { Authorization: `Bot ${candidate.token}` },
+          signal: controller.signal,
+        });
+        clearTimeout(timer);
+
+        if (response.ok) {
+          console.log(`[CustomBotManager] ✅ Gyldigt default bot-token fundet via ${candidate.source}`);
+          return candidate.token;
+        }
+
+        if (response.status === 401) {
+          console.warn(`[CustomBotManager] ${candidate.source} er ugyldigt; prøver næste token-kilde`);
+          continue;
+        }
+
+        console.warn(`[CustomBotManager] Kunne ikke validere ${candidate.source} (HTTP ${response.status}); forsøger login direkte`);
+        return candidate.token;
+      } catch (error) {
+        console.warn(`[CustomBotManager] Token-validering fejlede for ${candidate.source}: ${error?.message || error}; forsøger login direkte`);
+        return candidate.token;
+      }
+    }
+
+    console.error('[CustomBotManager] Ingen gyldige default bot-tokens blev fundet. Custom bots fortsætter.');
+    return null;
+  }
+
+  /**
+   * Start the default bot
+   */
+  async startDefaultBot() {
+    const defaultBotToken = await this.resolveDefaultBotToken();
+    if (!defaultBotToken) return null;
+
+    this.defaultBotToken = defaultBotToken;
     console.log('[CustomBotManager] Starting default bot...');
 
     this.defaultClient = this.createClient();
@@ -1016,14 +1061,14 @@ class CustomBotManager {
 
       // All slash commands are guild-only to avoid duplicate global + guild entries.
       const guildIds = this.defaultClient.guilds.cache.map(g => g.id);
-      await this.deployCommandsForBot(DEFAULT_BOT_TOKEN, this.defaultClient.user.id, guildIds);
+      await this.deployCommandsForBot(defaultBotToken, this.defaultClient.user.id, guildIds);
     });
 
     // Deploy commands instantly when bot joins a new server
     this.defaultClient.on('guildCreate', async (guild) => {
       console.log(`[CustomBotManager] 📥 Joined new guild: ${guild.name} (${guild.id})`);
       if (this.defaultClient.user) {
-        await this.deployCommandsToGuild(DEFAULT_BOT_TOKEN, this.defaultClient.user.id, guild.id);
+        await this.deployCommandsToGuild(defaultBotToken, this.defaultClient.user.id, guild.id);
       }
     });
 
@@ -1032,13 +1077,13 @@ class CustomBotManager {
     });
 
     try {
-      await this.defaultClient.login(DEFAULT_BOT_TOKEN);
+      await this.defaultClient.login(defaultBotToken);
       return this.defaultClient;
     } catch (error) {
       const message = error?.message || String(error);
       if (/invalid token/i.test(message)) {
         console.error('[CustomBotManager] Default bot-tokenet er ugyldigt. Custom bots fortsætter med at starte.');
-        console.error('[CustomBotManager] Kontrollér DEFAULT_BOT_TOKEN / DISCORD_TOKEN / DISCORD_BOT_TOKEN i /bot/.env.');
+        console.error('[CustomBotManager] Kontrollér defaultBotToken / DISCORD_TOKEN / DISCORD_BOT_TOKEN i /bot/.env.');
       } else {
         console.error('[CustomBotManager] Failed to start default bot:', message);
       }
@@ -1113,6 +1158,7 @@ class CustomBotManager {
     if (this.defaultClient) {
       this.defaultClient.destroy();
       this.defaultClient = null;
+      this.defaultBotToken = null;
     }
 
     console.log('[CustomBotManager] ✅ Manager stopped');
