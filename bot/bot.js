@@ -140,27 +140,117 @@ async function logModerationAction(guildId, action, moderator, target, reason, d
   }
 }
 
-async function isCommandEnabled(guildId, commandName) {
+const commandSettingsCache = new Map();
+const commandCooldowns = new Map();
+const COMMAND_SETTINGS_CACHE_TTL = Number(process.env.COMMAND_SETTINGS_CACHE_TTL || 10000);
+
+async function getGuildCommandSettings(guildId) {
+  const cached = commandSettingsCache.get(guildId);
+  if (cached && Date.now() - cached.fetchedAt < COMMAND_SETTINGS_CACHE_TTL) {
+    return cached.commands;
+  }
+
   try {
-    const { data: guild } = await supabase
+    const { data: guild, error: guildError } = await supabase
       .from('guilds')
       .select('id')
       .eq('guild_id', guildId)
-      .single();
+      .maybeSingle();
 
-    if (!guild) return true;
+    if (guildError || !guild) {
+      const empty = new Map();
+      commandSettingsCache.set(guildId, { fetchedAt: Date.now(), commands: empty });
+      return empty;
+    }
 
-    const { data: command } = await supabase
+    const { data: rows, error: commandError } = await supabase
       .from('guild_commands')
-      .select('enabled')
-      .eq('guild_id', guild.id)
-      .eq('command_name', commandName)
-      .single();
+      .select('command_name, enabled, cooldown_seconds, allowed_role_ids, allowed_channel_ids')
+      .eq('guild_id', guild.id);
 
-    return command ? command.enabled : true;
-  } catch {
-    return true;
+    if (commandError) throw commandError;
+
+    const commands = new Map();
+    for (const row of rows || []) {
+      commands.set(row.command_name, {
+        enabled: row.enabled !== false,
+        cooldown_seconds: Math.max(0, Number(row.cooldown_seconds) || 0),
+        allowed_role_ids: Array.isArray(row.allowed_role_ids) ? row.allowed_role_ids : [],
+        allowed_channel_ids: Array.isArray(row.allowed_channel_ids) ? row.allowed_channel_ids : [],
+      });
+    }
+
+    commandSettingsCache.set(guildId, { fetchedAt: Date.now(), commands });
+    return commands;
+  } catch (error) {
+    console.warn(`[Commands] Kunne ikke hente command-indstillinger for guild ${guildId}:`, error?.message || error);
+    return cached?.commands || new Map();
   }
+}
+
+async function checkCommandAccess({
+  guildId,
+  commandName,
+  userId,
+  roleIds = [],
+  channelId = null,
+  isAdmin = false,
+}) {
+  if (!guildId || !commandName) return { allowed: true };
+
+  const commands = await getGuildCommandSettings(guildId);
+  const settings = commands.get(commandName);
+
+  if (!settings) return { allowed: true };
+
+  if (!settings.enabled) {
+    return { allowed: false, reason: 'disabled', message: '❌ Denne command er deaktiveret.' };
+  }
+
+  if (!isAdmin && settings.allowed_role_ids.length > 0) {
+    const hasRole = roleIds.some((roleId) => settings.allowed_role_ids.includes(roleId));
+    if (!hasRole) {
+      return {
+        allowed: false,
+        reason: 'role',
+        message: '🚫 Du har ikke en rolle, der har adgang til denne command.',
+      };
+    }
+  }
+
+  if (!isAdmin && settings.allowed_channel_ids.length > 0 && !settings.allowed_channel_ids.includes(channelId)) {
+    const mentions = settings.allowed_channel_ids.slice(0, 5).map((id) => `<#${id}>`).join(', ');
+    return {
+      allowed: false,
+      reason: 'channel',
+      message: `🚫 Denne command må kun bruges i: ${mentions}`,
+    };
+  }
+
+  if (!isAdmin && settings.cooldown_seconds > 0 && userId) {
+    const cooldownKey = `${guildId}:${userId}:${commandName}`;
+    const now = Date.now();
+    const expiresAt = commandCooldowns.get(cooldownKey) || 0;
+
+    if (expiresAt > now) {
+      const retryAfter = Math.max(1, Math.ceil((expiresAt - now) / 1000));
+      return {
+        allowed: false,
+        reason: 'cooldown',
+        retryAfter,
+        message: `⏳ Du kan bruge **/${commandName}** igen om ${retryAfter} sek.`,
+      };
+    }
+
+    commandCooldowns.set(cooldownKey, now + settings.cooldown_seconds * 1000);
+  }
+
+  return { allowed: true, settings };
+}
+
+async function isCommandEnabled(guildId, commandName) {
+  const commands = await getGuildCommandSettings(guildId);
+  return commands.get(commandName)?.enabled !== false;
 }
 
 async function isModuleEnabled(guildId, moduleType) {
@@ -2660,7 +2750,7 @@ manager.registerHandler((client, guildId, assignedDiscordGuildId) => {
 
   // Register prefix command handler (mirrors all slash commands)
   try {
-    setupPrefixHandler(client, slashHandlers, { shouldHandleGuild, isCommandEnabled });
+    setupPrefixHandler(client, slashHandlers, { shouldHandleGuild, isCommandEnabled, checkCommandAccess });
     console.log(`[Bot] ✅ Prefix handler for ${clientLabel}`);
   } catch (e) {
     console.error(`[Bot] ❌ Prefix handler fejl:`, e.message);
@@ -2680,9 +2770,17 @@ manager.registerHandler((client, guildId, assignedDiscordGuildId) => {
 
     const commandName = interaction.commandName;
 
-    // Check if command is enabled for this guild
-    if (!(await isCommandEnabled(interaction.guild.id, commandName))) {
-      return interaction.reply({ content: '❌ Denne command er deaktiveret.', flags: 64 });
+    const access = await checkCommandAccess({
+      guildId: interaction.guild.id,
+      commandName,
+      userId: interaction.user.id,
+      roleIds: interaction.member?.roles?.cache ? [...interaction.member.roles.cache.keys()] : [],
+      channelId: interaction.channelId,
+      isAdmin: Boolean(interaction.member?.permissions?.has?.(PermissionFlagsBits.Administrator)),
+    });
+
+    if (!access.allowed) {
+      return interaction.reply({ content: access.message || '🚫 Du har ikke adgang til denne command.', flags: 64 });
     }
 
     const handler = slashHandlers[commandName];
