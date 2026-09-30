@@ -2123,7 +2123,11 @@ async function handleMusicCommand(interaction, command, args) {
  */
 function hasCustomBotForDiscordGuild(discordGuildId) {
   for (const [, bot] of manager.bots) {
-    if (bot?.client?.guilds?.cache?.has(discordGuildId)) {
+    if (
+      bot?.client?.isReady?.()
+      && bot?.config?.discord_guild_id === discordGuildId
+      && bot.client.guilds.cache.has(discordGuildId)
+    ) {
       return true;
     }
   }
@@ -2131,18 +2135,25 @@ function hasCustomBotForDiscordGuild(discordGuildId) {
   return false;
 }
 
-function createGuildFilter(client, guildId) {
+function createGuildFilter(client, internalGuildId, assignedDiscordGuildId = null) {
   return (eventGuildId) => {
     if (!eventGuildId) return false;
     
-    // Custom bot: only handle events for its assigned guild
-    if (guildId) {
-      return client?.guilds?.cache?.has(eventGuildId) || false;
+    // Custom bot: only handle the Discord guild explicitly tied to its DB config.
+    // If the API has not supplied the mapping yet, only allow a safe single-guild
+    // fallback. Never let a multi-guild custom token process every guild it can see.
+    if (internalGuildId) {
+      if (assignedDiscordGuildId) {
+        return eventGuildId === assignedDiscordGuildId
+          && Boolean(client?.guilds?.cache?.has(eventGuildId));
+      }
+
+      return client?.guilds?.cache?.size === 1
+        && Boolean(client.guilds.cache.has(eventGuildId));
     }
     
-    // Default bot: only handle guilds it is actually in and that DON'T have a custom bot.
-    // Without the cache check, background handlers could claim unrelated/stale guilds
-    // from the database and produce "guild not in cache" / backend 404 noise.
+    // Default bot: only handle guilds it is actually in and that DON'T have
+    // an explicitly assigned custom bot.
     return Boolean(client?.guilds?.cache?.has(eventGuildId))
       && !hasCustomBotForDiscordGuild(eventGuildId);
   };
@@ -2152,9 +2163,9 @@ function createGuildFilter(client, guildId) {
  * Register all handlers for a client
  * This is called for EVERY bot instance (default + custom bots)
  */
-manager.registerHandler((client, guildId) => {
+manager.registerHandler((client, guildId, assignedDiscordGuildId) => {
   const clientLabel = guildId ? `custom:${guildId}` : 'default';
-  const shouldHandleGuild = createGuildFilter(client, guildId);
+  const shouldHandleGuild = createGuildFilter(client, guildId, assignedDiscordGuildId);
   
   console.log(`[Bot] Registrerer handlers for ${clientLabel}...`);
 
