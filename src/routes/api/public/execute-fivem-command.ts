@@ -21,7 +21,6 @@ __serve(async (req) => {
   try {
     const supabaseUrl = __env("SUPABASE_URL")!;
     const supabaseServiceKey = __env("SUPABASE_SERVICE_ROLE_KEY")!;
-    const discordBotToken = __env("DISCORD_BOT_TOKEN");
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
@@ -82,6 +81,54 @@ __serve(async (req) => {
       });
     }
 
+    if (!/^[a-z0-9-]{1,64}$/i.test(String(command))) {
+      return new Response(JSON.stringify({ error: "Invalid command name" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const { data: settings } = await supabase
+      .from("fivem_settings")
+      .select("enabled, log_webhook_url")
+      .eq("guild_id", guild_id)
+      .maybeSingle();
+
+    if (!settings?.enabled) {
+      return new Response(JSON.stringify({
+        error: "FiveM integration is not enabled. Complete FiveM → Opsætning first."
+      }), {
+        status: 409,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const { data: serverStatus } = await supabase
+      .from("fivem_server_status")
+      .select("is_online, last_heartbeat")
+      .eq("guild_id", guild_id)
+      .order("last_heartbeat", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    const heartbeatMs = serverStatus?.last_heartbeat
+      ? new Date(serverStatus.last_heartbeat).getTime()
+      : 0;
+    const bridgeOnline = Boolean(
+      serverStatus?.is_online &&
+      heartbeatMs > 0 &&
+      Date.now() - heartbeatMs < 90_000
+    );
+
+    if (!bridgeOnline) {
+      return new Response(JSON.stringify({
+        error: "FiveM Bridge er offline. Tjek FiveM → Opsætning og server.cfg."
+      }), {
+        status: 409,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const moderatorName = data.moderatorName || "Dashboard";
     const moderatorDiscordId = data.moderatorDiscordId || "dashboard";
 
@@ -123,16 +170,8 @@ __serve(async (req) => {
       metadata: data,
     });
 
-    // Get FiveM settings for optional Discord notification
-    const { data: settings } = await supabase
-      .from("fivem_settings")
-      .select("log_channel_id, staff_chat_channel_id, announcement_channel_id")
-      .eq("guild_id", guild_id)
-      .single();
-
-    // Send Discord notification for certain commands
-    if (discordBotToken && settings?.log_channel_id) {
-      const logChannel = settings.log_channel_id;
+    // Optional webhook logging works for both the default bot and custom-bot guilds.
+    if (settings?.log_webhook_url) {
       const actionColors: Record<string, number> = {
         kick: 0xFFA500,
         ban: 0xFF0000,
@@ -143,23 +182,18 @@ __serve(async (req) => {
         time: 0x00BFFF,
       };
 
-      if (["kick", "ban", "kill", "revive"].includes(command)) {
-        await fetch(`https://discord.com/api/v10/channels/${logChannel}/messages`, {
-          method: "POST",
-          headers: {
-            Authorization: `Bot ${discordBotToken}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            embeds: [{
-              title: `🎮 FiveM ${command.charAt(0).toUpperCase() + command.slice(1)} (Queued)`,
-              description: `**Target:** ${data.targetName || data.targetDiscordId || 'Player #' + data.targetPlayerId}\n**Moderator:** ${moderatorName}${data.reason ? '\n**Reason:** ' + data.reason : ''}\n\n*Awaiting execution on FiveM server...*`,
-              color: actionColors[command] || 0x5865F2,
-              timestamp: new Date().toISOString(),
-            }],
-          }),
-        });
-      }
+      await fetch(settings.log_webhook_url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          embeds: [{
+            title: `🎮 FiveM ${command}`,
+            description: `**Target:** ${data.targetName || data.targetDiscordId || (data.targetPlayerId ? 'Player #' + data.targetPlayerId : 'N/A')}\n**Moderator:** ${moderatorName}${data.reason ? '\n**Reason:** ' + data.reason : ''}\n\n*Queued for the FiveM bridge.*`,
+            color: actionColors[command] || 0x5865F2,
+            timestamp: new Date().toISOString(),
+          }],
+        }),
+      }).catch(() => {});
     }
 
     return new Response(
