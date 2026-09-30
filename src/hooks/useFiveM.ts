@@ -389,11 +389,24 @@ export function useFiveMOnlinePlayers() {
     queryFn: async () => {
       if (!selectedGuild?.id) return [];
 
+      // Keep the player list on the same active FiveM instance the dashboard
+      // command endpoint will target. This avoids duplicate player IDs from
+      // multiple servers (e.g. main + event) under the same Discord guild.
+      const { data: activeStatus } = await supabase
+        .from('fivem_server_status')
+        .select('server_id, last_heartbeat')
+        .eq('guild_id', selectedGuild.id)
+        .order('last_heartbeat', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      const serverId = activeStatus?.server_id || 'main';
       const freshnessCutoff = new Date(Date.now() - 45_000).toISOString();
       const { data, error } = await supabase
         .from('fivem_online_players')
         .select('*')
         .eq('guild_id', selectedGuild.id)
+        .eq('server_id', serverId)
         .gte('last_update', freshnessCutoff)
         .order('joined_at', { ascending: false });
 
@@ -401,7 +414,7 @@ export function useFiveMOnlinePlayers() {
       return data as FiveMOnlinePlayer[];
     },
     enabled: !!selectedGuild?.id,
-    refetchInterval: 30000, // Auto-refresh every 30 seconds
+    refetchInterval: 15000,
   });
 }
 
