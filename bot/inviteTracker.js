@@ -18,8 +18,17 @@ const inviteCache = new Map();
 const vanityCache = new Map();
 
 const FAKE_ACCOUNT_DAYS = 7;
+const UNREGISTERED_GUILD_RETRY_MS = 10 * 60 * 1000;
+const unregisteredGuildUntil = new Map();
 
 async function callApi(action, data) {
+  const guildId = data?.guildId;
+  if (guildId) {
+    const retryAt = unregisteredGuildUntil.get(guildId) || 0;
+    if (retryAt > Date.now()) return null;
+    if (retryAt) unregisteredGuildUntil.delete(guildId);
+  }
+
   try {
     const res = await fetch(API_URL, {
       method: 'POST',
@@ -28,9 +37,21 @@ async function callApi(action, data) {
     });
     if (!res.ok) {
       const err = await res.text();
+
+      if (guildId && res.status === 404 && /guild not found/i.test(err)) {
+        const wasBackedOff = unregisteredGuildUntil.has(guildId);
+        unregisteredGuildUntil.set(guildId, Date.now() + UNREGISTERED_GUILD_RETRY_MS);
+        if (!wasBackedOff) {
+          console.warn(`[InviteTracker] Guild ${guildId} er ikke registreret i backend; sync pauses i 10 min.`);
+        }
+        return null;
+      }
+
       console.error(`[InviteTracker] API ${action} failed:`, res.status, err);
       return null;
     }
+
+    if (guildId) unregisteredGuildUntil.delete(guildId);
     return await res.json();
   } catch (e) {
     console.error(`[InviteTracker] API ${action} error:`, e.message);
