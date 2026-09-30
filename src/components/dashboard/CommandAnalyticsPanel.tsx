@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Activity, AlertTriangle, Ban, Gauge, Loader2, RefreshCw, Trophy } from 'lucide-react';
+import { Activity, AlertTriangle, Ban, Eye, Gauge, Loader2, RefreshCw, Trophy } from 'lucide-react';
 import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { useCommandAnalytics } from '@/hooks/useCommandAnalytics';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -42,9 +42,13 @@ function formatLastUsed(value: string | null) {
   }).format(new Date(value));
 }
 
-export function CommandAnalyticsPanel() {
+interface Props {
+  onInspect?: (commandName: string) => void;
+}
+
+export function CommandAnalyticsPanel({ onInspect }: Props) {
   const [days, setDays] = useState(7);
-  const { commands, timeline, summary, isLoading, refetch } = useCommandAnalytics(days);
+  const { commands, timeline, summary, recentErrors, isLoading, refetch } = useCommandAnalytics(days);
 
   const topCommand = commands[0];
 
@@ -176,6 +180,62 @@ export function CommandAnalyticsPanel() {
 
           <Card>
             <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-base">
+                <AlertTriangle className="h-4 w-4 text-destructive" />
+                Recent Errors
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-0">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Command</TableHead>
+                    <TableHead>Tid</TableHead>
+                    <TableHead>Kilde</TableHead>
+                    <TableHead>Latency</TableHead>
+                    <TableHead>Fejl</TableHead>
+                    <TableHead className="w-16"></TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {recentErrors.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={6} className="py-10 text-center text-muted-foreground">
+                        Ingen command-fejl i perioden.
+                      </TableCell>
+                    </TableRow>
+                  ) : recentErrors.map((event) => (
+                    <TableRow key={event.id}>
+                      <TableCell>
+                        <Badge variant="secondary" className="font-mono">/{event.command_name}</Badge>
+                      </TableCell>
+                      <TableCell className="whitespace-nowrap text-xs text-muted-foreground">
+                        {formatLastUsed(event.created_at)}
+                      </TableCell>
+                      <TableCell><Badge variant="outline">{event.source}</Badge></TableCell>
+                      <TableCell>{formatLatency(Number(event.latency_ms || 0))}</TableCell>
+                      <TableCell className="max-w-xl truncate font-mono text-xs text-destructive">
+                        {event.error_message || 'Ukendt fejl'}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => onInspect?.(event.command_name)}
+                          title="Åbn command"
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
               <CardTitle className="text-base">Commands</CardTitle>
             </CardHeader>
             <CardContent className="p-0">
@@ -190,6 +250,7 @@ export function CommandAnalyticsPanel() {
                     <TableHead className="text-right">Gns.</TableHead>
                     <TableHead className="text-right">Max</TableHead>
                     <TableHead className="text-right">Senest brugt</TableHead>
+                    <TableHead className="w-16"></TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -209,6 +270,16 @@ export function CommandAnalyticsPanel() {
                       <TableCell className="text-right">{formatLatency(command.avg_latency_ms)}</TableCell>
                       <TableCell className="text-right">{formatLatency(command.max_latency_ms)}</TableCell>
                       <TableCell className="text-right text-xs text-muted-foreground">{formatLastUsed(command.last_used_at)}</TableCell>
+                      <TableCell className="text-right">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => onInspect?.(command.command_name)}
+                          title="Åbn detaljer"
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
