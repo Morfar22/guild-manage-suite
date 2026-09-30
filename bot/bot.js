@@ -2155,9 +2155,10 @@ manager.registerHandler((client, guildId) => {
   
   console.log(`[Bot] Registrerer handlers for ${clientLabel}...`);
 
-  // Initialize music ONLY for default bot — Kazagumo uses a global instance
-  // and the default bot's Lavalink connection serves all guilds
-  if (initMusic && !guildId) {
+  // Initialize music for every Discord client.
+  // Each custom bot needs its own Discord gateway voice session even though
+  // all clients can share the same Lavalink server.
+  if (initMusic) {
     try {
       initMusic(client);
       console.log(`[Bot] ✅ Music initialiseret for ${clientLabel}`);
