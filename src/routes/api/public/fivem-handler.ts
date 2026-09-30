@@ -425,7 +425,9 @@ __serve(async (req) => {
       }
     }
 
-    console.log(`FiveM handler: action=${action}, guildId=${guildId}, auth=${authenticatedWithBridgeKey ? "bridge" : "legacy"}`);
+    if (!["getPendingCommands", "syncOnlinePlayers", "getSettings"].includes(action)) {
+      console.log(`FiveM handler: action=${action}, guildId=${guildId}, auth=${authenticatedWithBridgeKey ? "bridge" : "legacy"}`);
+    }
 
     switch (action) {
       // ==================== WHITELIST ACTIONS ====================
