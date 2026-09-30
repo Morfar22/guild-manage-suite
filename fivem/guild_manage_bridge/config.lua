@@ -12,6 +12,7 @@ Config.PlayerSyncMs = tonumber(GetConvar('gms_player_sync_ms', '15000')) or 1500
 Config.HeartbeatMs = tonumber(GetConvar('gms_heartbeat_ms', '30000')) or 30000
 Config.SettingsRefreshMs = tonumber(GetConvar('gms_settings_refresh_ms', '60000')) or 60000
 Config.ClientActionTimeoutMs = tonumber(GetConvar('gms_client_action_timeout_ms', '8000')) or 8000
+Config.ApiTimeoutMs = tonumber(GetConvar('gms_api_timeout_ms', '10000')) or 10000
 Config.Debug = GetConvar('gms_debug', 'false') == 'true'
 
 -- Protect the API and FXServer from accidental 0ms/too-fast loops in server.cfg.
@@ -20,6 +21,7 @@ Config.PlayerSyncMs = math.max(5000, Config.PlayerSyncMs)
 Config.HeartbeatMs = math.max(10000, Config.HeartbeatMs)
 Config.SettingsRefreshMs = math.max(15000, Config.SettingsRefreshMs)
 Config.ClientActionTimeoutMs = math.max(2000, Config.ClientActionTimeoutMs)
+Config.ApiTimeoutMs = math.max(3000, Config.ApiTimeoutMs)
 
 -- false = deny joins when the dashboard cannot be reached while whitelist is enabled.
 Config.FailOpen = GetConvar('gms_fail_open', 'false') == 'true'
