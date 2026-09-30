@@ -425,18 +425,6 @@ __serve(async (req) => {
       }
     }
 
-    if (authenticatedWithBridgeKey) {
-      await supabase
-        .from("fivem_settings")
-        .update({
-          bridge_last_seen_at: new Date().toISOString(),
-          bridge_version: req.headers.get("x-gms-version") || null,
-          bridge_framework: req.headers.get("x-gms-framework") || null,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("guild_id", internalGuildId);
-    }
-
     console.log(`FiveM handler: action=${action}, guildId=${guildId}, auth=${authenticatedWithBridgeKey ? "bridge" : "legacy"}`);
 
     switch (action) {
@@ -1558,6 +1546,18 @@ __serve(async (req) => {
 
       // ==================== SERVER STATUS (txAdmin-like) ====================
       case "updateServerStatus": {
+        if (authenticatedWithBridgeKey) {
+          await supabase
+            .from("fivem_settings")
+            .update({
+              bridge_last_seen_at: new Date().toISOString(),
+              bridge_version: req.headers.get("x-gms-version") || null,
+              bridge_framework: req.headers.get("x-gms-framework") || null,
+              updated_at: new Date().toISOString(),
+            })
+            .eq("guild_id", internalGuildId);
+        }
+
         const { 
           serverId, 
           serverName, 
