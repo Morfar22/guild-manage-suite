@@ -581,16 +581,6 @@ __serve(async (req) => {
   try {
     const supabaseUrl = __env("SUPABASE_URL")!;
     const supabaseServiceKey = __env("SUPABASE_SERVICE_ROLE_KEY")!;
-    const discordBotToken = __env("DISCORD_BOT_TOKEN");
-    const discordClientId = __env("DISCORD_CLIENT_ID");
-
-    if (!discordBotToken || !discordClientId) {
-      return new Response(JSON.stringify({ error: "Discord credentials not configured" }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     // Verify user is authenticated
@@ -637,76 +627,17 @@ __serve(async (req) => {
 
     const discordGuildId = guild.guild_id;
 
-    if (action === "register") {
-      // Build the single /fivem command with all subcommand groups
-      const fivemCommand = buildFivemCommand();
-
-      // Register guild command
-      const response = await fetch(
-        `https://discord.com/api/v10/applications/${discordClientId}/guilds/${discordGuildId}/commands`,
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bot ${discordBotToken}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(fivemCommand),
-        }
-      );
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error("Discord API error:", errorText);
-        return new Response(
-          JSON.stringify({ error: "Failed to register command", details: errorText }),
-          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-
-      const registeredCommand = await response.json();
-      
-      // Count total subcommands
-      const totalSubcommands = Object.values(FIVEM_SUBCOMMANDS).reduce(
-        (sum, cmds) => sum + cmds.length, 0
-      );
-
-      console.log(`Registered /fivem command with ${Object.keys(FIVEM_SUBCOMMANDS).length} groups and ${totalSubcommands} subcommands for guild ${discordGuildId}`);
-
+    if (action === "register" || action === "unregister") {
+      // Slash commands are deployed automatically by CustomBotManager using the
+      // correct bot application for this guild. Keeping registration here would
+      // reintroduce duplicate/wrong-app commands in custom-bot guilds.
       return new Response(
-        JSON.stringify({ 
-          success: true, 
-          message: `Registered /fivem command with ${totalSubcommands} subcommands in ${Object.keys(FIVEM_SUBCOMMANDS).length} groups`,
-          groups: Object.keys(FIVEM_SUBCOMMANDS),
-          command_id: registeredCommand.id
+        JSON.stringify({
+          success: true,
+          managed: true,
+          message: "FiveM slash commands synkroniseres automatisk af Bot Manager. Ingen manuel registrering er nødvendig.",
+          discordGuildId,
         }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    } else if (action === "unregister") {
-      // Get existing commands and delete the /fivem command
-      const getResponse = await fetch(
-        `https://discord.com/api/v10/applications/${discordClientId}/guilds/${discordGuildId}/commands`,
-        {
-          headers: { Authorization: `Bot ${discordBotToken}` },
-        }
-      );
-
-      if (getResponse.ok) {
-        const existingCommands = await getResponse.json();
-        const fivemCmd = existingCommands.find((c: any) => c.name === "fivem");
-        
-        if (fivemCmd) {
-          await fetch(
-            `https://discord.com/api/v10/applications/${discordClientId}/guilds/${discordGuildId}/commands/${fivemCmd.id}`,
-            {
-              method: "DELETE",
-              headers: { Authorization: `Bot ${discordBotToken}` },
-            }
-          );
-        }
-      }
-
-      return new Response(
-        JSON.stringify({ success: true, message: "FiveM command unregistered" }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     } else if (action === "list") {
