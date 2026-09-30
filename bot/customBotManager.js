@@ -52,6 +52,11 @@ class CustomBotManager {
     
     // Registered handler factories
     this.handlerFactories = [];
+
+    // Discord guild IDs that are explicitly assigned to active custom bots.
+    // Populated from config before the clients finish logging in, so the default
+    // bot can avoid those guilds during startup as well.
+    this.customDiscordGuildIds = new Set();
     
     // Running state
     this.isRunning = false;
@@ -917,6 +922,9 @@ class CustomBotManager {
 
     const configs = await this.fetchBotConfigs();
     const activeGuildIds = new Set(configs.map(c => c.guild_id));
+    this.customDiscordGuildIds = new Set(
+      configs.map(config => config.discord_guild_id).filter(Boolean)
+    );
 
     // Stop bots that are no longer active
     for (const [guildId, bot] of this.bots) {
