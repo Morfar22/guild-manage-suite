@@ -639,8 +639,11 @@ local function executeCommand(command)
                 moderatorName = data.moderatorName,
                 imageBase64 = result[2],
             })
-            if not response.ok then return false, 'Screenshot taget, men upload/logning fejlede.' end
-            return true, 'Screenshot modtaget og logget.'
+            if not response.ok then
+                return false, response.data and response.data.error or 'Screenshot taget, men upload/logning fejlede.'
+            end
+            local url = response.data and response.data.url
+            return true, url and ('Screenshot: ' .. url) or 'Screenshot modtaget og logget.'
         elseif sub == 'embed' then
             local message = tostring(data.message or '')
             if data.title and tostring(data.title) ~= '' then
