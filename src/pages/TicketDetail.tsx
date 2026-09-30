@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, type ReactNode } from 'react';
 import { useParams, Link } from '@tanstack/react-router';
 import { useTicket, useTicketMessages, getTicketAgeHours } from '@/hooks/useTickets';
 import { useApplicationByTicketId } from '@/hooks/useApplications';
@@ -455,7 +455,7 @@ export default function TicketDetail() {
   );
 }
 
-function MiniMetric({ label, value, icon }: { label: string; value: string; icon: React.ReactNode }) {
+function MiniMetric({ label, value, icon }: { label: string; value: string; icon: ReactNode }) {
   return (
     <Card className="border-border/50 bg-card/50">
       <CardContent className="flex items-center justify-between p-4">
@@ -469,7 +469,7 @@ function MiniMetric({ label, value, icon }: { label: string; value: string; icon
   );
 }
 
-function DetailRow({ label, children }: { label: string; children: React.ReactNode }) {
+function DetailRow({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div className="flex items-center justify-between gap-3">
       <span className="text-sm text-muted-foreground">{label}</span>
@@ -478,7 +478,7 @@ function DetailRow({ label, children }: { label: string; children: React.ReactNo
   );
 }
 
-function IconInfo({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
+function IconInfo({ icon, label, value }: { icon: ReactNode; label: string; value: string }) {
   return (
     <div className="flex items-start gap-2 text-sm">
       <span className="mt-0.5 text-muted-foreground">{icon}</span>
