@@ -340,6 +340,7 @@ export default function Commands() {
                     commandSettings={commandSettings}
                     onToggle={toggleCommand}
                     onConfigure={openSettings}
+                    onInspect={openDetail}
                     loading={updating}
                   />
                 </TabsContent>
