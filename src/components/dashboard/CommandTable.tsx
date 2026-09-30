@@ -1,4 +1,4 @@
-import { Settings2, TimerReset, ShieldCheck, Hash } from 'lucide-react';
+import { Activity, Settings2, TimerReset, ShieldCheck, Hash } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -18,6 +18,7 @@ interface CommandTableProps {
   commandSettings: Record<string, GuildCommandSettings>;
   onToggle: (commandName: string, enabled: boolean) => void;
   onConfigure: (command: CommandInfo) => void;
+  onInspect: (command: CommandInfo) => void;
   loading?: boolean;
 }
 
@@ -26,6 +27,7 @@ export function CommandTable({
   commandSettings,
   onToggle,
   onConfigure,
+  onInspect,
   loading,
 }: CommandTableProps) {
   return (
@@ -98,6 +100,9 @@ export function CommandTable({
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center justify-end gap-2">
+                      <Button variant="ghost" size="icon" onClick={() => onInspect(command)} title="Detaljer">
+                        <Activity className="h-4 w-4" />
+                      </Button>
                       <Button variant="ghost" size="icon" onClick={() => onConfigure(command)} title="Indstillinger">
                         <Settings2 className="h-4 w-4" />
                       </Button>
