@@ -3,6 +3,7 @@ import { useCommands } from '@/hooks/useCommands';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { CommandTable } from '@/components/dashboard/CommandTable';
 import { CommandSettingsDialog } from '@/components/dashboard/CommandSettingsDialog';
+import { CommandDetailDialog } from '@/components/dashboard/CommandDetailDialog';
 import { CommandAnalyticsPanel } from '@/components/dashboard/CommandAnalyticsPanel';
 import { CommandPermissionsMatrix } from '@/components/dashboard/CommandPermissionsMatrix';
 import { COMMANDS_BY_CATEGORY, CommandCategory, CommandInfo } from '@/types/discord';
@@ -93,6 +94,8 @@ export default function Commands() {
   const [activeCategory, setActiveCategory] = useState('all');
   const [selectedCommand, setSelectedCommand] = useState<CommandInfo | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [detailCommand, setDetailCommand] = useState<CommandInfo | null>(null);
+  const [detailOpen, setDetailOpen] = useState(false);
 
   const categories = Object.keys(COMMANDS_BY_CATEGORY) as CommandCategory[];
   const allCommands = useMemo(() => Object.values(COMMANDS_BY_CATEGORY).flat(), []);
@@ -134,6 +137,21 @@ export default function Commands() {
   const openSettings = (command: CommandInfo) => {
     setSelectedCommand(command);
     setSettingsOpen(true);
+  };
+
+  const openDetail = (command: CommandInfo) => {
+    setDetailCommand(command);
+    setDetailOpen(true);
+  };
+
+  const openDetailByName = (commandName: string) => {
+    const command = allCommands.find((item) => item.name === commandName);
+    if (command) openDetail(command);
+  };
+
+  const editFromDetail = (command: CommandInfo) => {
+    setDetailOpen(false);
+    openSettings(command);
   };
 
   const jumpToCategory = (category: string) => {
@@ -278,6 +296,7 @@ export default function Commands() {
                 commandSettings={commandSettings}
                 onToggle={toggleCommand}
                 onConfigure={openSettings}
+                onInspect={openDetail}
                 loading={updating}
               />
             </TabsContent>
@@ -330,7 +349,7 @@ export default function Commands() {
         </TabsContent>
 
         <TabsContent value="analytics">
-          <CommandAnalyticsPanel />
+          <CommandAnalyticsPanel onInspect={openDetailByName} />
         </TabsContent>
 
         <TabsContent value="permissions">
@@ -343,6 +362,18 @@ export default function Commands() {
           />
         </TabsContent>
       </Tabs>
+
+      {detailCommand && (
+        <CommandDetailDialog
+          open={detailOpen}
+          onOpenChange={setDetailOpen}
+          command={detailCommand}
+          settings={commandSettings[detailCommand.name]}
+          updating={updating}
+          onToggle={toggleCommand}
+          onEditSettings={editFromDetail}
+        />
+      )}
 
       <CommandSettingsDialog
         open={settingsOpen}
