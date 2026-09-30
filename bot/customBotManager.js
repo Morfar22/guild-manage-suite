@@ -1083,7 +1083,7 @@ class CustomBotManager {
       const message = error?.message || String(error);
       if (/invalid token/i.test(message)) {
         console.error('[CustomBotManager] Default bot-tokenet er ugyldigt. Custom bots fortsætter med at starte.');
-        console.error('[CustomBotManager] Kontrollér defaultBotToken / DISCORD_TOKEN / DISCORD_BOT_TOKEN i /bot/.env.');
+        console.error('[CustomBotManager] Kontrollér DEFAULT_BOT_TOKEN / DISCORD_TOKEN / DISCORD_BOT_TOKEN i /bot/.env.');
       } else {
         console.error('[CustomBotManager] Failed to start default bot:', message);
       }
@@ -1092,6 +1092,7 @@ class CustomBotManager {
         this.defaultClient?.destroy();
       } catch {}
       this.defaultClient = null;
+      this.defaultBotToken = null;
       return null;
     }
   }
