@@ -647,27 +647,40 @@ class CustomBotManager {
         }
       }
 
-      // Update avatar if configured and different
+      // Update avatar if configured and valid.
       if (config.bot_avatar_url) {
+        const avatarUrl = String(config.bot_avatar_url).trim();
+        let parsedAvatarUrl = null;
         try {
-          // Fetch the avatar image
-          const response = await fetch(config.bot_avatar_url);
-          if (response.ok) {
-            const buffer = await response.arrayBuffer();
-            const base64 = Buffer.from(buffer).toString('base64');
-            const contentType = response.headers.get('content-type') || 'image/png';
-            const dataUri = `data:${contentType};base64,${base64}`;
-            
-            await client.user.setAvatar(dataUri);
-            console.log(`[CustomBotManager] Updated bot avatar from: ${config.bot_avatar_url}`);
-          } else {
-            console.error(`[CustomBotManager] Failed to fetch avatar: ${response.status}`);
-          }
-        } catch (error) {
-          if (error.code === 50035 || error.message.includes('rate limit')) {
-            console.log(`[CustomBotManager] Avatar change rate limited, skipping`);
-          } else {
-            console.error(`[CustomBotManager] Error setting avatar:`, error.message);
+          parsedAvatarUrl = new URL(avatarUrl);
+        } catch {
+          console.warn(`[CustomBotManager] Skipping invalid avatar URL for ${client.user.tag}`);
+        }
+
+        if (parsedAvatarUrl && ['http:', 'https:'].includes(parsedAvatarUrl.protocol)) {
+          try {
+            const response = await fetch(parsedAvatarUrl.toString());
+            if (response.ok) {
+              const contentType = response.headers.get('content-type') || '';
+              if (!contentType.startsWith('image/')) {
+                console.warn(`[CustomBotManager] Skipping avatar URL with non-image content type: ${contentType || 'unknown'}`);
+              } else {
+                const buffer = await response.arrayBuffer();
+                const base64 = Buffer.from(buffer).toString('base64');
+                const dataUri = `data:${contentType};base64,${base64}`;
+
+                await client.user.setAvatar(dataUri);
+                console.log(`[CustomBotManager] Updated bot avatar from configured URL`);
+              }
+            } else {
+              console.warn(`[CustomBotManager] Avatar URL returned HTTP ${response.status}; keeping current avatar`);
+            }
+          } catch (error) {
+            if (error.code === 50035 || error.message.includes('rate limit')) {
+              console.log(`[CustomBotManager] Avatar change rate limited, skipping`);
+            } else {
+              console.warn(`[CustomBotManager] Avatar update skipped:`, error.message);
+            }
           }
         }
       }
@@ -702,7 +715,7 @@ class CustomBotManager {
 
     const client = this.createClient();
 
-    client.once('ready', async () => {
+    client.once('clientReady', async () => {
       console.log(`[CustomBotManager] ✅ Custom bot ready: ${client.user.tag} for guild ${guildId}`);
       
       // Deploy slash commands for this custom bot's application ID (per-guild for instant availability)
@@ -887,7 +900,7 @@ class CustomBotManager {
       }
     }
 
-    this.defaultClient.once('ready', async () => {
+    this.defaultClient.once('clientReady', async () => {
       console.log(`[CustomBotManager] ✅ Default bot ready: ${this.defaultClient.user.tag}`);
       console.log(`[CustomBotManager] Serving ${this.defaultClient.guilds.cache.size} guild(s)`);
 
