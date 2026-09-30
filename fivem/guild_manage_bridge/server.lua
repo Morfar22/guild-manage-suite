@@ -4,9 +4,26 @@ local startedAt = os.time()
 local framework = 'standalone'
 local cachedSettings = { enabled = false, whitelist_enabled = false, sync_playtime = true }
 local processing = {}
+local pendingClientActions = {}
+local clientActionSequence = 0
+local lastWarnAt = {}
 
 local function log(level, message)
     print(('[%s] [%s] %s'):format(RESOURCE, level, message))
+end
+
+local function debugLog(message)
+    if Config.Debug then log('DEBUG', message) end
+end
+
+local function throttledWarn(key, message, intervalMs)
+    local now = GetGameTimer()
+    local last = lastWarnAt[key] or -999999
+    intervalMs = intervalMs or 30000
+    if now - last >= intervalMs then
+        lastWarnAt[key] = now
+        log('WARN', message)
+    end
 end
 
 local function resourceStarted(name)
@@ -184,10 +201,45 @@ local function safeResourceName(name)
     return type(name) == 'string' and name:match('^[%w_%-]+$') ~= nil
 end
 
+RegisterNetEvent('guild_manage_bridge:server:actionResult', function(requestId, success, message)
+    local sourceId = tonumber(source)
+    local pending = pendingClientActions[tostring(requestId or '')]
+    if not pending or pending.source ~= sourceId then return end
+
+    pendingClientActions[tostring(requestId)] = nil
+    pending.promise:resolve({
+        success = success == true,
+        message = tostring(message or '')
+    })
+end)
+
 local function clientAction(source, action, data)
+    source = tonumber(source)
     if not playerExists(source) then return false, 'Spilleren er ikke online.' end
-    TriggerClientEvent('guild_manage_bridge:client:action', tonumber(source), action, data or {})
-    return true, ('%s sendt til spiller %s.'):format(action, source)
+
+    clientActionSequence = clientActionSequence + 1
+    local requestId = ('%s:%s:%s'):format(source, GetGameTimer(), clientActionSequence)
+    local p = promise.new()
+
+    pendingClientActions[requestId] = {
+        source = source,
+        promise = p,
+    }
+
+    TriggerClientEvent('guild_manage_bridge:client:action', source, action, data or {}, requestId)
+
+    SetTimeout(Config.ClientActionTimeoutMs, function()
+        local pending = pendingClientActions[requestId]
+        if not pending then return end
+        pendingClientActions[requestId] = nil
+        pending.promise:resolve({
+            success = false,
+            message = ('Klienten svarede ikke inden for %sms.'):format(Config.ClientActionTimeoutMs)
+        })
+    end)
+
+    local result = Citizen.Await(p)
+    return result.success == true, result.message ~= '' and result.message or ('%s udført.'):format(action)
 end
 
 local function inspectInventory(source)
@@ -230,6 +282,10 @@ local function inventoryAction(source, action, item, count)
 
     if action == 'inspect' then return inspectInventory(source) end
 
+    if (action == 'give' or action == 'take') and (type(item) ~= 'string' or item == '') then
+        return false, 'Item-navn er påkrævet.'
+    end
+
     if resourceStarted('ox_inventory') then
         if action == 'give' then
             local ok, success, response = pcall(function()
@@ -269,7 +325,8 @@ end
 local function moneyAction(source, action, moneyType, amount)
     source = tonumber(source)
     moneyType = moneyType or 'cash'
-    amount = tonumber(amount) or 0
+    amount = tonumber(amount)
+    if amount == nil or amount < 0 then return false, 'Beløb skal være 0 eller højere.' end
 
     if framework == 'qbox' then
         if action == 'inspect' then
@@ -617,6 +674,9 @@ local function executeCommand(command)
             local name = tostring(data.name or data.resourceName or '')
             if not safeResourceName(name) then return false, 'Ugyldigt resource-navn.' end
             if action == 'inspect' then return true, ('%s: %s'):format(name, GetResourceState(name)) end
+            if name == RESOURCE and (action == 'stop' or action == 'restart') then
+                return false, 'Bridgen kan ikke stoppe/genstarte sig selv via remote command. Brug serverkonsollen.'
+            end
             if action == 'ensure' or action == 'start' or action == 'stop' or action == 'restart' then
                 ExecuteCommand(('%s %s'):format(action, name))
                 return true, ('%s %s udført.'):format(action, name)
@@ -707,7 +767,7 @@ local function pollCommands()
     if not configured() then return end
     local response = api('getPendingCommands', {})
     if not response.ok then
-        if response.status ~= 401 then log('WARN', ('Command poll fejlede (HTTP %s)'):format(response.status)) end
+        if response.status ~= 401 then throttledWarn('command-poll', ('Command poll fejlede (HTTP %s)'):format(response.status), 30000) end
         return
     end
 
@@ -759,7 +819,7 @@ local function syncPlayers()
         players = buildPlayerList(),
     })
     if not response.ok and response.status ~= 401 then
-        log('WARN', ('Player sync fejlede (HTTP %s)'):format(response.status))
+        throttledWarn('player-sync', ('Player sync fejlede (HTTP %s)'):format(response.status), 30000)
     end
 end
 
@@ -782,11 +842,18 @@ local function updateStatus()
             bridgeVersion = Config.Version,
             framework = framework,
             resource = RESOURCE,
+            serverId = Config.ServerId,
+            oxInventory = resourceStarted('ox_inventory'),
+            screenshotBasic = resourceStarted('screenshot-basic'),
+            reviveAdapter = Config.Events.Revive ~= '',
+            jailAdapter = Config.Events.Jail ~= '',
+            unjailAdapter = Config.Events.Unjail ~= '',
+            clothingAdapter = Config.Events.Clothing ~= '',
         },
     })
 
     if not response.ok then
-        log('WARN', ('Heartbeat fejlede (HTTP %s): %s'):format(response.status, response.body or ''))
+        throttledWarn('heartbeat', ('Heartbeat fejlede (HTTP %s): %s'):format(response.status, response.body or ''), 30000)
     end
 end
 
