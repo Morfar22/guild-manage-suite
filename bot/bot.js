@@ -280,7 +280,10 @@ async function getInternalGuildIdForCommandAnalytics(discordGuildId) {
 
 function getCommandErrorMessage(error) {
   const message = error?.message || String(error || 'Ukendt fejl');
-  return message.slice(0, 500);
+  const code = error?.code ? String(error.code) : null;
+  const name = error?.name && error.name !== 'Error' ? String(error.name) : null;
+  const prefix = [name, code].filter(Boolean).join('/');
+  return `${prefix ? `[${prefix}] ` : ''}${message}`.slice(0, 1000);
 }
 
 async function queueCommandExecution({
