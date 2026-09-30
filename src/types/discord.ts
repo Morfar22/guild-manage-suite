@@ -62,15 +62,15 @@ const getCommandCount = (category: CommandCategory): number => {
   // This will be calculated after COMMANDS_BY_CATEGORY is defined
   const counts: Record<CommandCategory, number> = {
     moderation: 16,
-    music: 17,
+    music: 18,
     leveling: 10,
-    utility: 26,
+    utility: 28,
     fun: 20,
     economy: 16,
-    tickets: 8,
+    tickets: 12,
     giveaway: 6,
     tebex: 1,
-    admin: 12,
+    admin: 14,
     reactionroles: 5,
   };
   return counts[category];
@@ -188,6 +188,7 @@ export const COMMANDS_BY_CATEGORY: Record<string, CommandInfo[]> = {
     { name: 'jump', description: 'Jump to a song in queue', category: 'music', usage: '/jump [position]' },
     { name: 'autoplay', description: 'Toggle autoplay mode', category: 'music', usage: '/autoplay' },
     { name: 'filter', description: 'Apply audio filter', category: 'music', usage: '/filter [filter-name]' },
+    { name: 'musicquiz', description: 'Start and manage the music quiz', category: 'music', usage: '/musicquiz <start|stop|skip|leaderboard>' },
   ],
   leveling: [
     { name: 'rank', description: 'View your rank', category: 'leveling', usage: '/rank [@user]' },
@@ -202,7 +203,8 @@ export const COMMANDS_BY_CATEGORY: Record<string, CommandInfo[]> = {
     { name: 'resetleaderboard', description: 'Reset the entire leaderboard', category: 'leveling', usage: '/resetleaderboard' },
   ],
   utility: [
-    { name: 'help', description: 'Show help menu', category: 'utility', usage: '/help [command]' },
+    { name: 'help', description: 'Show help menu', category: 'utility', usage: '/help [category]' },
+    { name: 'commands', description: 'Alias for the help menu', category: 'utility', usage: '/commands [category]' },
     { name: 'ping', description: 'Check bot latency', category: 'utility', usage: '/ping' },
     { name: 'serverinfo', description: 'View server information', category: 'utility', usage: '/serverinfo' },
     { name: 'userinfo', description: 'View user information', category: 'utility', usage: '/userinfo [@user]' },
@@ -228,6 +230,7 @@ export const COMMANDS_BY_CATEGORY: Record<string, CommandInfo[]> = {
     { name: 'weather', description: 'Get weather information', category: 'utility', usage: '/weather [location]' },
     { name: 'calculate', description: 'Calculator', category: 'utility', usage: '/calculate [expression]' },
     { name: 'globalban-report', description: 'Report a user to the global ban system', category: 'utility', usage: '/globalban-report @user [reason] [severity] [evidence]' },
+    { name: 'suggest', description: 'Send a suggestion to the configured suggestion channel', category: 'utility', usage: '/suggest [suggestion]' },
   ],
   fun: [
     { name: '8ball', description: 'Ask the magic 8ball', category: 'fun', usage: '/8ball [question]' },
@@ -270,15 +273,18 @@ export const COMMANDS_BY_CATEGORY: Record<string, CommandInfo[]> = {
     { name: 'blackjack', description: 'Play blackjack', category: 'economy', usage: '/blackjack [bet]' },
   ],
   tickets: [
-    { name: 'ticket', description: 'Create a new ticket', category: 'tickets', usage: '/ticket [reason]' },
-    { name: 'close', description: 'Close a ticket', category: 'tickets', usage: '/close [reason]' },
-    { name: 'claim', description: 'Claim a ticket', category: 'tickets', usage: '/claim' },
-    { name: 'unclaim', description: 'Unclaim a ticket', category: 'tickets', usage: '/unclaim' },
-    { name: 'add', description: 'Add a user to the ticket', category: 'tickets', usage: '/add @user' },
-    { name: 'remove', description: 'Remove a user from the ticket', category: 'tickets', usage: '/remove @user' },
-    { name: 'transcript', description: 'Generate a transcript', category: 'tickets', usage: '/transcript' },
-    { name: 'rename', description: 'Rename the ticket channel', category: 'tickets', usage: '/rename [name]' },
+    { name: 'ticket', description: 'Create a new ticket', category: 'tickets', usage: '/ticket' },
+    { name: 'ticket-close', description: 'Close the current ticket', category: 'tickets', usage: '/ticket-close [delete]' },
+    { name: 'ticket-claim', description: 'Claim the current ticket', category: 'tickets', usage: '/ticket-claim' },
+    { name: 'ticket-add', description: 'Add a user to the current ticket', category: 'tickets', usage: '/ticket-add @user' },
+    { name: 'ticket-remove', description: 'Remove a user from the current ticket', category: 'tickets', usage: '/ticket-remove @user' },
     { name: 'ticket-remind', description: 'Remind ticket owner to respond (auto-close after 12h)', category: 'tickets', usage: '/ticket-remind' },
+    { name: 'close', description: 'Alias for closing the current ticket', category: 'tickets', usage: '/close [delete]' },
+    { name: 'claim', description: 'Alias for claiming the current ticket', category: 'tickets', usage: '/claim' },
+    { name: 'unclaim', description: 'Release your claim on the current ticket', category: 'tickets', usage: '/unclaim' },
+    { name: 'add', description: 'Alias for adding a user to the current ticket', category: 'tickets', usage: '/add @user' },
+    { name: 'transcript', description: 'Generate a transcript', category: 'tickets', usage: '/transcript [ticket-id]' },
+    { name: 'rename', description: 'Rename the ticket channel', category: 'tickets', usage: '/rename [name]' },
   ],
   giveaway: [
     { name: 'giveaway', description: 'Create a giveaway', category: 'giveaway', usage: '/giveaway [duration] [winners] [prize]' },
@@ -304,6 +310,8 @@ export const COMMANDS_BY_CATEGORY: Record<string, CommandInfo[]> = {
     { name: 'backup', description: 'Create server backup', category: 'admin', usage: '/backup create' },
     { name: 'restore', description: 'Restore server backup', category: 'admin', usage: '/restore [backup-id]' },
     { name: 'announce', description: 'Make an announcement', category: 'admin', usage: '/announce [#channel] [message]' },
+    { name: 'testall', description: 'Test bot command handlers (administrator only)', category: 'admin', usage: '/testall [verbose]' },
+    { name: 'fivem', description: 'Manage the connected FiveM server', category: 'admin', usage: '/fivem <group> <command>' },
   ],
   reactionroles: [
     { name: 'reactionrole', description: 'Create a reaction role panel', category: 'reactionroles', usage: '/reactionrole create' },
