@@ -265,7 +265,7 @@ function normalizeEmbed(embed: any, eventType: string, data: Record<string, any>
   if (embed.description) embed.description = truncate(embed.description, 4096)
 
   const fields = Array.isArray(embed.fields) ? embed.fields : []
-  embed.fields = fields
+  const normalizedFields = fields
     .filter((field: any) => field?.name && field?.value !== undefined && field?.value !== null)
     .slice(0, 25)
     .map((field: any) => ({
@@ -273,6 +273,24 @@ function normalizeEmbed(embed: any, eventType: string, data: Record<string, any>
       value: truncate(field.value, 1024),
       inline: Boolean(field.inline),
     }))
+
+  // Discord caps a complete embed at 6000 characters. Keep a safety margin
+  // so one unusually long message can never make the entire log fail.
+  const baseChars = String(embed.title || '').length + String(embed.description || '').length + 350
+  let usedChars = baseChars
+  embed.fields = []
+  for (const field of normalizedFields) {
+    const cost = field.name.length + field.value.length
+    if (usedChars + cost > 5700) {
+      const remaining = Math.max(80, 5700 - usedChars - field.name.length)
+      if (remaining >= 80) {
+        embed.fields.push({ ...field, value: truncate(field.value, remaining) })
+      }
+      break
+    }
+    embed.fields.push(field)
+    usedChars += cost
+  }
 
   const group = EVENT_GROUPS[eventType] || 'System'
   const id = typeof data.event_id === 'string' ? data.event_id.slice(0, 8) : 'ukendt'
