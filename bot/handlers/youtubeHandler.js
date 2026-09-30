@@ -444,7 +444,7 @@ function startYouTubeChecker(client, config = {}) {
   console.log('[YouTube] Starter YouTube checker service...');
 
   if (client) {
-    client.once('ready', () => {
+    client.once('clientReady', () => {
       console.log('[YouTube] Bot er klar - starter periodisk check');
 
       // First check after 45 seconds (stagger from TikTok)
