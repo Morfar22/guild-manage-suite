@@ -1154,6 +1154,16 @@ __serve(async (req) => {
 
       // ==================== COMMAND QUEUE (Dashboard -> FiveM) ====================
       case "getPendingCommands": {
+        // Recover commands that were claimed by a bridge that disappeared before
+        // reporting a result. The command executor is idempotent where possible.
+        const staleClaim = new Date(Date.now() - 2 * 60 * 1000).toISOString();
+        await supabase
+          .from("fivem_command_queue")
+          .update({ status: "pending", executed_at: null })
+          .eq("guild_id", internalGuildId)
+          .eq("status", "processing")
+          .lt("executed_at", staleClaim);
+
         // Fetch pending commands for this guild
         const { data: commands, error } = await supabase
           .from("fivem_command_queue")
@@ -1175,6 +1185,39 @@ __serve(async (req) => {
           JSON.stringify({ commands: commands || [] }),
           { headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
+      }
+
+      case "claimCommand": {
+        const { commandId } = data;
+        if (!commandId) {
+          return new Response(JSON.stringify({ error: "commandId is required" }), {
+            status: 400,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+
+        const { data: claimed, error } = await supabase
+          .from("fivem_command_queue")
+          .update({
+            status: "processing",
+            executed_at: new Date().toISOString(),
+          })
+          .eq("id", commandId)
+          .eq("guild_id", internalGuildId)
+          .eq("status", "pending")
+          .select("id")
+          .maybeSingle();
+
+        if (error) {
+          return new Response(JSON.stringify({ error: "Failed to claim command" }), {
+            status: 500,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+
+        return new Response(JSON.stringify({ claimed: Boolean(claimed) }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
       }
 
       case "markCommandExecuted": {
