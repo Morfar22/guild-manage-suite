@@ -391,51 +391,69 @@ class CustomBotManager {
       return;
     }
 
-    const deployGlobal = options.global !== false;
     const clearGuildIds = Array.isArray(options.clearGuildIds) ? options.clearGuildIds : [];
 
     try {
       const commands = CustomBotManager.buildCommands();
       const rest = new REST({ version: '10' }).setToken(token);
-      const commandData = commands.map(c => c.toJSON());
+      const commandData = commands.map(command => command.toJSON());
 
-      if (deployGlobal) {
-        // Default bot: global commands are intentional.
-        console.log(`[CustomBotManager] 🔄 Deploying ${commands.length} slash commands globally for app ${applicationId}...`);
-        const data = await rest.put(
-          Routes.applicationCommands(applicationId),
-          { body: commandData }
-        );
-        console.log(`[CustomBotManager] ✅ ${data.length} slash commands deployed globally for app ${applicationId}`);
-      } else {
-        // Custom bots are tied to one Discord guild. Remove stale global commands
-        // from older versions so commands don't appear in unrelated guilds.
-        await rest.put(
-          Routes.applicationCommands(applicationId),
-          { body: [] }
-        );
-        console.log(`[CustomBotManager] ✅ Cleared global commands for custom app ${applicationId}`);
+      // Slash commands are guild-only for every bot application.
+      // Mixing global + guild commands with identical names makes Discord display
+      // duplicate entries such as /8ball, /afk and /avatar.
+      let existingGlobals = [];
+      try {
+        existingGlobals = await rest.get(Routes.applicationCommands(applicationId));
+      } catch (error) {
+        console.warn(`[CustomBotManager] Could not inspect global commands for ${applicationId}:`, error.message);
       }
 
-      // Deploy per-guild for instant availability.
+      await rest.put(
+        Routes.applicationCommands(applicationId),
+        { body: [] }
+      );
+
+      // Verify the global scope is empty. Normally bulk overwrite is enough, but
+      // explicitly delete any leftovers returned by Discord as a legacy cleanup.
+      try {
+        const remainingGlobals = await rest.get(Routes.applicationCommands(applicationId));
+        if (Array.isArray(remainingGlobals) && remainingGlobals.length > 0) {
+          for (const command of remainingGlobals) {
+            await rest.delete(Routes.applicationCommand(applicationId, command.id));
+          }
+        }
+      } catch (error) {
+        console.warn(`[CustomBotManager] Could not verify global command cleanup for ${applicationId}:`, error.message);
+      }
+
+      console.log(
+        `[CustomBotManager] ✅ Global command scope cleared for app ${applicationId}`
+        + (Array.isArray(existingGlobals) && existingGlobals.length
+          ? ` (${existingGlobals.length} legacy command(s) removed)`
+          : '')
+      );
+
+      // Bulk overwrite each assigned guild. This produces exactly one command
+      // registration per command name in each guild.
       if (guildIds.length > 0) {
-        console.log(`[CustomBotManager] 🔄 Deploying commands to ${guildIds.length} assigned guild(s)...`);
+        console.log(`[CustomBotManager] 🔄 Deploying ${commands.length} commands to ${guildIds.length} assigned guild(s)...`);
         for (const guildId of guildIds) {
           try {
-            await rest.put(
+            const deployed = await rest.put(
               Routes.applicationGuildCommands(applicationId, guildId),
               { body: commandData }
             );
+            console.log(`[CustomBotManager] ✅ ${deployed.length} commands active in guild ${guildId}`);
           } catch (guildError) {
             console.error(`[CustomBotManager] Failed guild deploy for ${guildId}:`, guildError.message);
           }
         }
-        console.log('[CustomBotManager] ✅ Assigned guild command deployment complete');
       }
 
       // Remove stale guild-specific commands from extra guilds this custom bot may
       // still be invited to from older deployments.
       for (const guildId of clearGuildIds) {
+        if (guildIds.includes(guildId)) continue;
         try {
           await rest.put(
             Routes.applicationGuildCommands(applicationId, guildId),
@@ -839,7 +857,6 @@ class CustomBotManager {
           .map(guild => guild.id);
 
         await this.deployCommandsForBot(config.bot_token, applicationId, botGuildIds, {
-          global: false,
           clearGuildIds: unassignedGuildIds,
         });
       }
@@ -1024,9 +1041,9 @@ class CustomBotManager {
       console.log(`[CustomBotManager] ✅ Default bot ready: ${this.defaultClient.user.tag}`);
       console.log(`[CustomBotManager] Serving ${this.defaultClient.guilds.cache.size} guild(s)`);
 
-      // Deploy commands globally + per-guild for instant availability
+      // All slash commands are guild-only to avoid duplicate global + guild entries.
       const guildIds = this.defaultClient.guilds.cache.map(g => g.id);
-      await this.deployCommandsForBot(DEFAULT_BOT_TOKEN, this.defaultClient.user.id, guildIds, { global: true });
+      await this.deployCommandsForBot(DEFAULT_BOT_TOKEN, this.defaultClient.user.id, guildIds);
     });
 
     // Deploy commands instantly when bot joins a new server
