@@ -2140,8 +2140,11 @@ function createGuildFilter(client, guildId) {
       return client?.guilds?.cache?.has(eventGuildId) || false;
     }
     
-    // Default bot: only handle guilds that DON'T have a custom bot
-    return !hasCustomBotForDiscordGuild(eventGuildId);
+    // Default bot: only handle guilds it is actually in and that DON'T have a custom bot.
+    // Without the cache check, background handlers could claim unrelated/stale guilds
+    // from the database and produce "guild not in cache" / backend 404 noise.
+    return Boolean(client?.guilds?.cache?.has(eventGuildId))
+      && !hasCustomBotForDiscordGuild(eventGuildId);
   };
 }
 
