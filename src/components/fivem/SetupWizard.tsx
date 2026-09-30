@@ -47,6 +47,7 @@ export default function SetupWizard() {
     'setr gms_heartbeat_ms "30000"',
     'setr gms_settings_refresh_ms "60000"',
     'setr gms_client_action_timeout_ms "8000"',
+    'setr gms_api_timeout_ms "10000"',
     'setr gms_fail_open "false"',
     'setr gms_debug "false"',
     '',
