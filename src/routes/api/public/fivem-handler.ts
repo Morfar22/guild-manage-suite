@@ -1222,26 +1222,97 @@ __serve(async (req) => {
       }
 
       case "screenshotResult": {
-        // Handle screenshot result upload from FiveM server
-        const { targetDiscordId, targetName, targetPlayerId, imageBase64, moderatorDiscordId, moderatorName } = data;
+        const {
+          targetDiscordId,
+          targetName,
+          targetPlayerId,
+          imageBase64,
+          moderatorDiscordId,
+          moderatorName,
+        } = data;
+
+        if (!imageBase64 || typeof imageBase64 !== "string") {
+          return new Response(JSON.stringify({ error: "Screenshot data missing" }), {
+            status: 400,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+
+        const { data: screenshotSettings } = await supabase
+          .from("fivem_settings")
+          .select("log_webhook_url")
+          .eq("guild_id", internalGuildId)
+          .maybeSingle();
+
+        if (!screenshotSettings?.log_webhook_url) {
+          return new Response(JSON.stringify({
+            error: "Konfigurér FiveM log webhook i dashboardet for at modtage screenshots."
+          }), {
+            status: 409,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+
+        const match = imageBase64.match(/^data:(image\/(?:png|jpeg|jpg));base64,(.+)$/s);
+        if (!match) {
+          return new Response(JSON.stringify({ error: "Invalid screenshot format" }), {
+            status: 400,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+
+        const mime = match[1] === "image/jpg" ? "image/jpeg" : match[1];
+        const raw = atob(match[2]);
+        if (raw.length > 8 * 1024 * 1024) {
+          return new Response(JSON.stringify({ error: "Screenshot is too large" }), {
+            status: 413,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+
+        const bytes = new Uint8Array(raw.length);
+        for (let i = 0; i < raw.length; i++) bytes[i] = raw.charCodeAt(i);
+
+        const extension = mime === "image/png" ? "png" : "jpg";
+        const form = new FormData();
+        form.append("payload_json", JSON.stringify({
+          embeds: [{
+            title: "📸 FiveM Screenshot",
+            description: `**Spiller:** ${targetName || targetDiscordId || "Player #" + targetPlayerId}\n**Moderator:** ${moderatorName || moderatorDiscordId || "Dashboard"}`,
+            color: 0x5865F2,
+            timestamp: new Date().toISOString(),
+            image: { url: `attachment://screenshot.${extension}` },
+          }],
+        }));
+        form.append("files[0]", new Blob([bytes], { type: mime }), `screenshot.${extension}`);
+
+        const webhookUrl = screenshotSettings.log_webhook_url + (screenshotSettings.log_webhook_url.includes("?") ? "&wait=true" : "?wait=true");
+        const upload = await fetch(webhookUrl, { method: "POST", body: form });
+        if (!upload.ok) {
+          const text = await upload.text();
+          console.error("Screenshot webhook upload failed:", upload.status, text);
+          return new Response(JSON.stringify({ error: "Screenshot webhook upload failed" }), {
+            status: 502,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+
+        const webhookMessage = await upload.json().catch(() => null);
+        const attachmentUrl = webhookMessage?.attachments?.[0]?.url || null;
 
         await logAction(supabase, internalGuildId, "screenshot", {
           targetDiscordId,
           targetName,
           moderatorDiscordId,
           moderatorName,
-          metadata: { 
+          metadata: {
             targetPlayerId,
-            hasImage: !!imageBase64,
-            imageLength: imageBase64?.length || 0
-          }
+            attachmentUrl,
+          },
         });
 
-        // Could optionally store image in Supabase Storage here
-        // For now just log and return success
-
         return new Response(
-          JSON.stringify({ success: true, action: "screenshotResult", received: !!imageBase64 }),
+          JSON.stringify({ success: true, action: "screenshotResult", url: attachmentUrl }),
           { headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
