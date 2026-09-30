@@ -24,7 +24,7 @@ const { buildFiveMCommand } = require('./fivem/commands');
 const SUPABASE_URL = process.env.SUPABASE_URL || 'https://rkdqunnttcyuybbofkvz.supabase.co';
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const BOT_SECRET_KEY = process.env.BOT_SECRET_KEY;
-const DEFAULT_BOT_TOKEN = process.env.DEFAULT_BOT_TOKEN;
+const DEFAULT_BOT_TOKEN = process.env.DEFAULT_BOT_TOKEN || process.env.DISCORD_TOKEN || process.env.DISCORD_BOT_TOKEN;
 
 // How often to check for config changes (60 seconds)
 const CONFIG_CHECK_INTERVAL = 60000;
@@ -990,7 +990,8 @@ class CustomBotManager {
    */
   async startDefaultBot() {
     if (!DEFAULT_BOT_TOKEN) {
-      console.log('[CustomBotManager] No DEFAULT_BOT_TOKEN, skipping default bot');
+      console.warn('[CustomBotManager] Intet default bot-token fundet. Sætter kun custom bots i drift.');
+      console.warn('[CustomBotManager] Sæt DEFAULT_BOT_TOKEN, DISCORD_TOKEN eller DISCORD_BOT_TOKEN for at aktivere default botten.');
       return null;
     }
 
@@ -1034,7 +1035,18 @@ class CustomBotManager {
       await this.defaultClient.login(DEFAULT_BOT_TOKEN);
       return this.defaultClient;
     } catch (error) {
-      console.error('[CustomBotManager] Failed to start default bot:', error.message);
+      const message = error?.message || String(error);
+      if (/invalid token/i.test(message)) {
+        console.error('[CustomBotManager] Default bot-tokenet er ugyldigt. Custom bots fortsætter med at starte.');
+        console.error('[CustomBotManager] Kontrollér DEFAULT_BOT_TOKEN / DISCORD_TOKEN / DISCORD_BOT_TOKEN i /bot/.env.');
+      } else {
+        console.error('[CustomBotManager] Failed to start default bot:', message);
+      }
+
+      try {
+        this.defaultClient?.destroy();
+      } catch {}
+      this.defaultClient = null;
       return null;
     }
   }
