@@ -63,7 +63,7 @@ export function CommandAnalyticsPanel() {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="1">Sidste 24 timer</SelectItem>
+              <SelectItem value="1">I dag</SelectItem>
               <SelectItem value="7">Sidste 7 dage</SelectItem>
               <SelectItem value="30">Sidste 30 dage</SelectItem>
               <SelectItem value="90">Sidste 90 dage</SelectItem>
