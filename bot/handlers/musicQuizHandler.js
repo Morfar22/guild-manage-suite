@@ -17,6 +17,9 @@ const CACHE_TTL = 300_000;
 // guildDiscordId -> active game state
 const activeGames = new Map();
 
+// settingsCache is module-global, so one realtime subscription is enough for all bot clients.
+let settingsRealtimeSub = null;
+
 function setupMusicQuizHandler(client, supabase, options = {}) {
   const { shouldHandleGuild } = options;
 
@@ -321,22 +324,23 @@ function setupMusicQuizHandler(client, supabase, options = {}) {
     }
   });
 
-  // Realtime: invalidate cache when settings change (with auto-retry)
-  try {
-    const sub = createRealtimeSubscription(supabase, 'music_quiz_settings_changes', [
-      {
-        filter: { event: '*', schema: 'public', table: 'music_quiz_settings' },
-        callback: (payload) => {
-          const guildUuid = payload.new?.guild_id || payload.old?.guild_id;
-          if (!guildUuid) return;
-          settingsCache.clear();
+  // Realtime: settingsCache is shared across clients, so subscribe only once per process.
+  if (!settingsRealtimeSub) {
+    try {
+      settingsRealtimeSub = createRealtimeSubscription(supabase, 'music_quiz_settings_changes', [
+        {
+          filter: { event: '*', schema: 'public', table: 'music_quiz_settings' },
+          callback: (payload) => {
+            const guildUuid = payload.new?.guild_id || payload.old?.guild_id;
+            if (!guildUuid) return;
+            settingsCache.clear();
+          },
         },
-      },
-    ], { label: 'MusicQuizSettings' });
-    if (!client._musicQuizSubs) client._musicQuizSubs = [];
-    client._musicQuizSubs.push(sub);
-  } catch (e) {
-    console.warn('[MusicQuiz] realtime setup failed:', e.message);
+      ], { label: 'MusicQuizSettings' });
+    } catch (e) {
+      console.warn('[MusicQuiz] realtime setup failed:', e.message);
+      settingsRealtimeSub = null;
+    }
   }
 
   console.log('[MusicQuiz] Handler initialized');
