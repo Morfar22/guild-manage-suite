@@ -1458,11 +1458,17 @@ __serve(async (req) => {
       case "getPendingCommands": {
         const serverId = String(data.serverId || "main");
 
-        // Recover commands that were claimed by this bridge instance and then abandoned.
+        // Never auto-replay a claimed command. Some actions (money add,
+        // inventory give, bans, etc.) are not idempotent and could be executed twice
+        // if the bridge completed the action but lost the result response.
         const staleClaim = new Date(Date.now() - 2 * 60 * 1000).toISOString();
         await supabase
           .from("fivem_command_queue")
-          .update({ status: "pending", executed_at: null })
+          .update({
+            status: "failed",
+            result: "Bridge mistede forbindelsen efter command blev claimet. Ikke genkørt automatisk af sikkerhedshensyn.",
+            executed_at: new Date().toISOString(),
+          })
           .eq("guild_id", internalGuildId)
           .eq("server_id", serverId)
           .eq("status", "processing")
