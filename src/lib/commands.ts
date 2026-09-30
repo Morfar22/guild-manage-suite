@@ -10,6 +10,41 @@ export interface GuildCommandSettings {
   allowed_channel_ids: string[];
 }
 
+export interface CommandAuditEntry {
+  commandName: string;
+  action: string;
+  details: Record<string, unknown>;
+}
+
+export async function recordCommandAudits(
+  guildId: string,
+  entries: CommandAuditEntry[]
+): Promise<void> {
+  if (!entries.length) return;
+
+  try {
+    const { data: authData } = await supabase.auth.getUser();
+    const user = authData.user;
+    if (!user) return;
+
+    const { error } = await supabase.from('dashboard_audit_log').insert(
+      entries.map((entry) => ({
+        guild_id: guildId,
+        user_id: user.id,
+        user_email: user.email ?? null,
+        action: entry.action,
+        target_type: 'command',
+        target_id: entry.commandName,
+        details: entry.details,
+      }))
+    );
+
+    if (error) throw error;
+  } catch (error) {
+    console.warn('Kunne ikke skrive command audit-log:', error);
+  }
+}
+
 const getDefaultCommandSettings = (): Record<string, GuildCommandSettings> => {
   const out: Record<string, GuildCommandSettings> = {};
   for (const [category, commands] of Object.entries(COMMANDS_BY_CATEGORY)) {
