@@ -173,7 +173,7 @@ function startHeartbeat(client, config = {}) {
   console.log('[Heartbeat] Starter heartbeat service...');
   
   // Send første heartbeat når bot er klar
-  client.once('ready', () => {
+  client.once('clientReady', () => {
     console.log(`[Heartbeat] Bot er online i ${client.guilds.cache.size} guilds`);
     sendAllHeartbeats(client, shouldHandleGuild);
     
