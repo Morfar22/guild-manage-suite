@@ -105,7 +105,6 @@ function setupStatsHandler(client, supabase, options = {}) {
               }
 
               if (channel.name === channelName) {
-                console.log(`[Stats] Channel ${stat.channel_id} already named "${channelName}", skipping`);
                 continue;
               }
 
