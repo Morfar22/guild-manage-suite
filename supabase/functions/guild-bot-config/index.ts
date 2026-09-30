@@ -74,7 +74,8 @@ Deno.serve(async (req) => {
             bot_status,
             bot_activity_type,
             bot_activity_text,
-            is_active
+            is_active,
+            guilds!inner(guild_id)
           `)
           .eq('is_custom_bot', true)
           .eq('is_active', true)
@@ -90,6 +91,8 @@ Deno.serve(async (req) => {
         // Decrypt tokens for bot manager
         const decryptedConfigs = (configs || []).map(config => ({
           ...config,
+          discord_guild_id: (config as any).guilds?.guild_id || null,
+          guilds: undefined,
           bot_token: config.bot_token_encrypted 
             ? simpleDecrypt(config.bot_token_encrypted, encryptionKey)
             : null,
