@@ -715,6 +715,17 @@ class CustomBotManager {
 
     const client = this.createClient();
 
+    // Apply handlers BEFORE login, same as the default bot.
+    // Event-driven integrations such as Shoukaku/Kazagumo must subscribe
+    // before Discord emits clientReady or their Lavalink nodes never connect.
+    for (const factory of this.handlerFactories) {
+      try {
+        factory(client, guildId);
+      } catch (error) {
+        console.error(`[CustomBotManager] Handler error for ${guildId}:`, error);
+      }
+    }
+
     client.once('clientReady', async () => {
       console.log(`[CustomBotManager] ✅ Custom bot ready: ${client.user.tag} for guild ${guildId}`);
       
@@ -728,15 +739,6 @@ class CustomBotManager {
       
       // Set presence
       await this.setPresence(client, config);
-      
-      // Apply all registered handlers
-      for (const factory of this.handlerFactories) {
-        try {
-          factory(client, guildId);
-        } catch (error) {
-          console.error(`[CustomBotManager] Handler error for ${guildId}:`, error);
-        }
-      }
 
       // Send initial heartbeat
       await this.sendHeartbeat(guildId, client, true);
