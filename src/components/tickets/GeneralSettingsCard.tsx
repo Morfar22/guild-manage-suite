@@ -56,8 +56,9 @@ export default function GeneralSettingsCard() {
       <CardContent className="space-y-6">
         <div className="grid gap-4 md:grid-cols-2">
           <div className="space-y-2">
-            <Label>Thread parent category</Label>
-            <ChannelSelect value={threadCategoryId} onValueChange={setThreadCategoryId} placeholder="Discord category" includeCategories />
+            <Label>Ticket parent channel</Label>
+            <ChannelSelect value={threadCategoryId} onValueChange={setThreadCategoryId} placeholder="Text channel for private ticket threads" />
+            <p className="text-xs text-muted-foreground">Private ticket threads are created inside this Discord text channel.</p>
           </div>
           <div className="space-y-2">
             <Label className="flex items-center gap-2"><FileText className="h-4 w-4" /> Transcript log channel</Label>
