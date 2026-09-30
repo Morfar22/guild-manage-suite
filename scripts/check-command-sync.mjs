@@ -171,7 +171,7 @@ function standaloneHandlerNames() {
   const names = new Set();
 
   for (const source of [ticket, musicQuiz]) {
-    for (const match of source.matchAll(/interaction\.commandName\s*===\s*['"]([^'"]+)['"]/g)) {
+    for (const match of source.matchAll(/interaction\.commandName\s*(?:===|!==)\s*['"]([^'"]+)['"]/g)) {
       names.add(match[1]);
     }
     for (const match of source.matchAll(/\[([^\]]+)\]\.includes\(interaction\.commandName\)/g)) {
