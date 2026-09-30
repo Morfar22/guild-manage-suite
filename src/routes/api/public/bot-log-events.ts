@@ -191,18 +191,18 @@ const EVENT_COLORS: Record<string, number> = {
 }
 
 const EVENT_TITLES: Record<string, string> = {
-  'member_join': '👋 Medlem Joined',
+  'member_join': '👋 Medlem tilsluttede',
   'member_leave': '🚪 Medlem Forlod',
   'member_ban': '🔨 Medlem Bannet',
-  'member_unban': '✅ Medlem Unbanned',
-  'member_kick': '👢 Medlem Kicket',
+  'member_unban': '✅ Bandlysning ophævet',
+  'member_kick': '👢 Medlem fjernet',
   'member_timeout': '⏱️ Medlem Timet Ud',
   'member_untimeout': '⏱️ Timeout Fjernet',
   'message_delete': '🗑️ Besked Slettet',
   'message_edit': '✏️ Besked Redigeret',
-  'message_bulk_delete': '🗑️ Bulk Sletning',
-  'message_pin': '📌 Besked Pinned',
-  'message_unpin': '📌 Besked Unpinned',
+  'message_bulk_delete': '🧹 Flere beskeder slettet',
+  'message_pin': '📌 Besked fastgjort',
+  'message_unpin': '📌 Fastgørelse fjernet',
   'role_create': '🏷️ Rolle Oprettet',
   'role_delete': '🏷️ Rolle Slettet',
   'role_update': '🏷️ Rolle Opdateret',
@@ -211,11 +211,11 @@ const EVENT_TITLES: Record<string, string> = {
   'channel_create': '📁 Kanal Oprettet',
   'channel_delete': '📁 Kanal Slettet',
   'channel_update': '📁 Kanal Opdateret',
-  'voice_join': '🔊 Voice Join',
-  'voice_leave': '🔇 Voice Leave',
-  'voice_move': '🔀 Voice Move',
-  'voice_server_mute': '🔇 Server Mute',
-  'voice_server_deafen': '🔇 Server Deafen',
+  'voice_join': '🔊 Tilsluttet voice',
+  'voice_leave': '🔇 Forlod voice',
+  'voice_move': '🔀 Skiftede voice-kanal',
+  'voice_server_mute': '🔇 Server mute ændret',
+  'voice_server_deafen': '🔇 Server deafen ændret',
   'member_voice_move': '↔️ Medlem Flyttet (Voice)',
   'screen_share_start': '🖥️ Skærmdeling Startet',
   'screen_share_stop': '🖥️ Skærmdeling Stoppet',
@@ -229,28 +229,145 @@ const EVENT_TITLES: Record<string, string> = {
   'thread_create': '🧵 Tråd Oprettet',
   'thread_delete': '🧵 Tråd Slettet',
   'thread_archive': '🧵 Tråd Arkiveret',
-  'server_boost': '🚀 Server Boost',
-  'server_boost_remove': '🚀 Boost Fjernet',
+  'server_boost': '🚀 Server boost',
+  'server_boost_remove': '🚀 Boost fjernet',
   'server_update': '⚙️ Server Opdateret',
-  'command_used': '⚡ Kommando Brugt',
+  'command_used': '⚡ Kommando brugt',
   'sticker_create': '🎨 Sticker Oprettet',
   'sticker_delete': '🎨 Sticker Slettet',
+}
+
+const EVENT_GROUPS: Record<string, string> = {
+  member_join: 'Medlemmer', member_leave: 'Medlemmer', member_ban: 'Moderation',
+  member_unban: 'Moderation', member_kick: 'Moderation', member_timeout: 'Moderation',
+  member_untimeout: 'Moderation', message_delete: 'Beskeder', message_edit: 'Beskeder',
+  message_bulk_delete: 'Beskeder', message_pin: 'Beskeder', message_unpin: 'Beskeder',
+  role_create: 'Roller', role_delete: 'Roller', role_update: 'Roller', role_add: 'Roller',
+  role_remove: 'Roller', channel_create: 'Kanaler', channel_delete: 'Kanaler',
+  channel_update: 'Kanaler', voice_join: 'Voice', voice_leave: 'Voice', voice_move: 'Voice',
+  voice_server_mute: 'Voice', voice_server_deafen: 'Voice', member_voice_move: 'Voice',
+  screen_share_start: 'Voice', screen_share_stop: 'Voice', nickname_change: 'Medlemmer',
+  avatar_change: 'Medlemmer', invite_create: 'Invites', invite_delete: 'Invites',
+  emoji_create: 'Server', emoji_delete: 'Server', emoji_update: 'Server',
+  thread_create: 'Tråde', thread_delete: 'Tråde', thread_archive: 'Tråde',
+  server_boost: 'Server', server_boost_remove: 'Server', server_update: 'Server',
+  command_used: 'Kommandoer', sticker_create: 'Server', sticker_delete: 'Server',
+}
+
+function truncate(value: unknown, max = 1024): string {
+  const text = String(value ?? '').trim()
+  if (!text) return 'Ikke angivet'
+  return text.length > max ? `${text.slice(0, Math.max(0, max - 1))}…` : text
+}
+
+function normalizeEmbed(embed: any, eventType: string, data: Record<string, any>) {
+  embed.title = truncate(embed.title || eventType, 256)
+  if (embed.description) embed.description = truncate(embed.description, 4096)
+
+  const fields = Array.isArray(embed.fields) ? embed.fields : []
+  embed.fields = fields
+    .filter((field: any) => field?.name && field?.value !== undefined && field?.value !== null)
+    .slice(0, 25)
+    .map((field: any) => ({
+      name: truncate(field.name, 256),
+      value: truncate(field.value, 1024),
+      inline: Boolean(field.inline),
+    }))
+
+  const group = EVENT_GROUPS[eventType] || 'System'
+  const id = typeof data.event_id === 'string' ? data.event_id.slice(0, 8) : 'ukendt'
+  const guild = data.guild_name ? ` • ${truncate(data.guild_name, 80)}` : ''
+  embed.footer = {
+    text: `${group} • ${eventType} • #${id}${guild}`,
+  }
+
+  if (data.occurred_at) {
+    const occurred = new Date(data.occurred_at)
+    if (!Number.isNaN(occurred.getTime())) embed.timestamp = occurred.toISOString()
+  }
+
+  return embed
+}
+
+const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
+
+async function sendDiscordLog(
+  token: string,
+  channelId: string,
+  payload: Record<string, any>,
+  eventId: string,
+) {
+  const maxAttempts = 3
+  let lastStatus = 0
+  let lastBody = ''
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    const controller = new AbortController()
+    const timer = setTimeout(() => controller.abort(), 8000)
+
+    try {
+      const response = await fetch(
+        `https://discord.com/api/v10/channels/${channelId}/messages`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bot ${token}`,
+            'Content-Type': 'application/json',
+            'X-Audit-Log-Reason': encodeURIComponent(`Guild log event ${eventId}`),
+          },
+          body: JSON.stringify(payload),
+          signal: controller.signal,
+        }
+      )
+      clearTimeout(timer)
+
+      lastStatus = response.status
+      if (response.ok) return response
+
+      lastBody = await response.text().catch(() => '')
+      const retryable = response.status === 429 || response.status >= 500
+      if (!retryable || attempt === maxAttempts) break
+
+      let waitMs = 400 * attempt
+      if (response.status === 429) {
+        try {
+          const body = JSON.parse(lastBody)
+          waitMs = Math.max(waitMs, Math.ceil(Number(body.retry_after || 0) * 1000))
+        } catch {}
+      }
+      await sleep(Math.min(waitMs, 5000))
+    } catch (error) {
+      clearTimeout(timer)
+      lastBody = error instanceof Error ? error.message : String(error)
+      if (attempt === maxAttempts) break
+      await sleep(400 * attempt)
+    }
+  }
+
+  throw new Error(`Discord log delivery failed (status ${lastStatus || 'network'}, event ${eventId}): ${truncate(lastBody, 500)}`)
 }
 
 function buildEmbed(eventType: string, data: Record<string, any>): object {
   const embed: any = {
     title: EVENT_TITLES[eventType] || eventType,
     color: EVENT_COLORS[eventType] || 0x5865F2,
-    timestamp: new Date().toISOString(),
+    timestamp: data.occurred_at || new Date().toISOString(),
     fields: [],
-    footer: { text: `Event: ${eventType}` },
   }
 
   if (data.user_name) {
     embed.author = {
-      name: data.user_name,
+      name: truncate(data.user_name, 256),
       icon_url: data.user_avatar || undefined,
     }
+  }
+
+  if (data.guild_name && data.guild_member_count !== null && data.guild_member_count !== undefined) {
+    embed.fields.push({
+      name: '🏠 Server',
+      value: `${truncate(data.guild_name, 180)}\n${Number(data.guild_member_count).toLocaleString('da-DK')} medlemmer`,
+      inline: true,
+    })
   }
 
   // Helper to add moderator field
@@ -531,7 +648,7 @@ function buildEmbed(eventType: string, data: Record<string, any>): object {
       break
   }
 
-  return embed
+  return normalizeEmbed(embed, eventType, data)
 }
 
 __serve(async (req) => {
@@ -573,9 +690,11 @@ __serve(async (req) => {
     }
 
     const payload: LogEventPayload = await req.json()
-    console.log(`Log event: ${payload.event_type} for guild ${payload.guild_id}`)
+    const eventId = typeof payload?.data?.event_id === 'string'
+      ? payload.data.event_id
+      : crypto.randomUUID()
 
-    if (!payload.guild_id || !payload.event_type) {
+    if (!payload?.guild_id || !payload?.event_type || typeof payload?.data !== 'object' || payload.data === null) {
       return new Response(
         JSON.stringify({ error: 'Missing required fields: guild_id, event_type' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -645,37 +764,29 @@ __serve(async (req) => {
     const embed = buildEmbed(payload.event_type, payload.data)
     const discordToken = await getBotTokenForGuild(supabase, guild.id)
 
-    const discordResponse = await fetch(
-      `https://discord.com/api/v10/channels/${targetChannelId}/messages`,
+    await sendDiscordLog(
+      discordToken,
+      targetChannelId,
       {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bot ${discordToken}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ embeds: [embed] }),
-      }
+        embeds: [embed],
+        allowed_mentions: { parse: [] },
+      },
+      eventId,
     )
 
-    if (!discordResponse.ok) {
-      const errorText = await discordResponse.text()
-      console.error('Failed to send log to Discord:', errorText)
-      return new Response(
-        JSON.stringify({ error: 'Failed to send log to Discord', details: errorText }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-    }
-
-    console.log(`Log sent successfully for event: ${payload.event_type}`)
+    console.log(`[Logs] ${payload.event_type} -> guild ${payload.guild_id} [${eventId.slice(0, 8)}]`)
     return new Response(
-      JSON.stringify({ logged: true, event_type: payload.event_type }),
+      JSON.stringify({ logged: true, event_type: payload.event_type, event_id: eventId }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
 
   } catch (error) {
-    console.error('Unexpected error:', error)
+    console.error('[Logs] Unexpected error:', error)
     return new Response(
-      JSON.stringify({ error: 'Internal server error' }),
+      JSON.stringify({
+        error: 'Internal server error',
+        details: error instanceof Error ? truncate(error.message, 500) : truncate(error, 500),
+      }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   }
