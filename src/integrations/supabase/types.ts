@@ -1376,6 +1376,56 @@ export type Database = {
           },
         ]
       }
+      command_execution_events: {
+        Row: {
+          blocked_reason: string | null
+          channel_id: string | null
+          command_name: string
+          created_at: string
+          error_message: string | null
+          guild_id: string
+          id: string
+          latency_ms: number
+          source: string
+          status: string
+          user_id: string | null
+        }
+        Insert: {
+          blocked_reason?: string | null
+          channel_id?: string | null
+          command_name: string
+          created_at?: string
+          error_message?: string | null
+          guild_id: string
+          id?: string
+          latency_ms?: number
+          source?: string
+          status: string
+          user_id?: string | null
+        }
+        Update: {
+          blocked_reason?: string | null
+          channel_id?: string | null
+          command_name?: string
+          created_at?: string
+          error_message?: string | null
+          guild_id?: string
+          id?: string
+          latency_ms?: number
+          source?: string
+          status?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "command_execution_events_guild_id_fkey"
+            columns: ["guild_id"]
+            isOneToOne: false
+            referencedRelation: "guilds"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       custom_commands: {
         Row: {
           allowed_channels: string[] | null
@@ -6993,7 +7043,29 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      command_execution_daily_stats: {
+        Row: {
+          avg_latency_ms: number | null
+          blocked: number | null
+          command_name: string | null
+          day: string | null
+          errors: number | null
+          executions: number | null
+          guild_id: string | null
+          last_used_at: string | null
+          max_latency_ms: number | null
+          successes: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "command_execution_events_guild_id_fkey"
+            columns: ["guild_id"]
+            isOneToOne: false
+            referencedRelation: "guilds"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       guild_has_applications_pro: {
