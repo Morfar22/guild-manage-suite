@@ -21,6 +21,7 @@
 const { Client, GatewayIntentBits, Partials, ActivityType, REST, Routes, SlashCommandBuilder, ChannelType } = require('discord.js');
 
 const SUPABASE_URL = process.env.SUPABASE_URL || 'https://rkdqunnttcyuybbofkvz.supabase.co';
+const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const BOT_SECRET_KEY = process.env.BOT_SECRET_KEY;
 const DEFAULT_BOT_TOKEN = process.env.DEFAULT_BOT_TOKEN;
 
@@ -373,7 +374,7 @@ class CustomBotManager {
    * @param {string} applicationId - Bot application/client ID
    * @param {string[]} [guildIds] - Optional guild IDs for instant guild-specific deployment
    */
-  async deployCommandsForBot(token, applicationId, guildIds = []) {
+  async deployCommandsForBot(token, applicationId, guildIds = [], options = {}) {
     if (!applicationId) {
       console.log('[CustomBotManager] No application ID provided, skipping command deploy');
       return;
@@ -385,22 +386,35 @@ class CustomBotManager {
       return;
     }
 
+    const deployGlobal = options.global !== false;
+    const clearGuildIds = Array.isArray(options.clearGuildIds) ? options.clearGuildIds : [];
+
     try {
       const commands = CustomBotManager.buildCommands();
       const rest = new REST({ version: '10' }).setToken(token);
       const commandData = commands.map(c => c.toJSON());
 
-      // Deploy globally (takes up to 1 hour to propagate)
-      console.log(`[CustomBotManager] 🔄 Deploying ${commands.length} slash commands globally for app ${applicationId}...`);
-      const data = await rest.put(
-        Routes.applicationCommands(applicationId),
-        { body: commandData }
-      );
-      console.log(`[CustomBotManager] ✅ ${data.length} slash commands deployed globally for app ${applicationId}`);
+      if (deployGlobal) {
+        // Default bot: global commands are intentional.
+        console.log(`[CustomBotManager] 🔄 Deploying ${commands.length} slash commands globally for app ${applicationId}...`);
+        const data = await rest.put(
+          Routes.applicationCommands(applicationId),
+          { body: commandData }
+        );
+        console.log(`[CustomBotManager] ✅ ${data.length} slash commands deployed globally for app ${applicationId}`);
+      } else {
+        // Custom bots are tied to one Discord guild. Remove stale global commands
+        // from older versions so commands don't appear in unrelated guilds.
+        await rest.put(
+          Routes.applicationCommands(applicationId),
+          { body: [] }
+        );
+        console.log(`[CustomBotManager] ✅ Cleared global commands for custom app ${applicationId}`);
+      }
 
-      // Also deploy per-guild for instant availability
+      // Deploy per-guild for instant availability.
       if (guildIds.length > 0) {
-        console.log(`[CustomBotManager] 🔄 Deploying commands to ${guildIds.length} guild(s) for instant availability...`);
+        console.log(`[CustomBotManager] 🔄 Deploying commands to ${guildIds.length} assigned guild(s)...`);
         for (const guildId of guildIds) {
           try {
             await rest.put(
@@ -411,7 +425,21 @@ class CustomBotManager {
             console.error(`[CustomBotManager] Failed guild deploy for ${guildId}:`, guildError.message);
           }
         }
-        console.log(`[CustomBotManager] ✅ Guild-specific command deployment complete`);
+        console.log('[CustomBotManager] ✅ Assigned guild command deployment complete');
+      }
+
+      // Remove stale guild-specific commands from extra guilds this custom bot may
+      // still be invited to from older deployments.
+      for (const guildId of clearGuildIds) {
+        try {
+          await rest.put(
+            Routes.applicationGuildCommands(applicationId, guildId),
+            { body: [] }
+          );
+          console.log(`[CustomBotManager] ✅ Cleared commands from unassigned guild ${guildId}`);
+        } catch (guildError) {
+          console.warn(`[CustomBotManager] Could not clear commands from unassigned guild ${guildId}:`, guildError.message);
+        }
       }
 
       CustomBotManager._deployedAppIds.add(applicationId);
@@ -532,7 +560,44 @@ class CustomBotManager {
       }
 
       const result = await response.json();
-      return result.configs || [];
+      const configs = result.configs || [];
+
+      // Backward-compatible fallback: if the web API hasn't deployed the
+      // discord_guild_id field yet, resolve internal UUIDs directly via Supabase.
+      const missingIds = configs
+        .filter(config => !config.discord_guild_id && config.guild_id)
+        .map(config => config.guild_id);
+
+      if (missingIds.length > 0 && SUPABASE_SERVICE_ROLE_KEY) {
+        try {
+          const filter = encodeURIComponent(`in.(${missingIds.join(',')})`);
+          const guildResponse = await fetch(
+            `${SUPABASE_URL}/rest/v1/guilds?id=${filter}&select=id,guild_id`,
+            {
+              headers: {
+                apikey: SUPABASE_SERVICE_ROLE_KEY,
+                Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+              },
+            }
+          );
+
+          if (guildResponse.ok) {
+            const guildRows = await guildResponse.json();
+            const discordIdByUuid = new Map(guildRows.map(row => [row.id, row.guild_id]));
+            for (const config of configs) {
+              if (!config.discord_guild_id) {
+                config.discord_guild_id = discordIdByUuid.get(config.guild_id) || null;
+              }
+            }
+          } else {
+            console.warn('[CustomBotManager] Could not hydrate Discord guild IDs:', guildResponse.status);
+          }
+        } catch (error) {
+          console.warn('[CustomBotManager] Discord guild ID hydration failed:', error.message);
+        }
+      }
+
+      return configs;
     } catch (error) {
       console.error('[CustomBotManager] Network error fetching configs:', error.message);
       return [];
@@ -753,7 +818,14 @@ class CustomBotManager {
         console.warn(`[CustomBotManager] Custom bot ${client.user.tag} is not in assigned guild ${assignedDiscordGuildId}; skipping guild command deploy`);
       }
 
-      await this.deployCommandsForBot(config.bot_token, applicationId, botGuildIds);
+      const unassignedGuildIds = client.guilds.cache
+        .filter(guild => !assignedDiscordGuildId || guild.id !== assignedDiscordGuildId)
+        .map(guild => guild.id);
+
+      await this.deployCommandsForBot(config.bot_token, applicationId, botGuildIds, {
+        global: false,
+        clearGuildIds: unassignedGuildIds,
+      });
       
       // Update bot profile (username and avatar)
       await this.updateBotProfile(client, config);
@@ -934,7 +1006,7 @@ class CustomBotManager {
 
       // Deploy commands globally + per-guild for instant availability
       const guildIds = this.defaultClient.guilds.cache.map(g => g.id);
-      await this.deployCommandsForBot(DEFAULT_BOT_TOKEN, this.defaultClient.user.id, guildIds);
+      await this.deployCommandsForBot(DEFAULT_BOT_TOKEN, this.defaultClient.user.id, guildIds, { global: true });
     });
 
     // Deploy commands instantly when bot joins a new server
