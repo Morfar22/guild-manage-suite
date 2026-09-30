@@ -85,6 +85,8 @@ export default function ServerStatusWidget() {
         .from('fivem_server_status')
         .select('*')
         .eq('guild_id', selectedGuild!.id)
+        .order('updated_at', { ascending: false })
+        .limit(1)
         .maybeSingle();
       
       if (error) throw error;
@@ -159,7 +161,7 @@ export default function ServerStatusWidget() {
             <WifiOff className="h-12 w-12 mx-auto mb-4 opacity-50" />
             <p>Din FiveM server har ikke sendt status data endnu.</p>
             <p className="text-sm mt-2">
-              Sørg for at Lua resourcen kører på din server.
+              Åbn fanen Opsætning, installér guild_manage_bridge og kopiér server.cfg-blokken.
             </p>
           </div>
         </CardContent>
@@ -255,7 +257,7 @@ export default function ServerStatusWidget() {
         </div>
 
         {/* Additional Info */}
-        {(serverStatus.fxserver_version || serverStatus.map_name) && (
+        {(serverStatus.fxserver_version || serverStatus.map_name || serverStatus.metadata?.framework || serverStatus.metadata?.bridgeVersion) && (
           <div className="mt-4 pt-4 border-t border-border flex flex-wrap gap-4 text-sm text-muted-foreground">
             {serverStatus.fxserver_version && (
               <div className="flex items-center gap-1">
@@ -268,6 +270,12 @@ export default function ServerStatusWidget() {
                 <Globe className="h-3 w-3" />
                 Map: {serverStatus.map_name}
               </div>
+            )}
+            {typeof serverStatus.metadata?.framework === 'string' && (
+              <Badge variant="outline">Framework: {serverStatus.metadata.framework}</Badge>
+            )}
+            {typeof serverStatus.metadata?.bridgeVersion === 'string' && (
+              <Badge variant="outline">Bridge v{serverStatus.metadata.bridgeVersion}</Badge>
             )}
             {serverStatus.last_heartbeat && (
               <div className="flex items-center gap-1 ml-auto">
