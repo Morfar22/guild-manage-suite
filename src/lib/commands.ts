@@ -1,4 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
+import type { Json } from '@/integrations/supabase/types';
 import { COMMANDS_BY_CATEGORY } from '@/types/discord';
 
 export interface GuildCommandSettings {
@@ -35,7 +36,7 @@ export async function recordCommandAudits(
         action: entry.action,
         target_type: 'command',
         target_id: entry.commandName,
-        details: entry.details,
+        details: entry.details as Json,
       }))
     );
 
