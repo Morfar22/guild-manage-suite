@@ -373,15 +373,34 @@ export function useDeleteTicket() {
 
   return useMutation({
     mutationFn: async (ticketId: string) => {
-      await supabase
+      if (!selectedGuild?.id) throw new Error('No guild selected');
+
+      const { data: ticket, error: lookupError } = await supabase
+        .from('tickets')
+        .select('id, status')
+        .eq('id', ticketId)
+        .eq('guild_id', selectedGuild.id)
+        .maybeSingle();
+
+      if (lookupError) throw lookupError;
+      if (!ticket) throw new Error('Ticket not found');
+      if (ticket.status !== 'closed') {
+        throw new Error('Only closed tickets can be permanently deleted');
+      }
+
+      const { error: messageError } = await supabase
         .from('ticket_messages')
         .delete()
         .eq('ticket_id', ticketId);
 
+      if (messageError) throw messageError;
+
       const { error } = await supabase
         .from('tickets')
         .delete()
-        .eq('id', ticketId);
+        .eq('id', ticketId)
+        .eq('guild_id', selectedGuild.id)
+        .eq('status', 'closed');
 
       if (error) throw error;
     },
