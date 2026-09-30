@@ -117,6 +117,31 @@ export async function updateGuildCommandSettings(
   if (error) throw error;
 }
 
+export async function bulkUpdateGuildCommandSettings(
+  guildId: string,
+  entries: Array<{
+    commandName: string;
+    category: string;
+    updates: Partial<Pick<GuildCommandSettings, 'enabled' | 'cooldown_seconds' | 'allowed_role_ids' | 'allowed_channel_ids'>>;
+  }>
+): Promise<void> {
+  if (!entries.length) return;
+
+  const { error } = await supabase
+    .from('guild_commands')
+    .upsert(
+      entries.map(({ commandName, category, updates }) => ({
+        guild_id: guildId,
+        command_name: commandName,
+        category,
+        ...updates,
+      })),
+      { onConflict: 'guild_id,command_name' }
+    );
+
+  if (error) throw error;
+}
+
 export async function toggleCategoryCommands(
   guildId: string,
   category: string,
