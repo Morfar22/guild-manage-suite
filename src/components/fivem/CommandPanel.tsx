@@ -133,12 +133,15 @@ const STANDALONE_COMMANDS: CommandDef[] = [
     icon: <RefreshCw className="h-4 w-4" />,
     fields: [
       { name: 'action', label: 'Handling', type: 'select', required: true, options: [
+        { value: 'ensure', label: 'Ensure' },
         { value: 'start', label: 'Start' },
         { value: 'stop', label: 'Stop' },
         { value: 'restart', label: 'Restart' },
-        { value: 'refresh', label: 'Refresh' },
+        { value: 'refresh', label: 'Refresh resource-listen' },
+        { value: 'list', label: 'Vis alle resources' },
+        { value: 'inspect', label: 'Vis resource status' },
       ]},
-      { name: 'resourceName', label: 'Resource navn', type: 'text', required: true },
+      { name: 'resourceName', label: 'Resource navn', type: 'text' },
     ],
   },
   {
@@ -196,11 +199,12 @@ const STANDALONE_COMMANDS: CommandDef[] = [
     icon: <Shield className="h-4 w-4" />,
     fields: [
       { name: 'action', label: 'Handling', type: 'select', required: true, options: [
+        { value: 'toggle', label: 'Slå whitelist til/fra' },
         { value: 'add', label: 'Tilføj' },
         { value: 'remove', label: 'Fjern' },
         { value: 'check', label: 'Tjek' },
       ]},
-      { name: 'discordId', label: 'Discord ID', type: 'text', required: true },
+      { name: 'discordId', label: 'Discord ID', type: 'text' },
     ],
   },
   {
@@ -341,6 +345,7 @@ const QBCORE_COMMANDS: CommandDef[] = [
         { value: 'add', label: 'Tilføj' },
         { value: 'remove', label: 'Fjern' },
         { value: 'set', label: 'Sæt' },
+        { value: 'inspect', label: 'Vis saldo' },
       ]},
       { name: 'targetPlayerId', label: 'Spiller ID', type: 'player', required: true },
       { name: 'type', label: 'Type', type: 'select', required: true, options: [
@@ -348,7 +353,7 @@ const QBCORE_COMMANDS: CommandDef[] = [
         { value: 'bank', label: 'Bank' },
         { value: 'crypto', label: 'Crypto' },
       ]},
-      { name: 'amount', label: 'Beløb', type: 'number', required: true },
+      { name: 'amount', label: 'Beløb', type: 'number' },
     ],
   },
   {
@@ -402,11 +407,15 @@ const QBCORE_COMMANDS: CommandDef[] = [
   },
   {
     name: 'weather',
-    description: 'Sæt server vejr',
+    description: 'Sæt server vejr eller blackout',
     permission: 'admin',
     icon: <Cloud className="h-4 w-4" />,
     fields: [
-      { name: 'weather', label: 'Vejr', type: 'select', required: true, options: [
+      { name: 'action', label: 'Handling', type: 'select', required: true, options: [
+        { value: 'set', label: 'Sæt vejr' },
+        { value: 'blackout', label: 'Toggle blackout' },
+      ]},
+      { name: 'weather', label: 'Vejr', type: 'select', options: [
         { value: 'CLEAR', label: 'Klart' },
         { value: 'CLOUDS', label: 'Skyet' },
         { value: 'OVERCAST', label: 'Overskyet' },
@@ -640,7 +649,7 @@ export default function CommandPanel() {
       return;
     }
     
-    // status === 'pending' - keep polling (handled by refetchInterval)
+    // pending/processing: polling continues in useFiveMCommandQueueEntry
   }, [pending.data, pending.isLoading, pendingCommandId, toast]);
 
   const handleOpenCommand = (cmd: CommandDef) => {
@@ -648,13 +657,98 @@ export default function CommandPanel() {
     setCommandValues({});
   };
 
+  const isFieldVisible = (field: CommandDef['fields'][0]) => {
+    if (!selectedCommand) return true;
+    const action = String(commandValues.action || '');
+
+    if (selectedCommand.name === 'resource' && field.name === 'resourceName') {
+      return !['refresh', 'list'].includes(action);
+    }
+    if (selectedCommand.name === 'whitelist' && field.name === 'discordId') {
+      return action !== 'toggle';
+    }
+    if (selectedCommand.name === 'money' && field.name === 'amount') {
+      return action !== 'inspect';
+    }
+    if (selectedCommand.name === 'inventory' && (field.name === 'item' || field.name === 'count')) {
+      return action === 'give' || action === 'take';
+    }
+    if (selectedCommand.name === 'job' && (field.name === 'job' || field.name === 'grade')) {
+      return action === 'set';
+    }
+    if (selectedCommand.name === 'gang' && (field.name === 'gang' || field.name === 'grade')) {
+      return action === 'set';
+    }
+    if (selectedCommand.name === 'weather' && field.name === 'weather') {
+      return action === 'set';
+    }
+
+    return true;
+  };
+
+  const isFieldRequired = (field: CommandDef['fields'][0]) => {
+    if (!selectedCommand || !isFieldVisible(field)) return false;
+    const action = String(commandValues.action || '');
+
+    if (selectedCommand.name === 'resource' && field.name === 'resourceName') {
+      return ['ensure', 'start', 'stop', 'restart', 'inspect'].includes(action);
+    }
+    if (selectedCommand.name === 'whitelist' && field.name === 'discordId') {
+      return action !== 'toggle';
+    }
+    if (selectedCommand.name === 'money' && field.name === 'amount') {
+      return action !== 'inspect';
+    }
+    if (selectedCommand.name === 'inventory' && (field.name === 'item' || field.name === 'count')) {
+      return action === 'give' || action === 'take';
+    }
+    if (selectedCommand.name === 'job' && (field.name === 'job' || field.name === 'grade')) {
+      return action === 'set';
+    }
+    if (selectedCommand.name === 'gang' && (field.name === 'gang' || field.name === 'grade')) {
+      return action === 'set';
+    }
+    if (selectedCommand.name === 'weather' && field.name === 'weather') {
+      return action === 'set';
+    }
+
+    return Boolean(field.required);
+  };
+
   const handleExecute = async () => {
     if (!selectedCommand) return;
 
-    // Validate required fields
+    // Validate only fields used by the selected action.
     for (const field of selectedCommand.fields) {
-      if (field.required && !commandValues[field.name]) {
+      if (!isFieldVisible(field) || !isFieldRequired(field)) continue;
+      const value = commandValues[field.name];
+      if (value === undefined || value === null || value === '') {
         toast({ title: `${field.label} er påkrævet`, variant: 'destructive' });
+        return;
+      }
+    }
+
+    if (selectedCommand.name === 'teleport') {
+      const hasPreset = Boolean(commandValues.location);
+      const hasCoords = [commandValues.x, commandValues.y, commandValues.z]
+        .every((value) => value !== undefined && value !== null && value !== '');
+      if (!hasPreset && !hasCoords) {
+        toast({ title: 'Vælg et preset eller udfyld X, Y og Z', variant: 'destructive' });
+        return;
+      }
+    }
+
+    if (selectedCommand.name === 'time') {
+      const hour = Number(commandValues.hour);
+      if (!Number.isFinite(hour) || hour < 0 || hour > 23) {
+        toast({ title: 'Time skal være mellem 0 og 23', variant: 'destructive' });
+        return;
+      }
+    }
+
+    if (['money', 'inventory'].includes(selectedCommand.name) && commandValues.amount !== undefined) {
+      if (Number(commandValues.amount) < 0) {
+        toast({ title: 'Beløb/antal må ikke være negativt', variant: 'destructive' });
         return;
       }
     }
@@ -896,15 +990,17 @@ export default function CommandPanel() {
             <p className="text-center py-4 text-muted-foreground">Ingen parametre påkrævet</p>
           ) : (
             <div className="space-y-4">
-              {selectedCommand?.fields.map((field) => (
-                <div key={field.name} className="space-y-2">
-                  <Label>
-                    {field.label}
-                    {field.required && <span className="text-destructive ml-1">*</span>}
-                  </Label>
-                  {renderField(field)}
-                </div>
-              ))}
+              {selectedCommand?.fields
+                .filter((field) => isFieldVisible(field))
+                .map((field) => (
+                  <div key={field.name} className="space-y-2">
+                    <Label>
+                      {field.label}
+                      {isFieldRequired(field) && <span className="text-destructive ml-1">*</span>}
+                    </Label>
+                    {renderField(field)}
+                  </div>
+                ))}
             </div>
           )}
 
