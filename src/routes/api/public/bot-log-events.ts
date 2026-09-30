@@ -421,8 +421,15 @@ function buildEmbed(eventType: string, data: Record<string, any>): object {
         const age = Math.floor((Date.now() - created.getTime()) / (1000 * 60 * 60 * 24))
         embed.fields.push({ name: '📅 Konto oprettet', value: `<t:${Math.floor(created.getTime() / 1000)}:R> (${age} dage)`, inline: true })
         if (age < 7) {
-          embed.fields.push({ name: '⚠️ Ny konto', value: 'Konto er under 7 dage gammel!', inline: false })
+          embed.fields.push({ name: '⚠️ Ny konto', value: 'Konto er under 7 dage gammel', inline: false })
         }
+      }
+      if (data.joined_at) {
+        const joined = new Date(data.joined_at)
+        embed.fields.push({ name: '🕒 Join-tidspunkt', value: `<t:${Math.floor(joined.getTime() / 1000)}:F>`, inline: true })
+      }
+      if (data.pending_screening) {
+        embed.fields.push({ name: '🛡️ Membership screening', value: 'Afventer godkendelse', inline: true })
       }
       if (data.user_avatar) embed.thumbnail = { url: data.user_avatar }
       break
@@ -434,6 +441,11 @@ function buildEmbed(eventType: string, data: Record<string, any>): object {
         embed.fields.push({ name: '🆔 ID', value: data.user_id, inline: true })
       }
       if (data.roles) embed.fields.push({ name: '🏷️ Roller', value: data.roles, inline: false })
+      if (data.joined_at) {
+        const joined = new Date(data.joined_at)
+        const days = Math.max(0, Math.floor((Date.now() - joined.getTime()) / 86400000))
+        embed.fields.push({ name: '⏳ Tid på serveren', value: `${days} dage`, inline: true })
+      }
       if (data.user_avatar) embed.thumbnail = { url: data.user_avatar }
       break
 
@@ -491,6 +503,11 @@ function buildEmbed(eventType: string, data: Record<string, any>): object {
     case 'message_delete':
       embed.fields.push({ name: '📝 Kanal', value: data.channel_id ? `<#${data.channel_id}>` : 'Ukendt', inline: true })
       if (data.user_id) embed.fields.push({ name: '👤 Forfatter', value: `<@${data.user_id}>`, inline: true })
+      if (data.message_id) embed.fields.push({ name: '🆔 Besked-ID', value: `\`${data.message_id}\``, inline: true })
+      if (data.message_created_at) {
+        const created = new Date(data.message_created_at)
+        embed.fields.push({ name: '🕒 Oprettet', value: `<t:${Math.floor(created.getTime() / 1000)}:R>`, inline: true })
+      }
       addDeletedByField()
       if (data.content) embed.fields.push({ name: '💬 Indhold', value: data.content.substring(0, 1024), inline: false })
       if (data.attachments) embed.fields.push({ name: '📎 Vedhæftninger', value: data.attachments.substring(0, 1024), inline: false })
@@ -559,14 +576,30 @@ function buildEmbed(eventType: string, data: Record<string, any>): object {
 
     case 'voice_move':
       if (data.user_id) embed.description = `<@${data.user_id}>`
-      if (data.voice_channel_from) embed.fields.push({ name: '⬅️ Fra', value: data.voice_channel_from, inline: true })
-      if (data.voice_channel_to) embed.fields.push({ name: '➡️ Til', value: data.voice_channel_to, inline: true })
+      if (data.voice_channel_from) embed.fields.push({
+        name: '⬅️ Fra',
+        value: data.voice_channel_from_id ? `<#${data.voice_channel_from_id}>\n${data.voice_channel_from}` : data.voice_channel_from,
+        inline: true,
+      })
+      if (data.voice_channel_to) embed.fields.push({
+        name: '➡️ Til',
+        value: data.voice_channel_to_id ? `<#${data.voice_channel_to_id}>\n${data.voice_channel_to}` : data.voice_channel_to,
+        inline: true,
+      })
       break
 
     case 'member_voice_move':
       if (data.user_id) embed.description = `<@${data.user_id}> blev flyttet`
-      if (data.voice_channel_from) embed.fields.push({ name: '⬅️ Fra', value: data.voice_channel_from, inline: true })
-      if (data.voice_channel_to) embed.fields.push({ name: '➡️ Til', value: data.voice_channel_to, inline: true })
+      if (data.voice_channel_from) embed.fields.push({
+        name: '⬅️ Fra',
+        value: data.voice_channel_from_id ? `<#${data.voice_channel_from_id}>\n${data.voice_channel_from}` : data.voice_channel_from,
+        inline: true,
+      })
+      if (data.voice_channel_to) embed.fields.push({
+        name: '➡️ Til',
+        value: data.voice_channel_to_id ? `<#${data.voice_channel_to_id}>\n${data.voice_channel_to}` : data.voice_channel_to,
+        inline: true,
+      })
       addModeratorField()
       break
 
@@ -663,6 +696,7 @@ function buildEmbed(eventType: string, data: Record<string, any>): object {
       if (data.user_id) embed.description = `<@${data.user_id}>`
       if (data.command_name) embed.fields.push({ name: '⚡ Kommando', value: `\`/${data.command_name}\``, inline: true })
       if (data.channel_id) embed.fields.push({ name: '📝 Kanal', value: `<#${data.channel_id}>`, inline: true })
+      if (data.command_options) embed.fields.push({ name: '⚙️ Parametre', value: `\`\`\`\n${truncate(data.command_options, 960)}\n\`\`\``, inline: false })
       break
   }
 
