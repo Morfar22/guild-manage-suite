@@ -3,6 +3,37 @@ import { supabase } from '@/integrations/supabase/client';
 import { useGuild } from '@/contexts/GuildContext';
 import { invokeFunction } from '@/lib/functions-client';
 
+const FIVEM_SETTINGS_PUBLIC_COLUMNS = [
+  'id',
+  'guild_id',
+  'enabled',
+  'server_name',
+  'server_ip',
+  'cfx_code',
+  'whitelist_enabled',
+  'auto_whitelist_role_id',
+  'whitelisted_role_id',
+  'sync_discord_roles',
+  'sync_playtime',
+  'log_channel_id',
+  'whitelist_application_form_id',
+  'status_webhook_url',
+  'log_webhook_url',
+  'staff_chat_channel_id',
+  'announcement_channel_id',
+  'staff_role_ids',
+  'mod_role_ids',
+  'admin_role_ids',
+  'god_role_ids',
+  'bridge_token_created_at',
+  'bridge_last_seen_at',
+  'bridge_version',
+  'bridge_framework',
+  'created_at',
+  'updated_at',
+].join(',');
+
+
 export interface FiveMSettings {
   id: string;
   guild_id: string;
@@ -25,6 +56,10 @@ export interface FiveMSettings {
   mod_role_ids: string[] | null;
   admin_role_ids: string[] | null;
   god_role_ids: string[] | null;
+  bridge_token_created_at: string | null;
+  bridge_last_seen_at: string | null;
+  bridge_version: string | null;
+  bridge_framework: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -121,7 +156,7 @@ export function useFiveMSettings() {
 
       const { data, error } = await supabase
         .from('fivem_settings')
-        .select('*')
+        .select(FIVEM_SETTINGS_PUBLIC_COLUMNS)
         .eq('guild_id', selectedGuild.id)
         .maybeSingle();
 
@@ -151,7 +186,7 @@ export function useUpdateFiveMSettings() {
           .from('fivem_settings')
           .update(settings)
           .eq('guild_id', selectedGuild.id)
-          .select()
+          .select(FIVEM_SETTINGS_PUBLIC_COLUMNS)
           .single();
 
         if (error) throw error;
@@ -160,7 +195,7 @@ export function useUpdateFiveMSettings() {
         const { data, error } = await supabase
           .from('fivem_settings')
           .insert({ ...settings, guild_id: selectedGuild.id })
-          .select()
+          .select(FIVEM_SETTINGS_PUBLIC_COLUMNS)
           .single();
 
         if (error) throw error;
@@ -643,3 +678,84 @@ export function useFiveMCommandList() {
     staleTime: Infinity,
   });
 }
+
+export interface FiveMBridgeStatus {
+  configured: boolean;
+  enabled: boolean;
+  tokenCreatedAt: string | null;
+  lastSeenAt: string | null;
+  bridgeVersion: string | null;
+  framework: string | null;
+  discordGuildId: string;
+  guildName: string;
+  apiBase: string;
+}
+
+export interface FiveMBridgeKeyResult {
+  success: boolean;
+  token: string;
+  discordGuildId: string;
+  guildName: string;
+  apiBase: string;
+  warning: string;
+}
+
+export function useFiveMBridgeStatus() {
+  const { selectedGuild } = useGuild();
+
+  return useQuery({
+    queryKey: ['fivem-bridge-status', selectedGuild?.id],
+    queryFn: async () => {
+      if (!selectedGuild?.id) return null;
+      const { data, error } = await invokeFunction<FiveMBridgeStatus>('fivem-setup-key', {
+        body: { guild_id: selectedGuild.id, action: 'status' },
+      });
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!selectedGuild?.id,
+    refetchInterval: 15_000,
+  });
+}
+
+export function useRotateFiveMBridgeKey() {
+  const { selectedGuild } = useGuild();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async () => {
+      if (!selectedGuild?.id) throw new Error('No guild selected');
+      const { data, error } = await invokeFunction<FiveMBridgeKeyResult>('fivem-setup-key', {
+        body: { guild_id: selectedGuild.id, action: 'rotate' },
+      });
+      if (error) throw error;
+      if (!data?.token) throw new Error('Bridge key was not returned');
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['fivem-bridge-status', selectedGuild?.id] });
+      queryClient.invalidateQueries({ queryKey: ['fivem-settings', selectedGuild?.id] });
+    },
+  });
+}
+
+export function useRevokeFiveMBridgeKey() {
+  const { selectedGuild } = useGuild();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async () => {
+      if (!selectedGuild?.id) throw new Error('No guild selected');
+      const { data, error } = await invokeFunction<{ success: boolean }>('fivem-setup-key', {
+        body: { guild_id: selectedGuild.id, action: 'revoke' },
+      });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['fivem-bridge-status', selectedGuild?.id] });
+      queryClient.invalidateQueries({ queryKey: ['fivem-settings', selectedGuild?.id] });
+    },
+  });
+}
+
