@@ -19,7 +19,8 @@ import {
   Key,
   Wifi,
   MapPin,
-  Terminal
+  Terminal,
+  Server
 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -88,6 +89,7 @@ import {
 import { useDiscordRoles } from '@/hooks/useDiscordRoles';
 import CommandPanel from '@/components/fivem/CommandPanel';
 import ServerStatusWidget from '@/components/fivem/ServerStatusWidget';
+import SetupWizard from '@/components/fivem/SetupWizard';
 import { PremiumGate } from '@/components/premium/PremiumGate';
 
 export default function FiveMSettings() {
@@ -443,8 +445,12 @@ export default function FiveMSettings() {
         </Card>
       </div>
 
-      <Tabs defaultValue="commands" className="space-y-4">
+      <Tabs defaultValue="setup" className="space-y-4">
         <TabsList className="flex-wrap">
+          <TabsTrigger value="setup">
+            <Server className="h-4 w-4 mr-2" />
+            Opsætning
+          </TabsTrigger>
           <TabsTrigger value="commands">
             <Terminal className="h-4 w-4 mr-2" />
             Commands
@@ -474,6 +480,11 @@ export default function FiveMSettings() {
             Indstillinger
           </TabsTrigger>
         </TabsList>
+
+        {/* Setup Tab */}
+        <TabsContent value="setup">
+          <SetupWizard />
+        </TabsContent>
 
         {/* Commands Tab */}
         <TabsContent value="commands">
