@@ -26,6 +26,9 @@ export interface GuildCommand {
   command_name: string;
   category: string;
   enabled: boolean;
+  cooldown_seconds: number;
+  allowed_role_ids: string[];
+  allowed_channel_ids: string[];
   created_at: string;
   updated_at: string;
 }
