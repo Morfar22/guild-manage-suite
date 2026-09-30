@@ -43,6 +43,80 @@ async function checkIPWhitelist(req: Request, supabaseClient: any): Promise<{ al
   return { allowed: isWhitelisted, ip };
 }
 
+function simpleDecrypt(encoded: string, key: string): string {
+  const decoded = atob(encoded);
+  let output = "";
+  for (let i = 0; i < decoded.length; i++) {
+    output += String.fromCharCode(decoded.charCodeAt(i) ^ key.charCodeAt(i % key.length));
+  }
+  return output;
+}
+
+async function getDiscordBotToken(supabase: any, internalGuildId: string, encryptionKey?: string) {
+  if (encryptionKey) {
+    const { data: custom } = await supabase
+      .from("guild_bot_settings")
+      .select("bot_token_encrypted, is_active, is_custom_bot")
+      .eq("guild_id", internalGuildId)
+      .eq("is_active", true)
+      .eq("is_custom_bot", true)
+      .maybeSingle();
+
+    if (custom?.bot_token_encrypted) {
+      try {
+        return simpleDecrypt(custom.bot_token_encrypted, encryptionKey);
+      } catch (error) {
+        console.warn("Could not decrypt custom bot token for FiveM role sync");
+      }
+    }
+  }
+
+  return __env("DEFAULT_BOT_TOKEN") || __env("DISCORD_BOT_TOKEN") || null;
+}
+
+async function getDiscordMemberRoles(
+  supabase: any,
+  internalGuildId: string,
+  discordGuildId: string,
+  discordUserId: string,
+  encryptionKey?: string,
+): Promise<string[] | null> {
+  const token = await getDiscordBotToken(supabase, internalGuildId, encryptionKey);
+  if (!token) return null;
+
+  const response = await fetch(`https://discord.com/api/v10/guilds/${discordGuildId}/members/${discordUserId}`, {
+    headers: { Authorization: `Bot ${token}` },
+  });
+
+  if (!response.ok) return null;
+  const member = await response.json();
+  return Array.isArray(member.roles) ? member.roles : [];
+}
+
+async function syncDiscordWhitelistRole(
+  supabase: any,
+  internalGuildId: string,
+  discordGuildId: string,
+  discordUserId: string,
+  roleId: string | null | undefined,
+  shouldHaveRole: boolean,
+  encryptionKey?: string,
+) {
+  if (!roleId || !discordUserId) return;
+
+  const token = await getDiscordBotToken(supabase, internalGuildId, encryptionKey);
+  if (!token) return;
+
+  const url = `https://discord.com/api/v10/guilds/${discordGuildId}/members/${discordUserId}/roles/${roleId}`;
+  await fetch(url, {
+    method: shouldHaveRole ? "PUT" : "DELETE",
+    headers: {
+      Authorization: `Bot ${token}`,
+      "Content-Type": "application/json",
+    },
+  }).catch(() => {});
+}
+
 // Helper to log actions
 async function logAction(supabase: any, guildId: string, actionType: string, data: any) {
   await supabase.from("fivem_action_logs").insert({
@@ -294,7 +368,7 @@ __serve(async (req) => {
     // without ever exposing the platform-wide BOT_SECRET_KEY to FiveM customers.
     const { data: guild, error: guildError } = await supabase
       .from("guilds")
-      .select("id")
+      .select("id, guild_id")
       .eq("guild_id", guildId)
       .single();
 
@@ -369,29 +443,51 @@ __serve(async (req) => {
       // ==================== WHITELIST ACTIONS ====================
       case "checkWhitelist": {
         const { discordId, steamHex, license } = data;
-        
-        // First check if banned
-        const { data: banEntry } = await supabase
+
+        // Ban enforcement is always active, even when whitelist itself is disabled.
+        const { data: activeBans } = await supabase
           .from("fivem_bans")
           .select("*")
           .eq("guild_id", internalGuildId)
-          .eq("discord_user_id", discordId)
-          .eq("is_active", true)
-          .maybeSingle();
+          .eq("is_active", true);
 
-        if (banEntry) {
-          const isExpired = banEntry.expires_at && new Date(banEntry.expires_at) < new Date();
-          if (!isExpired) {
+        const matchingBan = (activeBans || []).find((ban: any) =>
+          (discordId && ban.discord_user_id === discordId) ||
+          (steamHex && ban.steam_hex === steamHex) ||
+          (license && ban.license === license)
+        );
+
+        if (matchingBan) {
+          const expired = matchingBan.expires_at && new Date(matchingBan.expires_at) < new Date();
+          if (!expired) {
             return new Response(
-              JSON.stringify({ 
-                whitelisted: false, 
+              JSON.stringify({
+                whitelisted: false,
                 banned: true,
-                banReason: banEntry.reason,
-                banExpires: banEntry.expires_at
+                banReason: matchingBan.reason,
+                banExpires: matchingBan.expires_at,
               }),
               { headers: { ...corsHeaders, "Content-Type": "application/json" } }
             );
           }
+
+          await supabase
+            .from("fivem_bans")
+            .update({ is_active: false })
+            .eq("id", matchingBan.id);
+        }
+
+        const { data: settings } = await supabase
+          .from("fivem_settings")
+          .select("whitelist_enabled, auto_whitelist_role_id, whitelisted_role_id, sync_discord_roles")
+          .eq("guild_id", internalGuildId)
+          .maybeSingle();
+
+        if (settings?.whitelist_enabled === false) {
+          return new Response(
+            JSON.stringify({ whitelisted: true, banned: false, whitelistDisabled: true }),
+            { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
         }
 
         let query = supabase
@@ -400,31 +496,114 @@ __serve(async (req) => {
           .eq("guild_id", internalGuildId)
           .eq("is_whitelisted", true);
 
-        if (discordId) {
-          query = query.eq("discord_user_id", discordId);
-        } else if (steamHex) {
-          query = query.eq("steam_hex", steamHex);
-        } else if (license) {
-          query = query.eq("license", license);
-        }
-
-        const { data: whitelistEntry, error } = await query.maybeSingle();
-
-        if (error) {
-          console.error("Error checking whitelist:", error);
+        if (discordId) query = query.eq("discord_user_id", discordId);
+        else if (steamHex) query = query.eq("steam_hex", steamHex);
+        else if (license) query = query.eq("license", license);
+        else {
           return new Response(
-            JSON.stringify({ error: "Database error" }),
-            { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+            JSON.stringify({ whitelisted: false, banned: false, reason: "No supported identifier" }),
+            { headers: { ...corsHeaders, "Content-Type": "application/json" } }
           );
         }
 
+        const { data: whitelistEntry, error } = await query.maybeSingle();
+        if (error) {
+          console.error("Error checking whitelist:", error);
+          return new Response(JSON.stringify({ error: "Database error" }), {
+            status: 500,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+
+        if (whitelistEntry) {
+          if (settings?.sync_discord_roles && settings?.whitelisted_role_id && discordId) {
+            await syncDiscordWhitelistRole(
+              supabase,
+              internalGuildId,
+              guild.guild_id,
+              discordId,
+              settings.whitelisted_role_id,
+              true,
+              botSecret,
+            );
+          }
+
+          return new Response(
+            JSON.stringify({
+              whitelisted: true,
+              banned: false,
+              player: whitelistEntry,
+              priority: whitelistEntry.priority_level || 0,
+              source: "database",
+            }),
+            { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+
+        // Optional Discord role based auto-whitelist. This uses the guild's custom
+        // bot when configured, otherwise the default bot.
+        if (discordId && settings?.auto_whitelist_role_id) {
+          const roles = await getDiscordMemberRoles(
+            supabase,
+            internalGuildId,
+            guild.guild_id,
+            discordId,
+            botSecret,
+          );
+
+          if (roles?.includes(settings.auto_whitelist_role_id)) {
+            const { data: existing } = await supabase
+              .from("fivem_whitelist")
+              .select("id")
+              .eq("guild_id", internalGuildId)
+              .eq("discord_user_id", discordId)
+              .maybeSingle();
+
+            const payload = {
+              is_whitelisted: true,
+              whitelist_reason: "Discord auto-whitelist role",
+              whitelisted_by: "discord-role-sync",
+              whitelisted_at: new Date().toISOString(),
+              last_seen_at: new Date().toISOString(),
+            };
+
+            if (existing) {
+              await supabase.from("fivem_whitelist").update(payload).eq("id", existing.id);
+            } else {
+              await supabase.from("fivem_whitelist").insert({
+                guild_id: internalGuildId,
+                discord_user_id: discordId,
+                discord_id: discordId,
+                ...payload,
+              });
+            }
+
+            if (settings?.sync_discord_roles && settings?.whitelisted_role_id) {
+              await syncDiscordWhitelistRole(
+                supabase,
+                internalGuildId,
+                guild.guild_id,
+                discordId,
+                settings.whitelisted_role_id,
+                true,
+                botSecret,
+              );
+            }
+
+            return new Response(
+              JSON.stringify({
+                whitelisted: true,
+                banned: false,
+                priority: 0,
+                source: "discord-role",
+              }),
+              { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+            );
+          }
+        }
+
         return new Response(
-          JSON.stringify({ 
-            whitelisted: !!whitelistEntry,
-            banned: false,
-            player: whitelistEntry || null,
-            priority: whitelistEntry?.priority_level || 0
-          }),
+          JSON.stringify({ whitelisted: false, banned: false, player: null, priority: 0 }),
           { headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
@@ -525,6 +704,24 @@ __serve(async (req) => {
             status: 500,
             headers: { ...corsHeaders, "Content-Type": "application/json" },
           });
+        }
+
+        const { data: syncSettings } = await supabase
+          .from("fivem_settings")
+          .select("sync_discord_roles, whitelisted_role_id")
+          .eq("guild_id", internalGuildId)
+          .maybeSingle();
+
+        if (syncSettings?.sync_discord_roles && syncSettings?.whitelisted_role_id) {
+          await syncDiscordWhitelistRole(
+            supabase,
+            internalGuildId,
+            guild.guild_id,
+            discordId,
+            syncSettings.whitelisted_role_id,
+            data.whitelisted !== false,
+            botSecret,
+          );
         }
 
         return new Response(JSON.stringify({ success: true }), {
