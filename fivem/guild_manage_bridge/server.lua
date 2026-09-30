@@ -31,8 +31,22 @@ local function resourceStarted(name)
 end
 
 local function detectFramework()
-    if Config.Framework ~= '' and Config.Framework ~= 'auto' then
-        framework = Config.Framework
+    local requested = tostring(Config.Framework or 'auto'):lower()
+    local valid = {
+        auto = true,
+        qbox = true,
+        qbcore = true,
+        esx = true,
+        standalone = true,
+    }
+
+    if not valid[requested] then
+        throttledWarn('framework-invalid', ('Ugyldigt gms_framework "%s". Bruger auto-detektion.'):format(requested), 60000)
+        requested = 'auto'
+    end
+
+    if requested ~= 'auto' then
+        framework = requested
     elseif resourceStarted('qbx_core') then
         framework = 'qbox'
     elseif resourceStarted('qb-core') then
@@ -42,6 +56,7 @@ local function detectFramework()
     else
         framework = 'standalone'
     end
+
     return framework
 end
 
@@ -51,11 +66,18 @@ end
 
 local function api(action, data)
     local p = promise.new()
+    local settled = false
     local body = json.encode({
         action = action,
         guildId = Config.GuildId,
         data = data or {}
     })
+
+    local function finish(result)
+        if settled then return end
+        settled = true
+        p:resolve(result)
+    end
 
     PerformHttpRequest(API_URL, function(status, responseBody, headers, errorData)
         local decoded = nil
@@ -64,7 +86,7 @@ local function api(action, data)
             if ok then decoded = result end
         end
 
-        p:resolve({
+        finish({
             ok = status >= 200 and status < 300,
             status = status,
             data = decoded,
@@ -77,6 +99,16 @@ local function api(action, data)
         ['x-gms-version'] = Config.Version,
         ['x-gms-framework'] = framework,
     })
+
+    SetTimeout(Config.ApiTimeoutMs, function()
+        finish({
+            ok = false,
+            status = 0,
+            data = nil,
+            body = '',
+            error = ('API timeout efter %sms'):format(Config.ApiTimeoutMs)
+        })
+    end)
 
     return Citizen.Await(p)
 end
@@ -985,6 +1017,20 @@ RegisterCommand('gmsbridge', function(source)
         log('INFO', ('Server ID: %s'):format(Config.ServerId))
         log('INFO', ('API: %s'):format(API_URL))
         log('INFO', ('API key: %s'):format(Config.ApiKey ~= '' and 'SAT' or 'MANGLER'))
+        log('INFO', ('Intervals: poll=%sms players=%sms heartbeat=%sms settings=%sms'):format(
+            Config.CommandPollMs, Config.PlayerSyncMs, Config.HeartbeatMs, Config.SettingsRefreshMs
+        ))
+        log('INFO', ('Client ACK timeout: %sms | API timeout: %sms'):format(Config.ClientActionTimeoutMs, Config.ApiTimeoutMs))
+        log('INFO', ('ox_inventory: %s | screenshot-basic: %s'):format(
+            resourceStarted('ox_inventory') and 'JA' or 'NEJ',
+            resourceStarted('screenshot-basic') and 'JA' or 'NEJ'
+        ))
+        log('INFO', ('Adapters: revive=%s jail=%s unjail=%s clothing=%s'):format(
+            Config.Events.Revive ~= '' and 'SAT' or 'MANGLER',
+            Config.Events.Jail ~= '' and 'SAT' or 'MANGLER',
+            Config.Events.Unjail ~= '' and 'SAT' or 'MANGLER',
+            Config.Events.Clothing ~= '' and 'SAT' or 'MANGLER'
+        ))
 
         if not configured() then
             log('ERROR', 'Bridge er ikke konfigureret. Brug Dashboard → FiveM → Opsætning.')
@@ -1019,6 +1065,79 @@ CreateThread(function()
     log('INFO', ('Starter v%s | framework=%s | guild=%s | server=%s'):format(
         Config.Version, framework, Config.GuildId, Config.ServerId
     ))
+
+    if not tostring(Config.GuildId):match('^%d+
+    updateStatus()
+    syncPlayers()
+
+    while true do
+        Wait(Config.CommandPollMs)
+        pollCommands()
+    end
+end)
+
+CreateThread(function()
+    while true do
+        Wait(Config.PlayerSyncMs)
+        syncPlayers()
+    end
+end)
+
+CreateThread(function()
+    while true do
+        Wait(Config.HeartbeatMs)
+        updateStatus()
+    end
+end)
+
+CreateThread(function()
+    while true do
+        Wait(Config.SettingsRefreshMs)
+        refreshSettings()
+        detectFramework()
+    end
+end)
+) then
+        log('WARN', 'gms_guild_id ligner ikke et Discord server ID. Kontrollér Opsætning-guiden.')
+    end
+    if not tostring(Config.ApiKey):match('^gms_') then
+        log('WARN', 'gms_api_key har uventet format. Rotér nøglen i Dashboard → FiveM → Opsætning hvis auth fejler.')
+    end
+    if not tostring(Config.ServerId):match('^[%w_%-]+
+    updateStatus()
+    syncPlayers()
+
+    while true do
+        Wait(Config.CommandPollMs)
+        pollCommands()
+    end
+end)
+
+CreateThread(function()
+    while true do
+        Wait(Config.PlayerSyncMs)
+        syncPlayers()
+    end
+end)
+
+CreateThread(function()
+    while true do
+        Wait(Config.HeartbeatMs)
+        updateStatus()
+    end
+end)
+
+CreateThread(function()
+    while true do
+        Wait(Config.SettingsRefreshMs)
+        refreshSettings()
+        detectFramework()
+    end
+end)
+) then
+        log('ERROR', 'gms_server_id må kun indeholde bogstaver, tal, _ og -.')
+        return
+    end
 
     refreshSettings()
     updateStatus()
