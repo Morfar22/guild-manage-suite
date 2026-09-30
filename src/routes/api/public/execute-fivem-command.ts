@@ -115,13 +115,19 @@ __serve(async (req) => {
       });
     }
 
-    const { data: serverStatus } = await supabase
+    const requestedServerId = data.serverId ? String(data.serverId) : null;
+    let statusQuery = supabase
       .from("fivem_server_status")
       .select("server_id, is_online, last_heartbeat")
       .eq("guild_id", guild_id)
       .order("last_heartbeat", { ascending: false })
-      .limit(1)
-      .maybeSingle();
+      .limit(1);
+
+    if (requestedServerId) {
+      statusQuery = statusQuery.eq("server_id", requestedServerId);
+    }
+
+    const { data: serverStatus } = await statusQuery.maybeSingle();
 
     const heartbeatMs = serverStatus?.last_heartbeat
       ? new Date(serverStatus.last_heartbeat).getTime()
@@ -134,7 +140,9 @@ __serve(async (req) => {
 
     if (!bridgeOnline) {
       return new Response(JSON.stringify({
-        error: "FiveM Bridge er offline. Tjek FiveM → Opsætning og server.cfg."
+        error: requestedServerId
+          ? `FiveM Bridge '${requestedServerId}' er offline. Tjek serveren eller vælg en anden instance.`
+          : "FiveM Bridge er offline. Tjek FiveM → Opsætning og server.cfg."
       }), {
         status: 409,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
