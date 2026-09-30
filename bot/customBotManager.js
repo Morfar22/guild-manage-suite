@@ -446,7 +446,7 @@ class CustomBotManager {
 
   /**
    * Register a handler factory that will be called for each bot client
-   * @param {function} factory - Function that takes (client, guildId) and sets up handlers
+   * @param {function} factory - Function that takes (client, internalGuildId, discordGuildId) and sets up handlers
    */
   registerHandler(factory) {
     this.handlerFactories.push(factory);
@@ -454,7 +454,7 @@ class CustomBotManager {
     // Apply to existing bots
     for (const [guildId, bot] of this.bots) {
       try {
-        factory(bot.client, guildId);
+        factory(bot.client, guildId, bot.config?.discord_guild_id || null);
       } catch (error) {
         console.error(`[CustomBotManager] Error applying handler to ${guildId}:`, error);
       }
@@ -463,7 +463,7 @@ class CustomBotManager {
     // Apply to default client if it exists
     if (this.defaultClient) {
       try {
-        factory(this.defaultClient, null);
+        factory(this.defaultClient, null, null);
       } catch (error) {
         console.error(`[CustomBotManager] Error applying handler to default client:`, error);
       }
@@ -476,23 +476,26 @@ class CustomBotManager {
    * @returns {Client} Discord.js client
    */
   getClient(guildId) {
-    const bot = this.bots.get(guildId);
-    if (bot && bot.client) {
-      return bot.client;
+    // Public callers use Discord guild IDs. Custom bots are stored by internal UUID,
+    // so resolve through the config instead of looking up the map directly.
+    for (const [, bot] of this.bots) {
+      if (bot?.config?.discord_guild_id === guildId && bot.client) {
+        return bot.client;
+      }
     }
     return this.defaultClient;
   }
 
   /**
    * Get all active clients
-   * @returns {Map<string, Client>} Map of guildId -> client
+   * @returns {Map<string, Client>} Map of Discord guildId -> client
    */
   getAllClients() {
     const clients = new Map();
     
-    for (const [guildId, bot] of this.bots) {
+    for (const [internalGuildId, bot] of this.bots) {
       if (bot.client && bot.client.isReady()) {
-        clients.set(guildId, bot.client);
+        clients.set(bot.config?.discord_guild_id || internalGuildId, bot.client);
       }
     }
     
@@ -539,11 +542,12 @@ class CustomBotManager {
   /**
    * Send heartbeat for a bot
    */
-  async sendHeartbeat(guildId, client, isCustom = false) {
+  async sendHeartbeat(guildId, client, isCustom = false, discordGuildId = null) {
     if (!BOT_SECRET_KEY) return;
 
     try {
-      const guild = client.guilds.cache.find(g => g.id === guildId);
+      const targetDiscordGuildId = discordGuildId || guildId;
+      const guild = client.guilds.cache.get(targetDiscordGuildId);
       
       const payload = {
         action: 'heartbeat',
@@ -727,7 +731,7 @@ class CustomBotManager {
     // before Discord emits clientReady or their Lavalink nodes never connect.
     for (const factory of this.handlerFactories) {
       try {
-        factory(client, guildId);
+        factory(client, guildId, config.discord_guild_id || null);
       } catch (error) {
         console.error(`[CustomBotManager] Handler error for ${guildId}:`, error);
       }
@@ -736,9 +740,19 @@ class CustomBotManager {
     client.once('clientReady', async () => {
       console.log(`[CustomBotManager] ✅ Custom bot ready: ${client.user.tag} for guild ${guildId}`);
       
-      // Deploy slash commands for this custom bot's application ID (per-guild for instant availability)
+      // Deploy per-guild commands only to the guild this custom bot is assigned to.
+      // A bot token can be invited to extra Discord guilds, but those guilds must not
+      // receive this customer's commands or handlers.
       const applicationId = client.user.id;
-      const botGuildIds = client.guilds.cache.map(g => g.id);
+      const assignedDiscordGuildId = config.discord_guild_id || null;
+      const botGuildIds = assignedDiscordGuildId && client.guilds.cache.has(assignedDiscordGuildId)
+        ? [assignedDiscordGuildId]
+        : [];
+
+      if (assignedDiscordGuildId && botGuildIds.length === 0) {
+        console.warn(`[CustomBotManager] Custom bot ${client.user.tag} is not in assigned guild ${assignedDiscordGuildId}; skipping guild command deploy`);
+      }
+
       await this.deployCommandsForBot(config.bot_token, applicationId, botGuildIds);
       
       // Update bot profile (username and avatar)
@@ -748,7 +762,7 @@ class CustomBotManager {
       await this.setPresence(client, config);
 
       // Send initial heartbeat
-      await this.sendHeartbeat(guildId, client, true);
+      await this.sendHeartbeat(guildId, client, true, config.discord_guild_id || null);
     });
 
     client.on('error', (error) => {
@@ -858,8 +872,8 @@ class CustomBotManager {
             config.bot_activity_text !== existing.config.bot_activity_text ||
             config.bot_activity_type !== existing.config.bot_activity_type) {
           await this.setPresence(existing.client, config);
-          existing.config = config;
         }
+        existing.config = config;
       }
     }
 
@@ -871,14 +885,19 @@ class CustomBotManager {
    */
   async sendAllHeartbeats() {
     for (const [guildId, bot] of this.bots) {
-      await this.sendHeartbeat(guildId, bot.client, true);
+      await this.sendHeartbeat(guildId, bot.client, true, bot.config?.discord_guild_id || null);
     }
 
-    // Also send for default client guilds
+    // Also send for default client guilds, except guilds explicitly assigned to a custom bot.
     if (this.defaultClient && this.defaultClient.isReady()) {
+      const customDiscordGuildIds = new Set(
+        [...this.bots.values()]
+          .map(bot => bot.config?.discord_guild_id)
+          .filter(Boolean)
+      );
+
       for (const [, guild] of this.defaultClient.guilds.cache) {
-        // Only if not using custom bot
-        if (!this.bots.has(guild.id)) {
+        if (!customDiscordGuildIds.has(guild.id)) {
           await this.sendHeartbeat(guild.id, this.defaultClient, false);
         }
       }
@@ -903,7 +922,7 @@ class CustomBotManager {
     // the client not being ready yet (e.g. guilds cache empty).
     for (const factory of this.handlerFactories) {
       try {
-        factory(this.defaultClient, null);
+        factory(this.defaultClient, null, null);
       } catch (error) {
         console.error('[CustomBotManager] Handler error for default:', error);
       }
