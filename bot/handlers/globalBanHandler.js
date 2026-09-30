@@ -12,6 +12,7 @@ function setupGlobalBanHandler(client, supabase, options = {}) {
   console.log('[GlobalBan] Setting up handler...');
 
   let isProcessingQueue = false;
+  const permissionWarnings = new Set();
 
   async function getManagedGuildRows() {
     const managedDiscordGuildIds = client.guilds.cache
@@ -110,14 +111,19 @@ function setupGlobalBanHandler(client, supabase, options = {}) {
           const me = guild.members.me || await guild.members.fetchMe().catch(() => null);
           if (!me?.permissions?.has('BanMembers')) {
             const permissionError = 'Missing BanMembers permission';
-            console.warn(`[GlobalBan] Skipping ${guild.name}: ${permissionError}`);
+            if (!permissionWarnings.has(discordGuildId)) {
+              console.warn(`[GlobalBan] Skipping ${guild.name}: ${permissionError}`);
+              permissionWarnings.add(discordGuildId);
+            }
             await supabase.from('global_ban_executions').update({
-              executed: true,
+              executed: false,
               error_message: permissionError,
               executed_at: new Date().toISOString(),
             }).eq('id', execution.id);
             continue;
           }
+
+          permissionWarnings.delete(discordGuildId);
 
           await guild.members.ban(ban.target_discord_id, {
             reason: `[Global Ban] ${ban.reason}`,
@@ -135,11 +141,8 @@ function setupGlobalBanHandler(client, supabase, options = {}) {
           const errorMsg = banError.message || String(banError);
           console.error(`[GlobalBan] ❌ Failed to ban in ${discordGuildId}:`, errorMsg);
 
-          const permanentPermissionFailure =
-            /missing permissions|missing access|missing banmembers/i.test(errorMsg);
-
           await supabase.from('global_ban_executions').update({
-            executed: permanentPermissionFailure,
+            executed: false,
             error_message: errorMsg,
             executed_at: new Date().toISOString(),
           }).eq('id', execution.id);
