@@ -214,6 +214,20 @@ const COMMANDS = [
       { name: "Tebex", value: "tebex" },
     ]},
   ]},
+  { name: "commands", description: "Se alle tilgængelige kommandoer (alias for /help)", options: [
+    { name: "category", description: "Kategori", type: 3, choices: [
+      { name: "Moderation", value: "moderation" },
+      { name: "Musik", value: "music" },
+      { name: "Leveling", value: "leveling" },
+      { name: "Utility", value: "utility" },
+      { name: "Fun", value: "fun" },
+      { name: "Economy", value: "economy" },
+      { name: "Giveaway", value: "giveaway" },
+      { name: "Suggestion", value: "suggestion" },
+      { name: "AFK", value: "afk" },
+      { name: "Tebex", value: "tebex" },
+    ]},
+  ]},
   { name: "ping", description: "Se bottens latency" },
   { name: "serverinfo", description: "Se info om serveren" },
   { name: "userinfo", description: "Se info om en bruger", options: [
@@ -699,12 +713,40 @@ __serve(async (req) => {
       defaultAppId,
     );
 
+    // /fivem is registered by the dedicated FiveM command route.
+    // Bulk-overwrite normally deletes commands that are not included, so preserve
+    // an existing /fivem definition when redeploying the main catalog.
+    let commandsToDeploy: any[] = [...COMMANDS];
+    try {
+      const existingRes = await fetch(
+        `https://discord.com/api/v10/applications/${appId}/guilds/${discordGuildId}/commands`,
+        { headers: { Authorization: `Bot ${botToken}` } }
+      );
+
+      if (existingRes.ok) {
+        const existingCommands = await existingRes.json();
+        const existingFiveM = existingCommands.find((command: any) => command.name === "fivem");
+        if (existingFiveM) {
+          commandsToDeploy.push({
+            name: existingFiveM.name,
+            description: existingFiveM.description,
+            type: existingFiveM.type,
+            options: existingFiveM.options || [],
+            default_member_permissions: existingFiveM.default_member_permissions ?? null,
+            nsfw: Boolean(existingFiveM.nsfw),
+          });
+        }
+      }
+    } catch (preserveError) {
+      console.warn("Could not inspect existing guild commands before deploy:", preserveError);
+    }
+
     const guildRes = await fetch(
       `https://discord.com/api/v10/applications/${appId}/guilds/${discordGuildId}/commands`,
       {
         method: "PUT",
         headers: { Authorization: `Bot ${botToken}`, "Content-Type": "application/json" },
-        body: JSON.stringify(COMMANDS),
+        body: JSON.stringify(commandsToDeploy),
       }
     );
 
