@@ -21,6 +21,7 @@ const {
   TextInputBuilder,
   TextInputStyle,
   StringSelectMenuBuilder,
+  PermissionFlagsBits,
 } = require('discord.js');
 
 const APP_API_BASE = (process.env.APP_API_BASE || 'https://bot.nethost-solutions.dk').replace(/\/$/, '');
@@ -92,6 +93,53 @@ async function callAPI(action, data) {
   }
 
   return response.json();
+}
+
+async function replyPrivate(interaction, content) {
+  const payload = { content, ephemeral: true };
+  if (interaction.deferred || interaction.replied) {
+    return interaction.followUp(payload).catch(() => interaction.editReply({ content }));
+  }
+  return interaction.reply(payload);
+}
+
+function memberHasRole(interaction, roleId) {
+  if (!roleId) return false;
+  const roles = interaction.member?.roles;
+  if (roles?.cache?.has) return roles.cache.has(roleId);
+  if (Array.isArray(roles)) return roles.includes(roleId);
+  return false;
+}
+
+async function requireTicketAccess(interaction, { allowCreator = false } = {}) {
+  const channelId = interaction.channel?.id;
+  if (!channelId) {
+    await replyPrivate(interaction, '❌ Kunne ikke finde ticket-kanalen.');
+    return null;
+  }
+
+  const { ticket } = await callAPI('getTicket', { channelId });
+  if (!ticket) {
+    await replyPrivate(interaction, '❌ Denne kanal er ikke registreret som en ticket.');
+    return null;
+  }
+
+  const permissions = interaction.memberPermissions;
+  const hasElevatedPermission = Boolean(
+    permissions?.has?.(PermissionFlagsBits.Administrator) ||
+    permissions?.has?.(PermissionFlagsBits.ManageThreads) ||
+    permissions?.has?.(PermissionFlagsBits.ManageChannels)
+  );
+  const staffRoleId = ticket.ticket_categories?.staff_role_id;
+  const hasStaffRole = memberHasRole(interaction, staffRoleId);
+  const isCreator = ticket.creator_id === interaction.user.id;
+
+  if (!hasElevatedPermission && !hasStaffRole && !(allowCreator && isCreator)) {
+    await replyPrivate(interaction, '⛔ Du har ikke adgang til at administrere denne ticket.');
+    return null;
+  }
+
+  return ticket;
 }
 
 // ---------------- Operating hours ----------------
@@ -219,12 +267,12 @@ function setupTicketHandler(client, config = {}) {
     }
 
     // Handle /ticket-close
-    if (interaction.isChatInputCommand?.() && interaction.commandName === 'ticket-close') {
+    if (interaction.isChatInputCommand?.() && ['ticket-close', 'close'].includes(interaction.commandName)) {
       try {
         if (!interaction.channel?.isThread()) {
           return interaction.reply({ content: '❌ Denne kommando kan kun bruges i en ticket-tråd.', ephemeral: true });
         }
-        const deleteThread = interaction.options.getBoolean('delete') || false;
+        const deleteThread = interaction.options.getBoolean?.('delete') || false;
         await handleCloseTicket(interaction, interaction.channel.id, deleteThread);
       } catch (error) {
         console.error('Ticket close error:', error);
@@ -236,7 +284,7 @@ function setupTicketHandler(client, config = {}) {
     }
 
     // Handle /ticket-claim
-    if (interaction.isChatInputCommand?.() && interaction.commandName === 'ticket-claim') {
+    if (interaction.isChatInputCommand?.() && ['ticket-claim', 'claim'].includes(interaction.commandName)) {
       try {
         if (!interaction.channel?.isThread()) {
           return interaction.reply({ content: '❌ Denne kommando kan kun bruges i en ticket-tråd.', ephemeral: true });
@@ -251,12 +299,30 @@ function setupTicketHandler(client, config = {}) {
       return;
     }
 
+    // Handle /unclaim
+    if (interaction.isChatInputCommand?.() && interaction.commandName === 'unclaim') {
+      try {
+        if (!interaction.channel?.isThread()) {
+          return interaction.reply({ content: '❌ Denne kommando kan kun bruges i en ticket-tråd.', ephemeral: true });
+        }
+        await handleUnclaimTicket(interaction, interaction.channel.id);
+      } catch (error) {
+        console.error('Ticket unclaim error:', error);
+        if (!interaction.replied && !interaction.deferred) {
+          await interaction.reply({ content: '❌ Der opstod en fejl.', ephemeral: true }).catch(console.error);
+        }
+      }
+      return;
+    }
+
     // Handle /ticket-add
     if (interaction.isChatInputCommand?.() && interaction.commandName === 'ticket-add') {
       try {
         if (!interaction.channel?.isThread()) {
           return interaction.reply({ content: '❌ Denne kommando kan kun bruges i en ticket-tråd.', ephemeral: true });
         }
+        const access = await requireTicketAccess(interaction);
+        if (!access) return;
         const user = interaction.options.getUser('user');
         await interaction.channel.members.add(user.id);
         await interaction.reply({ content: `✅ <@${user.id}> er blevet tilføjet til denne ticket.`, ephemeral: true });
@@ -275,6 +341,8 @@ function setupTicketHandler(client, config = {}) {
         if (!interaction.channel?.isThread()) {
           return interaction.reply({ content: '❌ Denne kommando kan kun bruges i en ticket-tråd.', ephemeral: true });
         }
+        const access = await requireTicketAccess(interaction);
+        if (!access) return;
         const user = interaction.options.getUser('user');
         await interaction.channel.members.remove(user.id);
         await interaction.reply({ content: `✅ <@${user.id}> er blevet fjernet fra denne ticket.`, ephemeral: true });
@@ -368,6 +436,10 @@ function setupTicketHandler(client, config = {}) {
         await handleClaimTicket(interaction, customId.replace('ticket_claim_', ''));
         return;
       }
+      if (customId.startsWith('ticket_unclaim_')) {
+        await handleUnclaimTicket(interaction, customId.replace('ticket_unclaim_', ''));
+        return;
+      }
       if (customId.startsWith('ticket_close_')) {
         await handleCloseTicket(interaction, customId.replace('ticket_close_', ''), false);
         return;
@@ -442,6 +514,19 @@ async function startTicketFlow(interaction, categoryId, panelId) {
     const reply = { content: '❌ Kategori ikke fundet.', ephemeral: true };
     if (interaction.deferred || interaction.replied) return interaction.editReply(reply);
     return interaction.reply(reply);
+  }
+
+  // Prevent duplicate active tickets for the same user/category.
+  const { ticket: existingTicket } = await callAPI('getOpenTicketForUser', {
+    guildId: category.guild_id,
+    categoryId,
+    creatorId: interaction.user.id,
+  });
+  if (existingTicket) {
+    return replyPrivate(
+      interaction,
+      `⚠️ Du har allerede en aktiv ticket i denne kategori: <#${existingTicket.channel_id}>`
+    );
   }
 
   // Operating hours check (panel override → settings fallback)
@@ -632,10 +717,30 @@ async function handleCreateTicket(interaction, categoryId, applicationAnswers, p
 
   const settings = presetSettings || (await callAPI('getSettings', { guildId: category.guild_id })).settings;
 
+  // Re-check immediately before creation to avoid race-condition duplicates.
+  const { ticket: existingTicket } = await callAPI('getOpenTicketForUser', {
+    guildId: category.guild_id,
+    categoryId,
+    creatorId: interaction.user.id,
+  });
+  if (existingTicket) {
+    return interaction.editReply({
+      content: `⚠️ Du har allerede en aktiv ticket i denne kategori: <#${existingTicket.channel_id}>`,
+      components: [],
+    });
+  }
+
   // Get parent channel
   const parentChannel = settings?.thread_category_id
     ? await interaction.guild.channels.fetch(settings.thread_category_id).catch(() => null)
     : interaction.channel;
+
+  if (!parentChannel?.threads?.create) {
+    return interaction.editReply({
+      content: '❌ Ticket parent er ikke en tekstkanal, der understøtter private threads. Ret den i ticket-indstillingerne.',
+      components: [],
+    });
+  }
 
   // Create thread
   const ticketNumber = Date.now().toString(36).toUpperCase();
@@ -691,6 +796,13 @@ async function handleCreateTicket(interaction, categoryId, applicationAnswers, p
 
   await thread.send({ embeds: [embed], components: [row] });
 
+  const firstAnswer = Array.isArray(applicationAnswers)
+    ? applicationAnswers.find((entry) => entry?.answer && entry.answer !== '(Intet svar)' && entry.answer !== '(Intet valgt)')
+    : null;
+  const ticketSubject = firstAnswer?.answer
+    ? `${category.name}: ${String(firstAnswer.answer).slice(0, 90)}`
+    : `${category.name} - ${interaction.user.username}`;
+
   // Save to database via API
   await callAPI('createTicket', {
     guildId: category.guild_id,
@@ -698,6 +810,7 @@ async function handleCreateTicket(interaction, categoryId, applicationAnswers, p
     channelId: thread.id,
     creatorId: interaction.user.id,
     creatorName: interaction.user.username,
+    subject: ticketSubject.slice(0, 140),
     ticketType: category.ticket_type,
     applicationType: category.name,
     answers: applicationAnswers || [],
@@ -708,6 +821,9 @@ async function handleCreateTicket(interaction, categoryId, applicationAnswers, p
 
 
 async function handleClaimTicket(interaction, threadId) {
+  const access = await requireTicketAccess(interaction);
+  if (!access) return;
+
   await callAPI('claimTicket', {
     channelId: threadId,
     claimedById: interaction.user.id,
@@ -722,7 +838,7 @@ async function handleClaimTicket(interaction, threadId) {
       ));
 
     const row = new ActionRowBuilder().addComponents(
-      new ButtonBuilder().setCustomId('disabled').setLabel(`Claimed af ${interaction.user.username}`).setStyle(ButtonStyle.Secondary).setEmoji('🙋').setDisabled(true),
+      new ButtonBuilder().setCustomId(`ticket_unclaim_${threadId}`).setLabel('Unclaim').setStyle(ButtonStyle.Secondary).setEmoji('↩️'),
       new ButtonBuilder().setCustomId(`ticket_close_${threadId}`).setLabel('Close (Archive)').setStyle(ButtonStyle.Secondary).setEmoji('📁'),
       new ButtonBuilder().setCustomId(`ticket_delete_${threadId}`).setLabel('Close (Delete)').setStyle(ButtonStyle.Danger).setEmoji('🗑️')
     );
@@ -738,7 +854,46 @@ async function handleClaimTicket(interaction, threadId) {
   }
 }
 
+async function handleUnclaimTicket(interaction, threadId) {
+  const ticket = await requireTicketAccess(interaction);
+  if (!ticket) return;
+
+  if (ticket.claimed_by_id && ticket.claimed_by_id !== interaction.user.id) {
+    const permissions = interaction.memberPermissions;
+    const canOverride = Boolean(
+      permissions?.has?.(PermissionFlagsBits.Administrator) ||
+      permissions?.has?.(PermissionFlagsBits.ManageChannels)
+    );
+    if (!canOverride) {
+      return replyPrivate(interaction, `⛔ Ticketen er claimed af <@${ticket.claimed_by_id}>.`);
+    }
+  }
+
+  await callAPI('unclaimTicket', { channelId: threadId });
+
+  if (interaction.isButton?.() && interaction.message?.embeds?.[0]) {
+    const embed = EmbedBuilder.from(interaction.message.embeds[0])
+      .setColor(0x5865F2)
+      .setFields(interaction.message.embeds[0].fields.map((field) =>
+        field.name === 'Status' ? { name: 'Status', value: '🟢 Åben', inline: true } : field
+      ));
+
+    const row = new ActionRowBuilder().addComponents(
+      new ButtonBuilder().setCustomId(`ticket_claim_${threadId}`).setLabel('Claim').setStyle(ButtonStyle.Primary).setEmoji('🙋'),
+      new ButtonBuilder().setCustomId(`ticket_close_${threadId}`).setLabel('Close (Archive)').setStyle(ButtonStyle.Secondary).setEmoji('📁'),
+      new ButtonBuilder().setCustomId(`ticket_delete_${threadId}`).setLabel('Close (Delete)').setStyle(ButtonStyle.Danger).setEmoji('🗑️')
+    );
+
+    await interaction.update({ embeds: [embed], components: [row] });
+  } else {
+    await replyPrivate(interaction, '↩️ Ticketen er frigivet og kan claimes igen.');
+  }
+}
+
 async function handleCloseTicket(interaction, threadId, deleteThread = false) {
+  const access = await requireTicketAccess(interaction, { allowCreator: !deleteThread });
+  if (!access) return;
+
   const result = await callAPI('closeTicket', {
     channelId: threadId,
     closedById: interaction.user.id,
@@ -811,6 +966,9 @@ async function handleTicketRemind(interaction, remindTimers) {
   if (!interaction.channel?.isThread()) {
     return interaction.reply({ content: '❌ Denne kommando kan kun bruges i en ticket-tråd.', ephemeral: true });
   }
+
+  const access = await requireTicketAccess(interaction);
+  if (!access) return;
 
   // Check if already reminded
   if (remindTimers.has(interaction.channel.id)) {
