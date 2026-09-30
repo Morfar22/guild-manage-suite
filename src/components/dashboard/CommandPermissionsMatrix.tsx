@@ -1,10 +1,11 @@
 import { useMemo, useState } from 'react';
-import { CheckSquare2, Copy, Loader2, ShieldCheck, SquareStack, Users } from 'lucide-react';
+import { Copy, Loader2, ShieldCheck, TimerReset, Users } from 'lucide-react';
 import { COMMANDS_BY_CATEGORY, CommandCategory } from '@/types/discord';
 import { GuildCommandSettings } from '@/lib/commands';
 import { useDiscordRoles } from '@/hooks/useDiscordRoles';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import {
@@ -42,6 +43,7 @@ export function CommandPermissionsMatrix({
   const [category, setCategory] = useState<CommandCategory>('moderation');
   const [selectedCommands, setSelectedCommands] = useState<string[]>([]);
   const [bulkRoleId, setBulkRoleId] = useState('');
+  const [bulkCooldown, setBulkCooldown] = useState(0);
   const [copySource, setCopySource] = useState('');
 
   const commands = COMMANDS_BY_CATEGORY[category] ?? [];
@@ -151,7 +153,7 @@ export function CommandPermissionsMatrix({
             </Button>
           </div>
 
-          <div className="grid gap-3 lg:grid-cols-2">
+          <div className="grid gap-3 xl:grid-cols-3">
             <div className="flex gap-2">
               <Select value={bulkRoleId} onValueChange={setBulkRoleId}>
                 <SelectTrigger>
@@ -169,6 +171,26 @@ export function CommandPermissionsMatrix({
                 className="whitespace-nowrap"
               >
                 Kun denne rolle
+              </Button>
+            </div>
+
+            <div className="flex gap-2">
+              <Input
+                type="number"
+                min={0}
+                max={86400}
+                value={bulkCooldown}
+                onChange={(event) => setBulkCooldown(Math.max(0, Math.min(86400, Number(event.target.value) || 0)))}
+                placeholder="Cooldown"
+              />
+              <Button
+                variant="outline"
+                disabled={updating}
+                onClick={() => void onBulkUpdate(selectedInCategory, { cooldown_seconds: bulkCooldown })}
+                className="whitespace-nowrap"
+              >
+                <TimerReset className="mr-1.5 h-4 w-4" />
+                Sæt cooldown
               </Button>
             </div>
 
@@ -252,7 +274,7 @@ export function CommandPermissionsMatrix({
                         onClick={() => void setUnrestricted(command.name)}
                         title="Tillad alle roller"
                       >
-                        {unrestricted ? <CheckSquare2 className="mr-1 h-3.5 w-3.5" /> : <SquareStack className="mr-1 h-3.5 w-3.5" />}
+                        <Users className="mr-1 h-3.5 w-3.5" />
                         Alle
                       </Button>
                     </div>
