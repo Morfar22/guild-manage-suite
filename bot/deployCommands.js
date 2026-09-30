@@ -723,30 +723,34 @@ const GUILD_ID = process.env.DEPLOY_GUILD_ID;
 
 (async () => {
   try {
-    const commandData = commands.map(c => c.toJSON());
-
-    // Deploy globally
-    console.log(`🔄 Registrerer ${commands.length} slash commands globalt...`);
-    const data = await rest.put(
-      Routes.applicationCommands(APPLICATION_ID),
-      { body: commandData }
-    );
-    console.log(`✅ ${data.length} slash commands registreret globalt!`);
-
-    // If a specific guild ID is provided, also deploy there instantly
-    if (GUILD_ID) {
-      console.log(`🔄 Deployer også til guild ${GUILD_ID} for øjeblikkelig tilgængelighed...`);
-      const guildData = await rest.put(
-        Routes.applicationGuildCommands(APPLICATION_ID, GUILD_ID),
-        { body: commandData }
-      );
-      console.log(`✅ ${guildData.length} commands deployed til guild ${GUILD_ID}!`);
+    if (!GUILD_ID) {
+      console.error('❌ DEPLOY_GUILD_ID mangler.');
+      console.error('   Dette projekt bruger kun guild-specifikke slash commands for at undgå dubletter.');
+      console.error('   Eksempel: DEPLOY_GUILD_ID=123456789012345678 node bot/deployCommands.js');
+      process.exitCode = 1;
+      return;
     }
 
-    console.log('📝 Registrerede commands:', data.map(c => c.name).join(', '));
-    console.log('');
-    console.log('⚠️ Globale commands kan tage op til 1 time at blive synkroniseret.');
-    console.log('   Brug DEPLOY_GUILD_ID=<id> for øjeblikkelig guild-specifik deployment.');
+    const commandData = commands.map(c => c.toJSON());
+
+    // Never register globals. Clean up legacy globals first.
+    const existingGlobals = await rest.get(Routes.applicationCommands(APPLICATION_ID));
+    await rest.put(
+      Routes.applicationCommands(APPLICATION_ID),
+      { body: [] }
+    );
+
+    console.log(`✅ Global command scope ryddet (${existingGlobals.length || 0} gamle command(s))`);
+
+    // Bulk overwrite the target guild, giving exactly one registration per command.
+    console.log(`🔄 Registrerer ${commands.length} slash commands i guild ${GUILD_ID}...`);
+    const guildData = await rest.put(
+      Routes.applicationGuildCommands(APPLICATION_ID, GUILD_ID),
+      { body: commandData }
+    );
+
+    console.log(`✅ ${guildData.length} commands registreret i guild ${GUILD_ID}`);
+    console.log('📝 Commands:', guildData.map(c => c.name).join(', '));
   } catch (error) {
     console.error('❌ Fejl ved registrering af commands:', error);
   }
