@@ -13,6 +13,7 @@ function setupGlobalBanHandler(client, supabase, options = {}) {
 
   let isProcessingQueue = false;
   const permissionWarnings = new Set();
+  const banFailureWarnings = new Set();
 
   async function getManagedGuildRows() {
     const managedDiscordGuildIds = client.guilds.cache
@@ -139,7 +140,11 @@ function setupGlobalBanHandler(client, supabase, options = {}) {
           console.log(`[GlobalBan] ✅ Banned ${ban.target_discord_id} from ${guild.name}`);
         } catch (banError) {
           const errorMsg = banError.message || String(banError);
-          console.error(`[GlobalBan] ❌ Failed to ban in ${discordGuildId}:`, errorMsg);
+          const failureKey = `${discordGuildId}:${ban.target_discord_id}:${errorMsg}`;
+          if (!banFailureWarnings.has(failureKey)) {
+            console.warn(`[GlobalBan] Could not ban ${ban.target_discord_id} in ${discordGuildId}: ${errorMsg}`);
+            banFailureWarnings.add(failureKey);
+          }
 
           await supabase.from('global_ban_executions').update({
             executed: false,
