@@ -4,6 +4,7 @@ import { useGuild } from '@/contexts/GuildContext';
 
 export type TicketStatus = 'open' | 'claimed' | 'closed';
 export type TicketType = 'support' | 'application';
+export type TicketAttention = 'normal' | 'watch' | 'urgent';
 
 export interface Ticket {
   id: string;
@@ -72,9 +73,32 @@ export interface TicketStats {
   openTickets: number;
   claimedTickets: number;
   closedTickets: number;
+  unclaimedTickets: number;
+  needsAttention: number;
   avgResponseTime: number | null;
+  avgResolutionTime: number | null;
+  oldestOpenHours: number | null;
   ticketsToday: number;
   ticketsThisWeek: number;
+}
+
+export function getTicketAgeHours(ticket: Pick<Ticket, 'created_at'>, now = Date.now()) {
+  return Math.max(0, (now - new Date(ticket.created_at).getTime()) / (1000 * 60 * 60));
+}
+
+export function getTicketAttention(ticket: Pick<Ticket, 'status' | 'claimed_by_id' | 'created_at'>, now = Date.now()): TicketAttention {
+  if (ticket.status === 'closed') return 'normal';
+
+  const ageHours = getTicketAgeHours(ticket, now);
+  if (!ticket.claimed_by_id) {
+    if (ageHours >= 6) return 'urgent';
+    if (ageHours >= 1) return 'watch';
+    return 'normal';
+  }
+
+  if (ageHours >= 24) return 'urgent';
+  if (ageHours >= 12) return 'watch';
+  return 'normal';
 }
 
 export function useTickets(status?: TicketStatus, excludeApplications: boolean = true) {
@@ -185,7 +209,7 @@ export function useTicketStats(excludeApplications: boolean = true) {
 
       let query = supabase
         .from('tickets')
-        .select('status, created_at, closed_at, ticket_type')
+        .select('status, created_at, closed_at, ticket_type, claimed_by_id')
         .eq('guild_id', selectedGuild.id);
 
       // Filter out application tickets if requested
@@ -206,7 +230,11 @@ export function useTicketStats(excludeApplications: boolean = true) {
         openTickets: tickets.filter(t => t.status === 'open').length,
         claimedTickets: tickets.filter(t => t.status === 'claimed').length,
         closedTickets: tickets.filter(t => t.status === 'closed').length,
+        unclaimedTickets: tickets.filter(t => t.status === 'open' && !t.claimed_by_id).length,
+        needsAttention: tickets.filter(t => getTicketAttention(t as Ticket, now.getTime()) !== 'normal').length,
         avgResponseTime: null,
+        avgResolutionTime: null,
+        oldestOpenHours: null,
         ticketsToday: tickets.filter(t => new Date(t.created_at) >= today).length,
         ticketsThisWeek: tickets.filter(t => new Date(t.created_at) >= weekAgo).length,
       };
@@ -219,7 +247,18 @@ export function useTicketStats(excludeApplications: boolean = true) {
           const closed = new Date(t.closed_at!).getTime();
           return acc + (closed - created);
         }, 0);
-        stats.avgResponseTime = totalMs / closedWithTime.length / (1000 * 60 * 60); // hours
+        const avgHours = totalMs / closedWithTime.length / (1000 * 60 * 60);
+        // Kept for backwards compatibility. This metric is ticket resolution time,
+        // not true first-response time.
+        stats.avgResponseTime = avgHours;
+        stats.avgResolutionTime = avgHours;
+      }
+
+      const activeTickets = tickets.filter(t => t.status !== 'closed');
+      if (activeTickets.length > 0) {
+        stats.oldestOpenHours = Math.max(
+          ...activeTickets.map(t => Math.max(0, (now.getTime() - new Date(t.created_at).getTime()) / (1000 * 60 * 60)))
+        );
       }
 
       return stats;
