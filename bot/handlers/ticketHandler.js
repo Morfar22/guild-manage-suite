@@ -3,7 +3,8 @@
  * 
  * Environment variables required:
  * - BOT_SECRET_KEY: (samme som i Lovable Cloud secrets)
- * - API_URL: https://rkdqunnttcyuybbofkvz.supabase.co/functions/v1/bot-tickets
+ * - APP_API_BASE: self-hosted dashboard/API base URL
+ * - API_URL: optional override for the bot-tickets endpoint
  * 
  * Usage in your main bot file:
  * const { setupTicketHandler } = require('./ticketHandler');
@@ -22,14 +23,14 @@ const {
   StringSelectMenuBuilder,
 } = require('discord.js');
 
-const API_URL = process.env.API_URL || '${APP_API_BASE}/api/public/bot-tickets';
+const APP_API_BASE = (process.env.APP_API_BASE || 'https://bot.nethost-solutions.dk').replace(/\/$/, '');
+const API_URL = process.env.API_URL || `${APP_API_BASE}/api/public/bot-tickets`;
 const BOT_SECRET = process.env.BOT_SECRET_KEY;
 
 // In-memory state for multi-step ticket creation flows (rich select-menu questions).
 // Key: `${userId}:${categoryId}`  Value: { answers: [{question, answer}], panelId, expires }
 const pendingFlows = new Map();
 const FLOW_TTL_MS = 10 * 60 * 1000;
-const APP_API_BASE = process.env.APP_API_BASE || 'https://bot.nethost-solutions.dk';
 
 function flowKey(userId, categoryId) {
   return `${userId}:${categoryId}`;
@@ -63,18 +64,31 @@ setInterval(() => {
 }, 60_000).unref?.();
 
 async function callAPI(action, data) {
-  const response = await fetch(API_URL, {
+  if (!BOT_SECRET) {
+    throw new Error('BOT_SECRET_KEY mangler i bot runtime');
+  }
+
+  let response;
+  try {
+    response = await fetch(API_URL, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       'x-bot-secret': BOT_SECRET
     },
-    body: JSON.stringify({ action, data })
-  });
+      body: JSON.stringify({ action, data })
+    });
+  } catch (error) {
+    console.error(`[Tickets] API request failed for ${action} -> ${API_URL}:`, error);
+    throw new Error(`Ticket API kunne ikke nås: ${error?.message || error}`);
+  }
 
   if (!response.ok) {
-    const error = await response.json().catch(() => ({}));
-    throw new Error(error.error || 'API request failed');
+    const raw = await response.text().catch(() => '');
+    let error = {};
+    try { error = raw ? JSON.parse(raw) : {}; } catch {}
+    console.error(`[Tickets] API ${action} returned ${response.status} from ${API_URL}: ${raw.slice(0, 500)}`);
+    throw new Error(error.error || `Ticket API request failed (${response.status})`);
   }
 
   return response.json();
