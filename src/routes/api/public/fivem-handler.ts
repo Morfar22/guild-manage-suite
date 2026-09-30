@@ -1379,11 +1379,14 @@ __serve(async (req) => {
       }
 
       case "serverOffline": {
-        // Mark server as offline
+        const serverId = String(data.serverId || "main");
+
+        // Mark only the resource instance that is shutting down as offline.
         const { data: existingStatus } = await supabase
           .from("fivem_server_status")
           .select("*")
           .eq("guild_id", internalGuildId)
+          .eq("server_id", serverId)
           .maybeSingle();
 
         await supabase
@@ -1392,7 +1395,8 @@ __serve(async (req) => {
             is_online: false,
             updated_at: new Date().toISOString(),
           })
-          .eq("guild_id", internalGuildId);
+          .eq("guild_id", internalGuildId)
+          .eq("server_id", serverId);
 
         // Send offline embed if configured
         const { data: settings } = await supabase
@@ -1429,7 +1433,7 @@ __serve(async (req) => {
       case "getSettings": {
         const { data: settings, error } = await supabase
           .from("fivem_settings")
-          .select("*")
+          .select("enabled, server_name, server_ip, cfx_code, whitelist_enabled, auto_whitelist_role_id, whitelisted_role_id, sync_discord_roles, sync_playtime, staff_role_ids, mod_role_ids, admin_role_ids, god_role_ids")
           .eq("guild_id", internalGuildId)
           .maybeSingle();
 
