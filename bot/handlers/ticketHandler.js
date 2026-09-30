@@ -316,7 +316,7 @@ function setupTicketHandler(client, config = {}) {
     }
 
     // Handle /ticket-add
-    if (interaction.isChatInputCommand?.() && interaction.commandName === 'ticket-add') {
+    if (interaction.isChatInputCommand?.() && ['ticket-add', 'add'].includes(interaction.commandName)) {
       try {
         if (!interaction.channel?.isThread()) {
           return interaction.reply({ content: '❌ Denne kommando kan kun bruges i en ticket-tråd.', ephemeral: true });
@@ -330,6 +330,29 @@ function setupTicketHandler(client, config = {}) {
         console.error('Ticket add error:', error);
         if (!interaction.replied && !interaction.deferred) {
           await interaction.reply({ content: '❌ Kunne ikke tilføje brugeren.', ephemeral: true }).catch(console.error);
+        }
+      }
+      return;
+    }
+
+    // Handle /rename
+    if (interaction.isChatInputCommand?.() && interaction.commandName === 'rename') {
+      try {
+        if (!interaction.channel?.isThread()) {
+          return interaction.reply({ content: '❌ Denne kommando kan kun bruges i en ticket-tråd.', ephemeral: true });
+        }
+        const access = await requireTicketAccess(interaction);
+        if (!access) return;
+        const name = interaction.options.getString('name', true).trim();
+        if (!name) {
+          return interaction.reply({ content: '❌ Navnet må ikke være tomt.', ephemeral: true });
+        }
+        await interaction.channel.setName(name.slice(0, 100));
+        await interaction.reply({ content: `✅ Ticket-tråden hedder nu **${name.slice(0, 100)}**.`, ephemeral: true });
+      } catch (error) {
+        console.error('Ticket rename error:', error);
+        if (!interaction.replied && !interaction.deferred) {
+          await interaction.reply({ content: '❌ Kunne ikke omdøbe ticketen.', ephemeral: true }).catch(console.error);
         }
       }
       return;
@@ -803,18 +826,28 @@ async function handleCreateTicket(interaction, categoryId, applicationAnswers, p
     ? `${category.name}: ${String(firstAnswer.answer).slice(0, 90)}`
     : `${category.name} - ${interaction.user.username}`;
 
-  // Save to database via API
-  await callAPI('createTicket', {
-    guildId: category.guild_id,
-    categoryId,
-    channelId: thread.id,
-    creatorId: interaction.user.id,
-    creatorName: interaction.user.username,
-    subject: ticketSubject.slice(0, 140),
-    ticketType: category.ticket_type,
-    applicationType: category.name,
-    answers: applicationAnswers || [],
-  });
+  // Save to database via API. Roll the Discord thread back if persistence fails,
+  // otherwise staff end up with orphaned ticket channels.
+  try {
+    await callAPI('createTicket', {
+      guildId: category.guild_id,
+      categoryId,
+      channelId: thread.id,
+      creatorId: interaction.user.id,
+      creatorName: interaction.user.username,
+      subject: ticketSubject.slice(0, 140),
+      ticketType: category.ticket_type,
+      applicationType: category.name,
+      answers: applicationAnswers || [],
+    });
+  } catch (error) {
+    console.error('[Tickets] Failed to persist ticket, deleting orphan thread:', error);
+    await thread.delete().catch(() => {});
+    return interaction.editReply({
+      content: '❌ Ticketen kunne ikke gemmes. Den midlertidige Discord-tråd er ryddet op igen.',
+      components: [],
+    });
+  }
 
   await interaction.editReply({ content: `✅ Ticket oprettet: <#${thread.id}>`, components: [] });
 }
@@ -824,11 +857,15 @@ async function handleClaimTicket(interaction, threadId) {
   const access = await requireTicketAccess(interaction);
   if (!access) return;
 
-  await callAPI('claimTicket', {
-    channelId: threadId,
-    claimedById: interaction.user.id,
-    claimedByName: interaction.user.username
-  });
+  try {
+    await callAPI('claimTicket', {
+      channelId: threadId,
+      claimedById: interaction.user.id,
+      claimedByName: interaction.user.username
+    });
+  } catch (error) {
+    return replyPrivate(interaction, `⚠️ ${error?.message || 'Ticketen kunne ikke claimes.'}`);
+  }
 
   // For button interactions, update the original message embed
   if (interaction.isButton?.() && interaction.message?.embeds?.[0]) {
