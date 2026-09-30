@@ -41,7 +41,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
-import { useExecuteFiveMCommand, useFiveMOnlinePlayers } from '@/hooks/useFiveM';
+import { useExecuteFiveMCommand, useFiveMOnlinePlayers, useFiveMServerInstances } from '@/hooks/useFiveM';
 import { useFiveMCommandQueueEntry } from '@/hooks/fivem/useFiveMCommandQueueEntry';
 
 interface CommandDef {
@@ -593,8 +593,20 @@ const QBCORE_COMMANDS: CommandDef[] = [
 
 export default function CommandPanel() {
   const { toast } = useToast();
-  const { data: onlinePlayers } = useFiveMOnlinePlayers();
+  const { data: serverInstances } = useFiveMServerInstances();
+  const [selectedServerId, setSelectedServerId] = useState<string>('');
+  const { data: onlinePlayers } = useFiveMOnlinePlayers(selectedServerId || undefined);
   const executeCommand = useExecuteFiveMCommand();
+
+  useEffect(() => {
+    if (!serverInstances?.length) {
+      setSelectedServerId('');
+      return;
+    }
+    if (!selectedServerId || !serverInstances.some((server) => server.server_id === selectedServerId)) {
+      setSelectedServerId(serverInstances[0].server_id || 'main');
+    }
+  }, [serverInstances, selectedServerId]);
 
   const [pendingCommandId, setPendingCommandId] = useState<string | null>(null);
   const pending = useFiveMCommandQueueEntry(pendingCommandId);
@@ -756,6 +768,7 @@ export default function CommandPanel() {
     try {
       const result = await executeCommand.mutateAsync({
         name: selectedCommand.name,
+        serverId: selectedServerId || undefined,
         targetPlayerId: commandValues.targetPlayerId as number,
         targetDiscordId,
         targetName,
@@ -905,10 +918,30 @@ export default function CommandPanel() {
                 Kør commands direkte mod FiveM Bridge. Discord /fivem synkroniseres automatisk af botten.
               </CardDescription>
             </div>
-            <Badge variant="outline" className="gap-1">
-              <Shield className="h-3.5 w-3.5" />
-              Automatisk Discord sync
-            </Badge>
+            <div className="flex flex-wrap items-center gap-2">
+              {serverInstances && serverInstances.length > 0 && (
+                <Select value={selectedServerId} onValueChange={setSelectedServerId}>
+                  <SelectTrigger className="w-[220px]">
+                    <SelectValue placeholder="Vælg FiveM server..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {serverInstances.map((server) => {
+                      const heartbeat = server.last_heartbeat ? new Date(server.last_heartbeat).getTime() : 0;
+                      const online = Boolean(server.is_online && heartbeat && Date.now() - heartbeat < 90_000);
+                      return (
+                        <SelectItem key={server.server_id} value={server.server_id}>
+                          {online ? '🟢' : '🔴'} {server.server_name || server.server_id} · {server.server_id}
+                        </SelectItem>
+                      );
+                    })}
+                  </SelectContent>
+                </Select>
+              )}
+              <Badge variant="outline" className="gap-1">
+                <Shield className="h-3.5 w-3.5" />
+                Automatisk Discord sync
+              </Badge>
+            </div>
           </div>
         </CardHeader>
         <CardContent>
