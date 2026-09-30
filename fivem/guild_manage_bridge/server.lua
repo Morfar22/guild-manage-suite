@@ -391,7 +391,9 @@ local aliases = {
     invisible = {'player','invisible'}, noclip = {'player','noclip'},
     teleport = {'teleport','player'}, ['teleport-all'] = {'teleport','all'}, bring = {'teleport','bring'}, goto = {'teleport','goto'},
     vehicle = {'vehicle','spawn'}, delvehicle = {'vehicle','delete'}, repair = {'vehicle','repair'},
-    giveweapon = {'weapon','give'}, removeweapon = {'weapon','remove'}, clearweapons = {'weapon','clear'},
+    giveweapon = {'weapon','give'}, ['give-weapon'] = {'weapon','give'},
+    removeweapon = {'weapon','remove'}, ['remove-weapon'] = {'weapon','remove'},
+    clearweapons = {'weapon','clear'}, ['clear-weapons'] = {'weapon','clear'},
     money = {'economy','money'}, inventory = {'economy','inventory'},
     job = {'jobs','job'}, gang = {'jobs','gang'}, ['clothing-menu'] = {'jobs','clothing-menu'},
     announcement = {'server','announcement'}, message = {'server','message'}, time = {'server','time'},
@@ -536,12 +538,14 @@ local function executeCommand(command)
         end
 
         local coords = nil
-        if tostring(data.type or '') == 'preset' then
+        local coordData = type(data.coords) == 'table' and data.coords or data
+        local wantsPreset = tostring(data.type or '') == 'preset' or (data.location and tostring(data.location) ~= '')
+        if wantsPreset then
             coords = presetCoords(data.location)
             if not coords then return false, 'Ukendt preset-lokation.' end
         else
-            local x, y, z = tonumber(data.x), tonumber(data.y), tonumber(data.z)
-            if not x or not y or not z then return false, 'x, y og z er påkrævet.' end
+            local x, y, z = tonumber(coordData.x), tonumber(coordData.y), tonumber(coordData.z)
+            if not x or not y or not z then return false, 'x, y og z eller et preset er påkrævet.' end
             coords = vector3(x, y, z)
         end
 
@@ -559,6 +563,8 @@ local function executeCommand(command)
         })
     elseif group == 'vehicle' then
         local actionMap = { spawn = 'vehicle_spawn', delete = 'vehicle_delete', repair = 'vehicle_repair' }
+        if not target then target = moderatorSource(data.moderatorDiscordId) end
+        if sub == 'spawn' and not data.spawncode then data.spawncode = data.vehicleCode end
         return clientAction(target, actionMap[sub], data)
     elseif group == 'weapon' then
         if resourceStarted('ox_inventory') and playerExists(target) then
@@ -608,7 +614,7 @@ local function executeCommand(command)
             local action = tostring(data.action or '')
             if action == 'list' then return true, listResources() end
             if action == 'refresh' then ExecuteCommand('refresh'); return true, 'Resource-listen opdateres.' end
-            local name = tostring(data.name or '')
+            local name = tostring(data.name or data.resourceName or '')
             if not safeResourceName(name) then return false, 'Ugyldigt resource-navn.' end
             if action == 'inspect' then return true, ('%s: %s'):format(name, GetResourceState(name)) end
             if action == 'ensure' or action == 'start' or action == 'stop' or action == 'restart' then
@@ -636,8 +642,12 @@ local function executeCommand(command)
             if not response.ok then return false, 'Screenshot taget, men upload/logning fejlede.' end
             return true, 'Screenshot modtaget og logget.'
         elseif sub == 'embed' then
-            local response = api('sendEmbed', data)
-            return response.ok, response.ok and 'Embed request sendt.' or 'Embed request fejlede.'
+            local message = tostring(data.message or '')
+            if data.title and tostring(data.title) ~= '' then
+                message = ('%s\n%s'):format(data.title, message)
+            end
+            TriggerClientEvent('guild_manage_bridge:client:action', -1, 'notify', { message = message, kind = 'announcement' })
+            return true, 'Beskeden er sendt til alle spillere.'
         elseif sub == 'info' then
             return true, ('%s | framework=%s | players=%s/%s | uptime=%ss'):format(
                 GetConvar('sv_hostname', 'FiveM Server'), framework, #GetPlayers(), GetConvarInt('sv_maxclients', 48), os.time() - startedAt
@@ -659,17 +669,17 @@ local function executeCommand(command)
             return false, 'Kunne ikke toggle whitelist.'
         elseif sub == 'add' then
             local response = api('setWhitelistEntry', {
-                discordId = data.discord_id,
+                discordId = data.discord_id or data.discordId,
                 whitelisted = true,
                 moderatorDiscordId = data.moderatorDiscordId,
                 reason = data.reason,
             })
             return response.ok, response.ok and 'Bruger tilføjet til whitelist.' or (response.data and response.data.error or 'Whitelist add fejlede.')
         elseif sub == 'remove' then
-            local response = api('removeWhitelistEntry', { discordId = data.discord_id })
+            local response = api('removeWhitelistEntry', { discordId = data.discord_id or data.discordId })
             return response.ok, response.ok and 'Bruger fjernet fra whitelist.' or 'Whitelist remove fejlede.'
         elseif sub == 'check' then
-            local response = api('getWhitelistEntry', { discordId = data.discord_id })
+            local response = api('getWhitelistEntry', { discordId = data.discord_id or data.discordId })
             if not response.ok then return false, 'Whitelist check fejlede.' end
             local entry = response.data and response.data.entry
             return true, entry and ('Whitelisted: %s | navn: %s'):format(tostring(entry.is_whitelisted), entry.discord_username or 'ukendt') or 'Ikke registreret.'
