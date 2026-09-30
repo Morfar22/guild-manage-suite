@@ -3,6 +3,8 @@ import { useCommands } from '@/hooks/useCommands';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { CommandTable } from '@/components/dashboard/CommandTable';
 import { CommandSettingsDialog } from '@/components/dashboard/CommandSettingsDialog';
+import { CommandAnalyticsPanel } from '@/components/dashboard/CommandAnalyticsPanel';
+import { CommandPermissionsMatrix } from '@/components/dashboard/CommandPermissionsMatrix';
 import { COMMANDS_BY_CATEGORY, CommandCategory, CommandInfo } from '@/types/discord';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
@@ -16,8 +18,10 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import {
+  BarChart3,
   Loader2,
   Shield,
+  ShieldCheck,
   Music,
   TrendingUp,
   Wrench,
@@ -75,15 +79,18 @@ export default function Commands() {
     updating,
     toggleCommand,
     updateCommandSettings,
+    bulkUpdateCommands,
+    copyCommandRules,
     toggleCategory,
     getCategoryStats,
   } = useCommands();
   const { language } = useLanguage();
   const en = language === 'en';
 
+  const [section, setSection] = useState('control');
   const [query, setQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
-  const [activeTab, setActiveTab] = useState('all');
+  const [activeCategory, setActiveCategory] = useState('all');
   const [selectedCommand, setSelectedCommand] = useState<CommandInfo | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
 
@@ -129,6 +136,11 @@ export default function Commands() {
     setSettingsOpen(true);
   };
 
+  const jumpToCategory = (category: string) => {
+    setSection('control');
+    setActiveCategory(category);
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
@@ -143,15 +155,13 @@ export default function Commands() {
         <div>
           <div className="mb-2 flex items-center gap-2 text-sm text-primary">
             <CommandIcon className="h-4 w-4" />
-            Command Center V2
+            Command Center V2.1
           </div>
-          <h1 className="text-3xl font-bold text-foreground">
-            {en ? 'Command Center' : 'Command Center'}
-          </h1>
+          <h1 className="text-3xl font-bold text-foreground">Command Center</h1>
           <p className="mt-1 max-w-2xl text-muted-foreground">
             {en
-              ? 'Control commands, cooldowns, role access and allowed channels from one place.'
-              : 'Styr commands, cooldowns, rolle-adgang og tilladte kanaler fra ét sted.'}
+              ? 'Control commands, access rules, cooldowns and execution analytics from one place.'
+              : 'Styr commands, adgangsregler, cooldowns og execution analytics fra ét sted.'}
           </p>
         </div>
 
@@ -165,140 +175,173 @@ export default function Commands() {
         </div>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6">
-        {categories.map((category) => {
-          const stats = getCategoryStats(category);
-          const Icon = getIcon(category);
-          return (
-            <button
-              key={category}
-              type="button"
-              onClick={() => setActiveTab(category)}
-              className="flex items-center gap-3 rounded-xl border border-border bg-card p-4 text-left transition-colors hover:bg-muted/40"
-            >
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10">
-                <Icon className="h-5 w-5 text-primary" />
-              </div>
-              <div className="min-w-0">
-                <p className="truncate text-sm font-medium capitalize text-foreground">{category}</p>
-                <p className="text-xs text-muted-foreground">
-                  {stats.enabled}/{stats.total} {en ? 'active' : 'aktive'}
-                </p>
-              </div>
-            </button>
-          );
-        })}
-      </div>
-
-      <div className="flex flex-col gap-3 rounded-xl border border-border bg-card p-4 lg:flex-row lg:items-center">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder={en ? 'Search command, description or usage...' : 'Søg efter command, beskrivelse eller brug...'}
-            className="pl-9"
-          />
-        </div>
-
-        <div className="flex items-center gap-2">
-          <SlidersHorizontal className="h-4 w-4 text-muted-foreground" />
-          <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as StatusFilter)}>
-            <SelectTrigger className="w-[190px]">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">{en ? 'All statuses' : 'Alle statusser'}</SelectItem>
-              <SelectItem value="enabled">{en ? 'Enabled' : 'Aktive'}</SelectItem>
-              <SelectItem value="disabled">{en ? 'Disabled' : 'Deaktiverede'}</SelectItem>
-              <SelectItem value="restricted">{en ? 'With restrictions' : 'Med begrænsninger'}</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
-
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-5">
+      <Tabs value={section} onValueChange={setSection} className="space-y-6">
         <TabsList className="h-auto flex-wrap gap-1 border border-border bg-muted p-1">
-          <TabsTrigger value="all" className="gap-2">
+          <TabsTrigger value="control" className="gap-2">
             <CommandIcon className="h-4 w-4" />
-            {en ? 'All' : 'Alle'}
-            <Badge variant="secondary" className="ml-1 text-xs">{filteredAll.length}</Badge>
+            {en ? 'Commands' : 'Commands'}
           </TabsTrigger>
-          {categories.map((category) => {
-            const Icon = getIcon(category);
-            const stats = getCategoryStats(category);
-            return (
-              <TabsTrigger key={category} value={category} className="flex items-center gap-2 capitalize">
-                <Icon className="h-4 w-4" />
-                {category}
-                <Badge variant={stats.allEnabled ? 'default' : stats.noneEnabled ? 'destructive' : 'secondary'} className="ml-1 text-xs">
-                  {stats.enabled}/{stats.total}
-                </Badge>
-              </TabsTrigger>
-            );
-          })}
+          <TabsTrigger value="analytics" className="gap-2">
+            <BarChart3 className="h-4 w-4" />
+            Analytics
+          </TabsTrigger>
+          <TabsTrigger value="permissions" className="gap-2">
+            <ShieldCheck className="h-4 w-4" />
+            Permissions
+          </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="all" className="space-y-4">
-          <div>
-            <h2 className="text-lg font-semibold text-foreground">{en ? 'All commands' : 'Alle commands'}</h2>
-            <p className="text-sm text-muted-foreground">
-              {filteredAll.length} {en ? 'commands match your filters' : 'commands matcher dine filtre'}
-            </p>
+        <TabsContent value="control" className="space-y-6">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6">
+            {categories.map((category) => {
+              const stats = getCategoryStats(category);
+              const Icon = getIcon(category);
+              return (
+                <button
+                  key={category}
+                  type="button"
+                  onClick={() => jumpToCategory(category)}
+                  className="flex items-center gap-3 rounded-xl border border-border bg-card p-4 text-left transition-colors hover:bg-muted/40"
+                >
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10">
+                    <Icon className="h-5 w-5 text-primary" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-medium capitalize text-foreground">{category}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {stats.enabled}/{stats.total} {en ? 'active' : 'aktive'}
+                    </p>
+                  </div>
+                </button>
+              );
+            })}
           </div>
-          <CommandTable
-            commands={filteredAll}
-            commandSettings={commandSettings}
-            onToggle={toggleCommand}
-            onConfigure={openSettings}
-            loading={updating}
-          />
-        </TabsContent>
 
-        {categories.map((category) => {
-          const stats = getCategoryStats(category);
-          const commands = filterCommands(COMMANDS_BY_CATEGORY[category]);
-          return (
-            <TabsContent key={category} value={category} className="space-y-4">
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <h2 className="text-lg font-semibold capitalize text-foreground">
-                    {category} {en ? 'commands' : 'commands'}
-                  </h2>
-                  <p className="text-sm text-muted-foreground">{categoryDescriptions[category]?.[language] || ''}</p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => toggleCategory(category, true)}
-                    disabled={updating || stats.allEnabled}
-                  >
-                    <ToggleRight className="mr-1 h-3.5 w-3.5" />
-                    {en ? 'Enable all' : 'Aktiver alle'}
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => toggleCategory(category, false)}
-                    disabled={updating || stats.noneEnabled}
-                  >
-                    <ToggleLeft className="mr-1 h-3.5 w-3.5" />
-                    {en ? 'Disable all' : 'Deaktiver alle'}
-                  </Button>
-                </div>
+          <div className="flex flex-col gap-3 rounded-xl border border-border bg-card p-4 lg:flex-row lg:items-center">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder={en ? 'Search command, description or usage...' : 'Søg efter command, beskrivelse eller brug...'}
+                className="pl-9"
+              />
+            </div>
+
+            <div className="flex items-center gap-2">
+              <SlidersHorizontal className="h-4 w-4 text-muted-foreground" />
+              <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as StatusFilter)}>
+                <SelectTrigger className="w-[190px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">{en ? 'All statuses' : 'Alle statusser'}</SelectItem>
+                  <SelectItem value="enabled">{en ? 'Enabled' : 'Aktive'}</SelectItem>
+                  <SelectItem value="disabled">{en ? 'Disabled' : 'Deaktiverede'}</SelectItem>
+                  <SelectItem value="restricted">{en ? 'With restrictions' : 'Med begrænsninger'}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <Tabs value={activeCategory} onValueChange={setActiveCategory} className="space-y-5">
+            <TabsList className="h-auto flex-wrap gap-1 border border-border bg-muted p-1">
+              <TabsTrigger value="all" className="gap-2">
+                <CommandIcon className="h-4 w-4" />
+                {en ? 'All' : 'Alle'}
+                <Badge variant="secondary" className="ml-1 text-xs">{filteredAll.length}</Badge>
+              </TabsTrigger>
+              {categories.map((category) => {
+                const Icon = getIcon(category);
+                const stats = getCategoryStats(category);
+                return (
+                  <TabsTrigger key={category} value={category} className="flex items-center gap-2 capitalize">
+                    <Icon className="h-4 w-4" />
+                    {category}
+                    <Badge variant={stats.allEnabled ? 'default' : stats.noneEnabled ? 'destructive' : 'secondary'} className="ml-1 text-xs">
+                      {stats.enabled}/{stats.total}
+                    </Badge>
+                  </TabsTrigger>
+                );
+              })}
+            </TabsList>
+
+            <TabsContent value="all" className="space-y-4">
+              <div>
+                <h2 className="text-lg font-semibold text-foreground">{en ? 'All commands' : 'Alle commands'}</h2>
+                <p className="text-sm text-muted-foreground">
+                  {filteredAll.length} {en ? 'commands match your filters' : 'commands matcher dine filtre'}
+                </p>
               </div>
-
               <CommandTable
-                commands={commands}
+                commands={filteredAll}
                 commandSettings={commandSettings}
                 onToggle={toggleCommand}
                 onConfigure={openSettings}
                 loading={updating}
               />
             </TabsContent>
-          );
-        })}
+
+            {categories.map((category) => {
+              const stats = getCategoryStats(category);
+              const commands = filterCommands(COMMANDS_BY_CATEGORY[category]);
+              return (
+                <TabsContent key={category} value={category} className="space-y-4">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                      <h2 className="text-lg font-semibold capitalize text-foreground">
+                        {category} commands
+                      </h2>
+                      <p className="text-sm text-muted-foreground">{categoryDescriptions[category]?.[language] || ''}</p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => toggleCategory(category, true)}
+                        disabled={updating || stats.allEnabled}
+                      >
+                        <ToggleRight className="mr-1 h-3.5 w-3.5" />
+                        {en ? 'Enable all' : 'Aktiver alle'}
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => toggleCategory(category, false)}
+                        disabled={updating || stats.noneEnabled}
+                      >
+                        <ToggleLeft className="mr-1 h-3.5 w-3.5" />
+                        {en ? 'Disable all' : 'Deaktiver alle'}
+                      </Button>
+                    </div>
+                  </div>
+
+                  <CommandTable
+                    commands={commands}
+                    commandSettings={commandSettings}
+                    onToggle={toggleCommand}
+                    onConfigure={openSettings}
+                    loading={updating}
+                  />
+                </TabsContent>
+              );
+            })}
+          </Tabs>
+        </TabsContent>
+
+        <TabsContent value="analytics">
+          <CommandAnalyticsPanel />
+        </TabsContent>
+
+        <TabsContent value="permissions">
+          <CommandPermissionsMatrix
+            commandSettings={commandSettings}
+            updating={updating}
+            onUpdateCommand={updateCommandSettings}
+            onBulkUpdate={bulkUpdateCommands}
+            onCopyRules={copyCommandRules}
+          />
+        </TabsContent>
       </Tabs>
 
       <CommandSettingsDialog
