@@ -17,6 +17,7 @@
  */
 
 require('dotenv').config({ path: require('path').join(__dirname, '.env') });
+require('./utils/consoleLogger').installGlobalConsoleLogger();
 
 const { Events, EmbedBuilder, PermissionFlagsBits, ChannelType } = require('discord.js');
 const { createClient } = require('@supabase/supabase-js');
