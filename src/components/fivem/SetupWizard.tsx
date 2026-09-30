@@ -22,17 +22,39 @@ export default function SetupWizard() {
 
   const apiBase = status?.apiBase || 'https://bot.nethost-solutions.dk';
   const guildId = status?.discordGuildId || 'DIT_DISCORD_GUILD_ID';
-  const key = visibleKey || 'GENERER_EN_NY_NØGLE';
+  const cfg = visibleKey
+    ? [
+        '# Guild Manage Suite - FiveM Bridge',
+        `setr gms_api_base "${apiBase}"`,
+        `setr gms_guild_id "${guildId}"`,
+        `setr gms_api_key "${visibleKey}"`,
+        'setr gms_server_id "main"',
+        'setr gms_framework "auto"',
+        '',
+        'ensure guild_manage_bridge',
+      ].join('\n')
+    : [
+        '# Generér eller rotér bridge-nøglen først.',
+        '# Af sikkerhedsgrunde kan en eksisterende nøgle ikke læses igen.',
+        `# Discord Server ID: ${guildId}`,
+        `# API: ${apiBase}`,
+      ].join('\n');
 
-  const cfg = [
-    '# Guild Manage Suite - FiveM Bridge',
-    `setr gms_api_base "${apiBase}"`,
-    `setr gms_guild_id "${guildId}"`,
-    `setr gms_api_key "${key}"`,
-    'setr gms_server_id "main"',
-    'setr gms_framework "auto"',
+  const advancedCfg = [
+    '# Valgfrit - standarderne passer til de fleste servere',
+    'setr gms_command_poll_ms "1500"',
+    'setr gms_player_sync_ms "15000"',
+    'setr gms_heartbeat_ms "30000"',
+    'setr gms_settings_refresh_ms "60000"',
+    'setr gms_client_action_timeout_ms "8000"',
+    'setr gms_fail_open "false"',
+    'setr gms_debug "false"',
     '',
-    'ensure guild_manage_bridge',
+    '# Valgfri adapters til server-specifikke scripts',
+    '# setr gms_event_revive "dit_ems:client:revive"',
+    '# setr gms_event_jail "dit_jail:client:jail"',
+    '# setr gms_event_unjail "dit_jail:client:unjail"',
+    '# setr gms_event_clothing "dit_clothing:client:open"',
   ].join('\n');
 
   const copy = async (value: string, title = 'Kopieret') => {
@@ -162,6 +184,11 @@ export default function SetupWizard() {
                 </Button>
               </div>
             )}
+            {status?.configured && !visibleKey && (
+              <div className="rounded-lg border border-blue-500/20 bg-blue-500/5 p-3 text-xs text-muted-foreground">
+                Der findes allerede en nøgle, men den kan ikke vises igen. Hvis du skal installere på ny eller flytte serveren, så rotér nøglen og kopiér den nye blok med det samme.
+              </div>
+            )}
             {status?.configured && (
               <Button variant="ghost" className="w-full text-destructive" onClick={handleRevoke} disabled={revokeKey.isPending}>
                 Tilbagekald nøgle
@@ -183,15 +210,55 @@ export default function SetupWizard() {
             <Button
               className="w-full"
               variant="outline"
-              onClick={() => copy(cfg, visibleKey ? 'server.cfg-blokken er kopieret' : 'Generér først en nøgle')}
-              disabled={!visibleKey && !status?.configured}
+              onClick={() => copy(cfg, 'server.cfg-blokken er kopieret')}
+              disabled={!visibleKey}
             >
               <Clipboard className="mr-2 h-4 w-4" />
               Kopiér server.cfg
             </Button>
+            {!visibleKey && (
+              <p className="text-xs text-muted-foreground">
+                Generér/rotér først nøglen. Vi tillader ikke kopiering af en config med en falsk placeholder-nøgle.
+              </p>
+            )}
           </CardContent>
         </Card>
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <RefreshCw className="h-5 w-5" />
+            4. Test forbindelsen
+          </CardTitle>
+          <CardDescription>
+            Efter installation skal bridgen kunne bestå sin egen diagnosticering.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="grid gap-4 lg:grid-cols-2">
+          <div className="space-y-2">
+            <div className="text-sm font-medium">Kør i FXServer/txAdmin console</div>
+            <pre className="rounded-lg bg-muted p-3 text-xs">restart guild_manage_bridge{String.raw`\n`}gmsbridge</pre>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => copy('restart guild_manage_bridge\ngmsbridge', 'Testkommandoer kopieret')}
+            >
+              <Clipboard className="mr-2 h-4 w-4" /> Kopiér testkommandoer
+            </Button>
+            <p className="text-xs text-muted-foreground">
+              <strong>gmsbridge</strong> viser framework, guild/server ID, API-status og om bridge-nøglen virker.
+            </p>
+          </div>
+          <div className="space-y-2">
+            <div className="text-sm font-medium">Valgfri avanceret config</div>
+            <pre className="max-h-64 overflow-auto rounded-lg bg-muted p-3 text-xs whitespace-pre-wrap">{advancedCfg}</pre>
+            <Button size="sm" variant="outline" onClick={() => copy(advancedCfg, 'Avanceret config kopieret')}>
+              <Clipboard className="mr-2 h-4 w-4" /> Kopiér avanceret config
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>
@@ -209,7 +276,8 @@ export default function SetupWizard() {
             'Discord /fivem permissions',
             'Dashboard command queue',
             'QBox/QBCore/ESX autodetect',
-            'Command-resultater tilbage til Discord',
+            'Command-resultater bekræftes af FiveM-klienten',
+            'Sikker retry/timeout ved client actions',
           ].map((item) => (
             <div key={item} className="flex items-center gap-2 rounded-lg border p-3">
               <CheckCircle2 className="h-4 w-4 shrink-0 text-green-500" />
