@@ -2174,6 +2174,11 @@ export type Database = {
           admin_role_ids: string[] | null
           announcement_channel_id: string | null
           auto_whitelist_role_id: string | null
+          bridge_framework: string | null
+          bridge_last_seen_at: string | null
+          bridge_token_created_at: string | null
+          bridge_token_hash: string | null
+          bridge_version: string | null
           cfx_code: string | null
           created_at: string
           enabled: boolean
@@ -2200,6 +2205,11 @@ export type Database = {
           admin_role_ids?: string[] | null
           announcement_channel_id?: string | null
           auto_whitelist_role_id?: string | null
+          bridge_framework?: string | null
+          bridge_last_seen_at?: string | null
+          bridge_token_created_at?: string | null
+          bridge_token_hash?: string | null
+          bridge_version?: string | null
           cfx_code?: string | null
           created_at?: string
           enabled?: boolean
@@ -2226,6 +2236,11 @@ export type Database = {
           admin_role_ids?: string[] | null
           announcement_channel_id?: string | null
           auto_whitelist_role_id?: string | null
+          bridge_framework?: string | null
+          bridge_last_seen_at?: string | null
+          bridge_token_created_at?: string | null
+          bridge_token_hash?: string | null
+          bridge_version?: string | null
           cfx_code?: string | null
           created_at?: string
           enabled?: boolean
