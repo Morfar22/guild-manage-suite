@@ -516,6 +516,13 @@ class CustomBotManager {
         return bot.client;
       }
     }
+
+    // If the guild is reserved for a custom bot but that client is not ready yet,
+    // never fall back to the default bot. The caller should retry next cycle.
+    if (this.customDiscordGuildIds.has(guildId)) {
+      return null;
+    }
+
     return this.defaultClient;
   }
 
@@ -744,7 +751,7 @@ class CustomBotManager {
             if (response.ok) {
               const contentType = response.headers.get('content-type') || '';
               if (!contentType.startsWith('image/')) {
-                warnAvatarOnce(`content-type:${parsedAvatarUrl.toString()}:${contentType}`, `[CustomBotManager] Skipping avatar URL with non-image content type: ${contentType || 'unknown'}`);
+                warnAvatarOnce(`content-type:${parsedAvatarUrl.toString()}:${contentType}`, `[CustomBotManager] Avatar URL for ${client.user.tag} has non-image content type: ${contentType || 'unknown'}`);
               } else {
                 const buffer = await response.arrayBuffer();
                 const base64 = Buffer.from(buffer).toString('base64');
@@ -754,7 +761,7 @@ class CustomBotManager {
                 console.log(`[CustomBotManager] Updated bot avatar from configured URL`);
               }
             } else {
-              warnAvatarOnce(`http:${parsedAvatarUrl.toString()}:${response.status}`, `[CustomBotManager] Avatar URL returned HTTP ${response.status}; keeping current avatar`);
+              warnAvatarOnce(`http:${parsedAvatarUrl.toString()}:${response.status}`, `[CustomBotManager] Avatar URL for ${client.user.tag} returned HTTP ${response.status}; keeping current avatar`);
             }
           } catch (error) {
             if (error.code === 50035 || error.message.includes('rate limit')) {
@@ -815,22 +822,27 @@ class CustomBotManager {
       // receive this customer's commands or handlers.
       const applicationId = client.user.id;
       const assignedDiscordGuildId = config.discord_guild_id || null;
-      const botGuildIds = assignedDiscordGuildId && client.guilds.cache.has(assignedDiscordGuildId)
-        ? [assignedDiscordGuildId]
-        : [];
 
-      if (assignedDiscordGuildId && botGuildIds.length === 0) {
-        console.warn(`[CustomBotManager] Custom bot ${client.user.tag} is not in assigned guild ${assignedDiscordGuildId}; skipping guild command deploy`);
+      if (!assignedDiscordGuildId) {
+        console.error(`[CustomBotManager] Missing Discord guild mapping for custom bot ${client.user.tag}; leaving existing commands untouched`);
+      } else {
+        const botGuildIds = client.guilds.cache.has(assignedDiscordGuildId)
+          ? [assignedDiscordGuildId]
+          : [];
+
+        if (botGuildIds.length === 0) {
+          console.warn(`[CustomBotManager] Custom bot ${client.user.tag} is not in assigned guild ${assignedDiscordGuildId}; skipping guild command deploy`);
+        }
+
+        const unassignedGuildIds = client.guilds.cache
+          .filter(guild => guild.id !== assignedDiscordGuildId)
+          .map(guild => guild.id);
+
+        await this.deployCommandsForBot(config.bot_token, applicationId, botGuildIds, {
+          global: false,
+          clearGuildIds: unassignedGuildIds,
+        });
       }
-
-      const unassignedGuildIds = client.guilds.cache
-        .filter(guild => !assignedDiscordGuildId || guild.id !== assignedDiscordGuildId)
-        .map(guild => guild.id);
-
-      await this.deployCommandsForBot(config.bot_token, applicationId, botGuildIds, {
-        global: false,
-        clearGuildIds: unassignedGuildIds,
-      });
       
       // Update bot profile (username and avatar)
       await this.updateBotProfile(client, config);
