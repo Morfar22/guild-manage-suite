@@ -140,6 +140,22 @@ export default function SetupWizard() {
         </CardContent>
       </Card>
 
+      {status && status.schemaReady === false && (
+        <Card className="border-destructive/40 bg-destructive/5">
+          <CardHeader>
+            <CardTitle className="text-base text-destructive">Database-opdatering mangler</CardTitle>
+            <CardDescription>
+              FiveM bridge-kolonnerne findes ikke i den aktive Supabase-database endnu. Kør de nyeste migrations, og opdater derefter siden.
+            </CardDescription>
+          </CardHeader>
+          {status.schemaError && (
+            <CardContent>
+              <pre className="overflow-auto rounded-lg bg-muted p-3 text-xs whitespace-pre-wrap">{status.schemaError}</pre>
+            </CardContent>
+          )}
+        </Card>
+      )}
+
       <div className="grid gap-4 xl:grid-cols-3">
         <Card>
           <CardHeader>
@@ -173,7 +189,7 @@ export default function SetupWizard() {
             <CardDescription>Nøglen gælder kun denne Discord/FiveM integration.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
-            <Button className="w-full" onClick={handleRotate} disabled={rotateKey.isPending}>
+            <Button className="w-full" onClick={handleRotate} disabled={rotateKey.isPending || status?.schemaReady === false}>
               {rotateKey.isPending ? 'Opretter…' : status?.configured ? 'Rotér bridge-nøgle' : 'Generér bridge-nøgle'}
             </Button>
             {visibleKey && (
