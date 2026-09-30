@@ -45,10 +45,39 @@ async function checkIPWhitelist(req: Request, supabase: any): Promise<{ allowed:
   return { allowed: !!whitelistData, ip: clientIp };
 }
 
-async function discordApi(path: string, init: RequestInit) {
+function simpleDecrypt(encoded: string, key: string): string {
+  const text = atob(encoded);
+  let result = "";
+  for (let i = 0; i < text.length; i++) {
+    result += String.fromCharCode(text.charCodeAt(i) ^ key.charCodeAt(i % key.length));
+  }
+  return result;
+}
+
+async function getBotTokenForGuild(supabase: any, guildId: string): Promise<string> {
+  const { data: settings } = await supabase
+    .from("guild_bot_settings")
+    .select("bot_token_encrypted")
+    .eq("guild_id", guildId)
+    .eq("is_custom_bot", true)
+    .eq("is_active", true)
+    .maybeSingle();
+
+  const key = __env("BOT_SECRET_KEY") || "default-encryption-key";
+  if (settings?.bot_token_encrypted) {
+    try {
+      return simpleDecrypt(settings.bot_token_encrypted, key);
+    } catch (error) {
+      console.error("Failed to decrypt custom bot token:", error);
+    }
+  }
+
   const token = __env("DISCORD_BOT_TOKEN");
   if (!token) throw new Error("Missing DISCORD_BOT_TOKEN secret");
+  return token;
+}
 
+async function discordApi(path: string, init: RequestInit, token: string) {
   const res = await fetch(`https://discord.com/api/v10${path}`, {
     ...init,
     headers: {
@@ -339,6 +368,12 @@ __serve(async (req) => {
         
         if (ticketError) throw ticketError;
 
+        if (ticket.status === "closed") {
+          return new Response(JSON.stringify({ success: true, ticket_id: ticket.id, already_closed: true }), {
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+
         // Update ticket status
         const { error } = await supabase
           .from("tickets")
@@ -355,12 +390,13 @@ __serve(async (req) => {
         // Check if transcript channel is configured
         const { data: settings } = await supabase
           .from("ticket_settings")
-          .select("transcript_channel_id")
+          .select("transcript_channel_id, enable_transcripts")
           .eq("guild_id", ticket.guild_id)
           .maybeSingle();
 
-        if (settings?.transcript_channel_id) {
+        if (settings?.transcript_channel_id && settings.enable_transcripts !== false) {
           try {
+            const botToken = await getBotTokenForGuild(supabase, ticket.guild_id);
             const messages = ticket.ticket_messages || [];
             const messageCount = messages.length;
             const createdAt = new Date(ticket.created_at);
@@ -393,7 +429,7 @@ __serve(async (req) => {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ embeds: [embed] }),
-            });
+            }, botToken);
 
             console.log(`Transcript sent to channel ${settings.transcript_channel_id}`);
           } catch (transcriptError) {
