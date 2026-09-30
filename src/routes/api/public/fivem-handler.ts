@@ -489,6 +489,104 @@ __serve(async (req) => {
         );
       }
 
+      case "setWhitelistEntry": {
+        const discordId = String(data.discordId || "").trim();
+        if (!/^\d{15,22}$/.test(discordId)) {
+          return new Response(JSON.stringify({ error: "Invalid Discord ID" }), {
+            status: 400,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+
+        const { data: existing } = await supabase
+          .from("fivem_whitelist")
+          .select("id")
+          .eq("guild_id", internalGuildId)
+          .eq("discord_user_id", discordId)
+          .maybeSingle();
+
+        const payload = {
+          discord_user_id: discordId,
+          discord_id: discordId,
+          is_whitelisted: data.whitelisted !== false,
+          whitelist_reason: data.reason || "FiveM command",
+          whitelisted_by: data.moderatorDiscordId || "system",
+          whitelisted_at: data.whitelisted === false ? null : new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        };
+
+        const query = existing
+          ? supabase.from("fivem_whitelist").update(payload).eq("id", existing.id)
+          : supabase.from("fivem_whitelist").insert({ guild_id: internalGuildId, ...payload });
+
+        const { error } = await query;
+        if (error) {
+          return new Response(JSON.stringify({ error: error.message }), {
+            status: 500,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+
+        return new Response(JSON.stringify({ success: true }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      case "removeWhitelistEntry": {
+        const discordId = String(data.discordId || "").trim();
+        await supabase
+          .from("fivem_whitelist")
+          .delete()
+          .eq("guild_id", internalGuildId)
+          .eq("discord_user_id", discordId);
+
+        return new Response(JSON.stringify({ success: true }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      case "getWhitelistEntry": {
+        const discordId = String(data.discordId || "").trim();
+        const { data: entry } = await supabase
+          .from("fivem_whitelist")
+          .select("*")
+          .eq("guild_id", internalGuildId)
+          .eq("discord_user_id", discordId)
+          .maybeSingle();
+
+        return new Response(JSON.stringify({ entry: entry || null }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      case "toggleWhitelist": {
+        const { data: current } = await supabase
+          .from("fivem_settings")
+          .select("whitelist_enabled")
+          .eq("guild_id", internalGuildId)
+          .maybeSingle();
+
+        const nextValue = !(current?.whitelist_enabled ?? true);
+        const { error } = await supabase
+          .from("fivem_settings")
+          .upsert({
+            guild_id: internalGuildId,
+            whitelist_enabled: nextValue,
+            updated_at: new Date().toISOString(),
+          }, { onConflict: "guild_id" });
+
+        if (error) {
+          return new Response(JSON.stringify({ error: error.message }), {
+            status: 500,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+
+        return new Response(JSON.stringify({ success: true, whitelistEnabled: nextValue }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
       // ==================== SESSION & PLAYTIME ====================
       case "updatePlaytime": {
         const { discordId, minutes } = data;
@@ -609,6 +707,61 @@ __serve(async (req) => {
 
         return new Response(
           JSON.stringify({ success: true }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      case "syncOnlinePlayers": {
+        const serverId = String(data.serverId || "main");
+        const players = Array.isArray(data.players) ? data.players.slice(0, 512) : [];
+        const now = new Date().toISOString();
+
+        const rows = players
+          .filter((player: any) => Number.isFinite(Number(player.playerId)))
+          .map((player: any) => ({
+            guild_id: internalGuildId,
+            server_id: serverId,
+            player_id: Number(player.playerId),
+            discord_user_id: player.discordId || null,
+            discord_username: player.discordUsername || null,
+            steam_hex: player.steamHex || null,
+            license: player.license || null,
+            character_name: player.characterName || null,
+            ping: Number.isFinite(Number(player.ping)) ? Number(player.ping) : null,
+            coords: player.coords || null,
+            last_update: now,
+          }));
+
+        if (rows.length > 0) {
+          const { error: upsertError } = await supabase
+            .from("fivem_online_players")
+            .upsert(rows, { onConflict: "guild_id,server_id,player_id" });
+
+          if (upsertError) {
+            console.error("Error syncing online players:", upsertError);
+            return new Response(JSON.stringify({ error: "Failed to sync online players" }), {
+              status: 500,
+              headers: { ...corsHeaders, "Content-Type": "application/json" },
+            });
+          }
+
+          const ids = rows.map((row: any) => row.player_id);
+          await supabase
+            .from("fivem_online_players")
+            .delete()
+            .eq("guild_id", internalGuildId)
+            .eq("server_id", serverId)
+            .not("player_id", "in", `(${ids.join(",")})`);
+        } else {
+          await supabase
+            .from("fivem_online_players")
+            .delete()
+            .eq("guild_id", internalGuildId)
+            .eq("server_id", serverId);
+        }
+
+        return new Response(
+          JSON.stringify({ success: true, count: rows.length }),
           { headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
