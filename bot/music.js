@@ -502,7 +502,6 @@ const commands = {
   // ---- REMOVE ----
   remove: async (interaction) => {
     const kazagumo = getKazagumoForInteraction(interaction);
-    const kazagumo = getKazagumoForInteraction(interaction);
     const player = kazagumo?.players.get(interaction.guildId);
     if (!player || !player.queue.length) {
       return interaction.editReply({ content: '❌ Køen er tom.' });
@@ -527,6 +526,7 @@ const commands = {
 
   // ---- MOVE ----
   move: async (interaction) => {
+    const kazagumo = getKazagumoForInteraction(interaction);
     const player = kazagumo?.players.get(interaction.guildId);
     if (!player || player.queue.length < 2) {
       return interaction.editReply({ content: '❌ Der skal være mindst 2 sange i køen.' });
