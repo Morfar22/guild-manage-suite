@@ -10,9 +10,14 @@ const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY;
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const BOT_SECRET_KEY = process.env.BOT_SECRET_KEY;
 const DISCORD_BOT_TOKEN = process.env.DISCORD_BOT_TOKEN;
+const { manager } = require('../customBotManager');
 
 // Check interval: 5 minutter (TikTok er langsomt at polle)
 const CHECK_INTERVAL = 300000;
+let globalPollerStarted = false;
+let globalPollerRegistered = false;
+let globalPollInterval = null;
+let globalInitialTimeout = null;
 
 const TIKTOK_URL_REGEX = /https?:\/\/(www\.|vm\.|vt\.)?tiktok\.com\/@?[\w.-]+\/video\/(\d+)/gi;
 const TIKTOK_SHORT_URL_REGEX = /https?:\/\/(vm|vt)\.tiktok\.com\/[\w]+/gi;
@@ -151,7 +156,7 @@ async function sendTikTokNotification(client, account, videoInfo, settings, guil
 /**
  * Send Discord notification for TikTok LIVE status change
  */
-async function sendTikTokLiveNotification(client, account, isLive, settings) {
+async function sendTikTokLiveNotification(targetClient, account, isLive, settings) {
   try {
     const channel = await client.channels.fetch(account.notification_channel_id).catch(() => null);
     if (!channel) return false;
@@ -210,7 +215,7 @@ async function sendTikTokLiveNotification(client, account, isLive, settings) {
 /**
  * Check all tracked TikTok accounts for new videos
  */
-async function checkAllTikTokAccounts(client, shouldHandleGuild) {
+async function checkAllTikTokAccounts(client = null, shouldHandleGuild = null) {
   if (!SUPABASE_SERVICE_ROLE_KEY) {
     console.error('[TikTok] SUPABASE_SERVICE_ROLE_KEY mangler');
     return;
@@ -240,6 +245,25 @@ async function checkAllTikTokAccounts(client, shouldHandleGuild) {
     const guildIds = [...new Set(accounts.map(a => a.guild_id))];
     const settingsMap = {};
 
+    // Resolve internal guild UUIDs to Discord guild IDs once per cycle.
+    const guildMap = {};
+    if (guildIds.length > 0) {
+      const filter = encodeURIComponent(`in.(${guildIds.join(',')})`);
+      const guildRes = await fetch(
+        `${SUPABASE_URL}/rest/v1/guilds?id=${filter}&select=id,guild_id`,
+        {
+          headers: {
+            'apikey': SUPABASE_SERVICE_ROLE_KEY,
+            'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+          },
+        }
+      );
+      if (guildRes.ok) {
+        const rows = await guildRes.json();
+        for (const row of rows) guildMap[row.id] = row.guild_id;
+      }
+    }
+
     for (const guildId of guildIds) {
       const settingsRes = await fetch(
         `${SUPABASE_URL}/rest/v1/tiktok_settings?guild_id=eq.${guildId}&select=*`,
@@ -265,20 +289,17 @@ async function checkAllTikTokAccounts(client, shouldHandleGuild) {
       const guildSettings = settingsMap[account.guild_id];
       if (guildSettings === undefined && Object.keys(settingsMap).length > 0) continue;
 
-      // Guild filter: resolve internal guild_id to Discord guild_id
+      const discordGuildId = guildMap[account.guild_id];
+      if (!discordGuildId) continue;
+
+      let targetClient = client;
       if (shouldHandleGuild && client) {
-        const guildRes = await fetch(
-          `${SUPABASE_URL}/rest/v1/guilds?id=eq.${account.guild_id}&select=guild_id`,
-          {
-            headers: {
-              'apikey': SUPABASE_SERVICE_ROLE_KEY,
-              'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
-            },
-          }
-        );
-        const guildData = await guildRes.json();
-        const discordGuildId = guildData[0]?.guild_id;
-        if (discordGuildId && !shouldHandleGuild(discordGuildId)) continue;
+        if (!shouldHandleGuild(discordGuildId)) continue;
+      } else {
+        targetClient = manager.getClient(discordGuildId);
+        if (!targetClient?.isReady?.() || !targetClient.guilds.cache.has(discordGuildId)) {
+          continue;
+        }
       }
 
       // Check for new videos and live status
@@ -305,19 +326,19 @@ async function checkAllTikTokAccounts(client, shouldHandleGuild) {
 
       // Handle LIVE status change
       const liveNotificationsEnabled = guildSettings?.live_notifications !== false;
-      if (liveNotificationsEnabled && client) {
+      if (liveNotificationsEnabled && targetClient) {
         const wasLive = account.is_live || false;
         const isNowLive = videoInfo.isLive || false;
 
         if (isNowLive && !wasLive) {
           // Just went LIVE
           console.log(`[TikTok] @${account.tiktok_username} er nu LIVE!`);
-          await sendTikTokLiveNotification(client, account, true, guildSettings);
+          await sendTikTokLiveNotification(targetClient, account, true, guildSettings);
           notified++;
         } else if (!isNowLive && wasLive) {
           // Went offline
           console.log(`[TikTok] @${account.tiktok_username} er gået offline`);
-          await sendTikTokLiveNotification(client, account, false, guildSettings);
+          await sendTikTokLiveNotification(targetClient, account, false, guildSettings);
           notified++;
         }
       }
@@ -335,20 +356,8 @@ async function checkAllTikTokAccounts(client, shouldHandleGuild) {
       if (videoInfo.videoId && videoInfo.videoId !== account.last_video_id) {
         console.log(`[TikTok] Ny video fra @${account.tiktok_username}: ${videoInfo.videoId}`);
 
-        const guildRes = await fetch(
-          `${SUPABASE_URL}/rest/v1/guilds?id=eq.${account.guild_id}&select=guild_id`,
-          {
-            headers: {
-              'apikey': SUPABASE_SERVICE_ROLE_KEY,
-              'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
-            },
-          }
-        );
-        const guildData = await guildRes.json();
-        const guildDiscordId = guildData[0]?.guild_id;
-
         const success = await sendTikTokNotification(
-          client, account, videoInfo, guildSettings, guildDiscordId
+          targetClient, account, videoInfo, guildSettings, discordGuildId
         );
 
         if (success) {
@@ -459,33 +468,40 @@ function startTikTokChecker(client, config = {}) {
     return;
   }
 
-  console.log('[TikTok] Starter TikTok checker service...');
-
   if (client) {
-    client.once('clientReady', () => {
-      console.log('[TikTok] Bot er klar - starter periodisk check');
-
-      // First check after 30 seconds
-      setTimeout(() => {
-        checkAllTikTokAccounts(client, shouldHandleGuild);
-
-        // Check every 5 minutes
-        setInterval(() => checkAllTikTokAccounts(client, shouldHandleGuild), CHECK_INTERVAL);
-      }, 30000);
-    });
-
-    // Listen for TikTok links in messages
+    // Auto-embed listener is per Discord client because the incoming message event
+    // belongs to that client.
     client.on('messageCreate', (message) => {
       if (message.guild && shouldHandleGuild(message.guild.id)) {
         handleTikTokLink(message, client).catch(() => {});
       }
     });
-  } else {
-    checkAllTikTokAccounts(null, shouldHandleGuild);
-    setInterval(() => checkAllTikTokAccounts(null, shouldHandleGuild), CHECK_INTERVAL);
   }
 
-  console.log('[TikTok] Service initialiseret (checker hvert 5. minut)');
+  const startGlobalPoller = () => {
+    if (globalPollerStarted) return;
+    globalPollerStarted = true;
+    console.log('[TikTok] Starter én global poller (ruter via korrekt bot-klient)');
+
+    globalInitialTimeout = setTimeout(() => {
+      checkAllTikTokAccounts().catch(() => {});
+      globalPollInterval = setInterval(
+        () => checkAllTikTokAccounts().catch(() => {}),
+        CHECK_INTERVAL
+      );
+    }, 30000);
+  };
+
+  if (!globalPollerRegistered && !globalPollerStarted) {
+    globalPollerRegistered = true;
+    if (client?.isReady?.()) {
+      startGlobalPoller();
+    } else if (client) {
+      client.once('clientReady', startGlobalPoller);
+    } else {
+      startGlobalPoller();
+    }
+  }
 }
 
 module.exports = {
