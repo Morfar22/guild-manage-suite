@@ -230,7 +230,7 @@ async function getFiveMRuntime(internalGuildId) {
       .maybeSingle(),
     supabase
       .from('fivem_server_status')
-      .select('is_online, player_count, max_players, uptime_seconds, server_name, last_heartbeat, updated_at')
+      .select('server_id, is_online, player_count, max_players, uptime_seconds, server_name, last_heartbeat, updated_at')
       .eq('guild_id', internalGuildId)
       .order('updated_at', { ascending: false })
       .limit(1)
@@ -1995,6 +1995,7 @@ function createSlashHandlers(client) {
         }
 
         const runtime = await getFiveMRuntime(internalGuildId);
+        const serverId = runtime.status?.server_id || 'main';
         if (!runtime.enabled) {
           return interaction.editReply(
             '⚙️ FiveM-integrationen er ikke aktiveret endnu. Åbn **Dashboard → FiveM → Opsætning** og gennemfør guiden.'
@@ -2004,6 +2005,7 @@ function createSlashHandlers(client) {
         const commandData = {
           moderatorDiscordId: userId,
           moderatorName: userName,
+          serverId,
           group,
           subcommand,
         };
@@ -2026,6 +2028,7 @@ function createSlashHandlers(client) {
             .from('fivem_online_players')
             .select('player_id, character_name, discord_username, ping')
             .eq('guild_id', internalGuildId)
+            .eq('server_id', serverId)
             .order('player_id', { ascending: true });
 
           if (playersErr) return interaction.editReply(`❌ Kunne ikke hente spillerlisten: ${playersErr.message}`);
@@ -2045,7 +2048,8 @@ function createSlashHandlers(client) {
           const { count, error } = await supabase
             .from('fivem_online_players')
             .select('id', { count: 'exact', head: true })
-            .eq('guild_id', internalGuildId);
+            .eq('guild_id', internalGuildId)
+            .eq('server_id', serverId);
           if (error) return interaction.editReply(`❌ Kunne ikke hente spillerantal: ${error.message}`);
           return interaction.editReply(`👥 **${count || 0}** spiller(e) online.`);
         }
@@ -2075,6 +2079,7 @@ function createSlashHandlers(client) {
           .from('fivem_command_queue')
           .insert({
             guild_id: internalGuildId,
+            server_id: serverId,
             command_name: effectiveCommand,
             command_data: commandData,
             target_player_id: commandData.targetPlayerId || null,
