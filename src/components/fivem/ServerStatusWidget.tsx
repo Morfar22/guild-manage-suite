@@ -182,6 +182,7 @@ export default function ServerStatusWidget() {
               <Server className="h-5 w-5 text-primary" />
               {serverStatus.server_name || 'FiveM Server'}
               {getStatusBadge(serverStatus.is_online, serverStatus.last_heartbeat)}
+              <Badge variant="outline">{serverStatus.server_id}</Badge>
             </CardTitle>
             <CardDescription className="flex items-center gap-2 mt-1">
               {serverStatus.server_ip && (
@@ -276,6 +277,18 @@ export default function ServerStatusWidget() {
             )}
             {typeof serverStatus.metadata?.bridgeVersion === 'string' && (
               <Badge variant="outline">Bridge v{serverStatus.metadata.bridgeVersion}</Badge>
+            )}
+            {serverStatus.metadata?.oxInventory === true && (
+              <Badge variant="outline">ox_inventory</Badge>
+            )}
+            {serverStatus.metadata?.screenshotBasic === true && (
+              <Badge variant="outline">Screenshot klar</Badge>
+            )}
+            {serverStatus.metadata?.reviveAdapter === true && (
+              <Badge variant="outline">Revive adapter</Badge>
+            )}
+            {serverStatus.metadata?.jailAdapter === true && (
+              <Badge variant="outline">Jail adapter</Badge>
             )}
             {serverStatus.last_heartbeat && (
               <div className="flex items-center gap-1 ml-auto">
