@@ -6,7 +6,7 @@ import { useDiscordRoles } from '@/hooks/useDiscordRoles';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
-import { ScrollArea } from '@/components/ui/scroll-area';
+import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import {
   Select,
   SelectContent,
@@ -276,6 +276,7 @@ export function CommandPermissionsMatrix({
                 );
               })}
             </div>
+            <ScrollBar orientation="horizontal" />
           </ScrollArea>
         </div>
       )}
