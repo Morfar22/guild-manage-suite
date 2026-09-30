@@ -13,6 +13,17 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+const ALLOWED_FIVEM_COMMANDS = new Set([
+  "announcement", "armor", "ban", "bring", "charinfo", "clear-weapons",
+  "clothing-menu", "delvehicle", "embed", "freeze", "give-weapon", "godmode",
+  "goto", "heal", "identifiers", "inventory", "invisible", "jail", "kick",
+  "kickall", "kill", "logout", "money", "noclip", "onlinecount", "permissions",
+  "players", "remove-weapon", "repair", "resource", "revive", "revive-all",
+  "screenshot", "server", "setarmor", "sethealth", "sethunger", "setmodel",
+  "setstress", "setthirst", "spectate", "teleport", "teleport-all", "unfreeze",
+  "unjail", "vehicle", "warn", "whitelist", "weather", "time", "job", "gang"
+]);
+
 __serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -81,8 +92,9 @@ __serve(async (req) => {
       });
     }
 
-    if (!/^[a-z0-9-]{1,64}$/i.test(String(command))) {
-      return new Response(JSON.stringify({ error: "Invalid command name" }), {
+    const commandName = String(command || "").toLowerCase();
+    if (!/^[a-z0-9-]{1,64}$/i.test(commandName) || !ALLOWED_FIVEM_COMMANDS.has(commandName)) {
+      return new Response(JSON.stringify({ error: "Unknown or unsupported FiveM command" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -139,7 +151,7 @@ __serve(async (req) => {
       .insert({
         guild_id,
         server_id: serverId,
-        command_name: command,
+        command_name: commandName,
         command_data: { ...data, serverId },
         target_player_id: data.targetPlayerId || null,
         target_discord_id: data.targetDiscordId || null,
@@ -162,7 +174,7 @@ __serve(async (req) => {
     // Also log the action for history
     await supabase.from("fivem_action_logs").insert({
       guild_id,
-      action_type: command,
+      action_type: commandName,
       target_discord_id: data.targetDiscordId || null,
       target_name: data.targetName || null,
       moderator_discord_id: moderatorDiscordId,
@@ -189,9 +201,9 @@ __serve(async (req) => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           embeds: [{
-            title: `🎮 FiveM ${command}`,
+            title: `🎮 FiveM ${commandName}`,
             description: `**Target:** ${data.targetName || data.targetDiscordId || (data.targetPlayerId ? 'Player #' + data.targetPlayerId : 'N/A')}\n**Moderator:** ${moderatorName}${data.reason ? '\n**Reason:** ' + data.reason : ''}\n\n*Queued for the FiveM bridge.*`,
-            color: actionColors[command] || 0x5865F2,
+            color: actionColors[commandName] || 0x5865F2,
             timestamp: new Date().toISOString(),
           }],
         }),
@@ -201,10 +213,10 @@ __serve(async (req) => {
     return new Response(
       JSON.stringify({ 
         success: true, 
-        command,
+        command: commandName,
         serverId,
         commandId: queuedRow.id,
-        message: `Command '${command}' queued for execution`,
+        message: `Command '${commandName}' queued for execution`,
         status: "queued"
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
