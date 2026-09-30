@@ -41,7 +41,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
-import { useExecuteFiveMCommand, useFiveMOnlinePlayers, useRegisterFiveMCommands } from '@/hooks/useFiveM';
+import { useExecuteFiveMCommand, useFiveMOnlinePlayers } from '@/hooks/useFiveM';
 import { useFiveMCommandQueueEntry } from '@/hooks/fivem/useFiveMCommandQueueEntry';
 
 interface CommandDef {
@@ -597,7 +597,6 @@ export default function CommandPanel() {
   const { toast } = useToast();
   const { data: onlinePlayers } = useFiveMOnlinePlayers();
   const executeCommand = useExecuteFiveMCommand();
-  const registerCommands = useRegisterFiveMCommands();
 
   const [pendingCommandId, setPendingCommandId] = useState<string | null>(null);
   const pending = useFiveMCommandQueueEntry(pendingCommandId);
@@ -727,15 +726,6 @@ export default function CommandPanel() {
     }
   };
 
-  const handleRegisterCommands = async () => {
-    try {
-      await registerCommands.mutateAsync('register');
-      toast({ title: '✅ 55+ FiveM slash commands registreret i Discord!' });
-    } catch {
-      toast({ title: 'Fejl ved registrering', variant: 'destructive' });
-    }
-  };
-
   const getPermissionBadge = (permission: string) => {
     switch (permission) {
       case 'god': return <Badge variant="destructive">GOD</Badge>;
@@ -822,31 +812,27 @@ export default function CommandPanel() {
     <>
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
+          <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
               <CardTitle className="flex items-center gap-2">
                 <Terminal className="h-5 w-5" />
                 Command Panel
               </CardTitle>
               <CardDescription>
-                Kør FiveM commands direkte fra dashboardet - 55+ zdiscord commands
+                Kør commands direkte mod FiveM Bridge. Discord /fivem synkroniseres automatisk af botten.
               </CardDescription>
             </div>
-            <Button onClick={handleRegisterCommands} disabled={registerCommands.isPending}>
-              {registerCommands.isPending ? (
-                <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-              ) : (
-                <Shield className="h-4 w-4 mr-2" />
-              )}
-              Registrer Discord Slash Commands
-            </Button>
+            <Badge variant="outline" className="gap-1">
+              <Shield className="h-3.5 w-3.5" />
+              Automatisk Discord sync
+            </Badge>
           </div>
         </CardHeader>
         <CardContent>
           <Tabs defaultValue="standalone">
             <TabsList className="mb-4">
               <TabsTrigger value="standalone">Standalone ({STANDALONE_COMMANDS.length})</TabsTrigger>
-              <TabsTrigger value="qbcore">QBCore ({QBCORE_COMMANDS.length})</TabsTrigger>
+              <TabsTrigger value="qbcore">QBox / QBCore ({QBCORE_COMMANDS.length})</TabsTrigger>
             </TabsList>
 
             <TabsContent value="standalone">
