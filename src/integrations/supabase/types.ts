@@ -1897,6 +1897,7 @@ export type Database = {
           moderator_discord_id: string
           moderator_name: string | null
           result: string | null
+          server_id: string
           status: string
           target_discord_id: string | null
           target_name: string | null
@@ -1912,6 +1913,7 @@ export type Database = {
           moderator_discord_id: string
           moderator_name?: string | null
           result?: string | null
+          server_id?: string
           status?: string
           target_discord_id?: string | null
           target_name?: string | null
