@@ -62,13 +62,12 @@ const STANDALONE_COMMANDS: CommandDef[] = [
   },
   {
     name: 'embed',
-    description: 'Send custom embed til spillere',
+    description: 'Send formateret serverbesked til alle spillere',
     permission: 'mod',
     icon: <MessageSquare className="h-4 w-4" />,
     fields: [
       { name: 'title', label: 'Titel', type: 'text', required: true },
       { name: 'message', label: 'Besked', type: 'textarea', required: true },
-      { name: 'color', label: 'Farve (hex)', type: 'text' },
     ],
   },
   {
@@ -451,14 +450,14 @@ const QBCORE_COMMANDS: CommandDef[] = [
     description: 'Slet køretøj',
     permission: 'admin',
     icon: <Car className="h-4 w-4" />,
-    fields: [{ name: 'targetPlayerId', label: 'Spiller ID', type: 'player' }],
+    fields: [{ name: 'targetPlayerId', label: 'Spiller ID', type: 'player', required: true }],
   },
   {
     name: 'repair',
     description: 'Reparer køretøj',
     permission: 'mod',
     icon: <Car className="h-4 w-4" />,
-    fields: [{ name: 'targetPlayerId', label: 'Spiller ID', type: 'player' }],
+    fields: [{ name: 'targetPlayerId', label: 'Spiller ID', type: 'player', required: true }],
   },
   {
     name: 'clothing-menu',
@@ -567,16 +566,6 @@ const QBCORE_COMMANDS: CommandDef[] = [
     fields: [
       { name: 'targetPlayerId', label: 'Spiller ID', type: 'player', required: true },
       { name: 'reason', label: 'Årsag', type: 'textarea', required: true },
-    ],
-  },
-  {
-    name: 'delwarn',
-    description: 'Fjern advarsel',
-    permission: 'admin',
-    icon: <MessageSquare className="h-4 w-4" />,
-    fields: [
-      { name: 'targetPlayerId', label: 'Spiller ID', type: 'player', required: true },
-      { name: 'warningId', label: 'Warning ID', type: 'number', required: true },
     ],
   },
   {
