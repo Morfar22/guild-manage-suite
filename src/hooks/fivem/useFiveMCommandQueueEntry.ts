@@ -10,6 +10,7 @@ export interface FiveMCommandQueueEntry {
   command_name: string;
   status: QueueStatus;
   result: string | null;
+  server_id: string;
   executed_at: string | null;
   created_at: string;
 }
@@ -25,7 +26,7 @@ export function useFiveMCommandQueueEntry(commandId?: string | null) {
 
       const { data, error } = await supabase
         .from("fivem_command_queue")
-        .select("id, guild_id, command_name, status, result, executed_at, created_at")
+        .select("id, guild_id, server_id, command_name, status, result, executed_at, created_at")
         .eq("guild_id", selectedGuild.id)
         .eq("id", commandId)
         .single();
