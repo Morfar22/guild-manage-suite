@@ -903,6 +903,38 @@ AddEventHandler('playerDropped', function()
     end)
 end)
 
+RegisterCommand('gmsbridge', function(source)
+    if source ~= 0 and not IsPlayerAceAllowed(tostring(source), 'command.gmsbridge') then
+        return
+    end
+
+    CreateThread(function()
+        detectFramework()
+        log('INFO', '----- Guild Manage Suite Bridge diagnostics -----')
+        log('INFO', ('Version: %s'):format(Config.Version))
+        log('INFO', ('Framework: %s'):format(framework))
+        log('INFO', ('Guild ID: %s'):format(Config.GuildId ~= '' and Config.GuildId or 'MANGLER'))
+        log('INFO', ('Server ID: %s'):format(Config.ServerId))
+        log('INFO', ('API: %s'):format(API_URL))
+        log('INFO', ('API key: %s'):format(Config.ApiKey ~= '' and 'SAT' or 'MANGLER'))
+
+        if not configured() then
+            log('ERROR', 'Bridge er ikke konfigureret. Brug Dashboard → FiveM → Opsætning.')
+            return
+        end
+
+        local response = api('getSettings', {})
+        if response.ok then
+            log('INFO', ('API test: OK | whitelist=%s | enabled=%s'):format(
+                tostring(response.data and response.data.whitelistEnabled),
+                tostring(response.data and response.data.enabled)
+            ))
+        else
+            log('ERROR', ('API test: FEJL HTTP %s | %s'):format(response.status, response.body or ''))
+        end
+    end)
+end, true)
+
 AddEventHandler('onResourceStop', function(resourceName)
     if resourceName ~= RESOURCE or not configured() then return end
     api('serverOffline', { serverId = Config.ServerId })
