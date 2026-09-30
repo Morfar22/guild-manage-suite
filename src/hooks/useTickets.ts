@@ -133,6 +133,7 @@ export function useTickets(status?: TicketStatus, excludeApplications: boolean =
       })) as Ticket[];
     },
     enabled: !!selectedGuild?.id,
+    refetchInterval: 15_000,
   });
 }
 
@@ -156,6 +157,7 @@ export function useTicket(ticketId: string | undefined) {
       } as Ticket;
     },
     enabled: !!ticketId,
+    refetchInterval: 15_000,
   });
 }
 
@@ -175,6 +177,7 @@ export function useTicketMessages(ticketId: string | undefined) {
       return data as TicketMessage[];
     },
     enabled: !!ticketId,
+    refetchInterval: 10_000,
   });
 }
 
@@ -264,6 +267,7 @@ export function useTicketStats(excludeApplications: boolean = true) {
       return stats;
     },
     enabled: !!selectedGuild?.id,
+    refetchInterval: 15_000,
   });
 }
 
