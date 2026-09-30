@@ -7,6 +7,7 @@
 
 const { EmbedBuilder } = require('discord.js');
 const { createClient } = require('@supabase/supabase-js');
+const { manager } = require('../customBotManager');
 
 const SUPABASE_URL = process.env.SUPABASE_URL || 'https://rkdqunnttcyuybbofkvz.supabase.co';
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -15,38 +16,36 @@ const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY;
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY || SUPABASE_ANON_KEY);
 
 const POLL_INTERVAL = 10000; // 10 seconds
+let tebexPollingStarted = false;
+let tebexStartRegistered = false;
+let tebexInterval = null;
 
-function setupTebexHandler(client, supabaseInstance, { shouldHandleGuild } = {}) {
+function setupTebexHandler(client) {
   if (!client) return { destroy: () => {} };
 
-  console.log('[TebexHandler] Initialiseret');
-
-  let intervalId = null;
-
   const startPolling = () => {
-    console.log('[TebexHandler] Starter polling for Tebex-kommandoer...');
-    intervalId = setInterval(() => pollTebexQueue(client, shouldHandleGuild), POLL_INTERVAL);
+    if (tebexPollingStarted) return;
+    tebexPollingStarted = true;
+    console.log('[TebexHandler] Starter én global poller for Tebex-kommandoer...');
+    pollTebexQueue().catch(() => {});
+    tebexInterval = setInterval(() => pollTebexQueue().catch(() => {}), POLL_INTERVAL);
   };
 
-  // If client is already ready, start immediately; otherwise wait
-  if (client.isReady()) {
-    startPolling();
-  } else {
-    client.once('clientReady', startPolling);
+  // Only one process-wide poller is needed. It routes each queue item through
+  // the Discord client responsible for that guild.
+  if (!tebexStartRegistered && !tebexPollingStarted) {
+    tebexStartRegistered = true;
+    if (client.isReady()) {
+      startPolling();
+    } else {
+      client.once('clientReady', startPolling);
+    }
   }
 
-  return {
-    destroy: () => {
-      if (intervalId) {
-        clearInterval(intervalId);
-        intervalId = null;
-        console.log('[TebexHandler] Polling stoppet');
-      }
-    }
-  };
+  return { destroy: () => {} };
 }
 
-async function pollTebexQueue(client, shouldHandleGuild) {
+async function pollTebexQueue() {
   try {
     const { data: commands, error } = await supabase
       .from('fivem_command_queue')
@@ -72,14 +71,14 @@ async function pollTebexQueue(client, shouldHandleGuild) {
           continue;
         }
 
-        // Apply guild filter if provided
-        if (shouldHandleGuild && !shouldHandleGuild(guildRow.guild_id)) {
-          continue; // Skip - another bot instance handles this guild
+        const client = manager.getClient(guildRow.guild_id);
+        if (!client?.isReady?.()) {
+          continue; // Responsible bot is still starting or unavailable
         }
 
         const guild = client.guilds.cache.get(guildRow.guild_id);
         if (!guild) {
-          continue; // Bot doesn't have access to this guild
+          continue; // Responsible bot doesn't currently have access to this guild
         }
 
         if (cmd.command_name === 'tebex_notification') {
