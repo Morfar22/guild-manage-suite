@@ -755,6 +755,7 @@ end
 local function markCommand(commandId, success, result)
     local response = api('markCommandExecuted', {
         commandId = commandId,
+        serverId = Config.ServerId,
         success = success == true,
         result = tostring(result or '')
     })
@@ -765,7 +766,7 @@ end
 
 local function pollCommands()
     if not configured() then return end
-    local response = api('getPendingCommands', {})
+    local response = api('getPendingCommands', { serverId = Config.ServerId })
     if not response.ok then
         if response.status ~= 401 then throttledWarn('command-poll', ('Command poll fejlede (HTTP %s)'):format(response.status), 30000) end
         return
@@ -775,7 +776,7 @@ local function pollCommands()
         if not processing[command.id] then
             processing[command.id] = true
             CreateThread(function()
-                local claim = api('claimCommand', { commandId = command.id })
+                local claim = api('claimCommand', { commandId = command.id, serverId = Config.ServerId })
                 if claim.ok and claim.data and claim.data.claimed then
                     local ok, success, result = pcall(executeCommand, command)
                     if not ok then
@@ -961,7 +962,7 @@ AddEventHandler('playerDropped', function()
 
     CreateThread(function()
         if ids.discordId then
-            api('sessionEnd', { discordId = ids.discordId })
+            api('sessionEnd', { discordId = ids.discordId, serverId = Config.ServerId })
         end
         api('removeOnlinePlayer', {
             playerId = tonumber(source),
