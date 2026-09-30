@@ -87,7 +87,8 @@ function initMusic(client) {
   });
 
   kazagumo.shoukaku.on('error', (name, error) => {
-    console.error(`[Music] Lavalink node "${name}" error:`, error.message);
+    const details = error?.message || error?.code || error?.stack || String(error || 'Unknown Lavalink error');
+    console.error(`[Music] Lavalink node "${name}" error:`, details);
   });
 
   kazagumo.shoukaku.on('close', (name, code, reason) => {
