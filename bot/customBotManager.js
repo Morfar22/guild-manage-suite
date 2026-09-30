@@ -31,6 +31,13 @@ const CONFIG_CHECK_INTERVAL = 60000;
 const HEARTBEAT_INTERVAL = 30000;
 const APP_API_BASE = process.env.APP_API_BASE || 'https://bot.nethost-solutions.dk';
 
+const avatarWarningKeys = new Set();
+function warnAvatarOnce(key, message) {
+  if (avatarWarningKeys.has(key)) return;
+  avatarWarningKeys.add(key);
+  console.warn(message);
+}
+
 class CustomBotManager {
   // Set of application IDs that already had commands deployed this session
   static _deployedAppIds = new Set();
@@ -654,7 +661,7 @@ class CustomBotManager {
         try {
           parsedAvatarUrl = new URL(avatarUrl);
         } catch {
-          console.warn(`[CustomBotManager] Skipping invalid avatar URL for ${client.user.tag}`);
+          warnAvatarOnce(`invalid:${avatarUrl}`, `[CustomBotManager] Skipping invalid avatar URL for ${client.user.tag}`);
         }
 
         if (parsedAvatarUrl && ['http:', 'https:'].includes(parsedAvatarUrl.protocol)) {
@@ -663,7 +670,7 @@ class CustomBotManager {
             if (response.ok) {
               const contentType = response.headers.get('content-type') || '';
               if (!contentType.startsWith('image/')) {
-                console.warn(`[CustomBotManager] Skipping avatar URL with non-image content type: ${contentType || 'unknown'}`);
+                warnAvatarOnce(`content-type:${parsedAvatarUrl.toString()}:${contentType}`, `[CustomBotManager] Skipping avatar URL with non-image content type: ${contentType || 'unknown'}`);
               } else {
                 const buffer = await response.arrayBuffer();
                 const base64 = Buffer.from(buffer).toString('base64');
@@ -673,7 +680,7 @@ class CustomBotManager {
                 console.log(`[CustomBotManager] Updated bot avatar from configured URL`);
               }
             } else {
-              console.warn(`[CustomBotManager] Avatar URL returned HTTP ${response.status}; keeping current avatar`);
+              warnAvatarOnce(`http:${parsedAvatarUrl.toString()}:${response.status}`, `[CustomBotManager] Avatar URL returned HTTP ${response.status}; keeping current avatar`);
             }
           } catch (error) {
             if (error.code === 50035 || error.message.includes('rate limit')) {
