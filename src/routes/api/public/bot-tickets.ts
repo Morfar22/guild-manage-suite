@@ -170,7 +170,7 @@ __serve(async (req) => {
       }
 
       case "createTicket": {
-        const { guildId, categoryId, channelId, creatorId, creatorName, ticketType, answers, applicationType } = data;
+        const { guildId, categoryId, channelId, creatorId, creatorName, ticketType, answers, applicationType, subject } = data;
         const { data: ticket, error } = await supabase
           .from("tickets")
           .insert({
@@ -179,6 +179,7 @@ __serve(async (req) => {
             channel_id: channelId,
             creator_id: creatorId,
             creator_name: creatorName,
+            subject: subject || null,
             ticket_type: ticketType,
             status: "open",
           })
@@ -211,8 +212,56 @@ __serve(async (req) => {
         });
       }
 
+      case "getOpenTicketForUser": {
+        const { guildId, categoryId, creatorId } = data;
+        const { data: ticket, error } = await supabase
+          .from("tickets")
+          .select("id, channel_id, status, subject, created_at")
+          .eq("guild_id", guildId)
+          .eq("category_id", categoryId)
+          .eq("creator_id", creatorId)
+          .in("status", ["open", "claimed"])
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (error) throw error;
+        return new Response(JSON.stringify({ ticket: ticket || null }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
       case "claimTicket": {
         const { channelId, claimedById, claimedByName } = data;
+
+        const { data: current, error: currentError } = await supabase
+          .from("tickets")
+          .select("id, status, claimed_by_id, claimed_by_name")
+          .eq("channel_id", channelId)
+          .maybeSingle();
+
+        if (currentError) throw currentError;
+        if (!current) {
+          return new Response(JSON.stringify({ error: "Ticket not found" }), {
+            status: 404,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+        if (current.status === "closed") {
+          return new Response(JSON.stringify({ error: "Ticket is closed" }), {
+            status: 409,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+        if (current.claimed_by_id && current.claimed_by_id !== claimedById) {
+          return new Response(JSON.stringify({
+            error: `Ticket is already claimed by ${current.claimed_by_name || current.claimed_by_id}`,
+          }), {
+            status: 409,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+
         const { error } = await supabase
           .from("tickets")
           .update({
@@ -221,7 +270,25 @@ __serve(async (req) => {
             status: "claimed",
           })
           .eq("channel_id", channelId);
-        
+
+        if (error) throw error;
+        return new Response(JSON.stringify({ success: true }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      case "unclaimTicket": {
+        const { channelId } = data;
+        const { error } = await supabase
+          .from("tickets")
+          .update({
+            claimed_by_id: null,
+            claimed_by_name: null,
+            status: "open",
+          })
+          .eq("channel_id", channelId)
+          .neq("status", "closed");
+
         if (error) throw error;
         return new Response(JSON.stringify({ success: true }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -334,7 +401,7 @@ __serve(async (req) => {
           }
         }
 
-        return new Response(JSON.stringify({ success: true }), {
+        return new Response(JSON.stringify({ success: true, ticket_id: ticket.id }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
@@ -343,7 +410,7 @@ __serve(async (req) => {
         const { channelId } = data;
         const { data: ticket, error: ticketErr } = await supabase
           .from("tickets")
-          .select("id, channel_id, creator_id, creator_name, status, ticket_type")
+          .select("id, channel_id, creator_id, creator_name, status, ticket_type, category_id, claimed_by_id, claimed_by_name, ticket_categories(staff_role_id, name)")
           .eq("channel_id", channelId)
           .maybeSingle();
 
