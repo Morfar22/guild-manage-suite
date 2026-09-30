@@ -20,6 +20,31 @@ const LOG_HTTP_RETRIES = Math.max(1, Math.min(5, Number(process.env.LOG_HTTP_RET
 
 const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
+function flattenCommandOptions(options = [], prefix = '') {
+  const values = [];
+
+  for (const option of options) {
+    const key = prefix ? `${prefix} ${option.name}` : option.name;
+    if (Array.isArray(option.options) && option.options.length > 0) {
+      values.push(...flattenCommandOptions(option.options, key));
+      continue;
+    }
+
+    const value =
+      option.value ??
+      option.user?.id ??
+      option.member?.id ??
+      option.role?.id ??
+      option.channel?.id ??
+      option.attachment?.name ??
+      '(ingen værdi)';
+
+    values.push(`${key}: ${String(value)}`);
+  }
+
+  return values;
+}
+
 async function postLogWithRetry(url, options, eventType) {
   let lastError;
 
@@ -176,6 +201,8 @@ function registerLogHandlers(client, config) {
       user_name: member.user.tag,
       user_avatar: member.user.displayAvatarURL(),
       account_created: member.user.createdAt?.toISOString(),
+      joined_at: member.joinedAt?.toISOString(),
+      pending_screening: Boolean(member.pending),
     });
   });
 
@@ -199,6 +226,7 @@ function registerLogHandlers(client, config) {
       user_name: member.user.tag,
       user_avatar: member.user.displayAvatarURL(),
       roles: member.roles.cache.filter(r => r.id !== member.guild.id).map(r => r.name).join(', ') || 'Ingen',
+      joined_at: member.joinedAt?.toISOString(),
     });
   });
 
@@ -241,6 +269,8 @@ function registerLogHandlers(client, config) {
       user_avatar: message.author?.displayAvatarURL(),
       channel_id: message.channel.id,
       channel_name: message.channel.name,
+      message_id: message.id,
+      message_created_at: message.createdAt?.toISOString(),
       content: message.content || '(intet tekstindhold)',
       attachments: message.attachments?.size > 0 ? message.attachments.map(a => a.url).join(', ') : null,
       deleted_by_id: isSelfDelete ? null : deletedBy?.id,
@@ -328,8 +358,20 @@ function registerLogHandlers(client, config) {
   client.on('roleUpdate', async (oldRole, newRole) => {
     const changes = [];
     if (oldRole.name !== newRole.name) changes.push(`Navn: ${oldRole.name} → ${newRole.name}`);
-    if (oldRole.color !== newRole.color) changes.push(`Farve: #${oldRole.color.toString(16)} → #${newRole.color.toString(16)}`);
-    if (oldRole.permissions.bitfield !== newRole.permissions.bitfield) changes.push('Tilladelser ændret');
+    if (oldRole.color !== newRole.color) {
+      const oldColor = oldRole.color.toString(16).padStart(6, '0');
+      const newColor = newRole.color.toString(16).padStart(6, '0');
+      changes.push(`Farve: #${oldColor} → #${newColor}`);
+    }
+    if (oldRole.permissions.bitfield !== newRole.permissions.bitfield) {
+      const oldPermissions = oldRole.permissions.toArray();
+      const newPermissions = newRole.permissions.toArray();
+      const added = newPermissions.filter(permission => !oldPermissions.includes(permission));
+      const removed = oldPermissions.filter(permission => !newPermissions.includes(permission));
+      if (added.length) changes.push(`Tilladelser tilføjet: ${added.join(', ')}`);
+      if (removed.length) changes.push(`Tilladelser fjernet: ${removed.join(', ')}`);
+    }
+    if (oldRole.position !== newRole.position) changes.push(`Placering: ${oldRole.position} → ${newRole.position}`);
     if (oldRole.hoist !== newRole.hoist) changes.push(`Vist separat: ${newRole.hoist ? 'Ja' : 'Nej'}`);
     if (oldRole.mentionable !== newRole.mentionable) changes.push(`Nævnbar: ${newRole.mentionable ? 'Ja' : 'Nej'}`);
     if (changes.length === 0) return;
@@ -372,9 +414,10 @@ function registerLogHandlers(client, config) {
     if (!newChannel.guild) return;
     const changes = [];
     if (oldChannel.name !== newChannel.name) changes.push(`Navn: ${oldChannel.name} → ${newChannel.name}`);
-    if (oldChannel.topic !== newChannel.topic) changes.push(`Emne ændret`);
+    if (oldChannel.topic !== newChannel.topic) changes.push(`Emne: ${oldChannel.topic || '(tomt)'} → ${newChannel.topic || '(tomt)'}`);
+    if (oldChannel.parentId !== newChannel.parentId) changes.push(`Kategori: ${oldChannel.parent?.name || 'Ingen'} → ${newChannel.parent?.name || 'Ingen'}`);
     if (oldChannel.nsfw !== newChannel.nsfw) changes.push(`NSFW: ${newChannel.nsfw ? 'Ja' : 'Nej'}`);
-    if (oldChannel.rateLimitPerUser !== newChannel.rateLimitPerUser) changes.push(`Slowmode: ${newChannel.rateLimitPerUser}s`);
+    if (oldChannel.rateLimitPerUser !== newChannel.rateLimitPerUser) changes.push(`Slowmode: ${oldChannel.rateLimitPerUser || 0}s → ${newChannel.rateLimitPerUser || 0}s`);
     if (changes.length === 0) return;
 
     const log = await fetchAuditLog(newChannel.guild, AuditLogEvent.ChannelUpdate, newChannel.id);
@@ -423,6 +466,8 @@ function registerLogHandlers(client, config) {
           user_id: userId, user_name: userName, user_avatar: userAvatar,
           voice_channel_from: oldState.channel?.name,
           voice_channel_to: newState.channel?.name,
+          voice_channel_from_id: oldState.channelId,
+          voice_channel_to_id: newState.channelId,
           moderator_id: moveLog.executor?.id,
           moderator_name: moveLog.executor?.tag,
         });
@@ -433,6 +478,8 @@ function registerLogHandlers(client, config) {
         user_id: userId, user_name: userName, user_avatar: userAvatar,
         voice_channel_from: oldState.channel?.name,
         voice_channel_to: newState.channel?.name,
+        voice_channel_from_id: oldState.channelId,
+        voice_channel_to_id: newState.channelId,
       });
     }
 
@@ -691,6 +738,7 @@ function registerLogHandlers(client, config) {
       user_name: interaction.user.tag,
       user_avatar: interaction.user.displayAvatarURL(),
       command_name: interaction.commandName,
+      command_options: flattenCommandOptions(interaction.options?.data || []).join('\n') || null,
       channel_id: interaction.channel?.id,
       channel_name: interaction.channel?.name,
     });
