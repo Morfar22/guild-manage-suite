@@ -8,9 +8,14 @@
 
 const SUPABASE_URL = process.env.SUPABASE_URL || 'https://rkdqunnttcyuybbofkvz.supabase.co';
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const { manager } = require('../customBotManager');
 
 // Check interval: 3 minutter
 const CHECK_INTERVAL = 180000;
+let globalPollerStarted = false;
+let globalPollerRegistered = false;
+let globalPollInterval = null;
+let globalInitialTimeout = null;
 
 /**
  * Fetch latest video from YouTube RSS feed
@@ -100,7 +105,7 @@ async function checkIfLive(channelId) {
 /**
  * Send Discord notification for a new YouTube video
  */
-async function sendVideoNotification(client, account, videoInfo, settings) {
+async function sendVideoNotification(targetClient, account, videoInfo, settings) {
   try {
     const channel = await client.channels.fetch(account.notification_channel_id).catch(() => null);
     if (!channel) {
@@ -163,7 +168,7 @@ async function sendVideoNotification(client, account, videoInfo, settings) {
 /**
  * Send Discord notification for live status change
  */
-async function sendLiveNotification(client, account, isLive, settings, liveTitle) {
+async function sendLiveNotification(targetClient, account, isLive, settings, liveTitle) {
   try {
     const targetChannelId = (isLive && account.live_channel_id) ? account.live_channel_id : account.notification_channel_id;
     const channel = await client.channels.fetch(targetChannelId).catch(() => null);
@@ -229,7 +234,7 @@ async function sendLiveNotification(client, account, isLive, settings, liveTitle
 /**
  * Check all tracked YouTube channels
  */
-async function checkAllYouTubeChannels(client, shouldHandleGuild) {
+async function checkAllYouTubeChannels(client = null, shouldHandleGuild = null) {
   if (!SUPABASE_SERVICE_ROLE_KEY) {
     console.error('[YouTube] SUPABASE_SERVICE_ROLE_KEY mangler');
     return;
@@ -259,6 +264,25 @@ async function checkAllYouTubeChannels(client, shouldHandleGuild) {
     const guildIds = [...new Set(accounts.map(a => a.guild_id))];
     const settingsMap = {};
 
+    // Resolve internal guild UUIDs to Discord guild IDs once per cycle.
+    const guildMap = {};
+    if (guildIds.length > 0) {
+      const filter = encodeURIComponent(`in.(${guildIds.join(',')})`);
+      const guildRes = await fetch(
+        `${SUPABASE_URL}/rest/v1/guilds?id=${filter}&select=id,guild_id`,
+        {
+          headers: {
+            'apikey': SUPABASE_SERVICE_ROLE_KEY,
+            'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+          },
+        }
+      );
+      if (guildRes.ok) {
+        const rows = await guildRes.json();
+        for (const row of rows) guildMap[row.id] = row.guild_id;
+      }
+    }
+
     for (const guildId of guildIds) {
       const settingsRes = await fetch(
         `${SUPABASE_URL}/rest/v1/youtube_settings?guild_id=eq.${guildId}&select=*`,
@@ -284,20 +308,17 @@ async function checkAllYouTubeChannels(client, shouldHandleGuild) {
       const guildSettings = settingsMap[account.guild_id];
       if (guildSettings === undefined && Object.keys(settingsMap).length > 0) continue;
 
-      // Guild filter
+      const discordGuildId = guildMap[account.guild_id];
+      if (!discordGuildId) continue;
+
+      let targetClient = client;
       if (shouldHandleGuild && client) {
-        const guildRes = await fetch(
-          `${SUPABASE_URL}/rest/v1/guilds?id=eq.${account.guild_id}&select=guild_id`,
-          {
-            headers: {
-              'apikey': SUPABASE_SERVICE_ROLE_KEY,
-              'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
-            },
-          }
-        );
-        const guildData = await guildRes.json();
-        const discordGuildId = guildData[0]?.guild_id;
-        if (discordGuildId && !shouldHandleGuild(discordGuildId)) continue;
+        if (!shouldHandleGuild(discordGuildId)) continue;
+      } else {
+        targetClient = manager.getClient(discordGuildId);
+        if (!targetClient?.isReady?.() || !targetClient.guilds.cache.has(discordGuildId)) {
+          continue;
+        }
       }
 
       // Check RSS feed for new videos
@@ -321,7 +342,7 @@ async function checkAllYouTubeChannels(client, shouldHandleGuild) {
 
       // Check live status
       const liveNotificationsEnabled = guildSettings?.live_notifications !== false;
-      if (liveNotificationsEnabled && client) {
+      if (liveNotificationsEnabled && targetClient) {
         const liveInfo = await checkIfLive(account.youtube_channel_id);
         const wasLive = account.is_live || false;
         const isNowLive = liveInfo.isLive || false;
@@ -330,12 +351,12 @@ async function checkAllYouTubeChannels(client, shouldHandleGuild) {
 
         if (isNowLive && !wasLive) {
           console.log(`[YouTube] ${account.channel_name || account.youtube_channel_id} er nu LIVE!`);
-          await sendLiveNotification(client, account, true, guildSettings, liveInfo.liveTitle);
+          await sendLiveNotification(targetClient, account, true, guildSettings, liveInfo.liveTitle);
           updateData.last_live_at = new Date().toISOString();
           notified++;
         } else if (!isNowLive && wasLive) {
           console.log(`[YouTube] ${account.channel_name || account.youtube_channel_id} er gået offline`);
-          await sendLiveNotification(client, account, false, guildSettings, null);
+          await sendLiveNotification(targetClient, account, false, guildSettings, null);
           notified++;
         }
 
@@ -353,7 +374,7 @@ async function checkAllYouTubeChannels(client, shouldHandleGuild) {
 
         if (isRecent && account.last_video_id) {
           console.log(`[YouTube] Ny video fra ${account.channel_name || account.youtube_channel_id}: ${videoInfo.videoId}`);
-          const success = await sendVideoNotification(client, account, videoInfo, guildSettings);
+          const success = await sendVideoNotification(targetClient, account, videoInfo, guildSettings);
           if (success) notified++;
         }
 
@@ -433,34 +454,36 @@ async function resolveYouTubeChannelId(input) {
 /**
  * Start YouTube checker service
  */
-function startYouTubeChecker(client, config = {}) {
-  const shouldHandleGuild = config.shouldHandleGuild || (() => true);
-
+function startYouTubeChecker(client) {
   if (!SUPABASE_SERVICE_ROLE_KEY) {
     console.error('[YouTube] SUPABASE_SERVICE_ROLE_KEY mangler! YouTube checker deaktiveret.');
     return;
   }
 
-  console.log('[YouTube] Starter YouTube checker service...');
+  const startGlobalPoller = () => {
+    if (globalPollerStarted) return;
+    globalPollerStarted = true;
+    console.log('[YouTube] Starter én global poller (ruter via korrekt bot-klient)');
 
-  if (client) {
-    client.once('clientReady', () => {
-      console.log('[YouTube] Bot er klar - starter periodisk check');
+    globalInitialTimeout = setTimeout(() => {
+      checkAllYouTubeChannels().catch(() => {});
+      globalPollInterval = setInterval(
+        () => checkAllYouTubeChannels().catch(() => {}),
+        CHECK_INTERVAL
+      );
+    }, 45000);
+  };
 
-      // First check after 45 seconds (stagger from TikTok)
-      setTimeout(() => {
-        checkAllYouTubeChannels(client, shouldHandleGuild);
-
-        // Check every 3 minutes
-        setInterval(() => checkAllYouTubeChannels(client, shouldHandleGuild), CHECK_INTERVAL);
-      }, 45000);
-    });
-  } else {
-    checkAllYouTubeChannels(null, shouldHandleGuild);
-    setInterval(() => checkAllYouTubeChannels(null, shouldHandleGuild), CHECK_INTERVAL);
+  if (!globalPollerRegistered && !globalPollerStarted) {
+    globalPollerRegistered = true;
+    if (client?.isReady?.()) {
+      startGlobalPoller();
+    } else if (client) {
+      client.once('clientReady', startGlobalPoller);
+    } else {
+      startGlobalPoller();
+    }
   }
-
-  console.log('[YouTube] Service initialiseret (checker hvert 3. minut)');
 }
 
 module.exports = {
