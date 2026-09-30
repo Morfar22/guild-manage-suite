@@ -7,6 +7,7 @@ import {
   toggleGuildCommand,
   toggleCategoryCommands,
   updateGuildCommandSettings,
+  bulkUpdateGuildCommandSettings,
 } from '@/lib/commands';
 import { COMMANDS_BY_CATEGORY } from '@/types/discord';
 import { toast } from 'sonner';
@@ -150,6 +151,62 @@ export function useCommands() {
     }
   }, [selectedGuild, commandSettings]);
 
+  const bulkUpdateCommands = useCallback(async (
+    commandNames: string[],
+    updates: Partial<Pick<GuildCommandSettings, 'enabled' | 'cooldown_seconds' | 'allowed_role_ids' | 'allowed_channel_ids'>>
+  ) => {
+    if (!selectedGuild || commandNames.length === 0) return;
+
+    const snapshot = { ...commandSettings };
+    const entries = commandNames.map((commandName) => ({
+      commandName,
+      category: findCategory(commandName),
+      updates,
+    }));
+
+    setCommandSettings((prev) => {
+      const next = { ...prev };
+      for (const { commandName, category } of entries) {
+        next[commandName] = {
+          ...(next[commandName] || {
+            command_name: commandName,
+            category,
+            enabled: true,
+            cooldown_seconds: 0,
+            allowed_role_ids: [],
+            allowed_channel_ids: [],
+          }),
+          ...updates,
+        };
+      }
+      return next;
+    });
+
+    try {
+      setUpdating(true);
+      await bulkUpdateGuildCommandSettings(selectedGuild.id, entries);
+      toast.success(`${commandNames.length} commands opdateret`);
+    } catch (error) {
+      setCommandSettings(snapshot);
+      console.error(error);
+      toast.error('Kunne ikke bulk-opdatere commands');
+      throw error;
+    } finally {
+      setUpdating(false);
+    }
+  }, [selectedGuild, commandSettings, findCategory]);
+
+  const copyCommandRules = useCallback(async (sourceCommand: string, targetCommands: string[]) => {
+    const source = commandSettings[sourceCommand];
+    if (!source || targetCommands.length === 0) return;
+
+    await bulkUpdateCommands(targetCommands.filter((name) => name !== sourceCommand), {
+      cooldown_seconds: source.cooldown_seconds,
+      allowed_role_ids: [...source.allowed_role_ids],
+      allowed_channel_ids: [...source.allowed_channel_ids],
+    });
+  }, [commandSettings, bulkUpdateCommands]);
+
   const getCategoryStats = useCallback((category: string) => {
     const commands = COMMANDS_BY_CATEGORY[category] || [];
     const enabled = commands.filter((cmd) => commandSettings[cmd.name]?.enabled !== false).length;
@@ -173,6 +230,8 @@ export function useCommands() {
     reload: load,
     toggleCommand,
     updateCommandSettings,
+    bulkUpdateCommands,
+    copyCommandRules,
     toggleCategory,
     getCategoryStats,
   };
