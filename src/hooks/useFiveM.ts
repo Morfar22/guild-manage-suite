@@ -389,10 +389,12 @@ export function useFiveMOnlinePlayers() {
     queryFn: async () => {
       if (!selectedGuild?.id) return [];
 
+      const freshnessCutoff = new Date(Date.now() - 45_000).toISOString();
       const { data, error } = await supabase
         .from('fivem_online_players')
         .select('*')
         .eq('guild_id', selectedGuild.id)
+        .gte('last_update', freshnessCutoff)
         .order('joined_at', { ascending: false });
 
       if (error) throw error;
