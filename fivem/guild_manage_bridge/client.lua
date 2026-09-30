@@ -1,5 +1,6 @@
 local noclip = false
 local spectating = false
+local blackout = false
 
 local function notify(message, kind)
     local prefix = kind == 'warning' and '^1ADVARSEL^7' or kind == 'announcement' and '^3SERVER^7' or '^5STAFF^7'
@@ -232,8 +233,8 @@ RegisterNetEvent('guild_manage_bridge:client:action', function(action, data)
 
     if action == 'weather' then
         if tostring(data.action or '') == 'blackout' then
-            local state = not GetArtificialLightsState()
-            SetArtificialLightsState(state)
+            blackout = not blackout
+            SetArtificialLightsState(blackout)
             return
         end
 
