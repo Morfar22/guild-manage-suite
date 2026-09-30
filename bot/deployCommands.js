@@ -733,6 +733,27 @@ const GUILD_ID = process.env.DEPLOY_GUILD_ID;
 
     const commandData = commands.map(c => c.toJSON());
 
+    // /fivem is registered through the dedicated FiveM command route.
+    // Preserve it when this script bulk-overwrites the guild command set.
+    try {
+      const existingGuildCommands = await rest.get(
+        Routes.applicationGuildCommands(APPLICATION_ID, GUILD_ID)
+      );
+      const existingFiveM = existingGuildCommands.find(command => command.name === 'fivem');
+      if (existingFiveM) {
+        commandData.push({
+          name: existingFiveM.name,
+          description: existingFiveM.description,
+          type: existingFiveM.type,
+          options: existingFiveM.options || [],
+          default_member_permissions: existingFiveM.default_member_permissions ?? null,
+          nsfw: Boolean(existingFiveM.nsfw),
+        });
+      }
+    } catch (error) {
+      console.warn('⚠️ Kunne ikke kontrollere eksisterende /fivem command:', error.message);
+    }
+
     // Never register globals. Clean up legacy globals first.
     const existingGlobals = await rest.get(Routes.applicationCommands(APPLICATION_ID));
     await rest.put(
