@@ -9,11 +9,57 @@
  */
 
 const { Events, AuditLogEvent } = require('discord.js');
+const { randomUUID } = require('crypto');
 
 // Deduplication cache to prevent duplicate log events
 const recentEvents = new Map();
 const DEDUPE_WINDOW_MS = 5000;
 const APP_API_BASE = process.env.APP_API_BASE || 'https://bot.nethost-solutions.dk';
+const LOG_HTTP_TIMEOUT_MS = Number(process.env.LOG_HTTP_TIMEOUT_MS || 8000);
+const LOG_HTTP_RETRIES = Math.max(1, Math.min(5, Number(process.env.LOG_HTTP_RETRIES || 3)));
+
+const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+async function postLogWithRetry(url, options, eventType) {
+  let lastError;
+
+  for (let attempt = 1; attempt <= LOG_HTTP_RETRIES; attempt++) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), LOG_HTTP_TIMEOUT_MS);
+
+    try {
+      const response = await fetch(url, { ...options, signal: controller.signal });
+      clearTimeout(timer);
+
+      if (response.ok) return response;
+
+      const body = await response.text().catch(() => '');
+      const retryable = response.status === 429 || response.status >= 500;
+      if (!retryable || attempt === LOG_HTTP_RETRIES) {
+        throw new Error(`HTTP ${response.status}: ${body.slice(0, 500) || response.statusText}`);
+      }
+
+      let retryAfterMs = 350 * attempt;
+      if (response.status === 429) {
+        try {
+          const parsed = JSON.parse(body);
+          retryAfterMs = Math.max(retryAfterMs, Math.ceil(Number(parsed.retry_after || 0) * 1000));
+        } catch {}
+      }
+
+      await sleep(Math.min(retryAfterMs, 5000));
+    } catch (error) {
+      clearTimeout(timer);
+      lastError = error;
+
+      if (attempt === LOG_HTTP_RETRIES) break;
+      const delay = error?.name === 'AbortError' ? 500 * attempt : 300 * attempt;
+      await sleep(delay);
+    }
+  }
+
+  throw lastError || new Error(`Kunne ikke sende log-event ${eventType}`);
+}
 
 function getEventKey(guildId, eventType, data) {
   const keyParts = [guildId, eventType];
@@ -49,45 +95,80 @@ function isDuplicateEvent(eventKey) {
   return false;
 }
 
-async function sendLogEvent(config, guildId, eventType, data) {
+async function sendLogEvent(config, guildId, eventType, data = {}) {
+  if (!guildId) return;
   if (typeof config?.shouldLogGuild === 'function' && !config.shouldLogGuild(guildId)) return;
+
   const eventKey = getEventKey(guildId, eventType, data);
-  if (isDuplicateEvent(eventKey)) {
-    console.log(`[LogHandler] Skipping duplicate ${eventType} event`);
-    return;
-  }
+  if (isDuplicateEvent(eventKey)) return;
+
+  const eventId = randomUUID();
+  const guild = config?.client?.guilds?.cache?.get(guildId);
+  const enrichedData = {
+    ...data,
+    event_id: eventId,
+    occurred_at: new Date().toISOString(),
+    guild_name: guild?.name || data.guild_name || null,
+    guild_member_count: guild?.memberCount ?? data.guild_member_count ?? null,
+    bot_user_id: config?.client?.user?.id || null,
+    bot_user_name: config?.client?.user?.tag || null,
+  };
+
   try {
-    const response = await fetch(`${APP_API_BASE}/api/public/bot-log-events`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-bot-secret': config.botSecretKey,
+    const response = await postLogWithRetry(
+      `${APP_API_BASE}/api/public/bot-log-events`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-bot-secret': config.botSecretKey,
+          'x-log-event-id': eventId,
+        },
+        body: JSON.stringify({ guild_id: guildId, event_type: eventType, data: enrichedData }),
       },
-      body: JSON.stringify({ guild_id: guildId, event_type: eventType, data }),
-    });
-    const result = await response.json();
+      eventType
+    );
+
+    const result = await response.json().catch(() => ({ logged: true }));
     if (!result.logged && result.reason) return;
-    if (result.error) console.error(`[LogHandler] Error logging ${eventType}:`, result.error);
+
+    if (result.error) {
+      console.error(`[LogHandler] [${eventId}] ${eventType} blev afvist:`, result.error);
+    }
   } catch (error) {
-    console.error(`[LogHandler] Failed to send ${eventType} event:`, error.message);
+    console.error(`[LogHandler] [${eventId}] Kunne ikke sende ${eventType}:`, error?.stack || error?.message || error);
   }
 }
 
 // Helper to fetch recent audit log entry
-async function fetchAuditLog(guild, actionType, targetId, withinMs = 5000) {
-  try {
-    const auditLogs = await guild.fetchAuditLogs({ type: actionType, limit: 1 });
-    const entry = auditLogs.entries.first();
-    if (entry && (Date.now() - entry.createdTimestamp) < withinMs) {
-      if (!targetId || entry.target?.id === targetId) {
-        return entry;
+async function fetchAuditLog(guild, actionType, targetId, withinMs = 15000) {
+  if (!guild?.members?.me?.permissions?.has?.('ViewAuditLog')) return null;
+
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      const auditLogs = await guild.fetchAuditLogs({ type: actionType, limit: 3 });
+      const entry = auditLogs.entries.find(candidate => {
+        if ((Date.now() - candidate.createdTimestamp) >= withinMs) return false;
+        return !targetId || candidate.target?.id === targetId;
+      });
+
+      if (entry) return entry;
+    } catch (error) {
+      if (attempt === 1) {
+        console.warn(`[LogHandler] Audit log lookup fejlede i ${guild.id}: ${error?.message || error}`);
       }
+      return null;
     }
-  } catch (e) { /* No audit log access */ }
+
+    if (attempt === 0) await sleep(450);
+  }
+
   return null;
 }
 
 function registerLogHandlers(client, config) {
+  config = { ...config, client };
+
   // ──── Member Events ────
   client.on('guildMemberAdd', async (member) => {
     await sendLogEvent(config, member.guild.id, 'member_join', {
@@ -615,7 +696,7 @@ function registerLogHandlers(client, config) {
     });
   });
 
-  console.log('[LogHandler] All event handlers registered (v2 - extended with timeout, server updates, pins, audit logs)');
+  console.log('[LogHandler] ✅ v3 registreret: retry/timeout, correlation IDs, audit-log retry og beriget kontekst');
 }
 
 module.exports = { registerLogHandlers };
