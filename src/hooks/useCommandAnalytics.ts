@@ -67,11 +67,11 @@ export function useCommandAnalytics(days: number) {
     for (const row of query.data ?? []) {
       if (!row.command_name || !row.day) continue;
 
-      const executions = Number(row.executions ?? 0);
       const successes = Number(row.successes ?? 0);
       const errors = Number(row.errors ?? 0);
       const blocked = Number(row.blocked ?? 0);
       const handled = successes + errors;
+      const executions = handled;
       const avgLatency = Number(row.avg_latency_ms ?? 0);
 
       const current = byCommand.get(row.command_name) ?? {
@@ -121,7 +121,7 @@ export function useCommandAnalytics(days: number) {
         avg_latency_ms: value.handled > 0 ? Math.round(value.weightedLatency / value.handled) : 0,
         max_latency_ms: value.maxLatency,
         last_used_at: value.lastUsedAt,
-        success_rate: value.handled > 0 ? Math.round((value.successes / value.handled) * 1000) / 10 : 100,
+        success_rate: value.handled > 0 ? Math.round((value.successes / value.handled) * 1000) / 10 : 0,
       }))
       .sort((a, b) => b.executions - a.executions);
 
@@ -149,7 +149,7 @@ export function useCommandAnalytics(days: number) {
         errors: summary.errors,
         blocked: summary.blocked,
         avg_latency_ms: summary.handled > 0 ? Math.round(summary.weightedLatency / summary.handled) : 0,
-        success_rate: summary.handled > 0 ? Math.round((summary.successes / summary.handled) * 1000) / 10 : 100,
+        success_rate: summary.handled > 0 ? Math.round((summary.successes / summary.handled) * 1000) / 10 : 0,
       },
     };
   }, [query.data]);
