@@ -2733,8 +2733,11 @@ export type Database = {
       }
       guild_commands: {
         Row: {
+          allowed_channel_ids: string[]
+          allowed_role_ids: string[]
           category: string
           command_name: string
+          cooldown_seconds: number
           created_at: string
           enabled: boolean
           guild_id: string
@@ -2742,8 +2745,11 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          allowed_channel_ids?: string[]
+          allowed_role_ids?: string[]
           category: string
           command_name: string
+          cooldown_seconds?: number
           created_at?: string
           enabled?: boolean
           guild_id: string
@@ -2751,8 +2757,11 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          allowed_channel_ids?: string[]
+          allowed_role_ids?: string[]
           category?: string
           command_name?: string
+          cooldown_seconds?: number
           created_at?: string
           enabled?: boolean
           guild_id?: string
