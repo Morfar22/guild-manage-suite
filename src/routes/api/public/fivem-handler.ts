@@ -737,6 +737,24 @@ __serve(async (req) => {
           .eq("guild_id", internalGuildId)
           .eq("discord_user_id", discordId);
 
+        const { data: syncSettings } = await supabase
+          .from("fivem_settings")
+          .select("sync_discord_roles, whitelisted_role_id")
+          .eq("guild_id", internalGuildId)
+          .maybeSingle();
+
+        if (syncSettings?.sync_discord_roles && syncSettings?.whitelisted_role_id) {
+          await syncDiscordWhitelistRole(
+            supabase,
+            internalGuildId,
+            guild.guild_id,
+            discordId,
+            syncSettings.whitelisted_role_id,
+            false,
+            botSecret,
+          );
+        }
+
         return new Response(JSON.stringify({ success: true }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
