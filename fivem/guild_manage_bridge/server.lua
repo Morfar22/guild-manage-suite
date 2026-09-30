@@ -356,9 +356,16 @@ end
 
 local function moneyAction(source, action, moneyType, amount)
     source = tonumber(source)
-    moneyType = moneyType or 'cash'
-    amount = tonumber(amount)
-    if amount == nil or amount < 0 then return false, 'Beløb skal være 0 eller højere.' end
+    moneyType = tostring(moneyType or 'cash'):lower()
+
+    if moneyType ~= 'cash' and moneyType ~= 'bank' and moneyType ~= 'crypto' then
+        return false, 'Pengetype skal være cash, bank eller crypto.'
+    end
+
+    if action ~= 'inspect' then
+        amount = tonumber(amount)
+        if amount == nil or amount < 0 then return false, 'Beløb skal være 0 eller højere.' end
+    end
 
     if framework == 'qbox' then
         if action == 'inspect' then
@@ -411,7 +418,13 @@ end
 
 local function jobAction(source, kind, action, name, grade)
     source = tonumber(source)
+    action = tostring(action or '')
     grade = tonumber(grade) or 0
+
+    if grade < 0 then return false, 'Grade må ikke være negativ.' end
+    if action == 'set' and (type(name) ~= 'string' or name == '') then
+        return false, ('%s-navn er påkrævet.'):format(kind == 'job' and 'Job' or 'Gang')
+    end
 
     if framework == 'qbox' then
         local player = qboxPlayer(source)
