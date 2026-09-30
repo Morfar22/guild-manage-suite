@@ -8,7 +8,8 @@
  * Bot Permission: ManageGuild (for at læse invites)
  */
 
-const API_URL = process.env.WELCOME_API_URL || '${APP_API_BASE}/api/public/bot-welcome';
+const APP_API_BASE = (process.env.APP_API_BASE || 'https://bot.nethost-solutions.dk').replace(/\/$/, '');
+const API_URL = process.env.INVITE_TRACKER_API_URL || `${APP_API_BASE}/api/public/invite-tracker`;
 const BOT_SECRET = process.env.BOT_SECRET_KEY;
 
 // Map<guildId, Map<inviteCode, { uses, inviterId, inviterName, channelId, maxUses, expiresAt }>>
@@ -17,7 +18,6 @@ const inviteCache = new Map();
 const vanityCache = new Map();
 
 const FAKE_ACCOUNT_DAYS = 7;
-const APP_API_BASE = process.env.APP_API_BASE || 'https://bot.nethost-solutions.dk';
 
 async function callApi(action, data) {
   try {
@@ -84,7 +84,7 @@ async function fetchAndCacheInvites(guild) {
 function setupInviteTracker(client, config = {}) {
   const shouldHandleGuild = config.shouldHandleGuild || (() => true);
 
-  client.once('ready', async () => {
+  client.once('clientReady', async () => {
     for (const guild of client.guilds.cache.values()) {
       if (!shouldHandleGuild(guild.id)) continue;
       await fetchAndCacheInvites(guild);
