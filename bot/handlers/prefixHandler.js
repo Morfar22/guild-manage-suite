@@ -617,7 +617,7 @@ async function getGuildPrefix(guildDiscordId) {
  * @param {Function} checkCommandAccess - Full command access/cooldown check
  * @param {Function} shouldHandleGuild - Guild filter function
  */
-function setupPrefixHandler(client, slashHandlers, { shouldHandleGuild, isCommandEnabled, checkCommandAccess }) {
+function setupPrefixHandler(client, slashHandlers, { shouldHandleGuild, isCommandEnabled, checkCommandAccess, queueCommandExecution }) {
   client.on('messageCreate', async (message) => {
     // Ignore bots and DMs
     if (message.author.bot || !message.guild) return;
@@ -652,6 +652,8 @@ function setupPrefixHandler(client, slashHandlers, { shouldHandleGuild, isComman
     // Check if we have a handler for this command
     if (!slashHandlers[commandName]) return;
 
+    const commandStartedAt = Date.now();
+
     if (checkCommandAccess) {
       const access = await checkCommandAccess({
         guildId: message.guild.id,
@@ -663,6 +665,18 @@ function setupPrefixHandler(client, slashHandlers, { shouldHandleGuild, isComman
       });
 
       if (!access.allowed) {
+        if (queueCommandExecution) {
+          void queueCommandExecution({
+            guildId: message.guild.id,
+            commandName,
+            userId: message.author.id,
+            channelId: message.channel.id,
+            source: 'prefix',
+            status: 'blocked',
+            latencyMs: Date.now() - commandStartedAt,
+            blockedReason: access.reason || 'access',
+          });
+        }
         await message.reply(access.message || '🚫 Du har ikke adgang til denne command.');
         return;
       }
@@ -707,7 +721,31 @@ function setupPrefixHandler(client, slashHandlers, { shouldHandleGuild, isComman
     // Execute handler
     try {
       await slashHandlers[commandName](interaction);
+      if (queueCommandExecution) {
+        void queueCommandExecution({
+          guildId: message.guild.id,
+          commandName,
+          userId: message.author.id,
+          channelId: message.channel.id,
+          source: 'prefix',
+          status: 'success',
+          latencyMs: Date.now() - commandStartedAt,
+        });
+      }
     } catch (error) {
+      if (queueCommandExecution) {
+        void queueCommandExecution({
+          guildId: message.guild.id,
+          commandName,
+          userId: message.author.id,
+          channelId: message.channel.id,
+          source: 'prefix',
+          status: 'error',
+          latencyMs: Date.now() - commandStartedAt,
+          error,
+        });
+      }
+
       console.error(`[Prefix] Fejl i command ${commandName}:`, error);
       try {
         await message.reply('❌ Der skete en fejl under udførelse af kommandoen.');
