@@ -1,0 +1,15 @@
+# Guild Manage Suite - kopieres fra Dashboard → FiveM → Opsætning
+setr gms_api_base "https://bot.nethost-solutions.dk"
+setr gms_guild_id "DIT_DISCORD_GUILD_ID"
+setr gms_api_key "gms_DIN_BRIDGE_NØGLE"
+setr gms_server_id "main"
+setr gms_framework "auto"
+
+# Valgfrit
+# setr gms_fail_open "false"
+# setr gms_event_revive "dit_ems:client:revive"
+# setr gms_event_jail "dit_jail:client:jail"
+# setr gms_event_unjail "dit_jail:client:unjail"
+# setr gms_event_clothing "dit_clothing:client:open"
+
+ensure guild_manage_bridge
