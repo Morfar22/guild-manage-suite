@@ -140,7 +140,7 @@ __serve(async (req) => {
         guild_id,
         server_id: serverId,
         command_name: command,
-        command_data: data,
+        command_data: { ...data, serverId },
         target_player_id: data.targetPlayerId || null,
         target_discord_id: data.targetDiscordId || null,
         target_name: data.targetName || null,
@@ -169,7 +169,7 @@ __serve(async (req) => {
       moderator_name: moderatorName,
       reason: data.reason || null,
       duration_seconds: data.duration ? parseDuration(String(data.duration)) : null,
-      metadata: data,
+      metadata: { ...data, serverId },
     });
 
     // Optional webhook logging works for both the default bot and custom-bot guilds.
