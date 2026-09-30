@@ -41,6 +41,12 @@ const Nodes = [
 // Discord never sends the VOICE_STATE_UPDATE/VOICE_SERVER_UPDATE pair back
 // to the connector and Shoukaku times out after 15 seconds.
 const kazagumoByClient = new WeakMap();
+const lavalinkHealthByClient = new WeakMap();
+
+// Process-wide throttling so 8+ custom bots don't print the same Lavalink outage
+// every second. Each bot still keeps its own connection/session.
+const lavalinkErrorThrottle = new Map();
+const LAVALINK_ERROR_LOG_INTERVAL_MS = Number(process.env.LAVALINK_ERROR_LOG_INTERVAL_MS || 30000);
 
 // ==================== HELPERS ====================
 
@@ -63,6 +69,65 @@ function progressBar(current, total, length = 15) {
 function truncate(str, max = 60) {
   if (!str) return 'Ukendt';
   return str.length > max ? str.slice(0, max - 3) + '...' : str;
+}
+
+function getConnectedNode(kazagumo) {
+  if (!kazagumo?.shoukaku?.nodes) return null;
+
+  // Shoukaku v4 NodeState.CONNECTED = 1.
+  for (const node of kazagumo.shoukaku.nodes.values()) {
+    if (node?.state === 1) return node;
+  }
+
+  return null;
+}
+
+function isLavalinkReady(kazagumo) {
+  return Boolean(getConnectedNode(kazagumo));
+}
+
+function getLavalinkHealth(client) {
+  const current = lavalinkHealthByClient.get(client);
+  if (current) return current;
+
+  const health = {
+    connected: false,
+    nodeName: null,
+    lastError: null,
+    lastErrorAt: null,
+    connectedAt: null,
+  };
+  lavalinkHealthByClient.set(client, health);
+  return health;
+}
+
+function normalizeLavalinkError(error) {
+  return error?.code || error?.message || error?.name || String(error || 'Unknown Lavalink error');
+}
+
+function logLavalinkErrorThrottled(name, error, client) {
+  const details = normalizeLavalinkError(error);
+  const key = `${name}:${details}`;
+  const now = Date.now();
+  const previous = lavalinkErrorThrottle.get(key);
+
+  if (!previous || now - previous.lastLoggedAt >= LAVALINK_ERROR_LOG_INTERVAL_MS) {
+    const suppressed = previous?.suppressed || 0;
+    const suffix = suppressed > 0 ? ` (undertrykte ${suppressed} gentagelser)` : '';
+    console.error(`[Music] Lavalink node "${name}" utilgængelig: ${details}${suffix}`);
+    lavalinkErrorThrottle.set(key, { lastLoggedAt: now, suppressed: 0 });
+  } else {
+    previous.suppressed += 1;
+    lavalinkErrorThrottle.set(key, previous);
+  }
+
+  if (client) {
+    const health = getLavalinkHealth(client);
+    health.connected = false;
+    health.nodeName = name || health.nodeName;
+    health.lastError = details;
+    health.lastErrorAt = new Date().toISOString();
+  }
 }
 
 // ==================== INIT ====================
@@ -90,20 +155,37 @@ function initMusic(client) {
 
   // Events
   kazagumo.shoukaku.on('ready', (name) => {
-    console.log(`[Music] Lavalink node "${name}" connected`);
+    const health = getLavalinkHealth(client);
+    health.connected = true;
+    health.nodeName = name;
+    health.lastError = null;
+    health.connectedAt = new Date().toISOString();
+
+    console.log(`[Music] ✅ Lavalink node "${name}" connected for ${client.user?.tag || client.user?.id || 'bot'}`);
   });
 
   kazagumo.shoukaku.on('error', (name, error) => {
-    const details = error?.message || error?.code || error?.stack || String(error || 'Unknown Lavalink error');
-    console.error(`[Music] Lavalink node "${name}" error:`, details);
+    logLavalinkErrorThrottled(name, error, client);
   });
 
   kazagumo.shoukaku.on('close', (name, code, reason) => {
-    console.warn(`[Music] Lavalink node "${name}" closed (${code}): ${reason || 'no reason'}`);
+    const health = getLavalinkHealth(client);
+    health.connected = false;
+    health.nodeName = name;
+    health.lastError = `WebSocket closed (${code}): ${reason || 'no reason'}`;
+    health.lastErrorAt = new Date().toISOString();
+
+    logLavalinkErrorThrottled(name, health.lastError, client);
   });
 
   kazagumo.shoukaku.on('disconnect', (name, players, moved) => {
-    console.warn(`[Music] Lavalink node "${name}" disconnected. Players: ${players.size}, Moved: ${moved}`);
+    const health = getLavalinkHealth(client);
+    health.connected = false;
+    health.nodeName = name;
+    health.lastError = 'Disconnected';
+    health.lastErrorAt = new Date().toISOString();
+
+    console.warn(`[Music] Lavalink node "${name}" disconnected. Players: ${players?.size || 0}, Moved: ${moved || 0}`);
   });
 
   // Player events
@@ -160,10 +242,7 @@ function initMusic(client) {
 
   kazagumoByClient.set(client, kazagumo);
 
-  console.log(`[Music] Kazagumo initialised for ${client.user?.tag || client.user?.id || 'pending client'} — connector will add nodes on client ready.`);
-  console.log(`[Music] Shoukaku nodes at init: ${kazagumo.shoukaku.nodes.size}`);
-  console.log(`[Music] Shoukaku id at init: ${kazagumo.shoukaku.id}`);
-  console.log(`[Music] Client ready: ${client.isReady()}`);
+  console.log(`[Music] Kazagumo initialiseret for ${client.user?.tag || client.user?.id || 'pending client'}`);
 
   return kazagumo;
 }
@@ -193,6 +272,17 @@ const commands = {
       return interaction.editReply({ content: '❌ Musik-systemet er ikke initialiseret for denne bot endnu.' });
     }
 
+    if (!isLavalinkReady(kazagumo)) {
+      const health = getLavalinkHealth(interaction.client);
+      const detail = health.lastError
+        ? ` Seneste fejl: \`${truncate(health.lastError, 120)}\`.`
+        : '';
+
+      return interaction.editReply({
+        content: `⚠️ Musikserveren er midlertidigt utilgængelig.${detail} Prøv igen om lidt.`,
+      });
+    }
+
     const me = interaction.guild?.members?.me;
     const permissions = me ? channel.permissionsFor(me) : null;
     if (!permissions?.has(PermissionFlagsBits.Connect)) {
@@ -204,13 +294,28 @@ const commands = {
 
     let player = kazagumo.players.get(interaction.guildId);
     if (!player) {
-      player = await kazagumo.createPlayer({
-        guildId: interaction.guildId,
-        textId: interaction.channelId,
-        voiceId: channel.id,
-        volume: 80,
-        deaf: true,
-      });
+      try {
+        player = await kazagumo.createPlayer({
+          guildId: interaction.guildId,
+          textId: interaction.channelId,
+          voiceId: channel.id,
+          volume: 80,
+          deaf: true,
+        });
+      } catch (error) {
+        const message = normalizeLavalinkError(error);
+        if (/no node found/i.test(message)) {
+          const health = getLavalinkHealth(interaction.client);
+          health.connected = false;
+          health.lastError = message;
+          health.lastErrorAt = new Date().toISOString();
+
+          return interaction.editReply({
+            content: '⚠️ Musikserveren er ikke forbundet lige nu. Prøv igen, når Lavalink er online.',
+          });
+        }
+        throw error;
+      }
     }
 
     // Determine search engine based on input type
@@ -589,4 +694,24 @@ function getKazagumoForClient(client) {
   return getKazagumo(client);
 }
 
-module.exports = { initMusic, commands, getKazagumo: getKazagumoForClient };
+function getMusicHealth(client) {
+  const kazagumo = getKazagumo(client);
+  const health = getLavalinkHealth(client);
+
+  return {
+    initialized: Boolean(kazagumo),
+    connected: isLavalinkReady(kazagumo),
+    nodeName: health.nodeName,
+    lastError: health.lastError,
+    lastErrorAt: health.lastErrorAt,
+    connectedAt: health.connectedAt,
+  };
+}
+
+module.exports = {
+  initMusic,
+  commands,
+  getKazagumo: getKazagumoForClient,
+  getMusicHealth,
+  isLavalinkReady,
+};
