@@ -44,6 +44,32 @@ export function useCommandAnalytics(days: number) {
     refetchInterval: 30_000,
   });
 
+  const recentErrorsQuery = useQuery({
+    queryKey: ['command-recent-errors', selectedGuild?.id, days],
+    queryFn: async () => {
+      if (!selectedGuild?.id) return [];
+
+      const sinceDate = new Date();
+      sinceDate.setUTCDate(sinceDate.getUTCDate() - Math.max(0, days - 1));
+      sinceDate.setUTCHours(0, 0, 0, 0);
+
+      const { data, error } = await supabase
+        .from('command_execution_events')
+        .select('id, command_name, user_id, channel_id, source, latency_ms, error_message, created_at')
+        .eq('guild_id', selectedGuild.id)
+        .eq('status', 'error')
+        .gte('created_at', sinceDate.toISOString())
+        .order('created_at', { ascending: false })
+        .limit(12);
+
+      if (error) throw error;
+      return data ?? [];
+    },
+    enabled: !!selectedGuild?.id,
+    staleTime: 15_000,
+    refetchInterval: 30_000,
+  });
+
   const derived = useMemo(() => {
     const byCommand = new Map<string, {
       executions: number;
@@ -156,8 +182,11 @@ export function useCommandAnalytics(days: number) {
 
   return {
     ...derived,
-    isLoading: query.isLoading,
-    error: query.error,
-    refetch: query.refetch,
+    recentErrors: recentErrorsQuery.data ?? [],
+    isLoading: query.isLoading || recentErrorsQuery.isLoading,
+    error: query.error || recentErrorsQuery.error,
+    refetch: async () => {
+      await Promise.all([query.refetch(), recentErrorsQuery.refetch()]);
+    },
   };
 }
