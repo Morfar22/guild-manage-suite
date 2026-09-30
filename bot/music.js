@@ -15,7 +15,7 @@
 
 const { Kazagumo, Plugins } = require('kazagumo');
 const { Connectors } = require('shoukaku');
-const { EmbedBuilder } = require('discord.js');
+const { EmbedBuilder, PermissionFlagsBits } = require('discord.js');
 
 // ==================== CONFIG ====================
 
@@ -36,7 +36,11 @@ const Nodes = [
 
 // ==================== STATE ====================
 
-let kazagumo = null;
+// One Kazagumo/Shoukaku instance per Discord client.
+// A custom bot must establish voice with its own gateway session, otherwise
+// Discord never sends the VOICE_STATE_UPDATE/VOICE_SERVER_UPDATE pair back
+// to the connector and Shoukaku times out after 15 seconds.
+const kazagumoByClient = new WeakMap();
 
 // ==================== HELPERS ====================
 
@@ -64,9 +68,12 @@ function truncate(str, max = 60) {
 // ==================== INIT ====================
 
 function initMusic(client) {
+  const existing = kazagumoByClient.get(client);
+  if (existing) return existing;
+
   const connector = new Connectors.DiscordJS(client);
 
-  kazagumo = new Kazagumo(
+  const kazagumo = new Kazagumo(
     {
       defaultSearchEngine: 'youtube',
       send: (guildId, payload) => {
@@ -151,7 +158,9 @@ function initMusic(client) {
     }
   });
 
-  console.log('[Music] Kazagumo initialised — connector will add nodes on client ready.');
+  kazagumoByClient.set(client, kazagumo);
+
+  console.log(`[Music] Kazagumo initialised for ${client.user?.tag || client.user?.id || 'pending client'} — connector will add nodes on client ready.`);
   console.log(`[Music] Shoukaku nodes at init: ${kazagumo.shoukaku.nodes.size}`);
   console.log(`[Music] Shoukaku id at init: ${kazagumo.shoukaku.id}`);
   console.log(`[Music] Client ready: ${client.isReady()}`);
@@ -159,11 +168,20 @@ function initMusic(client) {
   return kazagumo;
 }
 
+function getKazagumo(client) {
+  return client ? (kazagumoByClient.get(client) || null) : null;
+}
+
+function getKazagumoForInteraction(interaction) {
+  return getKazagumo(interaction?.client);
+}
+
 // ==================== COMMANDS ====================
 
 const commands = {
   // ---- PLAY ----
   play: async (interaction) => {
+    const kazagumo = getKazagumoForInteraction(interaction);
     const query = interaction.options.getString('query');
     const { channel } = interaction.member.voice;
 
@@ -172,7 +190,16 @@ const commands = {
     }
 
     if (!kazagumo) {
-      return interaction.editReply({ content: '❌ Musik-systemet er ikke tilgængeligt. Tjek Lavalink-forbindelsen.' });
+      return interaction.editReply({ content: '❌ Musik-systemet er ikke initialiseret for denne bot endnu.' });
+    }
+
+    const me = interaction.guild?.members?.me;
+    const permissions = me ? channel.permissionsFor(me) : null;
+    if (!permissions?.has(PermissionFlagsBits.Connect)) {
+      return interaction.editReply({ content: '❌ Jeg mangler **Connect**-tilladelse i din voice-kanal.' });
+    }
+    if (!permissions?.has(PermissionFlagsBits.Speak)) {
+      return interaction.editReply({ content: '❌ Jeg mangler **Speak**-tilladelse i din voice-kanal.' });
     }
 
     let player = kazagumo.players.get(interaction.guildId);
@@ -249,6 +276,7 @@ const commands = {
 
   // ---- SKIP ----
   skip: async (interaction) => {
+    const kazagumo = getKazagumoForInteraction(interaction);
     const player = kazagumo?.players.get(interaction.guildId);
     if (!player || !player.queue.current) {
       return interaction.editReply({ content: '❌ Der afspilles ingen musik.' });
@@ -268,6 +296,7 @@ const commands = {
 
   // ---- STOP ----
   stop: async (interaction) => {
+    const kazagumo = getKazagumoForInteraction(interaction);
     const player = kazagumo?.players.get(interaction.guildId);
     if (!player) {
       return interaction.editReply({ content: '❌ Der afspilles ingen musik.' });
@@ -286,6 +315,7 @@ const commands = {
 
   // ---- PAUSE ----
   pause: async (interaction) => {
+    const kazagumo = getKazagumoForInteraction(interaction);
     const player = kazagumo?.players.get(interaction.guildId);
     if (!player || !player.queue.current) {
       return interaction.editReply({ content: '❌ Der afspilles ingen musik.' });
@@ -307,6 +337,7 @@ const commands = {
 
   // ---- RESUME ----
   resume: async (interaction) => {
+    const kazagumo = getKazagumoForInteraction(interaction);
     const player = kazagumo?.players.get(interaction.guildId);
     if (!player || !player.queue.current) {
       return interaction.editReply({ content: '❌ Der afspilles ingen musik.' });
@@ -328,6 +359,7 @@ const commands = {
 
   // ---- QUEUE ----
   queue: async (interaction) => {
+    const kazagumo = getKazagumoForInteraction(interaction);
     const player = kazagumo?.players.get(interaction.guildId);
     if (!player || !player.queue.current) {
       return interaction.editReply({ content: '❌ Køen er tom.' });
@@ -369,6 +401,7 @@ const commands = {
 
   // ---- NOWPLAYING ----
   nowplaying: async (interaction) => {
+    const kazagumo = getKazagumoForInteraction(interaction);
     const player = kazagumo?.players.get(interaction.guildId);
     if (!player || !player.queue.current) {
       return interaction.editReply({ content: '❌ Der afspilles ingen musik.' });
@@ -396,6 +429,7 @@ const commands = {
 
   // ---- VOLUME ----
   volume: async (interaction) => {
+    const kazagumo = getKazagumoForInteraction(interaction);
     const player = kazagumo?.players.get(interaction.guildId);
     if (!player) {
       return interaction.editReply({ content: '❌ Der afspilles ingen musik.' });
@@ -420,6 +454,7 @@ const commands = {
 
   // ---- LOOP ----
   loop: async (interaction) => {
+    const kazagumo = getKazagumoForInteraction(interaction);
     const player = kazagumo?.players.get(interaction.guildId);
     if (!player || !player.queue.current) {
       return interaction.editReply({ content: '❌ Der afspilles ingen musik.' });
@@ -447,6 +482,7 @@ const commands = {
 
   // ---- SHUFFLE ----
   shuffle: async (interaction) => {
+    const kazagumo = getKazagumoForInteraction(interaction);
     const player = kazagumo?.players.get(interaction.guildId);
     if (!player || player.queue.length < 2) {
       return interaction.editReply({ content: '❌ Der skal være mindst 2 sange i køen for at blande.' });
@@ -465,6 +501,8 @@ const commands = {
 
   // ---- REMOVE ----
   remove: async (interaction) => {
+    const kazagumo = getKazagumoForInteraction(interaction);
+    const kazagumo = getKazagumoForInteraction(interaction);
     const player = kazagumo?.players.get(interaction.guildId);
     if (!player || !player.queue.length) {
       return interaction.editReply({ content: '❌ Køen er tom.' });
@@ -520,6 +558,7 @@ const commands = {
 
   // ---- JUMP ----
   jump: async (interaction) => {
+    const kazagumo = getKazagumoForInteraction(interaction);
     const player = kazagumo?.players.get(interaction.guildId);
     if (!player || !player.queue.length) {
       return interaction.editReply({ content: '❌ Køen er tom.' });
@@ -546,8 +585,8 @@ const commands = {
 
 // ==================== EXPORTS ====================
 
-function getKazagumo() {
-  return kazagumo;
+function getKazagumoForClient(client) {
+  return getKazagumo(client);
 }
 
-module.exports = { initMusic, commands, getKazagumo };
+module.exports = { initMusic, commands, getKazagumo: getKazagumoForClient };
