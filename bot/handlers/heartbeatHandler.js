@@ -14,6 +14,11 @@ const BOT_SECRET_KEY = process.env.BOT_SECRET_KEY;
 // Heartbeat interval i millisekunder (30 sekunder)
 const HEARTBEAT_INTERVAL = 30000;
 
+// Backend rows can temporarily be missing for guilds the bot is still connected to.
+// Back off instead of hammering the heartbeat endpoint every 30 seconds.
+const UNREGISTERED_GUILD_RETRY_MS = 10 * 60 * 1000;
+const unregisteredGuildUntil = new Map();
+
 // Tracker for daglige beskeder per guild
 const dailyMessageCount = new Map();
 const APP_API_BASE = process.env.APP_API_BASE || 'https://bot.nethost-solutions.dk';
@@ -111,6 +116,10 @@ async function sendHeartbeat(client, guild, metrics) {
     return;
   }
 
+  const retryAt = unregisteredGuildUntil.get(guild.id) || 0;
+  if (retryAt > Date.now()) return;
+  if (retryAt) unregisteredGuildUntil.delete(guild.id);
+
   try {
     const payload = {
       guild_id: guild.id,
@@ -132,8 +141,19 @@ async function sendHeartbeat(client, guild, metrics) {
 
     if (!response.ok) {
       const error = await response.text();
+
+      if (response.status === 404 && /guild not found/i.test(error)) {
+        const wasBackedOff = unregisteredGuildUntil.has(guild.id);
+        unregisteredGuildUntil.set(guild.id, Date.now() + UNREGISTERED_GUILD_RETRY_MS);
+        if (!wasBackedOff) {
+          console.warn(`[Heartbeat] Guild ${guild.name} er ikke registreret i backend; prøver igen om 10 min.`);
+        }
+        return;
+      }
+
       console.error(`[Heartbeat] Fejl for guild ${guild.name}:`, error);
     } else {
+      unregisteredGuildUntil.delete(guild.id);
       console.log(`[Heartbeat] Sendt for ${guild.name} (${client.ws.ping}ms latency)`);
     }
   } catch (error) {
