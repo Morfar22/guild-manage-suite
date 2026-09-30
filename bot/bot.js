@@ -23,6 +23,7 @@ const { createClient } = require('@supabase/supabase-js');
 
 // Import manager
 const { manager } = require('./customBotManager');
+const { getFiveMDefinition, getFiveMPermission, permissionAtLeast, queueCommandName } = require('./fivem/commands');
 
 // Import handlers
 const { setupTicketHandler } = require('./handlers/ticketHandler');
@@ -182,6 +183,69 @@ async function isModuleEnabled(guildId, moduleType) {
   } catch {
     return true;
   }
+}
+
+async function getFiveMAccessLevel(internalGuildId, interaction) {
+  if (!interaction.guild || !interaction.member) return 'user';
+
+  if (interaction.guild.ownerId === interaction.user.id || interaction.member.permissions.has(PermissionFlagsBits.Administrator)) {
+    return 'god';
+  }
+
+  const roleIds = [...interaction.member.roles.cache.keys()];
+  let level = 'user';
+
+  const { data: settings } = await supabase
+    .from('fivem_settings')
+    .select('staff_role_ids, mod_role_ids, admin_role_ids, god_role_ids')
+    .eq('guild_id', internalGuildId)
+    .maybeSingle();
+
+  const hasAny = (ids) => Array.isArray(ids) && ids.some((id) => roleIds.includes(id));
+  if (hasAny(settings?.staff_role_ids) || hasAny(settings?.mod_role_ids)) level = 'mod';
+  if (hasAny(settings?.admin_role_ids)) level = 'admin';
+  if (hasAny(settings?.god_role_ids)) level = 'god';
+
+  if (roleIds.length > 0) {
+    const { data: mappedRoles } = await supabase
+      .from('fivem_role_permissions')
+      .select('permission_level')
+      .eq('guild_id', internalGuildId)
+      .in('discord_role_id', roleIds);
+
+    for (const role of mappedRoles || []) {
+      if (permissionAtLeast(role.permission_level, level)) level = role.permission_level;
+    }
+  }
+
+  return level;
+}
+
+async function getFiveMRuntime(internalGuildId) {
+  const [{ data: settings }, { data: status }] = await Promise.all([
+    supabase
+      .from('fivem_settings')
+      .select('enabled, server_name')
+      .eq('guild_id', internalGuildId)
+      .maybeSingle(),
+    supabase
+      .from('fivem_server_status')
+      .select('is_online, player_count, max_players, uptime_seconds, server_name, last_heartbeat, updated_at')
+      .eq('guild_id', internalGuildId)
+      .order('updated_at', { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+  ]);
+
+  const heartbeatAt = status?.last_heartbeat ? new Date(status.last_heartbeat).getTime() : 0;
+  const fresh = heartbeatAt > 0 && (Date.now() - heartbeatAt) < 90_000;
+
+  return {
+    enabled: Boolean(settings?.enabled),
+    online: Boolean(status?.is_online && fresh),
+    status,
+    settings,
+  };
 }
 
 function formatDuration(seconds) {
@@ -1892,11 +1956,12 @@ function createSlashHandlers(client) {
       await interaction.deferReply({ flags: 64 });
 
       try {
+        if (!interaction.guild) return interaction.editReply('❌ Denne kommando kan kun bruges på en Discord-server.');
+
         const guildDiscordId = interaction.guild.id;
         const userId = interaction.user.id;
         const userName = interaction.user.username;
 
-        // Get internal guild ID
         const { data: guild, error: guildError } = await supabase
           .from('guilds')
           .select('id')
@@ -1904,138 +1969,129 @@ function createSlashHandlers(client) {
           .single();
 
         if (guildError || !guild) {
-          return interaction.editReply('❌ Guild not configured.');
+          return interaction.editReply('❌ Serveren er ikke sat op i dashboardet endnu.');
         }
 
         const internalGuildId = guild.id;
-
-        // Parse command structure. Supports both:
-        //   /fivem <subcommand> [options]                 (current registration)
-        //   /fivem <group> <subcommand> [options]         (legacy)
         const group = interaction.options.getSubcommandGroup(false);
         const subcommand = interaction.options.getSubcommand(false);
 
-        if (!subcommand) {
-          return interaction.editReply('❌ Invalid command format.');
+        if (!group || !subcommand) {
+          return interaction.editReply('❌ Ugyldigt FiveM-command format.');
         }
 
-        // Build command data from all options
+        const definition = getFiveMDefinition(group, subcommand);
+        if (!definition) {
+          return interaction.editReply('❌ Denne FiveM-command findes ikke i den aktive command-schema.');
+        }
+
+        const requiredLevel = getFiveMPermission(group, subcommand);
+        const actualLevel = await getFiveMAccessLevel(internalGuildId, interaction);
+        if (!permissionAtLeast(actualLevel, requiredLevel)) {
+          return interaction.editReply(
+            `🔒 Du mangler FiveM-rettighed. Kræver **${requiredLevel}**, du har **${actualLevel}**.\n` +
+            'En serveradministrator kan tildele roller under **FiveM → Permissions**.'
+          );
+        }
+
+        const runtime = await getFiveMRuntime(internalGuildId);
+        if (!runtime.enabled) {
+          return interaction.editReply(
+            '⚙️ FiveM-integrationen er ikke aktiveret endnu. Åbn **Dashboard → FiveM → Opsætning** og gennemfør guiden.'
+          );
+        }
+
         const commandData = {
           moderatorDiscordId: userId,
           moderatorName: userName,
-          group: group || subcommand,
+          group,
           subcommand,
         };
 
-        // Extract all options for the (sub)command
         const topData = interaction.options.data?.[0];
-        const rawOptions = group
-          ? (topData?.options?.[0]?.options || [])
-          : (topData?.options || []);
-        for (const opt of rawOptions) {
-          commandData[opt.name] = opt.value;
-        }
+        const rawOptions = topData?.options?.[0]?.options || [];
+        for (const opt of rawOptions) commandData[opt.name] = opt.value;
 
-        // Determine effective command name:
-        // - With group: "<group>_<subcommand>"
-        // - Without group: if an "action" option exists, use it (e.g. kick, ban, restart, announce);
-        //   otherwise use the subcommand name (status, players)
-        let effectiveCommand;
-        if (group && group !== subcommand) {
-          effectiveCommand = `${group}_${subcommand}`;
-        } else if (commandData.action) {
-          effectiveCommand = String(commandData.action);
-        } else {
-          effectiveCommand = subcommand;
-        }
-
-        const directInfoCommand = ['players', 'status'].includes(subcommand)
-          && (!group || group === subcommand);
-
-        // Map 'target' / 'id' option to 'targetPlayerId'
-        if (commandData.target && !commandData.targetPlayerId) {
-          commandData.targetPlayerId = commandData.target;
-        }
-        if (commandData.id) {
-          commandData.targetPlayerId = commandData.id;
+        if (commandData.id !== undefined && commandData.id !== null) {
+          commandData.targetPlayerId = Number(commandData.id);
           delete commandData.id;
         }
-        // Map 'message' to 'reason' for announce-style commands when no reason set
-        if (!commandData.reason && commandData.message) {
-          commandData.reason = commandData.message;
-        }
+        if (!commandData.reason && commandData.message) commandData.reason = commandData.message;
 
-        console.log(`[FiveM] Command: /fivem ${group ? group + ' ' : ''}${subcommand} -> ${effectiveCommand}`, JSON.stringify(commandData));
+        const cmdLabel = `/fivem ${group} ${subcommand}`;
 
-        // Short-circuit: `players` and `status` don't need to round-trip via the queue —
-        // read live data straight from the DB tables the Lua resource keeps updated.
-        if (directInfoCommand && subcommand === 'players') {
-          console.log('[FiveM] Direct Discord response: players');
+        // Read-only status commands use the synchronized tables directly.
+        if (group === 'server' && subcommand === 'players') {
           const { data: players, error: playersErr } = await supabase
             .from('fivem_online_players')
             .select('player_id, character_name, discord_username, ping')
             .eq('guild_id', internalGuildId)
             .order('player_id', { ascending: true });
 
-          if (playersErr) {
-            return interaction.editReply(`❌ Kunne ikke hente spillerliste: ${playersErr.message}`);
-          }
+          if (playersErr) return interaction.editReply(`❌ Kunne ikke hente spillerlisten: ${playersErr.message}`);
 
-          const count = players?.length || 0;
-          if (count === 0) {
-            return interaction.editReply('👥 **Spillere online:** 0\n\n*Ingen spillere på serveren lige nu.*');
-          }
-
-          const lines = players.map(p => {
-            const name = p.character_name || p.discord_username || `Player #${p.player_id}`;
-            return `[${p.player_id}] ${name}${p.ping ? ` (${p.ping}ms)` : ''}`;
+          const lines = (players || []).map((player) => {
+            const name = player.character_name || player.discord_username || `Player #${player.player_id}`;
+            return `[${player.player_id}] ${name}${player.ping !== null ? ` (${player.ping}ms)` : ''}`;
           });
+
+          if (!lines.length) return interaction.editReply('👥 **Spillere online: 0**');
           let body = lines.join('\n');
           if (body.length > 1800) body = body.slice(0, 1800) + '\n…';
-          return interaction.editReply(`👥 **Spillere online:** ${count}\n\`\`\`\n${body}\n\`\`\``);
+          return interaction.editReply(`👥 **Spillere online: ${lines.length}**\n\`\`\`\n${body}\n\`\`\``);
         }
 
-        if (directInfoCommand && subcommand === 'status') {
-          console.log('[FiveM] Direct Discord response: status');
-          const { data: status } = await supabase
-            .from('fivem_server_status')
-            .select('is_online, player_count, max_players, uptime_seconds, server_name')
-            .eq('guild_id', internalGuildId)
-            .order('updated_at', { ascending: false })
-            .limit(1)
-            .maybeSingle();
+        if (group === 'server' && subcommand === 'count') {
+          const { count, error } = await supabase
+            .from('fivem_online_players')
+            .select('id', { count: 'exact', head: true })
+            .eq('guild_id', internalGuildId);
+          if (error) return interaction.editReply(`❌ Kunne ikke hente spillerantal: ${error.message}`);
+          return interaction.editReply(`👥 **${count || 0}** spiller(e) online.`);
+        }
 
-          if (!status) return interaction.editReply('❌ Ingen serverstatus tilgængelig endnu.');
-
-          const online = status.is_online ? '🟢 Online' : '🔴 Offline';
+        if (group === 'server' && subcommand === 'info') {
+          const status = runtime.status;
+          if (!status) return interaction.editReply('🔴 Ingen heartbeat modtaget fra FiveM-bridgen endnu.');
           return interaction.editReply(
-            `**${status.server_name || 'FiveM Server'}**\n` +
-            `Status: ${online}\n` +
-            `Spillere: ${status.player_count || 0}/${status.max_players || 64}\n` +
+            `**${status.server_name || runtime.settings?.server_name || 'FiveM Server'}**\n` +
+            `Status: ${runtime.online ? '🟢 Online' : '🔴 Offline / heartbeat mangler'}\n` +
+            `Spillere: ${status.player_count || 0}/${status.max_players || 0}\n` +
             `Uptime: ${formatDuration(status.uptime_seconds || 0)}`
           );
         }
 
-        // Queue the command for FiveM server
-        const { data: queuedRow, error: queueError } = await supabase.from('fivem_command_queue').insert({
-          guild_id: internalGuildId,
-          command_name: effectiveCommand,
-          command_data: commandData,
-          target_player_id: commandData.targetPlayerId || null,
-          target_discord_id: null,
-          target_name: null,
-          moderator_discord_id: userId,
-          moderator_name: userName,
-          status: 'pending',
-        }).select('id').single();
-
-        if (queueError || !queuedRow?.id) {
-          console.error('[FiveM] Queue error:', JSON.stringify(queueError));
-          botLog(internalGuildId, 'error', 'fivem', `Failed to queue command ${effectiveCommand}: ${queueError?.message || JSON.stringify(queueError)}`, { error: queueError, commandData });
-          return interaction.editReply(`❌ Failed to queue command: ${queueError?.message || 'Unknown error'}`);
+        if (!runtime.online) {
+          return interaction.editReply(
+            '🔌 **FiveM Bridge er offline.** Kommandoen blev ikke lagt i kø.\n' +
+            'Tjek **Dashboard → FiveM → Opsætning**, resource-status og server.cfg.'
+          );
         }
 
-        // Log the action
+        const effectiveCommand = queueCommandName(group, subcommand);
+        console.log(`[FiveM] ${cmdLabel} -> ${effectiveCommand}`, JSON.stringify(commandData));
+
+        const { data: queuedRow, error: queueError } = await supabase
+          .from('fivem_command_queue')
+          .insert({
+            guild_id: internalGuildId,
+            command_name: effectiveCommand,
+            command_data: commandData,
+            target_player_id: commandData.targetPlayerId || null,
+            target_discord_id: commandData.targetDiscordId || null,
+            target_name: commandData.targetName || null,
+            moderator_discord_id: userId,
+            moderator_name: userName,
+            status: 'pending',
+          })
+          .select('id')
+          .single();
+
+        if (queueError || !queuedRow?.id) {
+          console.error('[FiveM] Queue error:', queueError);
+          return interaction.editReply(`❌ Kunne ikke lægge kommandoen i kø: ${queueError?.message || 'ukendt fejl'}`);
+        }
+
         await supabase.from('fivem_action_logs').insert({
           guild_id: internalGuildId,
           action_type: effectiveCommand,
@@ -2044,58 +2100,44 @@ function createSlashHandlers(client) {
           moderator_discord_id: userId,
           moderator_name: userName,
           reason: commandData.reason || null,
-          metadata: commandData,
+          metadata: { source: 'discord', ...commandData },
         });
 
-        const cmdLabel = `/fivem ${group ? group + ' ' : ''}${subcommand}`;
-
-        // Poll for execution result (max ~12s)
         let resultRow = null;
-        for (let i = 0; i < 24; i++) {
-          await new Promise(r => setTimeout(r, 500));
+        for (let i = 0; i < 30; i++) {
+          await new Promise((resolve) => setTimeout(resolve, 500));
           const { data: row } = await supabase
             .from('fivem_command_queue')
             .select('status, result')
             .eq('id', queuedRow.id)
             .single();
-          if (row && row.status !== 'pending') {
+
+          if (row && row.status !== 'pending' && row.status !== 'processing') {
             resultRow = row;
             break;
           }
         }
 
         if (!resultRow) {
-          return interaction.editReply(`⏳ \`${cmdLabel}\` queued, men FiveM-serveren svarede ikke i tide.`);
+          return interaction.editReply(
+            `⏳ ${cmdLabel} er sendt til serveren, men svaret tager længere end forventet. Se resultatet i FiveM-loggen på dashboardet.`
+          );
         }
 
         if (resultRow.status === 'failed') {
-          return interaction.editReply(`❌ \`${cmdLabel}\` fejlede: ${resultRow.result || 'Ukendt fejl'}`);
+          return interaction.editReply(`❌ ${cmdLabel} fejlede:\n\`\`\`\n${resultRow.result || 'Ukendt fejl'}\n\`\`\``);
         }
 
-        const rawResult = (resultRow.result || '').trim();
-        let responseMessage;
-
-        if (effectiveCommand === 'players') {
-          // Result examples: "[1] Name, [2] Other" or "[1] Name\n[2] Other"
-          const matches = rawResult.match(/\[\d+\]/g) || [];
-          const count = matches.length;
-          if (count === 0) {
-            responseMessage = `👥 **Spillere online:** 0\n\n*Ingen spillere på serveren.*`;
-          } else {
-            responseMessage = `👥 **Spillere online:** ${count}\n\`\`\`\n${rawResult}\n\`\`\``;
-          }
-        } else {
-          responseMessage = `✅ \`${cmdLabel}\` udført`;
-          if (rawResult) responseMessage += `\n\`\`\`\n${rawResult}\n\`\`\``;
+        const rawResult = String(resultRow.result || '').trim();
+        let message = `✅ ${cmdLabel} udført.`;
+        if (rawResult) {
+          const safeResult = rawResult.length > 1700 ? rawResult.slice(0, 1700) + '…' : rawResult;
+          message += `\n\`\`\`\n${safeResult}\n\`\`\``;
         }
-
-        await interaction.editReply(responseMessage);
+        return interaction.editReply(message);
       } catch (error) {
         console.error('[FiveM] Command error:', error);
-        const msg = interaction.deferred || interaction.replied
-          ? interaction.editReply('❌ An error occurred executing the FiveM command.')
-          : interaction.reply({ content: '❌ An error occurred.', flags: 64 });
-        await msg.catch(() => {});
+        return interaction.editReply('❌ Der opstod en intern fejl i FiveM-integrationen.').catch(() => {});
       }
     },
   };
