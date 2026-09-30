@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useGuild } from "@/contexts/GuildContext";
 
-type QueueStatus = "pending" | "executed" | "failed";
+type QueueStatus = "pending" | "processing" | "executed" | "failed";
 
 export interface FiveMCommandQueueEntry {
   id: string;
@@ -32,16 +32,15 @@ export function useFiveMCommandQueueEntry(commandId?: string | null) {
 
       if (error) throw error;
       
-      console.log("[useFiveMCommandQueueEntry] Fetched:", data?.status, data?.result);
       return data as FiveMCommandQueueEntry;
     },
     // Poll every second while pending - use staleTime 0 to always refetch
     staleTime: 0,
     refetchInterval: (query) => {
       const entry = query.state.data as FiveMCommandQueueEntry | undefined;
-      // Keep polling while status is pending
-      if (!entry) return 1000;
-      if (entry.status === "pending") return 1000;
+      // Keep polling while the bridge still owns/executes the command.
+      if (!entry) return 750;
+      if (entry.status === "pending" || entry.status === "processing") return 750;
       return false;
     },
   });
