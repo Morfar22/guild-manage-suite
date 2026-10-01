@@ -442,6 +442,17 @@ const commands = [
 
   // ==================== SUGGESTION ====================
   new SlashCommandBuilder()
+    .setName('appeal-submit')
+    .setDescription('Indsend en moderation appeal')
+    .addStringOption(o => o.setName('message').setDescription('Forklar hvorfor sagen bør genovervejes').setRequired(true))
+    .addStringOption(o => o.setName('case_id').setDescription('Valgfrit case-ID')),
+
+  new SlashCommandBuilder()
+    .setName('appeal-status')
+    .setDescription('Se status på dine appeals')
+    .addStringOption(o => o.setName('appeal_id').setDescription('Valgfrit appeal-ID')),
+
+  new SlashCommandBuilder()
     .setName('suggest')
     .setDescription('Send et forslag')
     .addStringOption(o => o.setName('suggestion').setDescription('Dit forslag').setRequired(true)),
