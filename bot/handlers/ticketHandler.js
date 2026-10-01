@@ -23,6 +23,7 @@ const {
   StringSelectMenuBuilder,
   PermissionFlagsBits,
 } = require('discord.js');
+const { resolveInteractionCommand } = require('../commandRouting');
 
 const APP_API_BASE = (process.env.APP_API_BASE || 'https://bot.nethost-solutions.dk').replace(/\/$/, '');
 const API_URL = process.env.API_URL || `${APP_API_BASE}/api/public/bot-tickets`;
@@ -199,6 +200,8 @@ function isWithinOperatingHours(hours) {
  */
 function setupTicketHandler(client, config = {}) {
   const shouldHandleGuild = config.shouldHandleGuild || (() => true);
+  const checkCommandAccess = config.checkCommandAccess;
+  const queueCommandExecution = config.queueCommandExecution;
 
   // Track which channels are ticket threads (populated on ticket creation)
   const ticketChannels = new Set();
@@ -243,11 +246,64 @@ function setupTicketHandler(client, config = {}) {
     // Check if this bot instance should handle this guild
     if (interaction.guild && !shouldHandleGuild(interaction.guild.id)) return;
 
+    const resolvedCommand = interaction.isChatInputCommand?.()
+      ? resolveInteractionCommand(interaction)
+      : null;
+    const commandName = resolvedCommand?.logicalName || interaction.commandName;
+    const ticketCommandNames = new Set([
+      'ticket',
+      'ticket-remind',
+      'ticket-close',
+      'ticket-claim',
+      'unclaim',
+      'ticket-add',
+      'rename',
+      'ticket-remove',
+      'transcript',
+    ]);
+    const commandStartedAt = Date.now();
+
+    const trackTicketCommand = (status, error = null, blockedReason = null) => {
+      if (!queueCommandExecution || !interaction.guild || !ticketCommandNames.has(commandName)) return;
+      void queueCommandExecution({
+        guildId: interaction.guild.id,
+        commandName,
+        userId: interaction.user?.id,
+        channelId: interaction.channelId,
+        source: 'slash',
+        status,
+        latencyMs: Date.now() - commandStartedAt,
+        blockedReason,
+        error,
+      });
+    };
+
+    if (
+      interaction.isChatInputCommand?.() &&
+      ticketCommandNames.has(commandName) &&
+      checkCommandAccess
+    ) {
+      const access = await checkCommandAccess({
+        guildId: interaction.guild.id,
+        commandName,
+        userId: interaction.user.id,
+        roleIds: interaction.member?.roles?.cache ? [...interaction.member.roles.cache.keys()] : [],
+        channelId: interaction.channelId,
+        isAdmin: Boolean(interaction.member?.permissions?.has?.(PermissionFlagsBits.Administrator)),
+      });
+
+      if (!access.allowed) {
+        trackTicketCommand('blocked', null, access.reason || 'access');
+        return replyPrivate(interaction, access.message || '🚫 Du har ikke adgang til denne command.');
+      }
+    }
+
     // Handle /ticket-remind slash command
-    if (interaction.isChatInputCommand?.() && interaction.commandName === 'ticket-remind') {
+    if (interaction.isChatInputCommand?.() && commandName === 'ticket-remind') {
       try {
-        await handleTicketRemind(interaction, remindTimers);
+        await handleTicketRemind(interaction, remindTimers);\n        trackTicketCommand('success');
       } catch (error) {
+        trackTicketCommand('error', error);
         console.error('Ticket remind error:', error);
         if (!interaction.replied && !interaction.deferred) {
           await interaction.reply({ content: '❌ Der opstod en fejl.', ephemeral: true }).catch(console.error);
@@ -257,10 +313,11 @@ function setupTicketHandler(client, config = {}) {
     }
 
     // Handle /ticket - create a new ticket via slash command
-    if (interaction.isChatInputCommand?.() && interaction.commandName === 'ticket') {
+    if (interaction.isChatInputCommand?.() && commandName === 'ticket') {
       try {
-        await handleTicketSlashCreate(interaction);
+        await handleTicketSlashCreate(interaction);\n        trackTicketCommand('success');
       } catch (error) {
+        trackTicketCommand('error', error);
         console.error('Ticket create error:', error);
         if (!interaction.replied && !interaction.deferred) {
           await interaction.reply({ content: '❌ Der opstod en fejl.', ephemeral: true }).catch(console.error);
@@ -270,14 +327,15 @@ function setupTicketHandler(client, config = {}) {
     }
 
     // Handle /ticket-close
-    if (interaction.isChatInputCommand?.() && ['ticket-close', 'close'].includes(interaction.commandName)) {
+    if (interaction.isChatInputCommand?.() && commandName === 'ticket-close') {
       try {
         if (!interaction.channel?.isThread()) {
           return interaction.reply({ content: '❌ Denne kommando kan kun bruges i en ticket-tråd.', ephemeral: true });
         }
         const deleteThread = interaction.options.getBoolean?.('delete') || false;
-        await handleCloseTicket(interaction, interaction.channel.id, deleteThread);
+        await handleCloseTicket(interaction, interaction.channel.id, deleteThread);\n        trackTicketCommand('success');
       } catch (error) {
+        trackTicketCommand('error', error);
         console.error('Ticket close error:', error);
         if (!interaction.replied && !interaction.deferred) {
           await interaction.reply({ content: '❌ Der opstod en fejl.', ephemeral: true }).catch(console.error);
@@ -287,13 +345,14 @@ function setupTicketHandler(client, config = {}) {
     }
 
     // Handle /ticket-claim
-    if (interaction.isChatInputCommand?.() && ['ticket-claim', 'claim'].includes(interaction.commandName)) {
+    if (interaction.isChatInputCommand?.() && commandName === 'ticket-claim') {
       try {
         if (!interaction.channel?.isThread()) {
           return interaction.reply({ content: '❌ Denne kommando kan kun bruges i en ticket-tråd.', ephemeral: true });
         }
-        await handleClaimTicket(interaction, interaction.channel.id);
+        await handleClaimTicket(interaction, interaction.channel.id);\n        trackTicketCommand('success');
       } catch (error) {
+        trackTicketCommand('error', error);
         console.error('Ticket claim error:', error);
         if (!interaction.replied && !interaction.deferred) {
           await interaction.reply({ content: '❌ Der opstod en fejl.', ephemeral: true }).catch(console.error);
@@ -303,13 +362,14 @@ function setupTicketHandler(client, config = {}) {
     }
 
     // Handle /unclaim
-    if (interaction.isChatInputCommand?.() && interaction.commandName === 'unclaim') {
+    if (interaction.isChatInputCommand?.() && commandName === 'unclaim') {
       try {
         if (!interaction.channel?.isThread()) {
           return interaction.reply({ content: '❌ Denne kommando kan kun bruges i en ticket-tråd.', ephemeral: true });
         }
-        await handleUnclaimTicket(interaction, interaction.channel.id);
+        await handleUnclaimTicket(interaction, interaction.channel.id);\n        trackTicketCommand('success');
       } catch (error) {
+        trackTicketCommand('error', error);
         console.error('Ticket unclaim error:', error);
         if (!interaction.replied && !interaction.deferred) {
           await interaction.reply({ content: '❌ Der opstod en fejl.', ephemeral: true }).catch(console.error);
@@ -319,7 +379,7 @@ function setupTicketHandler(client, config = {}) {
     }
 
     // Handle /ticket-add
-    if (interaction.isChatInputCommand?.() && ['ticket-add', 'add'].includes(interaction.commandName)) {
+    if (interaction.isChatInputCommand?.() && commandName === 'ticket-add') {
       try {
         if (!interaction.channel?.isThread()) {
           return interaction.reply({ content: '❌ Denne kommando kan kun bruges i en ticket-tråd.', ephemeral: true });
@@ -329,7 +389,9 @@ function setupTicketHandler(client, config = {}) {
         const user = interaction.options.getUser('user');
         await interaction.channel.members.add(user.id);
         await interaction.reply({ content: `✅ <@${user.id}> er blevet tilføjet til denne ticket.`, ephemeral: true });
+        trackTicketCommand('success');
       } catch (error) {
+        trackTicketCommand('error', error);
         console.error('Ticket add error:', error);
         if (!interaction.replied && !interaction.deferred) {
           await interaction.reply({ content: '❌ Kunne ikke tilføje brugeren.', ephemeral: true }).catch(console.error);
@@ -339,7 +401,7 @@ function setupTicketHandler(client, config = {}) {
     }
 
     // Handle /rename
-    if (interaction.isChatInputCommand?.() && interaction.commandName === 'rename') {
+    if (interaction.isChatInputCommand?.() && commandName === 'rename') {
       try {
         if (!interaction.channel?.isThread()) {
           return interaction.reply({ content: '❌ Denne kommando kan kun bruges i en ticket-tråd.', ephemeral: true });
@@ -353,6 +415,7 @@ function setupTicketHandler(client, config = {}) {
         await interaction.channel.setName(name.slice(0, 100));
         await interaction.reply({ content: `✅ Ticket-tråden hedder nu **${name.slice(0, 100)}**.`, ephemeral: true });
       } catch (error) {
+        trackTicketCommand('error', error);
         console.error('Ticket rename error:', error);
         if (!interaction.replied && !interaction.deferred) {
           await interaction.reply({ content: '❌ Kunne ikke omdøbe ticketen.', ephemeral: true }).catch(console.error);
@@ -362,7 +425,7 @@ function setupTicketHandler(client, config = {}) {
     }
 
     // Handle /ticket-remove
-    if (interaction.isChatInputCommand?.() && interaction.commandName === 'ticket-remove') {
+    if (interaction.isChatInputCommand?.() && commandName === 'ticket-remove') {
       try {
         if (!interaction.channel?.isThread()) {
           return interaction.reply({ content: '❌ Denne kommando kan kun bruges i en ticket-tråd.', ephemeral: true });
@@ -373,6 +436,7 @@ function setupTicketHandler(client, config = {}) {
         await interaction.channel.members.remove(user.id);
         await interaction.reply({ content: `✅ <@${user.id}> er blevet fjernet fra denne ticket.`, ephemeral: true });
       } catch (error) {
+        trackTicketCommand('error', error);
         console.error('Ticket remove error:', error);
         if (!interaction.replied && !interaction.deferred) {
           await interaction.reply({ content: '❌ Kunne ikke fjerne brugeren.', ephemeral: true }).catch(console.error);
