@@ -80,6 +80,7 @@ const { setupCurrencyShopHandler } = require('./handlers/currencyShopHandler');
 const { createExtraHandlers, setupSnipeTracker } = require('./handlers/extraCommands');
 const { createAdminHandlers } = require('./handlers/adminCommands');
 const { createGameHandlers } = require('./handlers/gameCommands');
+const { createAdvancedModerationHandlers, setupModerationScheduler } = require('./handlers/advancedModeration');
 
 const { setupPrefixHandler } = require('./handlers/prefixHandler');
 // Optional: Music system (comment out if not using)
@@ -2851,6 +2852,18 @@ manager.registerHandler((client, guildId, assignedDiscordGuildId) => {
     console.error(`[Bot] ❌ Game commands fejl:`, e.message);
   }
 
+  // Advanced moderation commands + persistent temp actions
+  try {
+    Object.assign(
+      slashHandlers,
+      createAdvancedModerationHandlers(client, { supabase })
+    );
+    const moderationScheduler = setupModerationScheduler(client, { supabase, shouldHandleGuild });
+    handlerInstances.set(`moderation_scheduler_${clientLabel}`, moderationScheduler);
+    console.log(`[Bot] ✅ Advanced moderation for ${clientLabel}`);
+  } catch (e) {
+    console.error(`[Bot] ❌ Advanced moderation fejl:`, e.message);
+  }
 
 
 
