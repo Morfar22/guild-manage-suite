@@ -19,6 +19,12 @@ export interface CustomCommand {
   cooldown_seconds: number;
   required_role_id: string | null;
   allowed_channels: string[];
+  allowed_role_ids: string[];
+  blocked_role_ids: string[];
+  blocked_channel_ids: string[];
+  conditions: Record<string, unknown>;
+  response_buttons: unknown[];
+  response_selects: unknown[];
   usage_count: number;
   created_by_id: string | null;
   created_by_name: string | null;
@@ -39,6 +45,12 @@ export interface CreateCustomCommand {
   cooldown_seconds?: number;
   required_role_id?: string;
   allowed_channels?: string[];
+  allowed_role_ids?: string[];
+  blocked_role_ids?: string[];
+  blocked_channel_ids?: string[];
+  conditions?: Record<string, unknown>;
+  response_buttons?: unknown[];
+  response_selects?: unknown[];
 }
 
 export function useCustomCommands() {
@@ -79,6 +91,12 @@ export function useCustomCommands() {
           role_id: cmd.role_id ?? null,
           required_role_id: cmd.required_role_id ?? null,
           allowed_channels: cmd.allowed_channels ?? [],
+          allowed_role_ids: cmd.allowed_role_ids ?? [],
+          blocked_role_ids: cmd.blocked_role_ids ?? [],
+          blocked_channel_ids: cmd.blocked_channel_ids ?? [],
+          conditions: cmd.conditions ? JSON.parse(JSON.stringify(cmd.conditions)) : {},
+          response_buttons: cmd.response_buttons ? JSON.parse(JSON.stringify(cmd.response_buttons)) : [],
+          response_selects: cmd.response_selects ? JSON.parse(JSON.stringify(cmd.response_selects)) : [],
         });
       if (error) throw error;
     },
