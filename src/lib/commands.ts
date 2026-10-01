@@ -15,6 +15,7 @@ export interface CommandAuditEntry {
   commandName: string;
   action: string;
   details: Record<string, unknown>;
+  undoPayload?: Record<string, unknown> | null;
 }
 
 export async function recordCommandAudits(
@@ -37,6 +38,7 @@ export async function recordCommandAudits(
         target_type: 'command',
         target_id: entry.commandName,
         details: entry.details as Json,
+        undo_payload: entry.undoPayload ? (entry.undoPayload as Json) : null,
       }))
     );
 
