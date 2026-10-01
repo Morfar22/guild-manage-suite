@@ -3644,41 +3644,169 @@ export type Database = {
           action_type: Database["public"]["Enums"]["moderation_action_type"]
           created_at: string
           duration_seconds: number | null
+          expires_at: string | null
           guild_id: string
           id: string
+          metadata: Json
           moderator_id: string
           moderator_name: string | null
           reason: string | null
           target_id: string
           target_name: string | null
+          updated_at: string
         }
         Insert: {
           action_type: Database["public"]["Enums"]["moderation_action_type"]
           created_at?: string
           duration_seconds?: number | null
+          expires_at?: string | null
           guild_id: string
           id?: string
+          metadata?: Json
           moderator_id: string
           moderator_name?: string | null
           reason?: string | null
           target_id: string
           target_name?: string | null
+          updated_at?: string
         }
         Update: {
           action_type?: Database["public"]["Enums"]["moderation_action_type"]
           created_at?: string
           duration_seconds?: number | null
+          expires_at?: string | null
           guild_id?: string
           id?: string
+          metadata?: Json
           moderator_id?: string
           moderator_name?: string | null
           reason?: string | null
           target_id?: string
           target_name?: string | null
+          updated_at?: string
         }
         Relationships: [
           {
             foreignKeyName: "moderation_logs_guild_id_fkey"
+            columns: ["guild_id"]
+            isOneToOne: false
+            referencedRelation: "guilds"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      moderation_notes: {
+        Row: {
+          case_id: string | null
+          created_at: string
+          guild_id: string
+          id: string
+          moderator_id: string
+          moderator_name: string | null
+          note: string
+          user_id: string
+          user_name: string | null
+        }
+        Insert: {
+          case_id?: string | null
+          created_at?: string
+          guild_id: string
+          id?: string
+          moderator_id: string
+          moderator_name?: string | null
+          note: string
+          user_id: string
+          user_name?: string | null
+        }
+        Update: {
+          case_id?: string | null
+          created_at?: string
+          guild_id?: string
+          id?: string
+          moderator_id?: string
+          moderator_name?: string | null
+          note?: string
+          user_id?: string
+          user_name?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "moderation_notes_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "moderation_logs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "moderation_notes_guild_id_fkey"
+            columns: ["guild_id"]
+            isOneToOne: false
+            referencedRelation: "guilds"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      moderation_scheduled_actions: {
+        Row: {
+          action_type: string
+          created_at: string
+          created_by_id: string
+          created_by_name: string | null
+          discord_guild_id: string
+          execute_at: string
+          executed_at: string | null
+          guild_id: string
+          id: string
+          last_error: string | null
+          metadata: Json
+          reason: string | null
+          role_id: string | null
+          status: string
+          target_id: string
+          target_name: string | null
+          updated_at: string
+        }
+        Insert: {
+          action_type: string
+          created_at?: string
+          created_by_id: string
+          created_by_name?: string | null
+          discord_guild_id: string
+          execute_at: string
+          executed_at?: string | null
+          guild_id: string
+          id?: string
+          last_error?: string | null
+          metadata?: Json
+          reason?: string | null
+          role_id?: string | null
+          status?: string
+          target_id: string
+          target_name?: string | null
+          updated_at?: string
+        }
+        Update: {
+          action_type?: string
+          created_at?: string
+          created_by_id?: string
+          created_by_name?: string | null
+          discord_guild_id?: string
+          execute_at?: string
+          executed_at?: string | null
+          guild_id?: string
+          id?: string
+          last_error?: string | null
+          metadata?: Json
+          reason?: string | null
+          role_id?: string | null
+          status?: string
+          target_id?: string
+          target_name?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "moderation_scheduled_actions_guild_id_fkey"
             columns: ["guild_id"]
             isOneToOne: false
             referencedRelation: "guilds"
@@ -7104,6 +7232,9 @@ export type Database = {
         | "timeout"
         | "unban"
         | "unmute"
+        | "tempban"
+        | "role"
+        | "quarantine"
       module_type:
         | "moderation"
         | "music"
