@@ -259,7 +259,6 @@ function setupTicketHandler(client, config = {}) {
       'ticket-add',
       'rename',
       'ticket-remove',
-      'transcript',
     ]);
     const commandStartedAt = Date.now();
 
