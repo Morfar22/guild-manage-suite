@@ -1,3 +1,4 @@
+const { resolveInteractionCommand } = require('../commandRouting');
 /**
  * Log Handler for Discord Bot
  * 
@@ -737,7 +738,7 @@ function registerLogHandlers(client, config) {
       user_id: interaction.user.id,
       user_name: interaction.user.tag,
       user_avatar: interaction.user.displayAvatarURL(),
-      command_name: interaction.commandName,
+      command_name: resolveInteractionCommand(interaction).logicalName || interaction.commandName,
       command_options: flattenCommandOptions(interaction.options?.data || []).join('\n') || null,
       channel_id: interaction.channel?.id,
       channel_name: interaction.channel?.name,
