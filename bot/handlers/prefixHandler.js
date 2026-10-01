@@ -79,6 +79,42 @@ const COMMAND_ARGS = {
     { name: 'user', type: 'user', required: true },
   ],
   nuke: [],
+  purge: [
+    { name: 'amount', type: 'integer', required: true },
+    { name: 'filter', type: 'string', required: false },
+    { name: 'user', type: 'user', required: false },
+  ],
+  massban: [
+    { name: 'users', type: 'string', required: true },
+    { name: 'reason', type: 'string_rest', required: false },
+  ],
+  case: [{ name: 'case_id', type: 'string', required: true }],
+  history: [{ name: 'user', type: 'user', required: true }],
+  reason: [
+    { name: 'case_id', type: 'string', required: true },
+    { name: 'reason', type: 'string_rest', required: true },
+  ],
+  note: [
+    { name: 'user', type: 'user', required: true },
+    { name: 'note', type: 'string_rest', required: true },
+  ],
+  tempban: [
+    { name: 'user', type: 'user', required: true },
+    { name: 'duration', type: 'integer', required: true },
+    { name: 'reason', type: 'string_rest', required: false },
+  ],
+  role: [
+    { name: 'user', type: 'user', required: true },
+    { name: 'role', type: 'role', required: true },
+    { name: 'action', type: 'string', required: true },
+    { name: 'reason', type: 'string_rest', required: false },
+  ],
+  quarantine: [
+    { name: 'user', type: 'user', required: true },
+    { name: 'role', type: 'role', required: true },
+    { name: 'duration', type: 'integer', required: false },
+    { name: 'reason', type: 'string_rest', required: false },
+  ],
 
   // Music
   play: [{ name: 'query', type: 'string_rest', required: true }],
