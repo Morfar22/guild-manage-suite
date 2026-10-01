@@ -19,7 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Loader2, Plus, Trash2, Clock, CheckCircle2, Timer } from 'lucide-react';
+import { Loader2, Plus, Trash2, Clock, CheckCircle2, Timer, Play, XCircle, CalendarClock } from 'lucide-react';
 import { useScheduledActions } from '@/hooks/useScheduledActions';
 import { useAuth } from '@/contexts/AuthContext';
 import { format } from 'date-fns';
@@ -42,7 +42,18 @@ const ACTION_COLORS: Record<string, string> = {
 };
 
 export default function ScheduledActions() {
-  const { pendingActions, executedActions, isLoading, createAction, deleteAction } = useScheduledActions();
+  const {
+    pendingActions,
+    executedActions,
+    pendingModerationActions,
+    moderationHistory,
+    isLoading,
+    createAction,
+    deleteAction,
+    cancelModerationAction,
+    executeModerationNow,
+    rescheduleModerationAction,
+  } = useScheduledActions();
   const { user } = useAuth();
 
   const [open, setOpen] = useState(false);
@@ -52,6 +63,7 @@ export default function ScheduledActions() {
   const [executeAt, setExecuteAt] = useState('');
   const [reason, setReason] = useState('');
   const [roleId, setRoleId] = useState('');
+  const [rescheduleValues, setRescheduleValues] = useState<Record<string, string>>({});
 
   const showRoleField = actionType === 'role_add' || actionType === 'role_remove';
 
@@ -192,6 +204,101 @@ export default function ScheduledActions() {
           </DialogContent>
         </Dialog>
       </div>
+
+      <Card className="border-primary/20">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <CalendarClock className="h-5 w-5 text-primary" />
+            Automatiske temp-actions ({pendingModerationActions.length})
+          </CardTitle>
+          <CardDescription>
+            Persistente tempban unbans og quarantine role removals. De overlever bot-restarts.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {pendingModerationActions.length === 0 ? (
+            <p className="py-6 text-center text-sm text-muted-foreground">Ingen aktive temp-actions.</p>
+          ) : pendingModerationActions.map((action) => (
+            <div key={action.id} className="rounded-lg border p-4">
+              <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+                <div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Badge variant={action.action_type === 'unban' ? 'default' : 'secondary'}>
+                      {action.action_type === 'unban' ? 'Auto-unban' : 'Fjern quarantine-rolle'}
+                    </Badge>
+                    <Badge variant="outline">{action.status}</Badge>
+                  </div>
+                  <p className="mt-2 font-medium">{action.target_name || action.target_id}</p>
+                  <p className="text-xs text-muted-foreground">
+                    Udføres {format(new Date(action.execute_at), 'PPP HH:mm', { locale: da })}
+                    {action.reason ? ` · ${action.reason}` : ''}
+                  </p>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-2">
+                  <Input
+                    type="datetime-local"
+                    className="w-[210px]"
+                    value={rescheduleValues[action.id] || ''}
+                    onChange={(event) => setRescheduleValues((current) => ({
+                      ...current,
+                      [action.id]: event.target.value,
+                    }))}
+                  />
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    disabled={!rescheduleValues[action.id]}
+                    onClick={() => {
+                      const value = rescheduleValues[action.id];
+                      if (!value) return;
+                      rescheduleModerationAction.mutate({
+                        id: action.id,
+                        executeAt: new Date(value).toISOString(),
+                      });
+                    }}
+                  >
+                    Flyt
+                  </Button>
+                  <Button
+                    size="sm"
+                    onClick={() => executeModerationNow.mutate(action.id)}
+                  >
+                    <Play className="mr-1 h-3.5 w-3.5" />
+                    Nu
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="destructive"
+                    onClick={() => cancelModerationAction.mutate(action.id)}
+                  >
+                    <XCircle className="mr-1 h-3.5 w-3.5" />
+                    Annuller
+                  </Button>
+                </div>
+              </div>
+            </div>
+          ))}
+
+          {moderationHistory.length > 0 && (
+            <div className="border-t pt-4">
+              <p className="mb-2 text-sm font-medium">Seneste historik</p>
+              <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-3">
+                {moderationHistory.slice(0, 9).map((action) => (
+                  <div key={action.id} className="rounded-md border bg-muted/20 p-3 text-sm">
+                    <div className="flex items-center justify-between gap-2">
+                      <span>{action.target_name || action.target_id}</span>
+                      <Badge variant={action.status === 'failed' ? 'destructive' : 'outline'}>{action.status}</Badge>
+                    </div>
+                    <div className="mt-1 text-xs text-muted-foreground">{action.action_type} · {format(new Date(action.execute_at), 'dd/MM HH:mm')}</div>
+                    {action.last_error && <p className="mt-1 line-clamp-2 text-xs text-destructive">{action.last_error}</p>}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       <div className="grid gap-6 lg:grid-cols-2">
         {/* Pending */}
