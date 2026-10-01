@@ -16,9 +16,13 @@ function loadRouteConfig() {
     }
   }
 
-  throw new Error(
-    `command-routes.json blev ikke fundet. Forsøgte: ${candidates.join(', ')}`
-  );
+  try {
+    return require('./commandRoutes.generated');
+  } catch (error) {
+    throw new Error(
+      `Command route catalog blev ikke fundet. Forsøgte JSON: ${candidates.join(', ')}. JS fallback fejlede: ${error.message}`
+    );
+  }
 }
 
 const routeConfig = loadRouteConfig();
