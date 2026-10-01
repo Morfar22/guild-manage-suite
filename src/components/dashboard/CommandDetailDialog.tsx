@@ -23,6 +23,7 @@ import {
 } from 'recharts';
 import { CommandInfo } from '@/types/discord';
 import { GuildCommandSettings } from '@/lib/commands';
+import { getCommandSlashPath } from '@/lib/commandGrouping';
 import { useCommandDetail } from '@/hooks/useCommandDetail';
 import { useDiscordChannels } from '@/hooks/useDiscordChannels';
 import { useDiscordMembers } from '@/hooks/useDiscordMembers';
@@ -161,7 +162,7 @@ export function CommandDetailDialog({
           <div className="flex flex-col gap-3 pr-8 xl:flex-row xl:items-start xl:justify-between">
             <div>
               <DialogTitle className="flex flex-wrap items-center gap-2 text-2xl">
-                /{command.name}
+                {getCommandSlashPath(command.name)}
                 <Badge variant={isEnabled ? 'default' : 'destructive'}>
                   {isEnabled ? 'Aktiv' : 'Deaktiveret'}
                 </Badge>
