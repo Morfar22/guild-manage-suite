@@ -731,34 +731,62 @@ __serve(async (req) => {
     const defaultBotToken = __env("DISCORD_BOT_TOKEN");
     const defaultAppId = __env("DISCORD_CLIENT_ID");
 
-    // Mode: clear-global always targets the default application, so the
-    // default credentials are required only for this operation.
+    // Mode: clear-global targets the application belonging to the selected
+    // guild. This supports both per-guild custom bots and the default bot.
     if (mode === "clear-global") {
-      if (!defaultBotToken || !defaultAppId) {
+      if (!discordGuildId || !/^\d{17,20}$/.test(String(discordGuildId))) {
+        return new Response(
+          JSON.stringify({ error: "Invalid guild ID for clear-global" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      const { botToken, appId, isCustomBot, botName } = await getBotCredentialsForDiscordGuild(
+        supabase,
+        String(discordGuildId),
+        defaultBotToken,
+        defaultAppId,
+      );
+
+      if (!botToken || !appId) {
         return new Response(
           JSON.stringify({
-            error: "Missing DISCORD_BOT_TOKEN or DISCORD_CLIENT_ID secret for clear-global",
+            error: "No usable Discord bot credentials found for this guild. Configure an active custom bot in Bot Settings, or set DISCORD_BOT_TOKEN and DISCORD_CLIENT_ID for the default bot.",
           }),
           { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
+
       const res = await fetch(
-        `https://discord.com/api/v10/applications/${defaultAppId}/commands`,
+        `https://discord.com/api/v10/applications/${appId}/commands`,
         {
           method: "PUT",
-          headers: { Authorization: `Bot ${defaultBotToken}`, "Content-Type": "application/json" },
+          headers: { Authorization: `Bot ${botToken}`, "Content-Type": "application/json" },
           body: JSON.stringify([]),
         }
       );
+
       if (!res.ok) {
         const txt = await res.text();
         return new Response(
-          JSON.stringify({ error: `Failed to clear global commands (${res.status})`, details: txt }),
+          JSON.stringify({
+            error: `Failed to clear global commands (${res.status})`,
+            details: txt,
+            usingCustomBot: isCustomBot,
+            botName,
+          }),
           { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
+
       return new Response(
-        JSON.stringify({ success: true, message: "Globale kommandoer ryddet. Discord cache kan tage op til 1 time at opdatere." }),
+        JSON.stringify({
+          success: true,
+          message: "Globale kommandoer ryddet. Discord cache kan tage op til 1 time at opdatere.",
+          usingCustomBot: isCustomBot,
+          botName,
+          applicationId: appId,
+        }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
