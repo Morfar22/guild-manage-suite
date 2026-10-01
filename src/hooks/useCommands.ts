@@ -78,6 +78,16 @@ export function useCommands() {
           before: { enabled: previous?.enabled ?? true },
           after: { enabled },
         },
+        undoPayload: {
+          table: 'guild_commands',
+          command_name: commandName,
+          values: {
+            enabled: previous?.enabled ?? true,
+            cooldown_seconds: previous?.cooldown_seconds ?? 0,
+            allowed_role_ids: previous?.allowed_role_ids ?? [],
+            allowed_channel_ids: previous?.allowed_channel_ids ?? [],
+          },
+        },
       }]);
       toast.success(`/${commandName} ${enabled ? 'aktiveret' : 'deaktiveret'}`);
     } catch {
@@ -125,6 +135,16 @@ export function useCommands() {
             ...updates,
           },
         },
+        undoPayload: previous ? {
+          table: 'guild_commands',
+          command_name: commandName,
+          values: {
+            enabled: previous.enabled,
+            cooldown_seconds: previous.cooldown_seconds,
+            allowed_role_ids: previous.allowed_role_ids,
+            allowed_channel_ids: previous.allowed_channel_ids,
+          },
+        } : null,
       }]);
       toast.success(`Indstillinger for /${commandName} gemt`);
     } catch (error) {
@@ -173,6 +193,16 @@ export function useCommands() {
             before: { enabled: snapshot[cmd.name]?.enabled ?? true },
             after: { enabled },
           },
+          undoPayload: snapshot[cmd.name] ? {
+            table: 'guild_commands',
+            command_name: cmd.name,
+            values: {
+              enabled: snapshot[cmd.name].enabled,
+              cooldown_seconds: snapshot[cmd.name].cooldown_seconds,
+              allowed_role_ids: snapshot[cmd.name].allowed_role_ids,
+              allowed_channel_ids: snapshot[cmd.name].allowed_channel_ids,
+            },
+          } : null,
         }))
       );
       toast.success(`Alle ${category}-kommandoer ${enabled ? 'aktiveret' : 'deaktiveret'}`);
@@ -231,6 +261,16 @@ export function useCommands() {
               ...updates,
             },
           },
+          undoPayload: snapshot[commandName] ? {
+            table: 'guild_commands',
+            command_name: commandName,
+            values: {
+              enabled: snapshot[commandName].enabled,
+              cooldown_seconds: snapshot[commandName].cooldown_seconds,
+              allowed_role_ids: snapshot[commandName].allowed_role_ids,
+              allowed_channel_ids: snapshot[commandName].allowed_channel_ids,
+            },
+          } : null,
         }))
       );
       toast.success(`${commandNames.length} commands opdateret`);
