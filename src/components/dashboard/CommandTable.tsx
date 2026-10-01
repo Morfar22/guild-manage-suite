@@ -4,6 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { CommandInfo } from '@/types/discord';
 import { GuildCommandSettings } from '@/lib/commands';
+import { getCommandSlashPath } from '@/lib/commandGrouping';
 import {
   Table,
   TableBody,
@@ -66,7 +67,7 @@ export function CommandTable({
                   <TableCell>
                     <div className="flex items-center gap-2">
                       <Badge variant={isEnabled ? 'secondary' : 'outline'} className="font-mono">
-                        /{command.name}
+                        {getCommandSlashPath(command.name)}
                       </Badge>
                       {hasRestrictions && <span className="h-2 w-2 rounded-full bg-primary" title="Har særlige regler" />}
                     </div>
@@ -96,7 +97,7 @@ export function CommandTable({
                     </div>
                   </TableCell>
                   <TableCell className="font-mono text-xs text-muted-foreground">
-                    <code className="rounded bg-muted px-1.5 py-0.5">{command.usage}</code>
+                    <code className="rounded bg-muted px-1.5 py-0.5">{getCommandSlashPath(command.name)}</code>
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center justify-end gap-2">
