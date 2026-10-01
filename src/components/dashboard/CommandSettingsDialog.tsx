@@ -18,6 +18,7 @@ import { useDiscordRoles } from '@/hooks/useDiscordRoles';
 import { useDiscordChannels } from '@/hooks/useDiscordChannels';
 import { CommandInfo } from '@/types/discord';
 import { GuildCommandSettings } from '@/lib/commands';
+import { getCommandSlashPath } from '@/lib/commandGrouping';
 
 interface Props {
   open: boolean;
@@ -85,7 +86,7 @@ export function CommandSettingsDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Settings2 className="h-5 w-5 text-primary" />
-            /{command.name}
+            {getCommandSlashPath(command.name)}
           </DialogTitle>
           <DialogDescription>
             Styr cooldown og hvor kommandoen må bruges. Tomme rolle- og kanallister betyder ingen begrænsning.
