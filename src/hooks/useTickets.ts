@@ -5,6 +5,7 @@ import { useGuild } from '@/contexts/GuildContext';
 export type TicketStatus = 'open' | 'claimed' | 'closed';
 export type TicketType = 'support' | 'application';
 export type TicketAttention = 'normal' | 'watch' | 'urgent';
+export type TicketPriority = 'low' | 'normal' | 'high' | 'urgent';
 
 export interface Ticket {
   id: string;
@@ -18,6 +19,14 @@ export interface Ticket {
   status: TicketStatus;
   ticket_type: TicketType;
   subject: string | null;
+  priority: TicketPriority;
+  tags: string[];
+  sla_due_at: string | null;
+  escalated_at: string | null;
+  transferred_to_role_id: string | null;
+  transferred_to_role_name: string | null;
+  reopened_at: string | null;
+  resolution: string | null;
   closed_at: string | null;
   closed_by_id: string | null;
   closed_by_name: string | null;
@@ -80,6 +89,8 @@ export interface TicketStats {
   oldestOpenHours: number | null;
   ticketsToday: number;
   ticketsThisWeek: number;
+  urgentTickets: number;
+  overdueSla: number;
 }
 
 export function getTicketAgeHours(ticket: Pick<Ticket, 'created_at'>, now = Date.now()) {
@@ -212,7 +223,7 @@ export function useTicketStats(excludeApplications: boolean = true) {
 
       let query = supabase
         .from('tickets')
-        .select('status, created_at, closed_at, ticket_type, claimed_by_id')
+        .select('status, created_at, closed_at, ticket_type, claimed_by_id, priority, sla_due_at')
         .eq('guild_id', selectedGuild.id);
 
       // Filter out application tickets if requested
@@ -240,6 +251,8 @@ export function useTicketStats(excludeApplications: boolean = true) {
         oldestOpenHours: null,
         ticketsToday: tickets.filter(t => new Date(t.created_at) >= today).length,
         ticketsThisWeek: tickets.filter(t => new Date(t.created_at) >= weekAgo).length,
+        urgentTickets: tickets.filter(t => t.status !== 'closed' && (t as any).priority === 'urgent').length,
+        overdueSla: tickets.filter(t => t.status !== 'closed' && (t as any).sla_due_at && new Date((t as any).sla_due_at).getTime() < now.getTime()).length,
       };
 
       // Calculate average response time for closed tickets
@@ -405,6 +418,152 @@ export function useDeleteTicket() {
       if (error) throw error;
     },
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tickets', selectedGuild?.id] });
+      queryClient.invalidateQueries({ queryKey: ['ticket-stats', selectedGuild?.id] });
+    },
+  });
+}
+
+
+export interface TicketInternalNote {
+  id: string;
+  guild_id: string;
+  ticket_id: string;
+  author_discord_id: string | null;
+  author_name: string | null;
+  author_user_id: string | null;
+  note: string;
+  created_at: string;
+}
+
+export function useUpdateTicketOperations() {
+  const queryClient = useQueryClient();
+  const { selectedGuild } = useGuild();
+
+  return useMutation({
+    mutationFn: async ({
+      id,
+      updates,
+    }: {
+      id: string;
+      updates: Partial<Pick<Ticket,
+        'priority' |
+        'tags' |
+        'sla_due_at' |
+        'escalated_at' |
+        'transferred_to_role_id' |
+        'transferred_to_role_name' |
+        'resolution'
+      >>;
+    }) => {
+      if (!selectedGuild?.id) throw new Error('No guild selected');
+
+      const { data, error } = await supabase
+        .from('tickets')
+        .update({ ...updates, updated_at: new Date().toISOString() })
+        .eq('id', id)
+        .eq('guild_id', selectedGuild.id)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data as Ticket;
+    },
+    onSuccess: (ticket) => {
+      queryClient.invalidateQueries({ queryKey: ['ticket', ticket.id] });
+      queryClient.invalidateQueries({ queryKey: ['tickets', selectedGuild?.id] });
+      queryClient.invalidateQueries({ queryKey: ['ticket-stats', selectedGuild?.id] });
+    },
+  });
+}
+
+export function useTicketInternalNotes(ticketId: string | undefined) {
+  return useQuery({
+    queryKey: ['ticket-internal-notes', ticketId],
+    queryFn: async () => {
+      if (!ticketId) return [];
+      const { data, error } = await supabase
+        .from('ticket_internal_notes')
+        .select('*')
+        .eq('ticket_id', ticketId)
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      return data as TicketInternalNote[];
+    },
+    enabled: !!ticketId,
+    refetchInterval: 15_000,
+  });
+}
+
+export function useCreateTicketInternalNote(ticketId: string | undefined) {
+  const queryClient = useQueryClient();
+  const { selectedGuild } = useGuild();
+
+  return useMutation({
+    mutationFn: async ({
+      note,
+      authorUserId,
+      authorName,
+      authorDiscordId,
+    }: {
+      note: string;
+      authorUserId?: string | null;
+      authorName?: string | null;
+      authorDiscordId?: string | null;
+    }) => {
+      if (!ticketId || !selectedGuild?.id) throw new Error('Ticket eller guild mangler');
+
+      const { data, error } = await supabase
+        .from('ticket_internal_notes')
+        .insert({
+          guild_id: selectedGuild.id,
+          ticket_id: ticketId,
+          note,
+          author_user_id: authorUserId ?? null,
+          author_name: authorName ?? null,
+          author_discord_id: authorDiscordId ?? null,
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data as TicketInternalNote;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['ticket-internal-notes', ticketId] });
+    },
+  });
+}
+
+export function useReopenTicket() {
+  const queryClient = useQueryClient();
+  const { selectedGuild } = useGuild();
+
+  return useMutation({
+    mutationFn: async (ticketId: string) => {
+      if (!selectedGuild?.id) throw new Error('No guild selected');
+
+      const now = new Date().toISOString();
+      const { data, error } = await supabase
+        .from('tickets')
+        .update({
+          status: 'open',
+          reopened_at: now,
+          closed_at: null,
+          closed_by_id: null,
+          closed_by_name: null,
+          updated_at: now,
+        })
+        .eq('id', ticketId)
+        .eq('guild_id', selectedGuild.id)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data as Ticket;
+    },
+    onSuccess: (ticket) => {
+      queryClient.invalidateQueries({ queryKey: ['ticket', ticket.id] });
       queryClient.invalidateQueries({ queryKey: ['tickets', selectedGuild?.id] });
       queryClient.invalidateQueries({ queryKey: ['ticket-stats', selectedGuild?.id] });
     },
