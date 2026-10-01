@@ -18,7 +18,7 @@ export function GuildCommandDeployer() {
   const [guildId, setGuildId] = useState('');
   const [deploying, setDeploying] = useState(false);
   const [clearing, setClearing] = useState(false);
-  const [lastResult, setLastResult] = useState<{ count: number; commands: string[] } | null>(null);
+  const [lastResult, setLastResult] = useState<{ count: number; logicalCount: number; commands: string[] } | null>(null);
 
   const handleDeploy = async () => {
     const trimmed = guildId.trim();
@@ -36,8 +36,15 @@ export function GuildCommandDeployer() {
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
 
-      setLastResult({ count: data.deployed, commands: data.commands || [] });
-      toast({ title: '✅ Kommandoer deployed', description: `${data.deployed} slash-kommandoer registreret øjeblikkeligt på guild ${trimmed}.` });
+      setLastResult({
+        count: data.deployed,
+        logicalCount: data.logicalCommands || data.deployed,
+        commands: data.commands || [],
+      });
+      toast({
+        title: '✅ Kommandoer deployed',
+        description: `${data.logicalCommands || data.deployed} funktioner fordelt på ${data.deployed} slash-grupper er registreret på guild ${trimmed}.`,
+      });
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : 'Ukendt fejl';
       toast({ title: 'Fejl ved deployment', description: msg, variant: 'destructive' });
@@ -113,7 +120,7 @@ export function GuildCommandDeployer() {
           <div className="rounded-lg border border-primary/30 bg-primary/5 p-4 space-y-2">
             <div className="flex items-center gap-2 text-sm font-medium text-primary">
               <CheckCircle2 className="h-4 w-4" />
-              {lastResult.count} kommandoer deployed
+              {lastResult.logicalCount} funktioner i {lastResult.count} slash-grupper
             </div>
             <div className="flex flex-wrap gap-1">
               {lastResult.commands.map((c) => (
