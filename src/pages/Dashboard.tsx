@@ -2,13 +2,14 @@ import { useGuild } from '@/contexts/GuildContext';
 import { useBotStatus } from '@/hooks/useBotStatus';
 import { useModerationLogs } from '@/hooks/useModerationLogs';
 import { useAnalytics } from '@/hooks/useAnalytics';
+import { useOperationsSummary } from '@/hooks/useOperationsSummary';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { StatusCard } from '@/components/dashboard/StatusCard';
 import { QuickActions } from '@/components/dashboard/QuickActions';
 import { ConfigurationAlerts } from '@/components/dashboard/ConfigurationAlerts';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
-  Activity, Users, MessageSquare, Shield, Clock, Zap, TrendingUp, BarChart3,
+  Activity, Users, MessageSquare, Shield, Clock, Zap, TrendingUp, BarChart3, Bell, FileSearch, Ticket, HeartPulse, CalendarClock, Siren,
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { da, enUS } from 'date-fns/locale';
@@ -25,6 +26,7 @@ export default function Dashboard() {
   const { status, isOnline, loading: statusLoading } = useBotStatus();
   const { logs, loading: logsLoading } = useModerationLogs({ limit: 5 });
   const { chartData, summary, hasData } = useAnalytics(7);
+  const { data: opsSummary } = useOperationsSummary();
   const { t, language } = useLanguage();
   const dateFnsLocale = language === 'da' ? da : enUS;
 
@@ -65,6 +67,26 @@ export default function Dashboard() {
 
 
       <ConfigurationAlerts />
+
+      <div>
+        <div className="mb-3 flex items-center justify-between">
+          <div>
+            <h2 className="font-display text-lg font-semibold">Operations Pulse</h2>
+            <p className="text-sm text-muted-foreground">Live signaler der kræver staff-opmærksomhed.</p>
+          </div>
+          <a href="/dashboard/operations" className="text-sm font-medium text-primary hover:underline">
+            Åbn Operations Center
+          </a>
+        </div>
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+          <PulseCard label="Åbne cases" value={opsSummary?.openCases ?? 0} icon={<FileSearch className="h-4 w-4" />} />
+          <PulseCard label="Appeals" value={opsSummary?.pendingAppeals ?? 0} icon={<Shield className="h-4 w-4" />} />
+          <PulseCard label="Alerts" value={opsSummary?.openAlerts ?? 0} icon={<Bell className="h-4 w-4" />} />
+          <PulseCard label="SLA" value={opsSummary?.overdueSla ?? 0} icon={<Ticket className="h-4 w-4" />} danger />
+          <PulseCard label="Command issues" value={opsSummary?.commandIssues ?? 0} icon={<HeartPulse className="h-4 w-4" />} danger />
+          <PulseCard label="Planlagt mod" value={opsSummary?.scheduledModeration ?? 0} icon={<CalendarClock className="h-4 w-4" />} />
+        </div>
+      </div>
 
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
         <StatusCard
@@ -300,5 +322,31 @@ export default function Dashboard() {
         </div>
       </div>
     </div>
+  );
+}
+
+
+function PulseCard({
+  label,
+  value,
+  icon,
+  danger = false,
+}: {
+  label: string;
+  value: number;
+  icon: React.ReactNode;
+  danger?: boolean;
+}) {
+  const activeDanger = danger && value > 0;
+  return (
+    <Card className={activeDanger ? 'border-destructive/30 bg-destructive/[0.03]' : 'border-border/60'}>
+      <CardContent className="flex items-center justify-between p-4">
+        <div>
+          <p className="text-xs text-muted-foreground">{label}</p>
+          <p className={`mt-1 text-2xl font-bold ${activeDanger ? 'text-destructive' : ''}`}>{value}</p>
+        </div>
+        <div className={activeDanger ? 'text-destructive' : 'text-primary'}>{icon}</div>
+      </CardContent>
+    </Card>
   );
 }
