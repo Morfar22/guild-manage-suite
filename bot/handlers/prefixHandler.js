@@ -185,6 +185,14 @@ const COMMAND_ARGS = {
   // Suggestion
   suggest: [{ name: 'suggestion', type: 'string_rest', required: true }],
 
+  // Appeals
+  'appeal-submit': [
+    { name: 'message', type: 'string_rest', required: true },
+  ],
+  'appeal-status': [
+    { name: 'appeal_id', type: 'string', required: false },
+  ],
+
   // Tebex
   'tebex-verify': [{ name: 'transaction_id', type: 'string', required: true }],
 
