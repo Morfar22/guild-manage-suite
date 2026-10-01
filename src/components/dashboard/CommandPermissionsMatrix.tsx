@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { Copy, Loader2, ShieldCheck, TimerReset, Users } from 'lucide-react';
 import { COMMANDS_BY_CATEGORY, CommandCategory } from '@/types/discord';
 import { GuildCommandSettings } from '@/lib/commands';
+import { getCommandSlashPath } from '@/lib/commandGrouping';
 import { useDiscordRoles } from '@/hooks/useDiscordRoles';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -201,7 +202,7 @@ export function CommandPermissionsMatrix({
                 </SelectTrigger>
                 <SelectContent>
                   {commands.map((command) => (
-                    <SelectItem key={command.name} value={command.name}>/{command.name}</SelectItem>
+                    <SelectItem key={command.name} value={command.name}>{getCommandSlashPath(command.name)}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -263,7 +264,7 @@ export function CommandPermissionsMatrix({
                     </div>
                     <div className="flex items-center gap-2 p-3">
                       <Badge variant={enabled ? 'secondary' : 'outline'} className="font-mono">
-                        /{command.name}
+                        {getCommandSlashPath(command.name)}
                       </Badge>
                     </div>
                     <div className="flex items-center justify-center p-2">
