@@ -16,6 +16,13 @@ const typeIcons: Record<string, any> = {
   error: Shield,
 };
 
+const severityVariants: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
+  info: 'outline',
+  warning: 'secondary',
+  error: 'destructive',
+  critical: 'destructive',
+};
+
 const typeColors: Record<string, string> = {
   moderation: 'text-destructive',
   member: 'text-green-500',
@@ -27,7 +34,7 @@ const typeColors: Record<string, string> = {
 };
 
 export default function DashboardNotifications() {
-  const { notifications, unreadCount, isLoading, markAsRead, markAllAsRead } = useDashboardNotifications();
+  const { notifications, unreadCount, isLoading, markAsRead, markAllAsRead, updateStatus } = useDashboardNotifications();
 
   if (isLoading) {
     return (
@@ -83,6 +90,12 @@ export default function DashboardNotifications() {
                     <div className="flex items-center gap-2">
                       <h3 className="font-medium text-sm">{notif.title}</h3>
                       <Badge variant="outline" className="text-[10px]">{notif.source}</Badge>
+                      <Badge variant={severityVariants[notif.severity] || 'outline'} className="text-[10px]">
+                        {notif.severity}
+                      </Badge>
+                      <Badge variant={notif.status === 'resolved' ? 'secondary' : 'outline'} className="text-[10px]">
+                        {notif.status}
+                      </Badge>
                     </div>
                     {notif.message && (
                       <p className="text-sm text-muted-foreground mt-0.5">{notif.message}</p>
@@ -91,16 +104,36 @@ export default function DashboardNotifications() {
                       {formatDistanceToNow(new Date(notif.created_at), { addSuffix: true, locale: da })}
                     </p>
                   </div>
-                  {!notif.is_read && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => markAsRead.mutate(notif.id)}
-                      disabled={markAsRead.isPending}
-                    >
-                      <Check className="h-4 w-4" />
-                    </Button>
-                  )}
+                  <div className="flex items-center gap-1">
+                    {!notif.is_read && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => markAsRead.mutate(notif.id)}
+                        disabled={markAsRead.isPending}
+                        title="Markér som læst"
+                      >
+                        <Check className="h-4 w-4" />
+                      </Button>
+                    )}
+                    {notif.status === 'open' && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => updateStatus.mutate({ id: notif.id, status: 'acknowledged' })}
+                      >
+                        Acknowledge
+                      </Button>
+                    )}
+                    {notif.status !== 'resolved' && (
+                      <Button
+                        size="sm"
+                        onClick={() => updateStatus.mutate({ id: notif.id, status: 'resolved' })}
+                      >
+                        Resolve
+                      </Button>
+                    )}
+                  </div>
                 </CardContent>
               </Card>
             );
