@@ -40,6 +40,9 @@
     },
     "rr": {
       "description": "Reaction roles"
+    },
+    "appeal": {
+      "description": "Moderation appeals"
     }
   },
   "legacyAliases": {
@@ -1073,6 +1076,22 @@
       "root": "utility",
       "group": "tools",
       "sub": "afk"
+    },
+    {
+      "logical": "appeal-status",
+      "category": "utility",
+      "source": "appeal-status",
+      "handler": "appeal-status",
+      "root": "appeal",
+      "sub": "status"
+    },
+    {
+      "logical": "appeal-submit",
+      "category": "utility",
+      "source": "appeal-submit",
+      "handler": "appeal-submit",
+      "root": "appeal",
+      "sub": "submit"
     },
     {
       "logical": "avatar",
