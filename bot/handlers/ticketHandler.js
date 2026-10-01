@@ -301,7 +301,8 @@ function setupTicketHandler(client, config = {}) {
     // Handle /ticket-remind slash command
     if (interaction.isChatInputCommand?.() && commandName === 'ticket-remind') {
       try {
-        await handleTicketRemind(interaction, remindTimers);\n        trackTicketCommand('success');
+        await handleTicketRemind(interaction, remindTimers);
+        trackTicketCommand('success');
       } catch (error) {
         trackTicketCommand('error', error);
         console.error('Ticket remind error:', error);
@@ -315,7 +316,8 @@ function setupTicketHandler(client, config = {}) {
     // Handle /ticket - create a new ticket via slash command
     if (interaction.isChatInputCommand?.() && commandName === 'ticket') {
       try {
-        await handleTicketSlashCreate(interaction);\n        trackTicketCommand('success');
+        await handleTicketSlashCreate(interaction);
+        trackTicketCommand('success');
       } catch (error) {
         trackTicketCommand('error', error);
         console.error('Ticket create error:', error);
@@ -333,7 +335,8 @@ function setupTicketHandler(client, config = {}) {
           return interaction.reply({ content: '❌ Denne kommando kan kun bruges i en ticket-tråd.', ephemeral: true });
         }
         const deleteThread = interaction.options.getBoolean?.('delete') || false;
-        await handleCloseTicket(interaction, interaction.channel.id, deleteThread);\n        trackTicketCommand('success');
+        await handleCloseTicket(interaction, interaction.channel.id, deleteThread);
+        trackTicketCommand('success');
       } catch (error) {
         trackTicketCommand('error', error);
         console.error('Ticket close error:', error);
@@ -350,7 +353,8 @@ function setupTicketHandler(client, config = {}) {
         if (!interaction.channel?.isThread()) {
           return interaction.reply({ content: '❌ Denne kommando kan kun bruges i en ticket-tråd.', ephemeral: true });
         }
-        await handleClaimTicket(interaction, interaction.channel.id);\n        trackTicketCommand('success');
+        await handleClaimTicket(interaction, interaction.channel.id);
+        trackTicketCommand('success');
       } catch (error) {
         trackTicketCommand('error', error);
         console.error('Ticket claim error:', error);
@@ -367,7 +371,8 @@ function setupTicketHandler(client, config = {}) {
         if (!interaction.channel?.isThread()) {
           return interaction.reply({ content: '❌ Denne kommando kan kun bruges i en ticket-tråd.', ephemeral: true });
         }
-        await handleUnclaimTicket(interaction, interaction.channel.id);\n        trackTicketCommand('success');
+        await handleUnclaimTicket(interaction, interaction.channel.id);
+        trackTicketCommand('success');
       } catch (error) {
         trackTicketCommand('error', error);
         console.error('Ticket unclaim error:', error);
@@ -414,6 +419,7 @@ function setupTicketHandler(client, config = {}) {
         }
         await interaction.channel.setName(name.slice(0, 100));
         await interaction.reply({ content: `✅ Ticket-tråden hedder nu **${name.slice(0, 100)}**.`, ephemeral: true });
+        trackTicketCommand('success');
       } catch (error) {
         trackTicketCommand('error', error);
         console.error('Ticket rename error:', error);
@@ -435,6 +441,7 @@ function setupTicketHandler(client, config = {}) {
         const user = interaction.options.getUser('user');
         await interaction.channel.members.remove(user.id);
         await interaction.reply({ content: `✅ <@${user.id}> er blevet fjernet fra denne ticket.`, ephemeral: true });
+        trackTicketCommand('success');
       } catch (error) {
         trackTicketCommand('error', error);
         console.error('Ticket remove error:', error);
