@@ -4,6 +4,7 @@ import { useTicket, useTicketMessages, getTicketAgeHours } from '@/hooks/useTick
 import { useApplicationByTicketId } from '@/hooks/useApplications';
 import { useAITicketSummary } from '@/hooks/useAITicketSummary';
 import { useGuild } from '@/contexts/GuildContext';
+import { TicketOperationsPanel } from '@/components/tickets/TicketOperationsPanel';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -263,6 +264,8 @@ export default function TicketDetail() {
           icon={<Paperclip className="h-4 w-4" />}
         />
       </div>
+
+      <TicketOperationsPanel ticket={ticket} />
 
       {(ticket as any).ai_summary && (
         <Card className="border-primary/20 bg-primary/5 backdrop-blur-sm">
