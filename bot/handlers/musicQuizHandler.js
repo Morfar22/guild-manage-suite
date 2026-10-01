@@ -10,6 +10,7 @@
 
 const { EmbedBuilder } = require('discord.js');
 const { createRealtimeSubscription } = require('../realtimeRetry');
+const { resolveInteractionCommand } = require('../commandRouting');
 
 const settingsCache = new Map();
 const CACHE_TTL = 300_000;
@@ -21,7 +22,7 @@ const activeGames = new Map();
 let settingsRealtimeSub = null;
 
 function setupMusicQuizHandler(client, supabase, options = {}) {
-  const { shouldHandleGuild } = options;
+  const { shouldHandleGuild, checkCommandAccess, queueCommandExecution } = options;
 
   // ---------- helpers ----------
   async function getGuildRow(guildDiscordId) {
@@ -264,9 +265,43 @@ function setupMusicQuizHandler(client, supabase, options = {}) {
   client.on('interactionCreate', async (interaction) => {
     try {
       if (!interaction.isChatInputCommand()) return;
-      if (interaction.commandName !== 'musicquiz') return;
+      const resolved = resolveInteractionCommand(interaction);
+      if (!resolved.logicalName?.startsWith('musicquiz-')) return;
       if (!interaction.guild) return;
       if (shouldHandleGuild && !shouldHandleGuild(interaction.guild.id)) return;
+
+      const commandName = resolved.logicalName;
+      const commandStartedAt = Date.now();
+
+      if (checkCommandAccess) {
+        const access = await checkCommandAccess({
+          guildId: interaction.guild.id,
+          commandName,
+          userId: interaction.user.id,
+          roleIds: interaction.member?.roles?.cache ? [...interaction.member.roles.cache.keys()] : [],
+          channelId: interaction.channelId,
+          isAdmin: Boolean(interaction.member?.permissions?.has?.('Administrator')),
+        });
+
+        if (!access.allowed) {
+          if (queueCommandExecution) {
+            void queueCommandExecution({
+              guildId: interaction.guild.id,
+              commandName,
+              userId: interaction.user.id,
+              channelId: interaction.channelId,
+              source: 'slash',
+              status: 'blocked',
+              latencyMs: Date.now() - commandStartedAt,
+              blockedReason: access.reason || 'access',
+            });
+          }
+          return interaction.reply({
+            content: access.message || '🚫 Du har ikke adgang til denne command.',
+            flags: 64,
+          });
+        }
+      }
 
       const sub = interaction.options.getSubcommand();
 
@@ -282,6 +317,17 @@ function setupMusicQuizHandler(client, supabase, options = {}) {
         }
         const result = await startGame(interaction.guild.id, channel, settings._guildUuid, settings);
         if (!result.ok) return interaction.reply({ content: `❌ ${result.error}`, flags: 64 });
+        if (queueCommandExecution) {
+          void queueCommandExecution({
+            guildId: interaction.guild.id,
+            commandName,
+            userId: interaction.user.id,
+            channelId: interaction.channelId,
+            source: 'slash',
+            status: 'success',
+            latencyMs: Date.now() - commandStartedAt,
+          });
+        }
         return interaction.reply({ content: `✅ Quiz starter i <#${channel.id}>`, flags: 64 });
       }
 
@@ -290,11 +336,33 @@ function setupMusicQuizHandler(client, supabase, options = {}) {
           return interaction.reply({ content: '❌ Ingen aktiv quiz.', flags: 64 });
         }
         await endGame(interaction.guild.id, 'manual');
+        if (queueCommandExecution) {
+          void queueCommandExecution({
+            guildId: interaction.guild.id,
+            commandName,
+            userId: interaction.user.id,
+            channelId: interaction.channelId,
+            source: 'slash',
+            status: 'success',
+            latencyMs: Date.now() - commandStartedAt,
+          });
+        }
         return interaction.reply({ content: '🛑 Quiz stoppet.', flags: 64 });
       }
 
       if (sub === 'skip') {
         const ok = skipRound(interaction.guild.id);
+        if (queueCommandExecution) {
+          void queueCommandExecution({
+            guildId: interaction.guild.id,
+            commandName,
+            userId: interaction.user.id,
+            channelId: interaction.channelId,
+            source: 'slash',
+            status: 'success',
+            latencyMs: Date.now() - commandStartedAt,
+          });
+        }
         return interaction.reply({ content: ok ? '⏭️ Sprunget over.' : '❌ Ingen aktiv runde.', flags: 64 });
       }
 
@@ -314,6 +382,17 @@ function setupMusicQuizHandler(client, supabase, options = {}) {
           .setDescription((data && data.length)
             ? data.map((r, i) => `**${i + 1}.** <@${r.user_id}> — **${r.points}** pt · ${r.rounds_won} sejre`).join('\n')
             : 'Ingen scores endnu.');
+        if (queueCommandExecution) {
+          void queueCommandExecution({
+            guildId: interaction.guild.id,
+            commandName,
+            userId: interaction.user.id,
+            channelId: interaction.channelId,
+            source: 'slash',
+            status: 'success',
+            latencyMs: Date.now() - commandStartedAt,
+          });
+        }
         return interaction.reply({ embeds: [embed] });
       }
     } catch (e) {
