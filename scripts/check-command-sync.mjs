@@ -175,6 +175,7 @@ function handlerNames() {
   const advancedModeration = read('bot/handlers/advancedModeration.js');
   const tickets = read('bot/handlers/ticketHandler.js');
   const musicQuiz = read('bot/handlers/musicQuizHandler.js');
+  const appeals = read('bot/handlers/appealHandler.js');
 
   const names = new Set([
     ...topLevelObjectKeys(core, 'return {\n    // ==================== MODERATION'),
@@ -182,6 +183,8 @@ function handlerNames() {
     ...topLevelObjectKeys(admin, 'return {\n    // ---------- ADMIN'),
     ...topLevelObjectKeys(games, 'return {\n    // ==================== TRIVIA'),
     ...[...advancedModeration.matchAll(/^    ([a-z][a-z0-9-]*): async \(interaction\) => \{/gm)]
+      .map((match) => match[1]),
+    ...[...appeals.matchAll(/^    ['"]?([a-z][a-z0-9-]*)['"]?: async \(interaction\) => \{/gm)]
       .map((match) => match[1]),
   ]);
 
