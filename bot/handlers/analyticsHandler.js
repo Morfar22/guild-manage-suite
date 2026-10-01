@@ -1,3 +1,4 @@
+const { resolveInteractionCommand } = require('../commandRouting');
 // Analytics Handler - Tracks bot and server activity
 class AnalyticsHandler {
   constructor(client, supabase, config = {}) {
@@ -120,7 +121,7 @@ class AnalyticsHandler {
     if (!guildId) return;
 
     this.queueEvent(guildId, 'command', interaction.user.id, interaction.channel?.id, {
-      command: interaction.commandName
+      command: resolveInteractionCommand(interaction).logicalName || interaction.commandName
     });
   }
 
