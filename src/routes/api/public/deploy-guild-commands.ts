@@ -26,8 +26,8 @@ function simpleDecrypt(encoded: string, key: string): string {
 async function getBotCredentialsForDiscordGuild(
   supabase: ReturnType<typeof createClient>,
   discordGuildId: string,
-  fallbackToken: string,
-  fallbackClientId: string,
+  fallbackToken?: string,
+  fallbackClientId?: string,
 ) {
   const { data: guildRow, error: guildLookupError } = await supabase
     .from("guilds")
@@ -729,15 +729,17 @@ __serve(async (req) => {
     const defaultBotToken = __env("DISCORD_BOT_TOKEN");
     const defaultAppId = __env("DISCORD_CLIENT_ID");
 
-    if (!defaultBotToken || !defaultAppId) {
-      return new Response(
-        JSON.stringify({ error: "Missing DISCORD_BOT_TOKEN or DISCORD_CLIENT_ID secret" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    // Mode: clear-global — removes all global commands (fixes duplicates)
+    // Mode: clear-global always targets the default application, so the
+    // default credentials are required only for this operation.
     if (mode === "clear-global") {
+      if (!defaultBotToken || !defaultAppId) {
+        return new Response(
+          JSON.stringify({
+            error: "Missing DISCORD_BOT_TOKEN or DISCORD_CLIENT_ID secret for clear-global",
+          }),
+          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
       const res = await fetch(
         `https://discord.com/api/v10/applications/${defaultAppId}/commands`,
         {
@@ -772,6 +774,18 @@ __serve(async (req) => {
       defaultBotToken,
       defaultAppId,
     );
+
+    if (!botToken || !appId) {
+      const hasEncryptionKey = Boolean(__env("BOT_SECRET_KEY"));
+      return new Response(
+        JSON.stringify({
+          error: hasEncryptionKey
+            ? "No usable Discord bot credentials found for this guild. Configure an active custom bot or set DISCORD_BOT_TOKEN and DISCORD_CLIENT_ID."
+            : "No usable Discord bot credentials found. Custom bots require BOT_SECRET_KEY on the web runtime; otherwise set DISCORD_BOT_TOKEN and DISCORD_CLIENT_ID.",
+        }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
     // /fivem is registered by the dedicated FiveM command route.
     // Bulk-overwrite normally deletes commands that are not included, so preserve
