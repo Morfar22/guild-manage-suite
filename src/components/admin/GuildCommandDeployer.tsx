@@ -54,16 +54,28 @@ export function GuildCommandDeployer() {
   };
 
   const handleClearGlobal = async () => {
+    const trimmed = guildId.trim();
+    if (!/^\d{17,20}$/.test(trimmed)) {
+      toast({
+        title: 'Vælg en server først',
+        description: 'Rydning af globale kommandoer skal vide hvilken bots application der skal ryddes.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     setClearing(true);
     try {
       const { data, error } = await invokeFunction('deploy-guild-commands', {
-        body: { mode: 'clear-global' },
+        body: { discordGuildId: trimmed, mode: 'clear-global' },
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
       toast({
         title: '✅ Globale kommandoer ryddet',
-        description: 'Discord-cachen kan tage op til 1 time at opdatere. Brug deploy-knappen pr. guild for øjeblikkelig adgang.',
+        description: data?.usingCustomBot
+          ? `Globale kommandoer for custom botten ${data.botName || ''} er ryddet. Discord-cachen kan tage op til 1 time.`
+          : 'Globale kommandoer for standardbotten er ryddet. Discord-cachen kan tage op til 1 time.',
       });
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : 'Ukendt fejl';
@@ -142,7 +154,7 @@ export function GuildCommandDeployer() {
           </div>
           <AlertDialog>
             <AlertDialogTrigger asChild>
-              <Button variant="destructive" disabled={clearing} className="w-full">
+              <Button variant="destructive" disabled={clearing || !guildId.trim()} className="w-full">
                 {clearing ? (<><Loader2 className="mr-2 h-4 w-4 animate-spin" />Rydder...</>) : (<><Trash2 className="mr-2 h-4 w-4" />Ryd globale kommandoer (fjerner duplikater)</>)}
               </Button>
             </AlertDialogTrigger>
@@ -150,7 +162,7 @@ export function GuildCommandDeployer() {
               <AlertDialogHeader>
                 <AlertDialogTitle>Ryd alle globale slash-kommandoer?</AlertDialogTitle>
                 <AlertDialogDescription>
-                  Dette fjerner alle bot-kommandoer fra Discords globale registrering. Servere der bruger guild-deployment (knappen ovenover) påvirkes ikke. Servere der KUN bruger globale kommandoer mister adgang indtil du re-deployer dem pr. guild.
+                  Dette fjerner alle globale slash-kommandoer fra den bot-application, der hører til den valgte server. Hvis serveren bruger en custom bot, ryddes den custom bots globale commands. Guild-deployede commands påvirkes ikke.
                   <br /><br />
                   Discord-cachen kan tage op til 1 time at opdatere efter ryddeoperationen.
                 </AlertDialogDescription>
