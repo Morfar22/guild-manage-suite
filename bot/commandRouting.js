@@ -5,6 +5,7 @@ const path = require('path');
 
 function loadRouteConfig() {
   const candidates = [
+    path.join(__dirname, 'command-routes.json'),
     path.join(__dirname, 'shared', 'command-routes.json'),
     path.join(__dirname, '..', 'shared', 'command-routes.json'),
   ];
