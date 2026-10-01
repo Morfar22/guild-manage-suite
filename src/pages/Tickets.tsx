@@ -157,7 +157,7 @@ export default function Tickets() {
         </Link>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-6">
         <MetricCard
           title={en ? 'Active queue' : 'Aktiv kø'}
           value={(stats?.openTickets ?? 0) + (stats?.claimedTickets ?? 0)}
@@ -180,6 +180,22 @@ export default function Tickets() {
           icon={<Flame className="h-4 w-4 text-destructive" />}
           loading={statsLoading}
           danger={(stats?.needsAttention ?? 0) > 0}
+        />
+        <MetricCard
+          title={en ? 'Urgent' : 'Akutte'}
+          value={stats?.urgentTickets ?? 0}
+          subtitle={en ? 'Priority = urgent' : 'Priority = akut'}
+          icon={<ShieldAlert className="h-4 w-4 text-destructive" />}
+          loading={statsLoading}
+          danger={(stats?.urgentTickets ?? 0) > 0}
+        />
+        <MetricCard
+          title={en ? 'SLA breached' : 'SLA overskredet'}
+          value={stats?.overdueSla ?? 0}
+          subtitle={en ? 'Open tickets past deadline' : 'Åbne tickets over deadline'}
+          icon={<Clock className="h-4 w-4 text-destructive" />}
+          loading={statsLoading}
+          danger={(stats?.overdueSla ?? 0) > 0}
         />
         <MetricCard
           title={en ? 'Avg. resolution' : 'Gns. løsningstid'}
@@ -288,6 +304,8 @@ export default function Tickets() {
                         <TableHead>{en ? 'User' : 'Bruger'}</TableHead>
                         <TableHead>{en ? 'Category' : 'Kategori'}</TableHead>
                         <TableHead>Status</TableHead>
+                        <TableHead>Priority</TableHead>
+                        <TableHead>SLA</TableHead>
                         <TableHead>{en ? 'Assigned' : 'Ansvarlig'}</TableHead>
                         <TableHead>{en ? 'Age' : 'Alder'}</TableHead>
                         <TableHead className="text-right">{en ? 'Actions' : 'Handlinger'}</TableHead>
@@ -315,6 +333,13 @@ export default function Tickets() {
                                   <div className="mt-1 font-mono text-[11px] text-muted-foreground">
                                     #{ticket.id.slice(0, 8)}
                                   </div>
+                                  {ticket.tags?.length > 0 && (
+                                    <div className="mt-1 flex flex-wrap gap-1">
+                                      {ticket.tags.slice(0, 3).map((tag) => (
+                                        <Badge key={tag} variant="outline" className="h-5 px-1.5 text-[10px]">{tag}</Badge>
+                                      ))}
+                                    </div>
+                                  )}
                                 </div>
                               </div>
                             </TableCell>
@@ -336,6 +361,33 @@ export default function Tickets() {
                                 <StatusIcon className="h-3 w-3" />
                                 {status.label}
                               </Badge>
+                            </TableCell>
+                            <TableCell>
+                              <Badge
+                                variant={
+                                  ticket.priority === 'urgent'
+                                    ? 'destructive'
+                                    : ticket.priority === 'high'
+                                      ? 'default'
+                                      : ticket.priority === 'low'
+                                        ? 'outline'
+                                        : 'secondary'
+                                }
+                              >
+                                {ticket.priority}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              {ticket.sla_due_at ? (
+                                <div className={ticket.status !== 'closed' && new Date(ticket.sla_due_at).getTime() < Date.now() ? 'text-destructive' : ''}>
+                                  <div className="text-xs font-medium">
+                                    {formatDistanceToNow(new Date(ticket.sla_due_at), { addSuffix: true, locale: dateLoc })}
+                                  </div>
+                                  {ticket.escalated_at && <Badge variant="destructive" className="mt-1 text-[10px]">Escalated</Badge>}
+                                </div>
+                              ) : (
+                                <span className="text-xs text-muted-foreground">—</span>
+                              )}
                             </TableCell>
                             <TableCell>
                               {ticket.claimed_by_name ? (
