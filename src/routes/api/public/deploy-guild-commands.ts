@@ -2,6 +2,7 @@
 // Migrated from Supabase Edge Function `deploy-guild-commands` to a TanStack server route.
 import { createFileRoute } from '@tanstack/react-router'
 import { createClient } from '@supabase/supabase-js'
+import { groupFlatCommandDefinitions, canonicalLogicalCommands } from '@/lib/commandGrouping'
 
 const __env = (k: string) => process.env[k] ?? (k === 'SUPABASE_ANON_KEY' ? process.env['SUPABASE_PUBLISHABLE_KEY'] : undefined)
 let __handler: (req: Request) => Response | Promise<Response>
@@ -716,7 +717,7 @@ __serve(async (req) => {
     // /fivem is registered by the dedicated FiveM command route.
     // Bulk-overwrite normally deletes commands that are not included, so preserve
     // an existing /fivem definition when redeploying the main catalog.
-    let commandsToDeploy: any[] = [...COMMANDS];
+    let commandsToDeploy: any[] = groupFlatCommandDefinitions(COMMANDS);
     try {
       const existingRes = await fetch(
         `https://discord.com/api/v10/applications/${appId}/guilds/${discordGuildId}/commands`,
@@ -770,6 +771,7 @@ __serve(async (req) => {
       JSON.stringify({
         success: true,
         deployed: deployed.length,
+        logicalCommands: canonicalLogicalCommands.length,
         commands: deployed.map((c: any) => c.name),
         usingCustomBot: isCustomBot,
       }),
