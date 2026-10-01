@@ -12,6 +12,12 @@ export interface DashboardNotification {
   source: string;
   is_read: boolean;
   metadata: any;
+  severity: 'info' | 'warning' | 'error' | 'critical';
+  status: 'open' | 'acknowledged' | 'resolved';
+  acknowledged_at: string | null;
+  acknowledged_by: string | null;
+  resolved_at: string | null;
+  resolved_by: string | null;
   created_at: string;
 }
 
@@ -76,6 +82,23 @@ export function useDashboardNotifications() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['dashboard-notifications'] }),
   });
 
+  const updateStatus = useMutation({
+    mutationFn: async ({ id, status }: { id: string; status: 'open' | 'acknowledged' | 'resolved' }) => {
+      if (!selectedGuild?.id) return;
+      const values: Record<string, unknown> = { status, is_read: true };
+      if (status === 'acknowledged') values.acknowledged_at = new Date().toISOString();
+      if (status === 'resolved') values.resolved_at = new Date().toISOString();
+
+      const { error } = await supabase
+        .from('dashboard_notifications')
+        .update(values)
+        .eq('id', id)
+        .eq('guild_id', selectedGuild.id);
+      if (error) throw error;
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['dashboard-notifications', selectedGuild?.id] }),
+  });
+
   const unreadCount = query.data?.filter(n => !n.is_read).length ?? 0;
 
   return {
@@ -84,5 +107,6 @@ export function useDashboardNotifications() {
     isLoading: query.isLoading,
     markAsRead,
     markAllAsRead,
+    updateStatus,
   };
 }
