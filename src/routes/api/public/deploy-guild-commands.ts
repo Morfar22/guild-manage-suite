@@ -155,6 +155,56 @@ const COMMANDS = [
     { name: "user", description: "Brugeren", type: 6, required: true },
   ]},
   { name: "nuke", description: "Slet alle beskeder i kanalen (genskaber kanalen)" },
+  { name: "purge", description: "Avanceret sletning af beskeder med filter", options: [
+    { name: "amount", description: "Maks antal beskeder der skal slettes (1-100)", type: 4, required: true },
+    { name: "filter", description: "Filtrer hvilke beskeder der slettes", type: 3, choices: [
+      { name: "Alle", value: "all" },
+      { name: "Bots", value: "bots" },
+      { name: "Links", value: "links" },
+      { name: "Embeds", value: "embeds" },
+    ]},
+    { name: "user", description: "Kun beskeder fra denne bruger", type: 6 },
+  ]},
+  { name: "massban", description: "Ban flere Discord bruger-ID'er på én gang", options: [
+    { name: "users", description: "Bruger-ID'er adskilt med mellemrum eller komma", type: 3, required: true },
+    { name: "reason", description: "Årsag", type: 3 },
+    { name: "delete_messages", description: "Slet beskeder fra de seneste 0-7 dage", type: 4 },
+  ]},
+  { name: "case", description: "Vis en moderation case", options: [
+    { name: "case_id", description: "Hele eller starten af case-ID'et", type: 3, required: true },
+  ]},
+  { name: "history", description: "Vis moderation-historik for en bruger", options: [
+    { name: "user", description: "Brugeren", type: 6, required: true },
+  ]},
+  { name: "reason", description: "Skift årsagen på en moderation case", options: [
+    { name: "case_id", description: "Hele eller starten af case-ID'et", type: 3, required: true },
+    { name: "reason", description: "Ny årsag", type: 3, required: true },
+  ]},
+  { name: "note", description: "Tilføj en intern staff-note", options: [
+    { name: "user", description: "Brugeren", type: 6, required: true },
+    { name: "note", description: "Noten", type: 3, required: true },
+    { name: "case_id", description: "Valgfrit case-ID", type: 3 },
+  ]},
+  { name: "tempban", description: "Ban en bruger midlertidigt", options: [
+    { name: "user", description: "Brugeren", type: 6, required: true },
+    { name: "duration", description: "Varighed i minutter", type: 4, required: true },
+    { name: "reason", description: "Årsag", type: 3 },
+  ]},
+  { name: "role", description: "Tilføj eller fjern en rolle som moderation", options: [
+    { name: "user", description: "Brugeren", type: 6, required: true },
+    { name: "role", description: "Rollen", type: 8, required: true },
+    { name: "action", description: "Handling", type: 3, required: true, choices: [
+      { name: "Tilføj", value: "add" },
+      { name: "Fjern", value: "remove" },
+    ]},
+    { name: "reason", description: "Årsag", type: 3 },
+  ]},
+  { name: "quarantine", description: "Tildel en quarantine-rolle", options: [
+    { name: "user", description: "Brugeren", type: 6, required: true },
+    { name: "role", description: "Quarantine-rollen", type: 8, required: true },
+    { name: "duration", description: "Varighed i minutter, 0 eller tom = permanent", type: 4 },
+    { name: "reason", description: "Årsag", type: 3 },
+  ]},
 
   // MUSIC
   { name: "play", description: "Afspil musik", options: [
