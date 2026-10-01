@@ -20,6 +20,7 @@ type CommandRoute = {
 
 const routes = routeConfig.routes as CommandRoute[];
 const roots = routeConfig.roots as Record<string, { description?: string; groups?: Record<string, string> }>;
+const routeByLogical = new Map(routes.map((route) => [route.logical, route]));
 
 function makeSubcommandFromFlat(route: CommandRoute, flatDefinition: FlatCommand) {
   const nested = (flatDefinition.options || []).find(
@@ -104,3 +105,15 @@ export function groupFlatCommandDefinitions(flatDefinitions: FlatCommand[]) {
 }
 
 export const canonicalLogicalCommands = routes.map((route) => route.logical);
+
+
+export function getCommandSlashPath(logicalName: string): string {
+  const route = routeByLogical.get(logicalName);
+  if (!route) return `/${logicalName}`;
+  if (route.passthrough) return `/${route.root}`;
+
+  const parts = [route.root];
+  if (route.group) parts.push(route.group);
+  if (route.sub) parts.push(route.sub);
+  return `/${parts.join(' ')}`;
+}
