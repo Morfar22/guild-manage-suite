@@ -181,7 +181,8 @@ function handlerNames() {
     ...topLevelObjectKeys(extra, 'return {\n    // ==================== UTILITY'),
     ...topLevelObjectKeys(admin, 'return {\n    // ---------- ADMIN'),
     ...topLevelObjectKeys(games, 'return {\n    // ==================== TRIVIA'),
-    ...topLevelObjectKeys(advancedModeration, 'return {\n    purge:'),
+    ...[...advancedModeration.matchAll(/^    ([a-z][a-z0-9-]*): async \(interaction\) => \{/gm)]
+      .map((match) => match[1]),
   ]);
 
   for (const match of tickets.matchAll(/commandName\s*===\s*['"]([^'"]+)['"]/g)) {
