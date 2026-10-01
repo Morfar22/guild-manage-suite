@@ -95,6 +95,76 @@ const commands = [
     .addUserOption(o => o.setName('user').setDescription('Brugeren').setRequired(true))
     .addStringOption(o => o.setName('reason').setDescription('Årsag')),
 
+  new SlashCommandBuilder()
+    .setName('purge')
+    .setDescription('Avanceret sletning af beskeder med filter')
+    .addIntegerOption(o => o.setName('amount').setDescription('Maks antal beskeder (1-100)').setRequired(true).setMinValue(1).setMaxValue(100))
+    .addStringOption(o => o.setName('filter').setDescription('Filter')
+      .addChoices(
+        { name: 'Alle', value: 'all' },
+        { name: 'Bots', value: 'bots' },
+        { name: 'Links', value: 'links' },
+        { name: 'Embeds', value: 'embeds' },
+      ))
+    .addUserOption(o => o.setName('user').setDescription('Kun beskeder fra denne bruger')),
+
+  new SlashCommandBuilder()
+    .setName('massban')
+    .setDescription('Ban flere Discord bruger-IDer på én gang')
+    .addStringOption(o => o.setName('users').setDescription('Bruger-IDer adskilt med mellemrum eller komma').setRequired(true))
+    .addStringOption(o => o.setName('reason').setDescription('Årsag'))
+    .addIntegerOption(o => o.setName('delete_messages').setDescription('Slet beskeder fra 0-7 dage').setMinValue(0).setMaxValue(7)),
+
+  new SlashCommandBuilder()
+    .setName('case')
+    .setDescription('Vis en moderation case')
+    .addStringOption(o => o.setName('case_id').setDescription('Hele eller starten af case-IDet').setRequired(true)),
+
+  new SlashCommandBuilder()
+    .setName('history')
+    .setDescription('Vis moderation-historik for en bruger')
+    .addUserOption(o => o.setName('user').setDescription('Brugeren').setRequired(true)),
+
+  new SlashCommandBuilder()
+    .setName('reason')
+    .setDescription('Skift årsagen på en moderation case')
+    .addStringOption(o => o.setName('case_id').setDescription('Hele eller starten af case-IDet').setRequired(true))
+    .addStringOption(o => o.setName('reason').setDescription('Ny årsag').setRequired(true)),
+
+  new SlashCommandBuilder()
+    .setName('note')
+    .setDescription('Tilføj en intern staff-note')
+    .addUserOption(o => o.setName('user').setDescription('Brugeren').setRequired(true))
+    .addStringOption(o => o.setName('note').setDescription('Noten').setRequired(true))
+    .addStringOption(o => o.setName('case_id').setDescription('Valgfrit case-ID')),
+
+  new SlashCommandBuilder()
+    .setName('tempban')
+    .setDescription('Ban en bruger midlertidigt')
+    .addUserOption(o => o.setName('user').setDescription('Brugeren').setRequired(true))
+    .addIntegerOption(o => o.setName('duration').setDescription('Varighed i minutter').setRequired(true).setMinValue(1).setMaxValue(525600))
+    .addStringOption(o => o.setName('reason').setDescription('Årsag')),
+
+  new SlashCommandBuilder()
+    .setName('role')
+    .setDescription('Tilføj eller fjern en rolle som moderation')
+    .addUserOption(o => o.setName('user').setDescription('Brugeren').setRequired(true))
+    .addRoleOption(o => o.setName('role').setDescription('Rollen').setRequired(true))
+    .addStringOption(o => o.setName('action').setDescription('Handling').setRequired(true)
+      .addChoices(
+        { name: 'Tilføj', value: 'add' },
+        { name: 'Fjern', value: 'remove' },
+      ))
+    .addStringOption(o => o.setName('reason').setDescription('Årsag')),
+
+  new SlashCommandBuilder()
+    .setName('quarantine')
+    .setDescription('Tildel en quarantine-rolle')
+    .addUserOption(o => o.setName('user').setDescription('Brugeren').setRequired(true))
+    .addRoleOption(o => o.setName('role').setDescription('Quarantine-rollen').setRequired(true))
+    .addIntegerOption(o => o.setName('duration').setDescription('Varighed i minutter, 0/tom = permanent').setMinValue(0).setMaxValue(40320))
+    .addStringOption(o => o.setName('reason').setDescription('Årsag')),
+
   // ==================== MUSIC ====================
   new SlashCommandBuilder()
     .setName('play')
