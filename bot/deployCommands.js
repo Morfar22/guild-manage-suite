@@ -163,10 +163,11 @@ const commands = [
         { name: 'Utility', value: 'utility' },
         { name: 'Fun', value: 'fun' },
         { name: 'Economy', value: 'economy' },
+        { name: 'Tickets', value: 'tickets' },
         { name: 'Giveaway', value: 'giveaway' },
-        { name: 'Suggestion', value: 'suggestion' },
-        { name: 'AFK', value: 'afk' },
         { name: 'Tebex', value: 'tebex' },
+        { name: 'Admin', value: 'admin' },
+        { name: 'Reaction Roles', value: 'reactionroles' },
       )),
 
   new SlashCommandBuilder()
@@ -180,10 +181,11 @@ const commands = [
         { name: 'Utility', value: 'utility' },
         { name: 'Fun', value: 'fun' },
         { name: 'Economy', value: 'economy' },
+        { name: 'Tickets', value: 'tickets' },
         { name: 'Giveaway', value: 'giveaway' },
-        { name: 'Suggestion', value: 'suggestion' },
-        { name: 'AFK', value: 'afk' },
         { name: 'Tebex', value: 'tebex' },
+        { name: 'Admin', value: 'admin' },
+        { name: 'Reaction Roles', value: 'reactionroles' },
       )),
 
   new SlashCommandBuilder()
