@@ -82,6 +82,7 @@ const { createAdminHandlers } = require('./handlers/adminCommands');
 const { createGameHandlers } = require('./handlers/gameCommands');
 const { createAdvancedModerationHandlers, setupModerationScheduler } = require('./handlers/advancedModeration');
 const { setupPlatformV3Handler } = require('./handlers/platformV3Handler');
+const { createAppealHandlers } = require('./handlers/appealHandler');
 
 const { setupPrefixHandler } = require('./handlers/prefixHandler');
 // Optional: Music system (comment out if not using)
@@ -2843,6 +2844,14 @@ manager.registerHandler((client, guildId, assignedDiscordGuildId) => {
     console.log(`[Bot] ✅ Admin commands for ${clientLabel}`);
   } catch (e) {
     console.error(`[Bot] ❌ Admin commands fejl:`, e.message);
+  }
+
+  // User-facing moderation appeals
+  try {
+    Object.assign(slashHandlers, createAppealHandlers(client, { supabase }));
+    console.log(`[Bot] ✅ Appeal commands for ${clientLabel}`);
+  } catch (e) {
+    console.error(`[Bot] ❌ Appeal commands fejl:`, e.message);
   }
 
   // Spil (trivia, ttt, connect4, hangman, wordle, blackjack)
