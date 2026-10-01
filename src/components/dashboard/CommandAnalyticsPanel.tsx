@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Activity, AlertTriangle, Ban, Eye, Gauge, Loader2, RefreshCw, Trophy } from 'lucide-react';
 import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { useCommandAnalytics } from '@/hooks/useCommandAnalytics';
+import { getCommandSlashPath } from '@/lib/commandGrouping';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -130,7 +131,7 @@ export function CommandAnalyticsPanel({ onInspect }: Props) {
               <Trophy className="h-5 w-5 text-primary" />
               <div className="min-w-0">
                 <p className="text-xs text-muted-foreground">Mest brugte</p>
-                <p className="truncate text-lg font-bold">{topCommand ? `/${topCommand.command_name}` : 'Ingen data'}</p>
+                <p className="truncate text-lg font-bold">{topCommand ? getCommandSlashPath(topCommand.command_name) : 'Ingen data'}</p>
               </div>
             </div>
           </CardContent>
@@ -207,7 +208,7 @@ export function CommandAnalyticsPanel({ onInspect }: Props) {
                   ) : recentErrors.map((event) => (
                     <TableRow key={event.id}>
                       <TableCell>
-                        <Badge variant="secondary" className="font-mono">/{event.command_name}</Badge>
+                        <Badge variant="secondary" className="font-mono">{getCommandSlashPath(event.command_name)}</Badge>
                       </TableCell>
                       <TableCell className="whitespace-nowrap text-xs text-muted-foreground">
                         {formatLastUsed(event.created_at)}
@@ -257,7 +258,7 @@ export function CommandAnalyticsPanel({ onInspect }: Props) {
                   {commands.map((command) => (
                     <TableRow key={command.command_name}>
                       <TableCell>
-                        <Badge variant="secondary" className="font-mono">/{command.command_name}</Badge>
+                        <Badge variant="secondary" className="font-mono">{getCommandSlashPath(command.command_name)}</Badge>
                       </TableCell>
                       <TableCell className="text-right font-medium">{command.executions.toLocaleString('da-DK')}</TableCell>
                       <TableCell className="text-right">
