@@ -1,0 +1,1249 @@
+{
+  "version": 1,
+  "roots": {
+    "mod": {
+      "description": "Moderation og medlemsstyring"
+    },
+    "music": {
+      "description": "Musik, kø og musikquiz",
+      "groups": {
+        "quiz": "Musikquiz"
+      }
+    },
+    "level": {
+      "description": "XP, levels og ranglister"
+    },
+    "utility": {
+      "description": "Serverværktøjer og information",
+      "groups": {
+        "info": "Information",
+        "tools": "Værktøjer"
+      }
+    },
+    "fun": {
+      "description": "Spil og underholdning"
+    },
+    "economy": {
+      "description": "Økonomi, shop og gambling"
+    },
+    "ticket": {
+      "description": "Tickets og support"
+    },
+    "giveaway": {
+      "description": "Giveaways og vindere"
+    },
+    "tebex": {
+      "description": "Tebex-værktøjer"
+    },
+    "admin": {
+      "description": "Serveropsætning og administration"
+    },
+    "rr": {
+      "description": "Reaction roles"
+    }
+  },
+  "legacyAliases": {
+    "close": "ticket-close",
+    "claim": "ticket-claim",
+    "add": "ticket-add",
+    "gstart": "giveaway-start",
+    "gend": "giveaway-end",
+    "greroll": "giveaway-reroll",
+    "glist": "giveaway-list",
+    "gpause": "giveaway-pause"
+  },
+  "routes": [
+    {
+      "logical": "announce",
+      "category": "admin",
+      "source": "announce",
+      "handler": "announce",
+      "root": "admin",
+      "sub": "announce"
+    },
+    {
+      "logical": "automod",
+      "category": "admin",
+      "source": "automod",
+      "handler": "automod",
+      "root": "admin",
+      "sub": "automod"
+    },
+    {
+      "logical": "autorole",
+      "category": "admin",
+      "source": "autorole",
+      "handler": "autorole",
+      "root": "admin",
+      "sub": "autorole"
+    },
+    {
+      "logical": "backup",
+      "category": "admin",
+      "source": "backup",
+      "handler": "backup",
+      "root": "admin",
+      "sub": "backup"
+    },
+    {
+      "logical": "config",
+      "category": "admin",
+      "source": "config",
+      "handler": "config",
+      "root": "admin",
+      "sub": "config"
+    },
+    {
+      "logical": "fivem",
+      "category": "admin",
+      "source": "fivem",
+      "handler": "fivem",
+      "root": "fivem",
+      "passthrough": true
+    },
+    {
+      "logical": "prefix",
+      "category": "admin",
+      "source": "prefix",
+      "handler": "prefix",
+      "root": "admin",
+      "sub": "prefix"
+    },
+    {
+      "logical": "restore",
+      "category": "admin",
+      "source": "restore",
+      "handler": "restore",
+      "root": "admin",
+      "sub": "restore"
+    },
+    {
+      "logical": "setleave",
+      "category": "admin",
+      "source": "setleave",
+      "handler": "setleave",
+      "root": "admin",
+      "sub": "setleave"
+    },
+    {
+      "logical": "setlevel",
+      "category": "admin",
+      "source": "setlevel",
+      "handler": "setlevel",
+      "root": "admin",
+      "sub": "setlevel"
+    },
+    {
+      "logical": "setlog",
+      "category": "admin",
+      "source": "setlog",
+      "handler": "setlog",
+      "root": "admin",
+      "sub": "setlog"
+    },
+    {
+      "logical": "setup",
+      "category": "admin",
+      "source": "setup",
+      "handler": "setup",
+      "root": "admin",
+      "sub": "setup"
+    },
+    {
+      "logical": "setwelcome",
+      "category": "admin",
+      "source": "setwelcome",
+      "handler": "setwelcome",
+      "root": "admin",
+      "sub": "setwelcome"
+    },
+    {
+      "logical": "testall",
+      "category": "admin",
+      "source": "testall",
+      "handler": "testall",
+      "root": "admin",
+      "sub": "testall"
+    },
+    {
+      "logical": "balance",
+      "category": "economy",
+      "source": "balance",
+      "handler": "balance",
+      "root": "economy",
+      "sub": "balance"
+    },
+    {
+      "logical": "blackjack",
+      "category": "economy",
+      "source": "blackjack",
+      "handler": "blackjack",
+      "root": "economy",
+      "sub": "blackjack"
+    },
+    {
+      "logical": "buy",
+      "category": "economy",
+      "source": "buy",
+      "handler": "buy",
+      "root": "economy",
+      "sub": "buy"
+    },
+    {
+      "logical": "crime",
+      "category": "economy",
+      "source": "crime",
+      "handler": "crime",
+      "root": "economy",
+      "sub": "crime"
+    },
+    {
+      "logical": "daily",
+      "category": "economy",
+      "source": "daily",
+      "handler": "daily",
+      "root": "economy",
+      "sub": "daily"
+    },
+    {
+      "logical": "deposit",
+      "category": "economy",
+      "source": "deposit",
+      "handler": "deposit",
+      "root": "economy",
+      "sub": "deposit"
+    },
+    {
+      "logical": "gamble",
+      "category": "economy",
+      "source": "gamble",
+      "handler": "gamble",
+      "root": "economy",
+      "sub": "gamble"
+    },
+    {
+      "logical": "inventory",
+      "category": "economy",
+      "source": "inventory",
+      "handler": "inventory",
+      "root": "economy",
+      "sub": "inventory"
+    },
+    {
+      "logical": "pay",
+      "category": "economy",
+      "source": "pay",
+      "handler": "pay",
+      "root": "economy",
+      "sub": "pay"
+    },
+    {
+      "logical": "richest",
+      "category": "economy",
+      "source": "richest",
+      "handler": "richest",
+      "root": "economy",
+      "sub": "richest"
+    },
+    {
+      "logical": "rob",
+      "category": "economy",
+      "source": "rob",
+      "handler": "rob",
+      "root": "economy",
+      "sub": "rob"
+    },
+    {
+      "logical": "sell",
+      "category": "economy",
+      "source": "sell",
+      "handler": "sell",
+      "root": "economy",
+      "sub": "sell"
+    },
+    {
+      "logical": "shop",
+      "category": "economy",
+      "source": "shop",
+      "handler": "shop",
+      "root": "economy",
+      "sub": "shop"
+    },
+    {
+      "logical": "weekly",
+      "category": "economy",
+      "source": "weekly",
+      "handler": "weekly",
+      "root": "economy",
+      "sub": "weekly"
+    },
+    {
+      "logical": "withdraw",
+      "category": "economy",
+      "source": "withdraw",
+      "handler": "withdraw",
+      "root": "economy",
+      "sub": "withdraw"
+    },
+    {
+      "logical": "work",
+      "category": "economy",
+      "source": "work",
+      "handler": "work",
+      "root": "economy",
+      "sub": "work"
+    },
+    {
+      "logical": "8ball",
+      "category": "fun",
+      "source": "8ball",
+      "handler": "8ball",
+      "root": "fun",
+      "sub": "8ball"
+    },
+    {
+      "logical": "ascii",
+      "category": "fun",
+      "source": "ascii",
+      "handler": "ascii",
+      "root": "fun",
+      "sub": "ascii"
+    },
+    {
+      "logical": "coinflip",
+      "category": "fun",
+      "source": "coinflip",
+      "handler": "coinflip",
+      "root": "fun",
+      "sub": "coinflip"
+    },
+    {
+      "logical": "connect4",
+      "category": "fun",
+      "source": "connect4",
+      "handler": "connect4",
+      "root": "fun",
+      "sub": "connect4"
+    },
+    {
+      "logical": "dice",
+      "category": "fun",
+      "source": "dice",
+      "handler": "dice",
+      "root": "fun",
+      "sub": "dice"
+    },
+    {
+      "logical": "fact",
+      "category": "fun",
+      "source": "fact",
+      "handler": "fact",
+      "root": "fun",
+      "sub": "fact"
+    },
+    {
+      "logical": "hangman",
+      "category": "fun",
+      "source": "hangman",
+      "handler": "hangman",
+      "root": "fun",
+      "sub": "hangman"
+    },
+    {
+      "logical": "joke",
+      "category": "fun",
+      "source": "joke",
+      "handler": "joke",
+      "root": "fun",
+      "sub": "joke"
+    },
+    {
+      "logical": "meme",
+      "category": "fun",
+      "source": "meme",
+      "handler": "meme",
+      "root": "fun",
+      "sub": "meme"
+    },
+    {
+      "logical": "mock",
+      "category": "fun",
+      "source": "mock",
+      "handler": "mock",
+      "root": "fun",
+      "sub": "mock"
+    },
+    {
+      "logical": "quote",
+      "category": "fun",
+      "source": "quote",
+      "handler": "quote",
+      "root": "fun",
+      "sub": "quote"
+    },
+    {
+      "logical": "rate",
+      "category": "fun",
+      "source": "rate",
+      "handler": "rate",
+      "root": "fun",
+      "sub": "rate"
+    },
+    {
+      "logical": "reverse",
+      "category": "fun",
+      "source": "reverse",
+      "handler": "reverse",
+      "root": "fun",
+      "sub": "reverse"
+    },
+    {
+      "logical": "roulette",
+      "category": "fun",
+      "source": "roulette",
+      "handler": "roulette",
+      "root": "fun",
+      "sub": "roulette"
+    },
+    {
+      "logical": "rps",
+      "category": "fun",
+      "source": "rps",
+      "handler": "rps",
+      "root": "fun",
+      "sub": "rps"
+    },
+    {
+      "logical": "ship",
+      "category": "fun",
+      "source": "ship",
+      "handler": "ship",
+      "root": "fun",
+      "sub": "ship"
+    },
+    {
+      "logical": "slots",
+      "category": "fun",
+      "source": "slots",
+      "handler": "slots",
+      "root": "fun",
+      "sub": "slots"
+    },
+    {
+      "logical": "trivia",
+      "category": "fun",
+      "source": "trivia",
+      "handler": "trivia",
+      "root": "fun",
+      "sub": "trivia"
+    },
+    {
+      "logical": "ttt",
+      "category": "fun",
+      "source": "ttt",
+      "handler": "ttt",
+      "root": "fun",
+      "sub": "ttt"
+    },
+    {
+      "logical": "wordle",
+      "category": "fun",
+      "source": "wordle",
+      "handler": "wordle",
+      "root": "fun",
+      "sub": "wordle"
+    },
+    {
+      "logical": "giveaway-end",
+      "category": "giveaway",
+      "source": "giveaway",
+      "handler": "giveaway",
+      "root": "giveaway",
+      "sub": "end"
+    },
+    {
+      "logical": "giveaway-list",
+      "category": "giveaway",
+      "source": "glist",
+      "handler": "glist",
+      "root": "giveaway",
+      "sub": "list"
+    },
+    {
+      "logical": "giveaway-pause",
+      "category": "giveaway",
+      "source": "gpause",
+      "handler": "gpause",
+      "root": "giveaway",
+      "sub": "pause"
+    },
+    {
+      "logical": "giveaway-reroll",
+      "category": "giveaway",
+      "source": "giveaway",
+      "handler": "giveaway",
+      "root": "giveaway",
+      "sub": "reroll"
+    },
+    {
+      "logical": "giveaway-start",
+      "category": "giveaway",
+      "source": "giveaway",
+      "handler": "giveaway",
+      "root": "giveaway",
+      "sub": "start"
+    },
+    {
+      "logical": "addxp",
+      "category": "leveling",
+      "source": "addxp",
+      "handler": "addxp",
+      "root": "level",
+      "sub": "addxp"
+    },
+    {
+      "logical": "leaderboard",
+      "category": "leveling",
+      "source": "leaderboard",
+      "handler": "leaderboard",
+      "root": "level",
+      "sub": "leaderboard"
+    },
+    {
+      "logical": "levelroles",
+      "category": "leveling",
+      "source": "levelroles",
+      "handler": "levelroles",
+      "root": "level",
+      "sub": "levelroles"
+    },
+    {
+      "logical": "rank",
+      "category": "leveling",
+      "source": "rank",
+      "handler": "rank",
+      "root": "level",
+      "sub": "rank"
+    },
+    {
+      "logical": "removexp",
+      "category": "leveling",
+      "source": "removexp",
+      "handler": "removexp",
+      "root": "level",
+      "sub": "removexp"
+    },
+    {
+      "logical": "resetleaderboard",
+      "category": "leveling",
+      "source": "resetleaderboard",
+      "handler": "resetleaderboard",
+      "root": "level",
+      "sub": "resetleaderboard"
+    },
+    {
+      "logical": "resetxp",
+      "category": "leveling",
+      "source": "resetxp",
+      "handler": "resetxp",
+      "root": "level",
+      "sub": "resetxp"
+    },
+    {
+      "logical": "setlevelrole",
+      "category": "leveling",
+      "source": "setlevelrole",
+      "handler": "setlevelrole",
+      "root": "level",
+      "sub": "setlevelrole"
+    },
+    {
+      "logical": "setxp",
+      "category": "leveling",
+      "source": "setxp",
+      "handler": "setxp",
+      "root": "level",
+      "sub": "setxp"
+    },
+    {
+      "logical": "xpmultiplier",
+      "category": "leveling",
+      "source": "xpmultiplier",
+      "handler": "xpmultiplier",
+      "root": "level",
+      "sub": "xpmultiplier"
+    },
+    {
+      "logical": "ban",
+      "category": "moderation",
+      "source": "ban",
+      "handler": "ban",
+      "root": "mod",
+      "sub": "ban"
+    },
+    {
+      "logical": "clear",
+      "category": "moderation",
+      "source": "clear",
+      "handler": "clear",
+      "root": "mod",
+      "sub": "clear"
+    },
+    {
+      "logical": "clearwarns",
+      "category": "moderation",
+      "source": "clearwarns",
+      "handler": "clearwarns",
+      "root": "mod",
+      "sub": "clearwarns"
+    },
+    {
+      "logical": "kick",
+      "category": "moderation",
+      "source": "kick",
+      "handler": "kick",
+      "root": "mod",
+      "sub": "kick"
+    },
+    {
+      "logical": "lock",
+      "category": "moderation",
+      "source": "lock",
+      "handler": "lock",
+      "root": "mod",
+      "sub": "lock"
+    },
+    {
+      "logical": "mute",
+      "category": "moderation",
+      "source": "mute",
+      "handler": "mute",
+      "root": "mod",
+      "sub": "mute"
+    },
+    {
+      "logical": "nuke",
+      "category": "moderation",
+      "source": "nuke",
+      "handler": "nuke",
+      "root": "mod",
+      "sub": "nuke"
+    },
+    {
+      "logical": "slowmode",
+      "category": "moderation",
+      "source": "slowmode",
+      "handler": "slowmode",
+      "root": "mod",
+      "sub": "slowmode"
+    },
+    {
+      "logical": "softban",
+      "category": "moderation",
+      "source": "softban",
+      "handler": "softban",
+      "root": "mod",
+      "sub": "softban"
+    },
+    {
+      "logical": "timeout",
+      "category": "moderation",
+      "source": "timeout",
+      "handler": "timeout",
+      "root": "mod",
+      "sub": "timeout"
+    },
+    {
+      "logical": "unban",
+      "category": "moderation",
+      "source": "unban",
+      "handler": "unban",
+      "root": "mod",
+      "sub": "unban"
+    },
+    {
+      "logical": "unlock",
+      "category": "moderation",
+      "source": "unlock",
+      "handler": "unlock",
+      "root": "mod",
+      "sub": "unlock"
+    },
+    {
+      "logical": "unmute",
+      "category": "moderation",
+      "source": "unmute",
+      "handler": "unmute",
+      "root": "mod",
+      "sub": "unmute"
+    },
+    {
+      "logical": "untimeout",
+      "category": "moderation",
+      "source": "untimeout",
+      "handler": "untimeout",
+      "root": "mod",
+      "sub": "untimeout"
+    },
+    {
+      "logical": "warn",
+      "category": "moderation",
+      "source": "warn",
+      "handler": "warn",
+      "root": "mod",
+      "sub": "warn"
+    },
+    {
+      "logical": "warnings",
+      "category": "moderation",
+      "source": "warnings",
+      "handler": "warnings",
+      "root": "mod",
+      "sub": "warnings"
+    },
+    {
+      "logical": "autoplay",
+      "category": "music",
+      "source": "autoplay",
+      "handler": "autoplay",
+      "root": "music",
+      "sub": "autoplay"
+    },
+    {
+      "logical": "filter",
+      "category": "music",
+      "source": "filter",
+      "handler": "filter",
+      "root": "music",
+      "sub": "filter"
+    },
+    {
+      "logical": "jump",
+      "category": "music",
+      "source": "jump",
+      "handler": "jump",
+      "root": "music",
+      "sub": "jump"
+    },
+    {
+      "logical": "loop",
+      "category": "music",
+      "source": "loop",
+      "handler": "loop",
+      "root": "music",
+      "sub": "loop"
+    },
+    {
+      "logical": "lyrics",
+      "category": "music",
+      "source": "lyrics",
+      "handler": "lyrics",
+      "root": "music",
+      "sub": "lyrics"
+    },
+    {
+      "logical": "move",
+      "category": "music",
+      "source": "move",
+      "handler": "move",
+      "root": "music",
+      "sub": "move"
+    },
+    {
+      "logical": "musicquiz-leaderboard",
+      "category": "music",
+      "source": "musicquiz",
+      "handler": "musicquiz",
+      "root": "music",
+      "group": "quiz",
+      "sub": "leaderboard"
+    },
+    {
+      "logical": "musicquiz-skip",
+      "category": "music",
+      "source": "musicquiz",
+      "handler": "musicquiz",
+      "root": "music",
+      "group": "quiz",
+      "sub": "skip"
+    },
+    {
+      "logical": "musicquiz-start",
+      "category": "music",
+      "source": "musicquiz",
+      "handler": "musicquiz",
+      "root": "music",
+      "group": "quiz",
+      "sub": "start"
+    },
+    {
+      "logical": "musicquiz-stop",
+      "category": "music",
+      "source": "musicquiz",
+      "handler": "musicquiz",
+      "root": "music",
+      "group": "quiz",
+      "sub": "stop"
+    },
+    {
+      "logical": "nowplaying",
+      "category": "music",
+      "source": "nowplaying",
+      "handler": "nowplaying",
+      "root": "music",
+      "sub": "nowplaying"
+    },
+    {
+      "logical": "pause",
+      "category": "music",
+      "source": "pause",
+      "handler": "pause",
+      "root": "music",
+      "sub": "pause"
+    },
+    {
+      "logical": "play",
+      "category": "music",
+      "source": "play",
+      "handler": "play",
+      "root": "music",
+      "sub": "play"
+    },
+    {
+      "logical": "queue",
+      "category": "music",
+      "source": "queue",
+      "handler": "queue",
+      "root": "music",
+      "sub": "queue"
+    },
+    {
+      "logical": "remove",
+      "category": "music",
+      "source": "remove",
+      "handler": "remove",
+      "root": "music",
+      "sub": "remove"
+    },
+    {
+      "logical": "resume",
+      "category": "music",
+      "source": "resume",
+      "handler": "resume",
+      "root": "music",
+      "sub": "resume"
+    },
+    {
+      "logical": "seek",
+      "category": "music",
+      "source": "seek",
+      "handler": "seek",
+      "root": "music",
+      "sub": "seek"
+    },
+    {
+      "logical": "shuffle",
+      "category": "music",
+      "source": "shuffle",
+      "handler": "shuffle",
+      "root": "music",
+      "sub": "shuffle"
+    },
+    {
+      "logical": "skip",
+      "category": "music",
+      "source": "skip",
+      "handler": "skip",
+      "root": "music",
+      "sub": "skip"
+    },
+    {
+      "logical": "stop",
+      "category": "music",
+      "source": "stop",
+      "handler": "stop",
+      "root": "music",
+      "sub": "stop"
+    },
+    {
+      "logical": "volume",
+      "category": "music",
+      "source": "volume",
+      "handler": "volume",
+      "root": "music",
+      "sub": "volume"
+    },
+    {
+      "logical": "reactionrole",
+      "category": "reactionroles",
+      "source": "reactionrole",
+      "handler": "reactionrole",
+      "root": "rr",
+      "sub": "create"
+    },
+    {
+      "logical": "rr-add",
+      "category": "reactionroles",
+      "source": "rr-add",
+      "handler": "rr-add",
+      "root": "rr",
+      "sub": "add"
+    },
+    {
+      "logical": "rr-clear",
+      "category": "reactionroles",
+      "source": "rr-clear",
+      "handler": "rr-clear",
+      "root": "rr",
+      "sub": "clear"
+    },
+    {
+      "logical": "rr-list",
+      "category": "reactionroles",
+      "source": "rr-list",
+      "handler": "rr-list",
+      "root": "rr",
+      "sub": "list"
+    },
+    {
+      "logical": "rr-remove",
+      "category": "reactionroles",
+      "source": "rr-remove",
+      "handler": "rr-remove",
+      "root": "rr",
+      "sub": "remove"
+    },
+    {
+      "logical": "tebex-verify",
+      "category": "tebex",
+      "source": "tebex-verify",
+      "handler": "tebex-verify",
+      "root": "tebex",
+      "sub": "verify"
+    },
+    {
+      "logical": "rename",
+      "category": "tickets",
+      "source": "rename",
+      "handler": "rename",
+      "root": "ticket",
+      "sub": "rename"
+    },
+    {
+      "logical": "ticket",
+      "category": "tickets",
+      "source": "ticket",
+      "handler": "ticket",
+      "root": "ticket",
+      "sub": "create"
+    },
+    {
+      "logical": "ticket-add",
+      "category": "tickets",
+      "source": "ticket-add",
+      "handler": "ticket-add",
+      "root": "ticket",
+      "sub": "add"
+    },
+    {
+      "logical": "ticket-claim",
+      "category": "tickets",
+      "source": "ticket-claim",
+      "handler": "ticket-claim",
+      "root": "ticket",
+      "sub": "claim"
+    },
+    {
+      "logical": "ticket-close",
+      "category": "tickets",
+      "source": "ticket-close",
+      "handler": "ticket-close",
+      "root": "ticket",
+      "sub": "close"
+    },
+    {
+      "logical": "ticket-remind",
+      "category": "tickets",
+      "source": "ticket-remind",
+      "handler": "ticket-remind",
+      "root": "ticket",
+      "sub": "remind"
+    },
+    {
+      "logical": "ticket-remove",
+      "category": "tickets",
+      "source": "ticket-remove",
+      "handler": "ticket-remove",
+      "root": "ticket",
+      "sub": "remove"
+    },
+    {
+      "logical": "transcript",
+      "category": "tickets",
+      "source": "transcript",
+      "handler": "transcript",
+      "root": "ticket",
+      "sub": "transcript"
+    },
+    {
+      "logical": "unclaim",
+      "category": "tickets",
+      "source": "unclaim",
+      "handler": "unclaim",
+      "root": "ticket",
+      "sub": "unclaim"
+    },
+    {
+      "logical": "afk",
+      "category": "utility",
+      "source": "afk",
+      "handler": "afk",
+      "root": "utility",
+      "group": "tools",
+      "sub": "afk"
+    },
+    {
+      "logical": "avatar",
+      "category": "utility",
+      "source": "avatar",
+      "handler": "avatar",
+      "root": "utility",
+      "group": "info",
+      "sub": "avatar"
+    },
+    {
+      "logical": "banner",
+      "category": "utility",
+      "source": "banner",
+      "handler": "banner",
+      "root": "utility",
+      "group": "info",
+      "sub": "banner"
+    },
+    {
+      "logical": "calculate",
+      "category": "utility",
+      "source": "calculate",
+      "handler": "calculate",
+      "root": "utility",
+      "group": "tools",
+      "sub": "calculate"
+    },
+    {
+      "logical": "channelinfo",
+      "category": "utility",
+      "source": "channelinfo",
+      "handler": "channelinfo",
+      "root": "utility",
+      "group": "info",
+      "sub": "channelinfo"
+    },
+    {
+      "logical": "commands",
+      "category": "utility",
+      "source": "commands",
+      "handler": "commands",
+      "root": "utility",
+      "group": "info",
+      "sub": "commands"
+    },
+    {
+      "logical": "editsnipe",
+      "category": "utility",
+      "source": "editsnipe",
+      "handler": "editsnipe",
+      "root": "utility",
+      "group": "tools",
+      "sub": "editsnipe"
+    },
+    {
+      "logical": "embed",
+      "category": "utility",
+      "source": "embed",
+      "handler": "embed",
+      "root": "utility",
+      "group": "tools",
+      "sub": "embed"
+    },
+    {
+      "logical": "emojis",
+      "category": "utility",
+      "source": "emojis",
+      "handler": "emojis",
+      "root": "utility",
+      "group": "info",
+      "sub": "emojis"
+    },
+    {
+      "logical": "globalban-report",
+      "category": "utility",
+      "source": "globalban-report",
+      "handler": "globalban-report",
+      "root": "utility",
+      "group": "tools",
+      "sub": "globalban-report"
+    },
+    {
+      "logical": "help",
+      "category": "utility",
+      "source": "help",
+      "handler": "help",
+      "root": "utility",
+      "group": "info",
+      "sub": "help"
+    },
+    {
+      "logical": "invite",
+      "category": "utility",
+      "source": "invite",
+      "handler": "invite",
+      "root": "utility",
+      "group": "info",
+      "sub": "invite"
+    },
+    {
+      "logical": "members",
+      "category": "utility",
+      "source": "members",
+      "handler": "members",
+      "root": "utility",
+      "group": "info",
+      "sub": "members"
+    },
+    {
+      "logical": "ping",
+      "category": "utility",
+      "source": "ping",
+      "handler": "ping",
+      "root": "utility",
+      "group": "info",
+      "sub": "ping"
+    },
+    {
+      "logical": "poll",
+      "category": "utility",
+      "source": "poll",
+      "handler": "poll",
+      "root": "utility",
+      "group": "tools",
+      "sub": "poll"
+    },
+    {
+      "logical": "remind",
+      "category": "utility",
+      "source": "remind",
+      "handler": "remind",
+      "root": "utility",
+      "group": "tools",
+      "sub": "remind"
+    },
+    {
+      "logical": "roleinfo",
+      "category": "utility",
+      "source": "roleinfo",
+      "handler": "roleinfo",
+      "root": "utility",
+      "group": "info",
+      "sub": "roleinfo"
+    },
+    {
+      "logical": "roles",
+      "category": "utility",
+      "source": "roles",
+      "handler": "roles",
+      "root": "utility",
+      "group": "info",
+      "sub": "roles"
+    },
+    {
+      "logical": "serverinfo",
+      "category": "utility",
+      "source": "serverinfo",
+      "handler": "serverinfo",
+      "root": "utility",
+      "group": "info",
+      "sub": "serverinfo"
+    },
+    {
+      "logical": "snipe",
+      "category": "utility",
+      "source": "snipe",
+      "handler": "snipe",
+      "root": "utility",
+      "group": "tools",
+      "sub": "snipe"
+    },
+    {
+      "logical": "stats",
+      "category": "utility",
+      "source": "stats",
+      "handler": "stats",
+      "root": "utility",
+      "group": "info",
+      "sub": "stats"
+    },
+    {
+      "logical": "suggest",
+      "category": "utility",
+      "source": "suggest",
+      "handler": "suggest",
+      "root": "utility",
+      "group": "tools",
+      "sub": "suggest"
+    },
+    {
+      "logical": "support",
+      "category": "utility",
+      "source": "support",
+      "handler": "support",
+      "root": "utility",
+      "group": "info",
+      "sub": "support"
+    },
+    {
+      "logical": "translate",
+      "category": "utility",
+      "source": "translate",
+      "handler": "translate",
+      "root": "utility",
+      "group": "tools",
+      "sub": "translate"
+    },
+    {
+      "logical": "uptime",
+      "category": "utility",
+      "source": "uptime",
+      "handler": "uptime",
+      "root": "utility",
+      "group": "info",
+      "sub": "uptime"
+    },
+    {
+      "logical": "userinfo",
+      "category": "utility",
+      "source": "userinfo",
+      "handler": "userinfo",
+      "root": "utility",
+      "group": "info",
+      "sub": "userinfo"
+    },
+    {
+      "logical": "vote",
+      "category": "utility",
+      "source": "vote",
+      "handler": "vote",
+      "root": "utility",
+      "group": "tools",
+      "sub": "vote"
+    },
+    {
+      "logical": "weather",
+      "category": "utility",
+      "source": "weather",
+      "handler": "weather",
+      "root": "utility",
+      "group": "tools",
+      "sub": "weather"
+    }
+  ]
+}
