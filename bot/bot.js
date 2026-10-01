@@ -24,6 +24,7 @@ const { createClient } = require('@supabase/supabase-js');
 
 // Import manager
 const { manager } = require('./customBotManager');
+const { resolveInteractionCommand } = require('./commandRouting');
 const { getFiveMDefinition, getFiveMPermission, permissionAtLeast, queueCommandName } = require('./fivem/commands');
 
 // Import handlers
@@ -2415,7 +2416,7 @@ manager.registerHandler((client, guildId, assignedDiscordGuildId) => {
 
   // Setup feature handlers with guild filtering
   try {
-    setupTicketHandler(client, { shouldHandleGuild });
+    setupTicketHandler(client, { shouldHandleGuild, checkCommandAccess, queueCommandExecution });
     console.log(`[Bot] ✅ Ticket handler for ${clientLabel}`);
   } catch (e) {
     console.error(`[Bot] ❌ Ticket handler fejl:`, e.message);
@@ -2771,7 +2772,7 @@ manager.registerHandler((client, guildId, assignedDiscordGuildId) => {
 
   // Music Quiz Handler
   try {
-    setupMusicQuizHandler(client, supabase, { shouldHandleGuild });
+    setupMusicQuizHandler(client, supabase, { shouldHandleGuild, checkCommandAccess, queueCommandExecution });
     console.log(`[Bot] ✅ Music Quiz handler for ${clientLabel}`);
   } catch (e) {
     console.error(`[Bot] ❌ Music Quiz handler fejl:`, e.message);
@@ -2858,7 +2859,14 @@ manager.registerHandler((client, guildId, assignedDiscordGuildId) => {
     // Only handle commands for guilds this bot instance is responsible for
     if (interaction.guild && !shouldHandleGuild(interaction.guild.id)) return;
 
-    const commandName = interaction.commandName;
+    const resolvedCommand = resolveInteractionCommand(interaction);
+    const commandName = resolvedCommand.logicalName;
+    const handlerName = resolvedCommand.handlerName;
+    const handler = slashHandlers[handlerName];
+
+    // Ticket and Music Quiz are handled by dedicated interaction listeners.
+    if (!handler || !commandName) return;
+
     const commandStartedAt = Date.now();
 
     const access = await checkCommandAccess({
@@ -2884,38 +2892,35 @@ manager.registerHandler((client, guildId, assignedDiscordGuildId) => {
       return interaction.reply({ content: access.message || '🚫 Du har ikke adgang til denne command.', flags: 64 });
     }
 
-    const handler = slashHandlers[commandName];
-    if (handler) {
-      try {
-        await handler(interaction);
-        void queueCommandExecution({
-          guildId: interaction.guild.id,
-          commandName,
-          userId: interaction.user.id,
-          channelId: interaction.channelId,
-          source: 'slash',
-          status: 'success',
-          latencyMs: Date.now() - commandStartedAt,
-        });
-      } catch (error) {
-        void queueCommandExecution({
-          guildId: interaction.guild.id,
-          commandName,
-          userId: interaction.user.id,
-          channelId: interaction.channelId,
-          source: 'slash',
-          status: 'error',
-          latencyMs: Date.now() - commandStartedAt,
-          error,
-        });
+    try {
+      await handler(interaction);
+      void queueCommandExecution({
+        guildId: interaction.guild.id,
+        commandName,
+        userId: interaction.user.id,
+        channelId: interaction.channelId,
+        source: 'slash',
+        status: 'success',
+        latencyMs: Date.now() - commandStartedAt,
+      });
+    } catch (error) {
+      void queueCommandExecution({
+        guildId: interaction.guild.id,
+        commandName,
+        userId: interaction.user.id,
+        channelId: interaction.channelId,
+        source: 'slash',
+        status: 'error',
+        latencyMs: Date.now() - commandStartedAt,
+        error,
+      });
 
-        console.error(`[Bot] Fejl i command ${commandName}:`, error);
-        const reply = { content: '❌ Der skete en fejl under udførelse af kommandoen.', flags: 64 };
-        if (interaction.deferred || interaction.replied) {
-          await interaction.editReply({ content: reply.content }).catch(() => {});
-        } else {
-          await interaction.reply(reply).catch(() => {});
-        }
+      console.error(`[Bot] Fejl i command ${commandName}:`, error);
+      const reply = { content: '❌ Der skete en fejl under udførelse af kommandoen.', flags: 64 };
+      if (interaction.deferred || interaction.replied) {
+        await interaction.editReply({ content: reply.content }).catch(() => {});
+      } else {
+        await interaction.reply(reply).catch(() => {});
       }
     }
   });
