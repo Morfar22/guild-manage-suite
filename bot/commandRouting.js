@@ -1,6 +1,26 @@
 'use strict';
 
-const routeConfig = require('../shared/command-routes.json');
+const fs = require('fs');
+const path = require('path');
+
+function loadRouteConfig() {
+  const candidates = [
+    path.join(__dirname, 'shared', 'command-routes.json'),
+    path.join(__dirname, '..', 'shared', 'command-routes.json'),
+  ];
+
+  for (const candidate of candidates) {
+    if (fs.existsSync(candidate)) {
+      return require(candidate);
+    }
+  }
+
+  throw new Error(
+    `command-routes.json blev ikke fundet. Forsøgte: ${candidates.join(', ')}`
+  );
+}
+
+const routeConfig = loadRouteConfig();
 
 const routes = routeConfig.routes || [];
 const roots = routeConfig.roots || {};
