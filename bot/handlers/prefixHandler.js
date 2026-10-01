@@ -653,11 +653,12 @@ function setupPrefixHandler(client, slashHandlers, { shouldHandleGuild, isComman
     if (!slashHandlers[commandName]) return;
 
     const commandStartedAt = Date.now();
+    const accessCommandName = resolveLegacyCommandName(commandName);
 
     if (checkCommandAccess) {
       const access = await checkCommandAccess({
         guildId: message.guild.id,
-        commandName,
+        commandName: accessCommandName,
         userId: message.author.id,
         roleIds: message.member?.roles?.cache ? [...message.member.roles.cache.keys()] : [],
         channelId: message.channel.id,
@@ -681,7 +682,7 @@ function setupPrefixHandler(client, slashHandlers, { shouldHandleGuild, isComman
         return;
       }
     } else if (isCommandEnabled) {
-      const enabled = await isCommandEnabled(message.guild.id, commandName);
+      const enabled = await isCommandEnabled(message.guild.id, accessCommandName);
       if (!enabled) {
         await message.reply('❌ Denne kommando er deaktiveret.');
         return;
@@ -724,7 +725,7 @@ function setupPrefixHandler(client, slashHandlers, { shouldHandleGuild, isComman
       if (queueCommandExecution) {
         void queueCommandExecution({
           guildId: message.guild.id,
-          commandName,
+          commandName: accessCommandName,
           userId: message.author.id,
           channelId: message.channel.id,
           source: 'prefix',
@@ -736,7 +737,7 @@ function setupPrefixHandler(client, slashHandlers, { shouldHandleGuild, isComman
       if (queueCommandExecution) {
         void queueCommandExecution({
           guildId: message.guild.id,
-          commandName,
+          commandName: accessCommandName,
           userId: message.author.id,
           channelId: message.channel.id,
           source: 'prefix',
