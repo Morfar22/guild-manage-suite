@@ -14,6 +14,7 @@
 require('dotenv').config();
 
 const { REST, Routes, SlashCommandBuilder, ChannelType } = require('discord.js');
+const { groupFlatCommandDefinitions, getCanonicalLogicalCommands } = require('./commandRouting');
 
 const TOKEN = process.env.DEFAULT_BOT_TOKEN || process.env.DISCORD_TOKEN;
 const APPLICATION_ID = process.env.APPLICATION_ID;
@@ -731,7 +732,8 @@ const GUILD_ID = process.env.DEPLOY_GUILD_ID;
       return;
     }
 
-    const commandData = commands.map(c => c.toJSON());
+    const flatCommandData = commands.map(c => c.toJSON());
+    const commandData = groupFlatCommandDefinitions(flatCommandData);
 
     // /fivem is registered through the dedicated FiveM command route.
     // Preserve it when this script bulk-overwrites the guild command set.
@@ -764,7 +766,7 @@ const GUILD_ID = process.env.DEPLOY_GUILD_ID;
     console.log(`✅ Global command scope ryddet (${existingGlobals.length || 0} gamle command(s))`);
 
     // Bulk overwrite the target guild, giving exactly one registration per command.
-    console.log(`🔄 Registrerer ${commands.length} slash commands i guild ${GUILD_ID}...`);
+    console.log(`🔄 Registrerer ${commandData.length} grupperede slash commands (${getCanonicalLogicalCommands().length} funktioner) i guild ${GUILD_ID}...`);
     const guildData = await rest.put(
       Routes.applicationGuildCommands(APPLICATION_ID, GUILD_ID),
       { body: commandData }
