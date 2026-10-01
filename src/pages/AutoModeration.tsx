@@ -46,6 +46,8 @@ export default function AutoModeration() {
   const [editingConfig, setEditingConfig] = useState<Record<string, unknown>>({});
   const [editingAction, setEditingAction] = useState<AutomodAction>('warn');
   const [editingDuration, setEditingDuration] = useState<string>('');
+  const [testMessage, setTestMessage] = useState('');
+  const [testResults, setTestResults] = useState<Array<{ type: AutomodRuleType; matched: boolean; note: string }>>([]);
 
   const getRule = (type: AutomodRuleType) => rules?.find(r => r.rule_type === type);
 
@@ -59,6 +61,67 @@ export default function AutoModeration() {
     setEditingConfig(existing?.config || RULE_TYPE_INFO[type].defaultConfig);
     setEditingAction(existing?.action || 'warn');
     setEditingDuration(existing?.action_duration_seconds?.toString() || '');
+  };
+
+  const testRules = () => {
+    const message = testMessage;
+    const lower = message.toLowerCase();
+    const enabledRules = (rules || []).filter((rule) => rule.enabled);
+
+    const results = enabledRules.map((rule) => {
+      const config = rule.config || {};
+      let matched = false;
+      let note = 'Ingen match';
+
+      if (rule.rule_type === 'words') {
+        const words = Array.isArray(config.words) ? config.words.map(String) : [];
+        const exact = Boolean(config.match_exact);
+        const hit = words.find((word) => {
+          if (!word) return false;
+          if (!exact) return lower.includes(word.toLowerCase());
+          return new RegExp(`(^|\\W)${word.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\  const handleSaveRule = () => {')}(?=\\W|$)`, 'i').test(message);
+        });
+        matched = Boolean(hit);
+        note = hit ? `Forbudt ord: ${hit}` : 'Ingen forbudte ord';
+      } else if (rule.rule_type === 'links') {
+        const urls = message.match(/https?:\/\/[^\s]+/gi) || [];
+        const allowed = Array.isArray(config.allowed_domains) ? config.allowed_domains.map(String) : [];
+        const blocked = Array.isArray(config.blocked_domains) ? config.blocked_domains.map(String) : [];
+        const blockedUrl = urls.find((url) => {
+          const domain = (() => { try { return new URL(url).hostname; } catch { return ''; } })();
+          if (allowed.some((item) => domain.includes(item))) return false;
+          return Boolean(config.block_all) || blocked.some((item) => domain.includes(item));
+        });
+        matched = Boolean(blockedUrl);
+        note = blockedUrl ? `Blokeret link: ${blockedUrl}` : `${urls.length} links analyseret`;
+      } else if (rule.rule_type === 'invites') {
+        matched = /(?:discord\.gg|discord(?:app)?\.com\/invite)\/[a-z0-9-]+/i.test(message);
+        note = matched ? 'Discord invite fundet' : 'Ingen invite';
+      } else if (rule.rule_type === 'mentions') {
+        const userMentions = (message.match(/<@!?\d+>/g) || []).length;
+        const roleMentions = (message.match(/<@&\d+>/g) || []).length;
+        matched =
+          userMentions > Number(config.max_mentions ?? 5) ||
+          roleMentions > Number(config.max_role_mentions ?? 3);
+        note = `${userMentions} user mentions · ${roleMentions} role mentions`;
+      } else if (rule.rule_type === 'caps') {
+        const letters = message.match(/[a-zæøå]/gi) || [];
+        const uppercase = letters.filter((letter) => letter === letter.toUpperCase()).length;
+        const percent = letters.length ? Math.round((uppercase / letters.length) * 100) : 0;
+        matched =
+          message.length >= Number(config.min_length ?? 10) &&
+          percent > Number(config.max_caps_percent ?? 70);
+        note = `${percent}% CAPS`;
+      } else if (rule.rule_type === 'spam') {
+        note = 'Spam kræver flere beskeder over tid og kan ikke afgøres på én testbesked.';
+      } else if (rule.rule_type === 'ai_toxicity') {
+        note = 'AI toxicity kræver server-side AI-kald og simuleres ikke i browseren.';
+      }
+
+      return { type: rule.rule_type, matched, note };
+    });
+
+    setTestResults(results);
   };
 
   const handleSaveRule = () => {
@@ -97,6 +160,10 @@ export default function AutoModeration() {
           <TabsTrigger value="logs" className="gap-2">
             <History className="h-4 w-4" />
             Logs
+          </TabsTrigger>
+          <TabsTrigger value="test" className="gap-2">
+            <Shield className="h-4 w-4" />
+            Test regler
           </TabsTrigger>
         </TabsList>
 
@@ -334,6 +401,47 @@ export default function AutoModeration() {
               </CardContent>
             </Card>
           )}
+        </TabsContent>
+
+        <TabsContent value="test" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>AutoMod Rule Tester</CardTitle>
+              <CardDescription>
+                Test en besked mod de aktive deterministiske regler uden at sende den i Discord eller udløse en punishment.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <Textarea
+                value={testMessage}
+                onChange={(event) => setTestMessage(event.target.value)}
+                placeholder="Indsæt en testbesked..."
+                rows={6}
+              />
+              <Button onClick={testRules} disabled={!testMessage.trim()}>
+                Test besked
+              </Button>
+
+              {testResults.length > 0 && (
+                <div className="grid gap-2 md:grid-cols-2">
+                  {testResults.map((result) => (
+                    <div
+                      key={result.type}
+                      className={`rounded-lg border p-3 ${result.matched ? 'border-destructive/40 bg-destructive/[0.04]' : ''}`}
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="font-medium">{RULE_TYPE_INFO[result.type].label}</span>
+                        <Badge variant={result.matched ? 'destructive' : 'outline'}>
+                          {result.matched ? 'MATCH' : 'OK'}
+                        </Badge>
+                      </div>
+                      <p className="mt-1 text-xs text-muted-foreground">{result.note}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </TabsContent>
 
         <TabsContent value="logs" className="space-y-4">
