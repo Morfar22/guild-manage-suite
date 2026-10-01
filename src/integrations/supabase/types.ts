@@ -862,6 +862,65 @@ export type Database = {
           },
         ]
       }
+      automation_workflows: {
+        Row: {
+          actions: Json
+          created_at: string
+          created_by_email: string | null
+          created_by_id: string | null
+          description: string | null
+          enabled: boolean
+          guild_id: string
+          id: string
+          last_run_at: string | null
+          name: string
+          run_count: number
+          trigger_config: Json
+          trigger_type: string
+          updated_at: string
+        }
+        Insert: {
+          actions?: Json
+          created_at?: string
+          created_by_email?: string | null
+          created_by_id?: string | null
+          description?: string | null
+          enabled?: boolean
+          guild_id: string
+          id?: string
+          last_run_at?: string | null
+          name: string
+          run_count?: number
+          trigger_config?: Json
+          trigger_type: string
+          updated_at?: string
+        }
+        Update: {
+          actions?: Json
+          created_at?: string
+          created_by_email?: string | null
+          created_by_id?: string | null
+          description?: string | null
+          enabled?: boolean
+          guild_id?: string
+          id?: string
+          last_run_at?: string | null
+          name?: string
+          run_count?: number
+          trigger_config?: Json
+          trigger_type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "automation_workflows_guild_id_fkey"
+            columns: ["guild_id"]
+            isOneToOne: false
+            referencedRelation: "guilds"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       automod_logs: {
         Row: {
           action_taken: Database["public"]["Enums"]["automod_action"]
@@ -1250,6 +1309,144 @@ export type Database = {
           },
         ]
       }
+      command_execution_events: {
+        Row: {
+          blocked_reason: string | null
+          channel_id: string | null
+          command_name: string
+          created_at: string
+          error_message: string | null
+          guild_id: string
+          id: string
+          latency_ms: number
+          source: string
+          status: string
+          user_id: string | null
+        }
+        Insert: {
+          blocked_reason?: string | null
+          channel_id?: string | null
+          command_name: string
+          created_at?: string
+          error_message?: string | null
+          guild_id: string
+          id?: string
+          latency_ms?: number
+          source?: string
+          status: string
+          user_id?: string | null
+        }
+        Update: {
+          blocked_reason?: string | null
+          channel_id?: string | null
+          command_name?: string
+          created_at?: string
+          error_message?: string | null
+          guild_id?: string
+          id?: string
+          latency_ms?: number
+          source?: string
+          status?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "command_execution_events_guild_id_fkey"
+            columns: ["guild_id"]
+            isOneToOne: false
+            referencedRelation: "guilds"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      command_permission_profiles: {
+        Row: {
+          allowed_channel_ids: string[]
+          command_names: string[]
+          cooldown_seconds: number | null
+          created_at: string
+          description: string | null
+          enabled: boolean
+          guild_id: string
+          id: string
+          name: string
+          role_ids: string[]
+          updated_at: string
+        }
+        Insert: {
+          allowed_channel_ids?: string[]
+          command_names?: string[]
+          cooldown_seconds?: number | null
+          created_at?: string
+          description?: string | null
+          enabled?: boolean
+          guild_id: string
+          id?: string
+          name: string
+          role_ids?: string[]
+          updated_at?: string
+        }
+        Update: {
+          allowed_channel_ids?: string[]
+          command_names?: string[]
+          cooldown_seconds?: number | null
+          created_at?: string
+          description?: string | null
+          enabled?: boolean
+          guild_id?: string
+          id?: string
+          name?: string
+          role_ids?: string[]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "command_permission_profiles_guild_id_fkey"
+            columns: ["guild_id"]
+            isOneToOne: false
+            referencedRelation: "guilds"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      command_presets: {
+        Row: {
+          created_at: string
+          description: string | null
+          guild_id: string
+          id: string
+          name: string
+          rules: Json
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          guild_id: string
+          id?: string
+          name: string
+          rules?: Json
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          guild_id?: string
+          id?: string
+          name?: string
+          rules?: Json
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "command_presets_guild_id_fkey"
+            columns: ["guild_id"]
+            isOneToOne: false
+            referencedRelation: "guilds"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       confession_settings: {
         Row: {
           approval_channel_id: string | null
@@ -1376,59 +1573,13 @@ export type Database = {
           },
         ]
       }
-      command_execution_events: {
-        Row: {
-          blocked_reason: string | null
-          channel_id: string | null
-          command_name: string
-          created_at: string
-          error_message: string | null
-          guild_id: string
-          id: string
-          latency_ms: number
-          source: string
-          status: string
-          user_id: string | null
-        }
-        Insert: {
-          blocked_reason?: string | null
-          channel_id?: string | null
-          command_name: string
-          created_at?: string
-          error_message?: string | null
-          guild_id: string
-          id?: string
-          latency_ms?: number
-          source?: string
-          status: string
-          user_id?: string | null
-        }
-        Update: {
-          blocked_reason?: string | null
-          channel_id?: string | null
-          command_name?: string
-          created_at?: string
-          error_message?: string | null
-          guild_id?: string
-          id?: string
-          latency_ms?: number
-          source?: string
-          status?: string
-          user_id?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "command_execution_events_guild_id_fkey"
-            columns: ["guild_id"]
-            isOneToOne: false
-            referencedRelation: "guilds"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       custom_commands: {
         Row: {
           allowed_channels: string[] | null
+          allowed_role_ids: string[]
+          blocked_channel_ids: string[]
+          blocked_role_ids: string[]
+          conditions: Json
           cooldown_seconds: number
           created_at: string
           created_by_id: string | null
@@ -1439,9 +1590,11 @@ export type Database = {
           id: string
           name: string
           required_role_id: string | null
+          response_buttons: Json
           response_content: string | null
           response_embed: Json | null
           response_options: Json | null
+          response_selects: Json
           response_type: string
           role_id: string | null
           trigger: string
@@ -1451,6 +1604,10 @@ export type Database = {
         }
         Insert: {
           allowed_channels?: string[] | null
+          allowed_role_ids?: string[]
+          blocked_channel_ids?: string[]
+          blocked_role_ids?: string[]
+          conditions?: Json
           cooldown_seconds?: number
           created_at?: string
           created_by_id?: string | null
@@ -1461,9 +1618,11 @@ export type Database = {
           id?: string
           name: string
           required_role_id?: string | null
+          response_buttons?: Json
           response_content?: string | null
           response_embed?: Json | null
           response_options?: Json | null
+          response_selects?: Json
           response_type?: string
           role_id?: string | null
           trigger: string
@@ -1473,6 +1632,10 @@ export type Database = {
         }
         Update: {
           allowed_channels?: string[] | null
+          allowed_role_ids?: string[]
+          blocked_channel_ids?: string[]
+          blocked_role_ids?: string[]
+          conditions?: Json
           cooldown_seconds?: number
           created_at?: string
           created_by_id?: string | null
@@ -1483,9 +1646,11 @@ export type Database = {
           id?: string
           name?: string
           required_role_id?: string | null
+          response_buttons?: Json
           response_content?: string | null
           response_embed?: Json | null
           response_options?: Json | null
+          response_selects?: Json
           response_type?: string
           role_id?: string | null
           trigger?: string
@@ -1512,6 +1677,9 @@ export type Database = {
           id: string
           target_id: string | null
           target_type: string
+          undo_payload: Json | null
+          undone_at: string | null
+          undone_by: string | null
           user_email: string | null
           user_id: string
         }
@@ -1523,6 +1691,9 @@ export type Database = {
           id?: string
           target_id?: string | null
           target_type: string
+          undo_payload?: Json | null
+          undone_at?: string | null
+          undone_by?: string | null
           user_email?: string | null
           user_id: string
         }
@@ -1534,6 +1705,9 @@ export type Database = {
           id?: string
           target_id?: string | null
           target_type?: string
+          undo_payload?: Json | null
+          undone_at?: string | null
+          undone_by?: string | null
           user_email?: string | null
           user_id?: string
         }
@@ -1549,41 +1723,94 @@ export type Database = {
       }
       dashboard_notifications: {
         Row: {
+          acknowledged_at: string | null
+          acknowledged_by: string | null
           created_at: string
           guild_id: string
           id: string
           is_read: boolean
           message: string | null
           metadata: Json | null
+          resolved_at: string | null
+          resolved_by: string | null
+          severity: string
           source: string
+          status: string
           title: string
           type: string
         }
         Insert: {
+          acknowledged_at?: string | null
+          acknowledged_by?: string | null
           created_at?: string
           guild_id: string
           id?: string
           is_read?: boolean
           message?: string | null
           metadata?: Json | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          severity?: string
           source?: string
+          status?: string
           title: string
           type?: string
         }
         Update: {
+          acknowledged_at?: string | null
+          acknowledged_by?: string | null
           created_at?: string
           guild_id?: string
           id?: string
           is_read?: boolean
           message?: string | null
           metadata?: Json | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          severity?: string
           source?: string
+          status?: string
           title?: string
           type?: string
         }
         Relationships: [
           {
             foreignKeyName: "dashboard_notifications_guild_id_fkey"
+            columns: ["guild_id"]
+            isOneToOne: false
+            referencedRelation: "guilds"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      dashboard_preferences: {
+        Row: {
+          compact_mode: boolean
+          guild_id: string
+          id: string
+          updated_at: string
+          user_id: string
+          widgets: Json
+        }
+        Insert: {
+          compact_mode?: boolean
+          guild_id: string
+          id?: string
+          updated_at?: string
+          user_id: string
+          widgets?: Json
+        }
+        Update: {
+          compact_mode?: boolean
+          guild_id?: string
+          id?: string
+          updated_at?: string
+          user_id?: string
+          widgets?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dashboard_preferences_guild_id_fkey"
             columns: ["guild_id"]
             isOneToOne: false
             referencedRelation: "guilds"
@@ -1979,6 +2206,7 @@ export type Database = {
           moderator_discord_id?: string
           moderator_name?: string | null
           result?: string | null
+          server_id?: string
           status?: string
           target_discord_id?: string | null
           target_name?: string | null
@@ -3639,9 +3867,135 @@ export type Database = {
           },
         ]
       }
+      moderation_appeals: {
+        Row: {
+          appellant_discord_id: string
+          appellant_name: string | null
+          case_id: string | null
+          created_at: string
+          guild_id: string
+          id: string
+          message: string
+          reviewed_at: string | null
+          reviewed_by_id: string | null
+          reviewed_by_name: string | null
+          staff_response: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          appellant_discord_id: string
+          appellant_name?: string | null
+          case_id?: string | null
+          created_at?: string
+          guild_id: string
+          id?: string
+          message: string
+          reviewed_at?: string | null
+          reviewed_by_id?: string | null
+          reviewed_by_name?: string | null
+          staff_response?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          appellant_discord_id?: string
+          appellant_name?: string | null
+          case_id?: string | null
+          created_at?: string
+          guild_id?: string
+          id?: string
+          message?: string
+          reviewed_at?: string | null
+          reviewed_by_id?: string | null
+          reviewed_by_name?: string | null
+          staff_response?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "moderation_appeals_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "moderation_logs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "moderation_appeals_guild_id_fkey"
+            columns: ["guild_id"]
+            isOneToOne: false
+            referencedRelation: "guilds"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      moderation_evidence: {
+        Row: {
+          added_by_id: string
+          added_by_name: string | null
+          case_id: string
+          channel_id: string | null
+          content: string | null
+          created_at: string
+          evidence_type: string
+          guild_id: string
+          id: string
+          label: string | null
+          message_id: string | null
+          url: string | null
+        }
+        Insert: {
+          added_by_id: string
+          added_by_name?: string | null
+          case_id: string
+          channel_id?: string | null
+          content?: string | null
+          created_at?: string
+          evidence_type?: string
+          guild_id: string
+          id?: string
+          label?: string | null
+          message_id?: string | null
+          url?: string | null
+        }
+        Update: {
+          added_by_id?: string
+          added_by_name?: string | null
+          case_id?: string
+          channel_id?: string | null
+          content?: string | null
+          created_at?: string
+          evidence_type?: string
+          guild_id?: string
+          id?: string
+          label?: string | null
+          message_id?: string | null
+          url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "moderation_evidence_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "moderation_logs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "moderation_evidence_guild_id_fkey"
+            columns: ["guild_id"]
+            isOneToOne: false
+            referencedRelation: "guilds"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       moderation_logs: {
         Row: {
           action_type: Database["public"]["Enums"]["moderation_action_type"]
+          assigned_to_id: string | null
+          assigned_to_name: string | null
+          closed_at: string | null
           created_at: string
           duration_seconds: number | null
           expires_at: string | null
@@ -3651,12 +4005,19 @@ export type Database = {
           moderator_id: string
           moderator_name: string | null
           reason: string | null
+          reopened_at: string | null
+          resolution: string | null
+          severity: string
+          status: string
           target_id: string
           target_name: string | null
           updated_at: string
         }
         Insert: {
           action_type: Database["public"]["Enums"]["moderation_action_type"]
+          assigned_to_id?: string | null
+          assigned_to_name?: string | null
+          closed_at?: string | null
           created_at?: string
           duration_seconds?: number | null
           expires_at?: string | null
@@ -3666,12 +4027,19 @@ export type Database = {
           moderator_id: string
           moderator_name?: string | null
           reason?: string | null
+          reopened_at?: string | null
+          resolution?: string | null
+          severity?: string
+          status?: string
           target_id: string
           target_name?: string | null
           updated_at?: string
         }
         Update: {
           action_type?: Database["public"]["Enums"]["moderation_action_type"]
+          assigned_to_id?: string | null
+          assigned_to_name?: string | null
+          closed_at?: string | null
           created_at?: string
           duration_seconds?: number | null
           expires_at?: string | null
@@ -3681,6 +4049,10 @@ export type Database = {
           moderator_id?: string
           moderator_name?: string | null
           reason?: string | null
+          reopened_at?: string | null
+          resolution?: string | null
+          severity?: string
+          status?: string
           target_id?: string
           target_name?: string | null
           updated_at?: string
@@ -5463,6 +5835,54 @@ export type Database = {
           },
         ]
       }
+      ticket_internal_notes: {
+        Row: {
+          author_discord_id: string | null
+          author_name: string | null
+          author_user_id: string | null
+          created_at: string
+          guild_id: string
+          id: string
+          note: string
+          ticket_id: string
+        }
+        Insert: {
+          author_discord_id?: string | null
+          author_name?: string | null
+          author_user_id?: string | null
+          created_at?: string
+          guild_id: string
+          id?: string
+          note: string
+          ticket_id: string
+        }
+        Update: {
+          author_discord_id?: string | null
+          author_name?: string | null
+          author_user_id?: string | null
+          created_at?: string
+          guild_id?: string
+          id?: string
+          note?: string
+          ticket_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ticket_internal_notes_guild_id_fkey"
+            columns: ["guild_id"]
+            isOneToOne: false
+            referencedRelation: "guilds"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ticket_internal_notes_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "tickets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ticket_messages: {
         Row: {
           attachments: Json | null
@@ -5745,11 +6165,19 @@ export type Database = {
           created_at: string
           creator_id: string
           creator_name: string | null
+          escalated_at: string | null
           guild_id: string
           id: string
+          priority: string
+          reopened_at: string | null
+          resolution: string | null
+          sla_due_at: string | null
           status: Database["public"]["Enums"]["ticket_status"]
           subject: string | null
+          tags: string[]
           ticket_type: Database["public"]["Enums"]["ticket_type"]
+          transferred_to_role_id: string | null
+          transferred_to_role_name: string | null
           updated_at: string
         }
         Insert: {
@@ -5763,11 +6191,19 @@ export type Database = {
           created_at?: string
           creator_id: string
           creator_name?: string | null
+          escalated_at?: string | null
           guild_id: string
           id?: string
+          priority?: string
+          reopened_at?: string | null
+          resolution?: string | null
+          sla_due_at?: string | null
           status?: Database["public"]["Enums"]["ticket_status"]
           subject?: string | null
+          tags?: string[]
           ticket_type?: Database["public"]["Enums"]["ticket_type"]
+          transferred_to_role_id?: string | null
+          transferred_to_role_name?: string | null
           updated_at?: string
         }
         Update: {
@@ -5781,11 +6217,19 @@ export type Database = {
           created_at?: string
           creator_id?: string
           creator_name?: string | null
+          escalated_at?: string | null
           guild_id?: string
           id?: string
+          priority?: string
+          reopened_at?: string | null
+          resolution?: string | null
+          sla_due_at?: string | null
           status?: Database["public"]["Enums"]["ticket_status"]
           subject?: string | null
+          tags?: string[]
           ticket_type?: Database["public"]["Enums"]["ticket_type"]
+          transferred_to_role_id?: string | null
+          transferred_to_role_name?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -6947,6 +7391,54 @@ export type Database = {
           },
         ]
       }
+      workflow_executions: {
+        Row: {
+          created_at: string
+          error_message: string | null
+          guild_id: string
+          id: string
+          status: string
+          trigger_payload: Json
+          trigger_type: string
+          workflow_id: string
+        }
+        Insert: {
+          created_at?: string
+          error_message?: string | null
+          guild_id: string
+          id?: string
+          status?: string
+          trigger_payload?: Json
+          trigger_type: string
+          workflow_id: string
+        }
+        Update: {
+          created_at?: string
+          error_message?: string | null
+          guild_id?: string
+          id?: string
+          status?: string
+          trigger_payload?: Json
+          trigger_type?: string
+          workflow_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workflow_executions_guild_id_fkey"
+            columns: ["guild_id"]
+            isOneToOne: false
+            referencedRelation: "guilds"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workflow_executions_workflow_id_fkey"
+            columns: ["workflow_id"]
+            isOneToOne: false
+            referencedRelation: "automation_workflows"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       xp_multipliers: {
         Row: {
           created_at: string
@@ -7194,6 +7686,43 @@ export type Database = {
           },
         ]
       }
+      command_health_7d: {
+        Row: {
+          avg_latency_ms: number | null
+          blocked: number | null
+          command_name: string | null
+          error_rate: number | null
+          errors: number | null
+          executions: number | null
+          guild_id: string | null
+          last_used_at: string | null
+          successes: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "command_execution_events_guild_id_fkey"
+            columns: ["guild_id"]
+            isOneToOne: false
+            referencedRelation: "guilds"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      staff_performance_30d: {
+        Row: {
+          bans: number | null
+          guild_id: string | null
+          kicks: number | null
+          last_activity_at: string | null
+          moderation_actions: number | null
+          staff_id: string | null
+          staff_name: string | null
+          tickets_closed: number | null
+          timeouts: number | null
+          warns: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       guild_has_applications_pro: {
@@ -7397,6 +7926,9 @@ export const Constants = {
         "timeout",
         "unban",
         "unmute",
+        "tempban",
+        "role",
+        "quarantine",
       ],
       module_type: [
         "moderation",
