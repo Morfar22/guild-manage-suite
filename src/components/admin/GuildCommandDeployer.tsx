@@ -81,7 +81,7 @@ export function GuildCommandDeployer() {
           Deploy Slash-Kommandoer pr. Guild
         </CardTitle>
         <CardDescription>
-          Registrér alle bot-kommandoer øjeblikkeligt på en specifik Discord-server. Bruger den globale kommandoliste fra Discord som kilde.
+          Registrér hele det canonical command-katalog som grupperede slash commands på en specifik Discord-server.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
