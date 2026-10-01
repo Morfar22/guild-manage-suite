@@ -383,6 +383,13 @@ const COMMANDS = [
   ]},
 
   // SUGGESTION
+  { name: "appeal-submit", description: "Indsend en moderation appeal", options: [
+    { name: "message", description: "Forklar hvorfor sagen bør genovervejes", type: 3, required: true },
+    { name: "case_id", description: "Valgfrit case-ID", type: 3 },
+  ]},
+  { name: "appeal-status", description: "Se status på dine appeals", options: [
+    { name: "appeal_id", description: "Valgfrit appeal-ID", type: 3 },
+  ]},
   { name: "suggest", description: "Send et forslag", options: [
     { name: "suggestion", description: "Dit forslag", type: 3, required: true },
   ]},
