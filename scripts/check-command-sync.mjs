@@ -172,6 +172,7 @@ function handlerNames() {
   const extra = read('bot/handlers/extraCommands.js');
   const admin = read('bot/handlers/adminCommands.js');
   const games = read('bot/handlers/gameCommands.js');
+  const advancedModeration = read('bot/handlers/advancedModeration.js');
   const tickets = read('bot/handlers/ticketHandler.js');
   const musicQuiz = read('bot/handlers/musicQuizHandler.js');
 
@@ -180,6 +181,7 @@ function handlerNames() {
     ...topLevelObjectKeys(extra, 'return {\n    // ==================== UTILITY'),
     ...topLevelObjectKeys(admin, 'return {\n    // ---------- ADMIN'),
     ...topLevelObjectKeys(games, 'return {\n    // ==================== TRIVIA'),
+    ...topLevelObjectKeys(advancedModeration, 'return {\n    purge:'),
   ]);
 
   for (const match of tickets.matchAll(/commandName\s*===\s*['"]([^'"]+)['"]/g)) {
