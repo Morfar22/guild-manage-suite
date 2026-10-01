@@ -61,7 +61,7 @@ export interface CommandInfo {
 const getCommandCount = (category: CommandCategory): number => {
   // This will be calculated after COMMANDS_BY_CATEGORY is defined
   const counts: Record<CommandCategory, number> = {
-    moderation: 16,
+    moderation: 25,
     music: 21,
     leveling: 10,
     utility: 28,
@@ -168,7 +168,16 @@ export const COMMANDS_BY_CATEGORY: Record<string, CommandInfo[]> = {
     { name: 'unban', description: 'Unban a user', category: 'moderation', usage: '/unban [user-id]' },
     { name: 'timeout', description: 'Timeout a user', category: 'moderation', usage: '/timeout @user [duration] [reason]' },
     { name: 'untimeout', description: 'Remove timeout from a user', category: 'moderation', usage: '/untimeout @user' },
-    { name: 'nuke', description: 'Delete and recreate a channel', category: 'moderation', usage: '/nuke [channel]' },
+    { name: 'nuke', description: 'Delete and recreate a channel', category: 'moderation', usage: '/mod nuke' },
+    { name: 'purge', description: 'Advanced message cleanup with filters', category: 'moderation', usage: '/mod purge' },
+    { name: 'massban', description: 'Ban multiple Discord user IDs at once', category: 'moderation', usage: '/mod massban' },
+    { name: 'case', description: 'View a moderation case', category: 'moderation', usage: '/mod case' },
+    { name: 'history', description: 'View full moderation history for a user', category: 'moderation', usage: '/mod history' },
+    { name: 'reason', description: 'Change the reason on a moderation case', category: 'moderation', usage: '/mod reason' },
+    { name: 'note', description: 'Add an internal staff note to a user or case', category: 'moderation', usage: '/mod note' },
+    { name: 'tempban', description: 'Temporarily ban a user with automatic unban', category: 'moderation', usage: '/mod tempban' },
+    { name: 'role', description: 'Add or remove a role as a moderation action', category: 'moderation', usage: '/mod role' },
+    { name: 'quarantine', description: 'Apply a quarantine role temporarily or permanently', category: 'moderation', usage: '/mod quarantine' },
   ],
   music: [
     { name: 'play', description: 'Play a song', category: 'music', usage: '/play [song]' },
