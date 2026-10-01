@@ -598,6 +598,19 @@ export function useOperationsCenter() {
       if (insert && typeof insert === 'object' && !Array.isArray(insert)) {
         const { error } = await (supabase.from(table as 'automation_workflows') as any).insert(insert);
         if (error) throw error;
+      } else if (
+        table === 'guild_commands' &&
+        payload.command_name &&
+        values &&
+        typeof values === 'object' &&
+        !Array.isArray(values)
+      ) {
+        const { error } = await supabase
+          .from('guild_commands')
+          .update(values as any)
+          .eq('guild_id', guildId)
+          .eq('command_name', String(payload.command_name));
+        if (error) throw error;
       } else if (id && values && typeof values === 'object' && !Array.isArray(values)) {
         const { error } = await (supabase.from(table as 'moderation_logs') as any)
           .update(values)
