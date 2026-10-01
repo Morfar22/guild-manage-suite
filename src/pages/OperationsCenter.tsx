@@ -32,6 +32,7 @@ import { useOperationsCenter, useCaseEvidence, ModerationCase } from '@/hooks/us
 import { useDiscordRoles } from '@/hooks/useDiscordRoles';
 import { useDiscordChannels } from '@/hooks/useDiscordChannels';
 import { COMMANDS_BY_CATEGORY } from '@/types/discord';
+import { CommandTestCenter } from '@/components/dashboard/CommandTestCenter';
 import { getCommandSlashPath } from '@/lib/commandGrouping';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -561,6 +562,7 @@ export default function OperationsCenter() {
         </TabsContent>
 
         <TabsContent value="health" className="space-y-5">
+          <CommandTestCenter health={ops.commandHealth} />
           <div className="grid gap-5 xl:grid-cols-2">
             <Card>
               <CardHeader><CardTitle>Command Health</CardTitle><CardDescription>7-dages signaler fra faktisk execution-data.</CardDescription></CardHeader>
