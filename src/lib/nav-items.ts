@@ -62,6 +62,7 @@ export const navGroups: NavGroup[] = [
     icon: Shield,
     items: [
       { to: '/dashboard/moderation', icon: Shield, labelKey: 'nav.moderation' },
+      { to: '/dashboard/operations', icon: Activity, labelKey: 'nav.operations' },
       { to: '/dashboard/warnings', icon: AlertTriangle, labelKey: 'nav.warnings' },
       { to: '/dashboard/automod', icon: ShieldAlert, labelKey: 'nav.automod' },
       { to: '/dashboard/ai-automod', icon: Brain, labelKey: 'nav.aiAutomod' },
