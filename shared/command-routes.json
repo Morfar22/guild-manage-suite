@@ -582,6 +582,14 @@
       "sub": "ban"
     },
     {
+      "logical": "case",
+      "category": "moderation",
+      "source": "case",
+      "handler": "case",
+      "root": "mod",
+      "sub": "case"
+    },
+    {
       "logical": "clear",
       "category": "moderation",
       "source": "clear",
@@ -596,6 +604,14 @@
       "handler": "clearwarns",
       "root": "mod",
       "sub": "clearwarns"
+    },
+    {
+      "logical": "history",
+      "category": "moderation",
+      "source": "history",
+      "handler": "history",
+      "root": "mod",
+      "sub": "history"
     },
     {
       "logical": "kick",
@@ -614,6 +630,14 @@
       "sub": "lock"
     },
     {
+      "logical": "massban",
+      "category": "moderation",
+      "source": "massban",
+      "handler": "massban",
+      "root": "mod",
+      "sub": "massban"
+    },
+    {
       "logical": "mute",
       "category": "moderation",
       "source": "mute",
@@ -622,12 +646,52 @@
       "sub": "mute"
     },
     {
+      "logical": "note",
+      "category": "moderation",
+      "source": "note",
+      "handler": "note",
+      "root": "mod",
+      "sub": "note"
+    },
+    {
       "logical": "nuke",
       "category": "moderation",
       "source": "nuke",
       "handler": "nuke",
       "root": "mod",
       "sub": "nuke"
+    },
+    {
+      "logical": "purge",
+      "category": "moderation",
+      "source": "purge",
+      "handler": "purge",
+      "root": "mod",
+      "sub": "purge"
+    },
+    {
+      "logical": "quarantine",
+      "category": "moderation",
+      "source": "quarantine",
+      "handler": "quarantine",
+      "root": "mod",
+      "sub": "quarantine"
+    },
+    {
+      "logical": "reason",
+      "category": "moderation",
+      "source": "reason",
+      "handler": "reason",
+      "root": "mod",
+      "sub": "reason"
+    },
+    {
+      "logical": "role",
+      "category": "moderation",
+      "source": "role",
+      "handler": "role",
+      "root": "mod",
+      "sub": "role"
     },
     {
       "logical": "slowmode",
@@ -644,6 +708,14 @@
       "handler": "softban",
       "root": "mod",
       "sub": "softban"
+    },
+    {
+      "logical": "tempban",
+      "category": "moderation",
+      "source": "tempban",
+      "handler": "tempban",
+      "root": "mod",
+      "sub": "tempban"
     },
     {
       "logical": "timeout",
