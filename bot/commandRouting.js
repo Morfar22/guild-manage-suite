@@ -233,6 +233,17 @@ function getCanonicalLogicalCommands() {
   return routes.map((route) => route.logical);
 }
 
+function getSlashPathForLogical(logicalName) {
+  const route = routeByLogical.get(logicalName);
+  if (!route) return `/${logicalName}`;
+  if (route.passthrough) return `/${route.root}`;
+
+  const parts = [route.root];
+  if (route.group) parts.push(route.group);
+  if (route.sub) parts.push(route.sub);
+  return `/${parts.join(' ')}`;
+}
+
 module.exports = {
   routeConfig,
   routes,
@@ -242,4 +253,5 @@ module.exports = {
   resolveLegacyCommandName,
   groupFlatCommandDefinitions,
   getCanonicalLogicalCommands,
+  getSlashPathForLogical,
 };
