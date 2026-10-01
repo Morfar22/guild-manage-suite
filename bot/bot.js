@@ -24,7 +24,7 @@ const { createClient } = require('@supabase/supabase-js');
 
 // Import manager
 const { manager } = require('./customBotManager');
-const { resolveInteractionCommand } = require('./commandRouting');
+const { resolveInteractionCommand, routeConfig, getSlashPathForLogical } = require('./commandRouting');
 const { getFiveMDefinition, getFiveMPermission, permissionAtLeast, queueCommandName } = require('./fivem/commands');
 
 // Import handlers
@@ -1030,25 +1030,40 @@ function createSlashHandlers(client) {
     help: async (interaction) => {
       const category = interaction.options.getString('category');
 
-      const categories = {
-        moderation: { emoji: '🛡️', commands: ['ban', 'kick', 'mute', 'unmute', 'warn', 'warnings', 'clearwarns', 'clear', 'slowmode', 'lock', 'unlock', 'softban', 'unban', 'timeout', 'untimeout', 'nuke'] },
-        music: { emoji: '🎵', commands: ['play', 'skip', 'stop', 'pause', 'resume', 'queue', 'nowplaying', 'volume', 'loop', 'shuffle', 'remove', 'move', 'jump'] },
-        leveling: { emoji: '📈', commands: ['rank', 'leaderboard'] },
-        utility: { emoji: '🔧', commands: ['help', 'ping', 'serverinfo', 'userinfo', 'avatar', 'poll', 'remind'] },
-        fun: { emoji: '🎮', commands: ['8ball', 'coinflip', 'dice', 'rps', 'joke', 'meme', 'ship', 'rate'] },
-        economy: { emoji: '💰', commands: ['daily', 'work', 'balance', 'pay', 'deposit', 'withdraw', 'rob', 'richest'] },
-        giveaway: { emoji: '🎉', commands: ['giveaway'] },
-        suggestion: { emoji: '💡', commands: ['suggest'] },
-        afk: { emoji: '💤', commands: ['afk'] },
-        tebex: { emoji: '🛒', commands: ['tebex-verify'] }
+      const categoryMeta = {
+        moderation: { emoji: '🛡️', label: 'Moderation' },
+        music: { emoji: '🎵', label: 'Musik' },
+        leveling: { emoji: '📈', label: 'Leveling' },
+        utility: { emoji: '🔧', label: 'Utility' },
+        fun: { emoji: '🎮', label: 'Fun' },
+        economy: { emoji: '💰', label: 'Economy' },
+        tickets: { emoji: '🎫', label: 'Tickets' },
+        giveaway: { emoji: '🎉', label: 'Giveaway' },
+        tebex: { emoji: '🛒', label: 'Tebex' },
+        admin: { emoji: '⚙️', label: 'Admin' },
+        reactionroles: { emoji: '🎭', label: 'Reaction Roles' },
       };
+
+      const categories = {};
+      for (const route of routeConfig.routes || []) {
+        const meta = categoryMeta[route.category];
+        if (!meta) continue;
+        if (!categories[route.category]) {
+          categories[route.category] = { ...meta, commands: [] };
+        }
+        categories[route.category].commands.push(route.logical);
+      }
 
       if (category && categories[category]) {
         const cat = categories[category];
+        const lines = cat.commands
+          .map((logical) => `\`${getSlashPathForLogical(logical)}\``)
+          .join('\n');
+
         const embed = new EmbedBuilder()
           .setColor('#5865F2')
-          .setTitle(`${cat.emoji} ${category.charAt(0).toUpperCase() + category.slice(1)} Commands`)
-          .setDescription(cat.commands.map(c => `\`/${c}\``).join(', '));
+          .setTitle(`${cat.emoji} ${cat.label}`)
+          .setDescription(lines || 'Ingen commands i denne kategori.');
 
         return interaction.reply({ embeds: [embed] });
       }
@@ -1056,10 +1071,10 @@ function createSlashHandlers(client) {
       const embed = new EmbedBuilder()
         .setColor('#5865F2')
         .setTitle('📚 Bot Commands')
-        .setDescription('Brug `/help [kategori]` for at se commands i en kategori.')
+        .setDescription('Brug `/utility info help` og vælg en kategori for at se de konkrete commands.')
         .addFields(
           Object.entries(categories).map(([name, data]) => ({
-            name: `${data.emoji} ${name.charAt(0).toUpperCase() + name.slice(1)}`,
+            name: `${data.emoji} ${data.label}`,
             value: `${data.commands.length} commands`,
             inline: true
           }))
