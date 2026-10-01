@@ -69,8 +69,10 @@ async function getBotCredentialsForDiscordGuild(
     };
   }
 
-  const encryptionKey = __env("BOT_SECRET_KEY");
-  if (!settings?.bot_token_encrypted || !settings?.bot_client_id || !encryptionKey) {
+  // Must match guild-bot-config encryption behavior, including legacy installs
+  // that saved tokens before BOT_SECRET_KEY was configured.
+  const encryptionKey = __env("BOT_SECRET_KEY") || "default-encryption-key";
+  if (!settings?.bot_token_encrypted || !settings?.bot_client_id) {
     return {
       botToken: fallbackToken,
       appId: fallbackClientId,
@@ -776,12 +778,9 @@ __serve(async (req) => {
     );
 
     if (!botToken || !appId) {
-      const hasEncryptionKey = Boolean(__env("BOT_SECRET_KEY"));
       return new Response(
         JSON.stringify({
-          error: hasEncryptionKey
-            ? "No usable Discord bot credentials found for this guild. Configure an active custom bot or set DISCORD_BOT_TOKEN and DISCORD_CLIENT_ID."
-            : "No usable Discord bot credentials found. Custom bots require BOT_SECRET_KEY on the web runtime; otherwise set DISCORD_BOT_TOKEN and DISCORD_CLIENT_ID.",
+          error: "No usable Discord bot credentials found for this guild. Configure an active custom bot in Bot Settings, or set DISCORD_BOT_TOKEN and DISCORD_CLIENT_ID for the default bot.",
         }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
