@@ -81,6 +81,7 @@ const { createExtraHandlers, setupSnipeTracker } = require('./handlers/extraComm
 const { createAdminHandlers } = require('./handlers/adminCommands');
 const { createGameHandlers } = require('./handlers/gameCommands');
 const { createAdvancedModerationHandlers, setupModerationScheduler } = require('./handlers/advancedModeration');
+const { setupPlatformV3Handler } = require('./handlers/platformV3Handler');
 
 const { setupPrefixHandler } = require('./handlers/prefixHandler');
 // Optional: Music system (comment out if not using)
@@ -2865,6 +2866,14 @@ manager.registerHandler((client, guildId, assignedDiscordGuildId) => {
     console.error(`[Bot] ❌ Advanced moderation fejl:`, e.message);
   }
 
+  // Platform V3 workflows, command-health alerts and ticket SLA alerts
+  try {
+    const platformV3Handler = setupPlatformV3Handler(client, supabase, { shouldHandleGuild });
+    handlerInstances.set(`platform_v3_${clientLabel}`, platformV3Handler);
+    console.log(`[Bot] ✅ Platform V3 workflow/alert engine for ${clientLabel}`);
+  } catch (e) {
+    console.error(`[Bot] ❌ Platform V3 handler fejl:`, e.message);
+  }
 
 
   // Register prefix command handler (mirrors all slash commands)
