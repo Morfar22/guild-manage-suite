@@ -39,6 +39,8 @@ const CONFIG_CHECK_INTERVAL = 60000;
 // How often to send heartbeats (30 seconds)
 const HEARTBEAT_INTERVAL = 30000;
 const APP_API_BASE = process.env.APP_API_BASE || 'https://bot.nethost-solutions.dk';
+const GUILDOS_BRAND_NAME = 'GuildOS Bot';
+const GUILDOS_ACTIVITY = process.env.DEFAULT_BOT_ACTIVITY || 'GuildOS Bot • /help';
 
 const avatarWarningKeys = new Set();
 function warnAvatarOnce(key, message) {
@@ -1040,7 +1042,7 @@ class CustomBotManager {
     if (!defaultBotToken) return null;
 
     this.defaultBotToken = defaultBotToken;
-    console.log('[CustomBotManager] Starting default bot...');
+    console.log('[CustomBotManager] Starting GuildOS Bot...');
 
     this.defaultClient = this.createClient();
 
@@ -1056,7 +1058,26 @@ class CustomBotManager {
     }
 
     this.defaultClient.once('clientReady', async () => {
-      console.log(`[CustomBotManager] ✅ Default bot ready: ${this.defaultClient.user.tag}`);
+      // Keep the shared/default bot visibly branded as GuildOS Bot.
+      // Custom bots intentionally keep the names configured by each guild.
+      try {
+        if (this.defaultClient.user.username !== GUILDOS_BRAND_NAME) {
+          await this.defaultClient.user.setUsername(GUILDOS_BRAND_NAME);
+        }
+      } catch (error) {
+        console.warn('[CustomBotManager] Kunne ikke ændre Discord-navn til GuildOS Bot:', error?.message || error);
+      }
+
+      try {
+        this.defaultClient.user.setPresence({
+          status: 'online',
+          activities: [{ name: GUILDOS_ACTIVITY, type: ActivityType.Watching }],
+        });
+      } catch (error) {
+        console.warn('[CustomBotManager] Kunne ikke sætte GuildOS Bot presence:', error?.message || error);
+      }
+
+      console.log(`[CustomBotManager] ✅ GuildOS Bot ready: ${this.defaultClient.user.tag}`);
       console.log(`[CustomBotManager] Serving ${this.defaultClient.guilds.cache.size} guild(s)`);
 
       // All slash commands are guild-only to avoid duplicate global + guild entries.
