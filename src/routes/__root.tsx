@@ -17,22 +17,22 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   errorComponent: ErrorFallback,
   head: () => ({
     meta: [
-      { title: "GuildOS Bot — Discord Server Management" },
+      { title: "GuildOS Bot - Discord management samlet ét sted" },
       { charSet: "UTF-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1.0" },
-      { name: "description", content: "Alt-i-én Discord bot med 49+ moduler: moderation, tickets, AI, leveling, FiveM og mere. Sikker, hurtig og fuldt tilpasselig. Kom i gang gratis." },
+      { name: "description", content: "GuildOS samler moderation, tickets, AI, automation, analytics, FiveM og creator-integrationer i ét Discord dashboard." },
       { name: "author", content: "GuildOS Bot" },
       { name: "keywords", content: "Discord bot, moderation, tickets, AI chat, leveling, FiveM, dashboard" },
       { name: "theme-color", content: "#5865F2" },
       { property: "og:type", content: "website" },
       { property: "og:url", content: "https://bot.nethost-solutions.dk/" },
-      { property: "og:title", content: "GuildOS Bot — Dit komplette Discord server-operativsystem" },
-      { property: "og:description", content: "Alt-i-én Discord bot med 49+ moduler: moderation, tickets, AI, leveling, FiveM og mere." },
-      { property: "og:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/cd28fa51-9f36-481b-9dfc-34c5b5ad37c1" },
+      { property: "og:title", content: "GuildOS Bot - Dit Discord-team får et kontrolrum" },
+      { property: "og:description", content: "Moderation, tickets, AI, FiveM, analytics og automation samlet i én Discord-platform." },
+      { property: "og:image", content: "https://bot.nethost-solutions.dk/og/guildos-card.svg" },
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:title", content: "GuildOS Bot — Den smarteste Discord bot platform" },
+      { name: "twitter:title", content: "GuildOS Bot - Discord management samlet ét sted" },
       { name: "twitter:description", content: "Alt-i-én Discord bot med 49+ moduler: moderation, tickets, AI, leveling, FiveM og mere." },
-      { name: "twitter:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/cd28fa51-9f36-481b-9dfc-34c5b5ad37c1" },
+      { name: "twitter:image", content: "https://bot.nethost-solutions.dk/og/guildos-card.svg" },
     ],
     links: [
       { rel: "stylesheet", href: appCss },
@@ -79,7 +79,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
           name: "GuildOS Bot",
           applicationCategory: "Discord Bot",
           operatingSystem: "Web, Discord",
-          description: "Alt-i-én Discord bot platform med 49+ moduler: moderation, tickets, AI, leveling, FiveM integration og mere.",
+          description: "Discord management platform med moderation, tickets, AI, automation, analytics, FiveM og creator-integrationer.",
           url: "https://bot.nethost-solutions.dk/",
           offers: {
             "@type": "Offer",
@@ -141,9 +141,9 @@ function ErrorFallback({ error }: { error: Error }) {
   reportLovableError(error, { route: "/" });
   return (
     <div className="flex min-h-screen flex-col items-center justify-center p-6 text-center">
-      <h1 className="mb-2 text-2xl font-bold">This page didn't load</h1>
+      <h1 className="mb-2 text-2xl font-bold">Siden kunne ikke indlæses</h1>
       <p className="text-muted-foreground">
-        Something went wrong on our end. You can try refreshing or head back home.
+        Noget gik galt under indlæsningen. Prøv at genindlæse siden eller gå tilbage til forsiden.
       </p>
       <div className="mt-6 flex gap-4">
         <button
