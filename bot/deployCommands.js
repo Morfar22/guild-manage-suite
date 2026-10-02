@@ -809,13 +809,13 @@ const DEPLOY_SCOPE = String(process.env.DEPLOY_SCOPE || (GUILD_ID ? 'guild' : 'g
 (async () => {
   try {
     // Resolve the application from the bot token itself. This prevents a stale
-    // resolvedApplicationId value from deploying commands to the wrong Discord app.
+    // APPLICATION_ID value from deploying commands to the wrong Discord app.
     const currentBot = await rest.get(Routes.user('@me'));
     const resolvedApplicationId = currentBot.id;
 
-    if (resolvedApplicationId && resolvedApplicationId !== resolvedApplicationId) {
+    if (APPLICATION_ID && APPLICATION_ID !== resolvedApplicationId) {
       console.warn(
-        `⚠️ resolvedApplicationId (${resolvedApplicationId}) matcher ikke bot-tokenets application/user ID (${resolvedApplicationId}). Bruger tokenets ID.`
+        `⚠️ APPLICATION_ID (${APPLICATION_ID}) matcher ikke bot-tokenets application/user ID (${resolvedApplicationId}). Bruger tokenets ID.`
       );
     }
     if (!['global', 'guild'].includes(DEPLOY_SCOPE)) {
