@@ -73,6 +73,11 @@ function commandSetsEqual(existingCommands, desiredCommands) {
   });
 }
 
+function getWsPing(client) {
+  const ping = Number(client?.ws?.ping);
+  return Number.isFinite(ping) && ping >= 0 ? Math.round(ping) : null;
+}
+
 const avatarWarningKeys = new Set();
 function warnAvatarOnce(key, message) {
   if (avatarWarningKeys.has(key)) return;
@@ -719,7 +724,7 @@ class CustomBotManager {
         action: 'heartbeat',
         guild_id: guildId,
         is_online: client.isReady(),
-        latency_ms: client.ws.ping,
+        latency_ms: getWsPing(client),
         member_count: guild?.memberCount || 0,
         is_custom_bot: isCustom
       };
@@ -1383,7 +1388,7 @@ class CustomBotManager {
         ready: this.defaultClient.isReady(),
         tag: this.defaultClient.user?.tag,
         guilds: this.defaultClient.guilds?.cache.size || 0,
-        ping: this.defaultClient.ws?.ping || 0
+        ping: getWsPing(this.defaultClient)
       };
     }
 
@@ -1392,7 +1397,7 @@ class CustomBotManager {
         guildId,
         ready: bot.client?.isReady() || false,
         tag: bot.client?.user?.tag,
-        ping: bot.client?.ws?.ping || 0,
+        ping: getWsPing(bot.client),
         startedAt: bot.startedAt
       });
     }
