@@ -64,7 +64,12 @@ async function checkTwitchStreamers(guildId = null) {
       ];
       console.log(
         `[Twitch] Sendte ${uniqueNotifications.length} notifikation(er):`,
-        uniqueNotifications.map(n => `${n.streamer}: ${n.action}`).join(', ')
+        uniqueNotifications
+          .map((n) => {
+            const target = [n.guild_id, n.channel_id].filter(Boolean).join('/');
+            return `${n.streamer}: ${n.action}${target ? ` [${target}]` : ''}`;
+          })
+          .join(', ')
       );
     } else {
       console.log(`[Twitch] Checked ${result.checked || 0} streamers, ${result.live || 0} live`);
