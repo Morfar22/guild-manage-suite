@@ -50,3 +50,33 @@ Runtime secrets and infrastructure identifiers intentionally keep their existing
 **Dashboard:** GuildOS Bot  
 **Default Discord bot:** GuildOS Bot  
 **Operations workspace:** GuildOS Bot Operations Center
+
+
+## Security
+
+Never commit runtime `.env` files, Discord bot tokens, Supabase service-role keys or
+`BOT_SECRET_KEY`. Use the committed `.env.example` templates and provide real values
+through the deployment environment.
+
+If a credential has ever been committed to Git history, rotate it at the provider even
+after deleting the file from the current branch.
+
+## Discord Discovery
+
+The official GuildOS Bot application uses global slash commands. The production bot
+checks the running application against Discord application `1555371176224628787` and
+warns on mismatch.
+
+Public legal pages:
+
+- Terms of Service: `https://bot.nethost-solutions.dk/terms`
+- Privacy Policy: `https://bot.nethost-solutions.dk/privacy`
+
+Run the canonical command deployment with:
+
+```bash
+cd bot
+node deployCommands.js
+```
+
+Use `DEPLOY_SCOPE=guild` only for test or custom-bot deployments.
