@@ -12,7 +12,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "format": "prettier --write .",
-    "check:commands": "node scripts/check-command-sync.mjs"
+    "check:commands": "node scripts/check-command-sync.mjs",
+    "check:discovery": "node scripts/check-discovery-safety.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
