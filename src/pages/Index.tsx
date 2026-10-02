@@ -322,8 +322,8 @@ function ProductPreview() {
           <div className="flex items-center gap-3">
             <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 text-primary"><Bot className="h-5 w-5" /></span>
             <div>
-              <div className="text-sm font-semibold">Nordisk RP 16+</div>
-              <div className="text-xs text-muted-foreground">Operations overview</div>
+              <div className="text-sm font-semibold">Community Hub</div>
+              <div className="text-xs text-muted-foreground">Eksempelvisning af dashboard</div>
             </div>
           </div>
           <span className="inline-flex items-center gap-1.5 rounded-full bg-success/10 px-2.5 py-1 text-xs font-medium text-success">
@@ -381,7 +381,7 @@ function ProductPreview() {
 
           <div className="flex items-center justify-between rounded-xl bg-secondary/30 px-4 py-3 text-xs">
             <span className="inline-flex items-center gap-2 text-muted-foreground"><Globe className="h-4 w-4" /> Discord · FiveM · Twitch</span>
-            <span className="font-medium text-primary">Live dashboard</span>
+            <span className="font-medium text-primary">Produktpreview</span>
           </div>
         </CardContent>
       </Card>
