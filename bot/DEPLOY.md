@@ -46,11 +46,22 @@ nano .env
 
 ### 4. Deploy Slash Commands
 
+Den officielle GuildOS Bot skal bruge globale slash commands, så de er tilgængelige
+på alle servere og kan registreres korrekt til Discord Discovery:
+
 ```bash
 node deployCommands.js
 ```
 
-> ⚠️ Globale commands kan tage op til 1 time at synkronisere.
+Standard uden `DEPLOY_GUILD_ID` er nu global deployment.
+
+Til en testserver eller custom bot kan guild-scoped deployment bruges eksplicit:
+
+```bash
+DEPLOY_SCOPE=guild DEPLOY_GUILD_ID=123456789012345678 node deployCommands.js
+```
+
+> ⚠️ Globale commands kan bruge lidt tid på at propagere hos Discord.
 
 ### 5. Start Bot
 
