@@ -129,12 +129,20 @@ __serve(async (req) => {
     let botToken: string | null = null;
 
     // Use custom bot token if available and active, otherwise fall back to global bot
-    if (customBotSettings?.bot_token_encrypted && customBotSettings.is_custom_bot) {
+    if (
+      customBotSettings?.bot_token_encrypted &&
+      customBotSettings.is_custom_bot &&
+      customBotSettings.is_active
+    ) {
       botToken = simpleDecrypt(customBotSettings.bot_token_encrypted, encryptionKey);
       console.log(`Using custom bot token for guild ${guild.guild_id}`);
     } else {
-      botToken = __env("DISCORD_BOT_TOKEN") || null;
-      console.log(`Using global bot token for guild ${guild.guild_id}`);
+      botToken =
+        __env("DEFAULT_BOT_TOKEN") ||
+        __env("DISCORD_TOKEN") ||
+        __env("DISCORD_BOT_TOKEN") ||
+        null;
+      console.log(`Using GuildOS Bot token for guild ${guild.guild_id}`);
     }
 
     if (!botToken) {
@@ -173,19 +181,83 @@ __serve(async (req) => {
 
     const roles: DiscordRole[] = await discordRes.json();
 
-    // Filter out @everyone role and managed roles (bot roles), sort by position
+    // Resolve the active bot's member + role hierarchy so the dashboard can
+    // prevent selection of roles Discord will reject.
+    let botMember: any = null;
+    try {
+      const meRes = await fetch("https://discord.com/api/v10/users/@me", {
+        headers: { Authorization: `Bot ${botToken}` },
+      });
+      if (meRes.ok) {
+        const me = await meRes.json();
+        const memberRes = await fetch(
+          `https://discord.com/api/v10/guilds/${guild.guild_id}/members/${me.id}`,
+          { headers: { Authorization: `Bot ${botToken}` } },
+        );
+        if (memberRes.ok) botMember = await memberRes.json();
+      }
+    } catch (error) {
+      console.warn("Could not resolve bot member role hierarchy:", error);
+    }
+
+    const botRoleIds = new Set<string>([
+      guild.guild_id,
+      ...((botMember?.roles || []) as string[]),
+    ]);
+    const botRoles = roles.filter((role) => botRoleIds.has(role.id));
+    const highestBotRolePosition = botRoles.reduce(
+      (max, role) => Math.max(max, role.position || 0),
+      0,
+    );
+    const permissionBits = botRoles.reduce(
+      (bits, role: any) => bits | BigInt(role.permissions || "0"),
+      0n,
+    );
+    const hasAdministrator = (permissionBits & 8n) === 8n;
+    const hasManageRoles = hasAdministrator || (permissionBits & 268435456n) === 268435456n;
+
     const filteredRoles = roles
-      .filter((role) => role.name !== "@everyone" && !role.managed)
+      .filter((role) => role.name !== "@everyone")
       .sort((a, b) => b.position - a.position)
-      .map((role) => ({
-        id: role.id,
-        name: role.name,
-        color: role.color,
-      }));
+      .map((role) => {
+        let assignable = true;
+        let reason: string | null = null;
 
-    console.log(`Fetched ${filteredRoles.length} roles for guild ${guild.guild_id}`);
+        if (role.managed) {
+          assignable = false;
+          reason = "Discord-administreret rolle";
+        } else if (!hasManageRoles) {
+          assignable = false;
+          reason = 'Botten mangler "Manage Roles"';
+        } else if ((role.position || 0) >= highestBotRolePosition) {
+          assignable = false;
+          reason = "Rollen ligger over eller på niveau med bottens højeste rolle";
+        }
 
-    return new Response(JSON.stringify({ roles: filteredRoles }), {
+        return {
+          id: role.id,
+          name: role.name,
+          color: role.color,
+          position: role.position,
+          managed: role.managed,
+          assignable,
+          reason,
+        };
+      });
+
+    console.log(
+      `Fetched ${filteredRoles.length} roles for guild ${guild.guild_id}; ` +
+      `${filteredRoles.filter((r) => r.assignable).length} assignable`
+    );
+
+    return new Response(JSON.stringify({
+      roles: filteredRoles,
+      bot_permissions: {
+        manage_roles: hasManageRoles,
+        administrator: hasAdministrator,
+        highest_role_position: highestBotRolePosition,
+      },
+    }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error: unknown) {
