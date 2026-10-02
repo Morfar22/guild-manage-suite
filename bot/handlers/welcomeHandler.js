@@ -15,8 +15,16 @@
  */
 
 const APP_API_BASE = process.env.APP_API_BASE || 'https://bot.nethost-solutions.dk';
-const API_URL = process.env.WELCOME_API_URL || `${APP_API_BASE}/api/public/bot-welcome`;
+const configuredWelcomeApiUrl = String(process.env.WELCOME_API_URL || '').trim();
+const legacyWelcomeApi = configuredWelcomeApiUrl.includes('/functions/v1/bot-welcome');
+const API_URL = configuredWelcomeApiUrl && !legacyWelcomeApi
+  ? configuredWelcomeApiUrl
+  : `${APP_API_BASE}/api/public/bot-welcome`;
 const BOT_SECRET = process.env.BOT_SECRET_KEY;
+
+if (legacyWelcomeApi) {
+  console.warn('[Welcome] Ignorerer legacy WELCOME_API_URL og bruger GuildOS web API-ruten i stedet.');
+}
 
 // Deduplication: track recently processed events to prevent double handling
 const recentEvents = new Map();
