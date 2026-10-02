@@ -206,9 +206,20 @@ async function callApi(action, data) {
 
 async function fetchAndCacheInvites(guild) {
   try {
-    if (!guild.members.me?.permissions.has('ManageGuild')) {
+    if (!guild?.id || !guild.invites?.fetch) {
+      console.warn('[InviteTracker] Guild cache er endnu ikke klar; springer invite sync over indtil næste event');
       return;
     }
+
+    // guild.members / guild.members.me can briefly be unavailable while Discord
+    // is hydrating a guild during startup. Only enforce the local permission
+    // check when the member object is actually available. The REST request below
+    // remains the source of truth and is already caught safely.
+    const botMember = guild.members?.me;
+    if (botMember?.permissions && !botMember.permissions.has('ManageGuild')) {
+      return;
+    }
+
     const invites = await guild.invites.fetch();
     const map = new Map();
     invites.forEach((inv) => {
