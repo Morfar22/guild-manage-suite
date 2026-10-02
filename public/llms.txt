@@ -6,8 +6,10 @@ GuildOS Bot er en Discord bot management platform hvor server-ejere kan konfigur
 
 ## Pages
 
-- [Forside](/): Oversigt over GuildOS Bot platformen og features.
-- [Log ind](/auth): Log ind med Discord OAuth for at komme i gang.
+- [Forside](/): Produktoversigt, onboarding og live platformtal.
+- [Features](/features): Offentlig oversigt over moderation, tickets, engagement og integrationer.
+- [Sikkerhed](/security): Konkrete oplysninger om OAuth, permissions, tokens og dataadgang.
+- [Log ind](/auth): Discord-first login til dashboardet.
 - [Dokumentation](/docs): Komplet dokumentation for alle moduler og kommandoer.
 
 ## Docs
@@ -24,5 +26,5 @@ GuildOS Bot er en Discord bot management platform hvor server-ejere kan konfigur
 - [Changelog](/docs/changelog/latest): Seneste opdateringer.
 - [Kontakt](/docs/contact/support): Support og kontakt.
 
-- [Terms of Service](/terms): Vilkår for brug af GuildOS Bot.
-- [Privacy Policy](/privacy): Oplysninger om databehandling og privatliv.
+- [Vilkår](/terms): Vilkår for brug af GuildOS Bot.
+- [Privatliv](/privacy): Oplysninger om databehandling og privatliv.
