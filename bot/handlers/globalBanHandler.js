@@ -15,7 +15,48 @@ function setupGlobalBanHandler(client, supabase, options = {}) {
   const permissionWarnings = new Set();
   const banFailureWarnings = new Set();
   const blockedExecutionUntil = new Map();
-  const BLOCKED_RETRY_MS = 10 * 60 * 1000;
+  const blockedGuildUntil = new Map();
+  const BLOCKED_RETRY_MS = 30 * 60 * 1000;
+
+  async function createPermissionAlertOnce(guildRowId, discordGuildId, guildName, permissionName) {
+    const key = `${discordGuildId}:${permissionName}`;
+    if (permissionWarnings.has(key)) return;
+    permissionWarnings.add(key);
+
+    console.warn(
+      `[GlobalBan] ${guildName}: mangler ${permissionName}. GlobalBan pauses for denne guild i 30 min.`
+    );
+
+    try {
+      const { data: existing } = await supabase
+        .from('dashboard_notifications')
+        .select('id')
+        .eq('guild_id', guildRowId)
+        .eq('source', 'globalban-permission')
+        .neq('status', 'resolved')
+        .contains('metadata', { permission: permissionName })
+        .limit(1)
+        .maybeSingle();
+
+      if (!existing) {
+        await supabase.from('dashboard_notifications').insert({
+          guild_id: guildRowId,
+          type: 'warning',
+          severity: 'warning',
+          status: 'open',
+          title: 'GlobalBan mangler Discord-permission',
+          message: `GuildOS Bot mangler ${permissionName} på ${guildName}. GlobalBan kan ikke håndhæves før permissionen er givet.`,
+          source: 'globalban-permission',
+          metadata: {
+            discord_guild_id: discordGuildId,
+            permission: permissionName,
+          },
+        });
+      }
+    } catch (error) {
+      console.warn('[GlobalBan] Kunne ikke oprette permission-alert:', error?.message || error);
+    }
+  }
 
   async function getManagedGuildRows() {
     const managedDiscordGuildIds = client.guilds.cache
@@ -86,6 +127,10 @@ function setupGlobalBanHandler(client, supabase, options = {}) {
         const discordGuildId = guildIdByDbId.get(execution.guild_id);
         const ban = bansById.get(execution.global_ban_id);
 
+        const guildBlockedUntil = blockedGuildUntil.get(discordGuildId) || 0;
+        if (guildBlockedUntil > Date.now()) continue;
+        if (guildBlockedUntil) blockedGuildUntil.delete(discordGuildId);
+
         if (!discordGuildId) {
           await supabase.from('global_ban_executions').update({
             executed: false,
@@ -119,10 +164,15 @@ function setupGlobalBanHandler(client, supabase, options = {}) {
           if (!me?.permissions?.has('BanMembers')) {
             const permissionError = 'Missing BanMembers permission';
             blockedExecutionUntil.set(execution.id, Date.now() + BLOCKED_RETRY_MS);
-            if (!permissionWarnings.has(discordGuildId)) {
-              console.warn(`[GlobalBan] Skipping ${guild.name}: ${permissionError} (retry om 10 min)`);
-              permissionWarnings.add(discordGuildId);
-            }
+            blockedGuildUntil.set(discordGuildId, Date.now() + BLOCKED_RETRY_MS);
+
+            await createPermissionAlertOnce(
+              execution.guild_id,
+              discordGuildId,
+              guild.name,
+              'Ban Members'
+            );
+
             await supabase.from('global_ban_executions').update({
               executed: false,
               error_message: permissionError,
@@ -131,7 +181,8 @@ function setupGlobalBanHandler(client, supabase, options = {}) {
             continue;
           }
 
-          permissionWarnings.delete(discordGuildId);
+          permissionWarnings.delete(`${discordGuildId}:Ban Members`);
+          blockedGuildUntil.delete(discordGuildId);
 
           // If the target is currently a member, Discord role hierarchy may make
           // them unbannable even when the bot has BanMembers.
@@ -245,9 +296,31 @@ function setupGlobalBanHandler(client, supabase, options = {}) {
       });
 
       if (autoAction === 'ban') {
+        const me = member.guild.members.me || await member.guild.members.fetchMe().catch(() => null);
+        if (!me?.permissions?.has('BanMembers') || !member.bannable) {
+          await createPermissionAlertOnce(
+            guildRow.id,
+            member.guild.id,
+            member.guild.name,
+            !me?.permissions?.has('BanMembers') ? 'Ban Members' : 'Role hierarchy for bans'
+          );
+          return;
+        }
+
         await member.ban({ reason: `[Global Ban Auto-detect] ${ban.reason}` });
         console.log(`[GlobalBan] Auto-banned ${member.user.tag} from ${member.guild.name}`);
       } else if (autoAction === 'kick') {
+        const me = member.guild.members.me || await member.guild.members.fetchMe().catch(() => null);
+        if (!me?.permissions?.has('KickMembers') || !member.kickable) {
+          await createPermissionAlertOnce(
+            guildRow.id,
+            member.guild.id,
+            member.guild.name,
+            !me?.permissions?.has('KickMembers') ? 'Kick Members' : 'Role hierarchy for kicks'
+          );
+          return;
+        }
+
         await member.kick(`[Global Ban Auto-detect] ${ban.reason}`);
         console.log(`[GlobalBan] Auto-kicked ${member.user.tag} from ${member.guild.name}`);
       } else if (autoAction === 'warn') {
@@ -263,11 +336,27 @@ function setupGlobalBanHandler(client, supabase, options = {}) {
 
   client.on('guildMemberAdd', onGuildMemberAdd);
 
+  const onGuildMemberUpdate = (oldMember, newMember) => {
+    if (newMember.id !== client.user?.id) return;
+    if (oldMember.permissions.bitfield === newMember.permissions.bitfield) return;
+
+    blockedGuildUntil.delete(newMember.guild.id);
+    permissionWarnings.delete(`${newMember.guild.id}:Ban Members`);
+    permissionWarnings.delete(`${newMember.guild.id}:Kick Members`);
+    console.log(`[GlobalBan] Bot permissions changed in ${newMember.guild.name}; retry-backoff cleared`);
+    setTimeout(() => void processPendingExecutions(), 1000);
+  };
+
+  client.on('guildMemberUpdate', onGuildMemberUpdate);
+
   return {
     destroy: () => {
       clearInterval(executionInterval);
       clearTimeout(initialExecutionTimeout);
       client.removeListener('guildMemberAdd', onGuildMemberAdd);
+      client.removeListener('guildMemberUpdate', onGuildMemberUpdate);
+      blockedGuildUntil.clear();
+      blockedExecutionUntil.clear();
       console.log('[GlobalBan] Handler destroyed');
     },
   };
