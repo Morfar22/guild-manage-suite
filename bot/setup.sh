@@ -17,6 +17,10 @@ echo "===================="
 echo "📁 Opretter mapper..."
 mkdir -p handlers
 mkdir -p logs
+mkdir -p lavalink
+
+chmod +x scripts/start-lavalink.sh 2>/dev/null || true
+chmod +x scripts/install-lavalink.sh 2>/dev/null || true
 
 # Liste over handler-filer der skal flyttes til handlers/
 HANDLERS=(
@@ -98,8 +102,11 @@ echo "==========================================
 NÆSTE TRIN:
 ==========================================
 1. Udfyld .env filen med dine credentials
-2. Deploy slash commands:  node deployCommands.js
-3. Start botten:           node bot.js
+2. Installér Lavalink:     npm run lavalink:install
+3. Start Lavalink:         npm run lavalink:pm2
+4. Test Lavalink:          npm run lavalink:check
+5. Deploy slash commands:  node deployCommands.js
+6. Start botten:           node bot.js
    Eller med PM2:          pm2 start ecosystem.config.js
 ==========================================
 "
