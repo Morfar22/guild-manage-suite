@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Navigate } from '@tanstack/react-router';
+import { Navigate, Link } from '@tanstack/react-router';
 import { useSearchParams } from '@/hooks/useSearchParams';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -218,7 +218,12 @@ export default function Auth() {
           </div>
         </div>
 
-        <p className="mt-6 text-center text-xs text-muted-foreground">{t('auth.terms')}</p>
+        <p className="mt-6 text-center text-xs leading-5 text-muted-foreground">
+          Ved at fortsætte accepterer du vores{' '}
+          <Link to="/terms" className="text-primary hover:underline">Terms of Service</Link>
+          {' '}og{' '}
+          <Link to="/privacy" className="text-primary hover:underline">Privacy Policy</Link>.
+        </p>
       </div>
     </main>
   );
