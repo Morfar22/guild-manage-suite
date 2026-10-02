@@ -804,13 +804,17 @@ const commands = [
 
 const rest = new REST({ version: '10' }).setToken(TOKEN);
 const GUILD_ID = process.env.DEPLOY_GUILD_ID;
+const DEPLOY_SCOPE = String(process.env.DEPLOY_SCOPE || (GUILD_ID ? 'guild' : 'global')).toLowerCase();
 
 (async () => {
   try {
-    if (!GUILD_ID) {
-      console.error('❌ DEPLOY_GUILD_ID mangler.');
-      console.error('   Dette projekt bruger kun guild-specifikke slash commands for at undgå dubletter.');
-      console.error('   Eksempel: DEPLOY_GUILD_ID=123456789012345678 node bot/deployCommands.js');
+    if (!['global', 'guild'].includes(DEPLOY_SCOPE)) {
+      throw new Error('DEPLOY_SCOPE skal være "global" eller "guild"');
+    }
+
+    if (DEPLOY_SCOPE === 'guild' && !GUILD_ID) {
+      console.error('❌ DEPLOY_GUILD_ID mangler til guild-scoped deployment.');
+      console.error('   Eksempel: DEPLOY_SCOPE=guild DEPLOY_GUILD_ID=123456789012345678 node bot/deployCommands.js');
       process.exitCode = 1;
       return;
     }
@@ -818,8 +822,48 @@ const GUILD_ID = process.env.DEPLOY_GUILD_ID;
     const flatCommandData = commands.map(c => c.toJSON());
     const commandData = groupFlatCommandDefinitions(flatCommandData);
 
-    // /fivem is registered through the dedicated FiveM command route.
-    // Preserve it when this script bulk-overwrites the guild command set.
+    if (DEPLOY_SCOPE === 'global') {
+      // Preserve an existing global /fivem command because it is managed by the
+      // dedicated FiveM command route rather than this flat command catalog.
+      try {
+        const existingGlobals = await rest.get(Routes.applicationCommands(APPLICATION_ID));
+        const existingFiveM = existingGlobals.find(command => command.name === 'fivem');
+        if (existingFiveM) {
+          commandData.push({
+            name: existingFiveM.name,
+            description: existingFiveM.description,
+            type: existingFiveM.type,
+            options: existingFiveM.options || [],
+            default_member_permissions: existingFiveM.default_member_permissions ?? null,
+            nsfw: Boolean(existingFiveM.nsfw),
+          });
+        }
+      } catch (error) {
+        console.warn('⚠️ Kunne ikke kontrollere eksisterende global /fivem command:', error.message);
+      }
+
+      console.log(`🔄 Registrerer ${commandData.length} globale slash commands (${getCanonicalLogicalCommands().length} funktioner)...`);
+      const globalData = await rest.put(
+        Routes.applicationCommands(APPLICATION_ID),
+        { body: commandData }
+      );
+
+      console.log(`✅ ${globalData.length} globale commands registreret`);
+      console.log('📝 Commands:', globalData.map(c => c.name).join(', '));
+
+      // If a guild ID is supplied during migration, remove legacy guild copies
+      // so Discord does not display duplicate global + guild commands.
+      if (GUILD_ID) {
+        await rest.put(
+          Routes.applicationGuildCommands(APPLICATION_ID, GUILD_ID),
+          { body: [] }
+        );
+        console.log(`✅ Legacy guild commands ryddet i ${GUILD_ID}`);
+      }
+      return;
+    }
+
+    // Guild-scoped deployment remains available for testing and custom bots.
     try {
       const existingGuildCommands = await rest.get(
         Routes.applicationGuildCommands(APPLICATION_ID, GUILD_ID)
@@ -839,16 +883,14 @@ const GUILD_ID = process.env.DEPLOY_GUILD_ID;
       console.warn('⚠️ Kunne ikke kontrollere eksisterende /fivem command:', error.message);
     }
 
-    // Never register globals. Clean up legacy globals first.
+    // A guild-scoped test/custom deployment must not keep same-name globals.
     const existingGlobals = await rest.get(Routes.applicationCommands(APPLICATION_ID));
     await rest.put(
       Routes.applicationCommands(APPLICATION_ID),
       { body: [] }
     );
-
     console.log(`✅ Global command scope ryddet (${existingGlobals.length || 0} gamle command(s))`);
 
-    // Bulk overwrite the target guild, giving exactly one registration per command.
     console.log(`🔄 Registrerer ${commandData.length} grupperede slash commands (${getCanonicalLogicalCommands().length} funktioner) i guild ${GUILD_ID}...`);
     const guildData = await rest.put(
       Routes.applicationGuildCommands(APPLICATION_ID, GUILD_ID),
@@ -859,5 +901,6 @@ const GUILD_ID = process.env.DEPLOY_GUILD_ID;
     console.log('📝 Commands:', guildData.map(c => c.name).join(', '));
   } catch (error) {
     console.error('❌ Fejl ved registrering af commands:', error);
+    process.exitCode = 1;
   }
 })();
