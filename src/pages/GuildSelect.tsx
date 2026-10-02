@@ -14,7 +14,7 @@ import { toast } from 'sonner';
 import { useIsAdmin } from '@/hooks/useAdmin';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { invokeFunction } from '@/lib/functions-client';
-import { PUBLIC_PUBLIC_BOT_INVITE_URL } from '@/lib/product';
+import { PUBLIC_BOT_INVITE_URL } from '@/lib/product';
 
 export default function GuildSelect() {
   const { user, loading: authLoading, signOut } = useAuth();
