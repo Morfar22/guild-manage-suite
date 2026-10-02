@@ -46,6 +46,9 @@ jobs:
       - name: Verify shared web product imports
         run: bun run check:web-product
 
+      - name: Verify web runtime symbols
+        run: bun run check:web-runtime
+
       - name: Legacy lint audit
         if: github.event_name == 'workflow_dispatch'
         continue-on-error: true
