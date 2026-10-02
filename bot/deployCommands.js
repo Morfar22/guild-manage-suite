@@ -18,10 +18,85 @@
 require('dotenv').config();
 
 const { REST, Routes, SlashCommandBuilder, ChannelType } = require('discord.js');
-const { groupFlatCommandDefinitions, getCanonicalLogicalCommands } = require('./commandRouting');
+const { groupFlatCommandDefinitions, getCanonicalLogicalCommands, routes } = require('./commandRouting');
 
 const TOKEN = process.env.DEFAULT_BOT_TOKEN || process.env.DISCORD_TOKEN;
 const APPLICATION_ID = process.env.APPLICATION_ID;
+
+// The public/Discovery GuildOS application must stay suitable for Discord's
+// all-ages Discovery surfaces. Custom/guild-scoped bots keep the full catalog.
+const DISCOVERY_EXCLUDED_COMMANDS = new Set([
+  'crime',
+  'slots',
+  'gamble',
+  'roulette',
+  'blackjack',
+]);
+
+function matchesCommandShape(actual, expected) {
+  if (Array.isArray(expected)) {
+    return Array.isArray(actual)
+      && actual.length === expected.length
+      && expected.every((item, index) => matchesCommandShape(actual[index], item));
+  }
+
+  if (expected && typeof expected === 'object') {
+    if (!actual || typeof actual !== 'object') return false;
+    return Object.keys(expected).every((key) => matchesCommandShape(actual[key], expected[key]));
+  }
+
+  return actual === expected;
+}
+
+function commandSetsEqual(existingCommands, desiredCommands) {
+  if (!Array.isArray(existingCommands) || existingCommands.length !== desiredCommands.length) {
+    return false;
+  }
+
+  const existingByKey = new Map(
+    existingCommands.map((command) => [`${command.type || 1}:${command.name}`, command])
+  );
+
+  return desiredCommands.every((desired) => {
+    const existing = existingByKey.get(`${desired.type || 1}:${desired.name}`);
+    return Boolean(existing) && matchesCommandShape(existing, desired);
+  });
+}
+
+function removeDiscoveryRestrictedRoutes(groupedCommands) {
+  const blockedRoutes = routes.filter((route) =>
+    DISCOVERY_EXCLUDED_COMMANDS.has(route.logical)
+    || DISCOVERY_EXCLUDED_COMMANDS.has(route.source)
+  );
+
+  for (const route of blockedRoutes) {
+    if (route.passthrough) continue;
+    const root = groupedCommands.find((command) => command.name === route.root);
+    if (!root || !Array.isArray(root.options)) continue;
+
+    if (route.group) {
+      const group = root.options.find(
+        (option) => option.type === 2 && option.name === route.group
+      );
+      if (group?.options) {
+        group.options = group.options.filter(
+          (option) => !(option.type === 1 && option.name === route.sub)
+        );
+      }
+      root.options = root.options.filter(
+        (option) => !(option.type === 2 && Array.isArray(option.options) && option.options.length === 0)
+      );
+    } else {
+      root.options = root.options.filter(
+        (option) => !(option.type === 1 && option.name === route.sub)
+      );
+    }
+  }
+
+  return groupedCommands.filter(
+    (command) => !Array.isArray(command.options) || command.options.length > 0
+  );
+}
 
 if (!TOKEN) {
   console.error('❌ Missing DEFAULT_BOT_TOKEN or DISCORD_TOKEN in environment variables');
@@ -834,13 +909,17 @@ const DEPLOY_SCOPE = String(process.env.DEPLOY_SCOPE || (GUILD_ID ? 'guild' : 'g
     }
 
     const flatCommandData = commands.map(c => c.toJSON());
-    const commandData = groupFlatCommandDefinitions(flatCommandData);
+    const groupedCommandData = groupFlatCommandDefinitions(flatCommandData);
+    const commandData = DEPLOY_SCOPE === 'global'
+      ? removeDiscoveryRestrictedRoutes(groupedCommandData)
+      : groupedCommandData;
 
     if (DEPLOY_SCOPE === 'global') {
       // Preserve an existing global /fivem command because it is managed by the
       // dedicated FiveM command route rather than this flat command catalog.
+      let existingGlobals = [];
       try {
-        const existingGlobals = await rest.get(Routes.applicationCommands(resolvedApplicationId));
+        existingGlobals = await rest.get(Routes.applicationCommands(resolvedApplicationId));
         const existingFiveM = existingGlobals.find(command => command.name === 'fivem');
         if (existingFiveM) {
           commandData.push({
@@ -856,14 +935,26 @@ const DEPLOY_SCOPE = String(process.env.DEPLOY_SCOPE || (GUILD_ID ? 'guild' : 'g
         console.warn('⚠️ Kunne ikke kontrollere eksisterende global /fivem command:', error.message);
       }
 
-      console.log(`🔄 Registrerer ${commandData.length} globale slash commands (${getCanonicalLogicalCommands().length} funktioner)...`);
-      const globalData = await rest.put(
-        Routes.applicationCommands(resolvedApplicationId),
-        { body: commandData }
-      );
+      const publicLogicalCount = getCanonicalLogicalCommands().filter(
+        (name) => !DISCOVERY_EXCLUDED_COMMANDS.has(name)
+      ).length;
 
-      console.log(`✅ ${globalData.length} globale commands registreret`);
-      console.log('📝 Commands:', globalData.map(c => c.name).join(', '));
+      if (commandSetsEqual(existingGlobals, commandData)) {
+        console.log(
+          `✅ Globale slash commands er allerede opdaterede (${commandData.length} roots / ${publicLogicalCount} Discovery-safe funktioner)`
+        );
+      } else {
+        console.log(
+          `🔄 Synkroniserer ${commandData.length} globale slash commands (${publicLogicalCount} Discovery-safe funktioner)...`
+        );
+        const globalData = await rest.put(
+          Routes.applicationCommands(resolvedApplicationId),
+          { body: commandData }
+        );
+
+        console.log(`✅ ${globalData.length} globale commands registreret`);
+        console.log('📝 Commands:', globalData.map(c => c.name).join(', '));
+      }
 
       // If a guild ID is supplied during migration, remove legacy guild copies
       // so Discord does not display duplicate global + guild commands.
@@ -899,20 +990,34 @@ const DEPLOY_SCOPE = String(process.env.DEPLOY_SCOPE || (GUILD_ID ? 'guild' : 'g
 
     // A guild-scoped test/custom deployment must not keep same-name globals.
     const existingGlobals = await rest.get(Routes.applicationCommands(resolvedApplicationId));
-    await rest.put(
-      Routes.applicationCommands(resolvedApplicationId),
-      { body: [] }
-    );
-    console.log(`✅ Global command scope ryddet (${existingGlobals.length || 0} gamle command(s))`);
+    if (existingGlobals.length > 0) {
+      await rest.put(
+        Routes.applicationCommands(resolvedApplicationId),
+        { body: [] }
+      );
+      console.log(`✅ Global command scope ryddet (${existingGlobals.length} gamle command(s))`);
+    } else {
+      console.log('✅ Global command scope var allerede tomt');
+    }
 
-    console.log(`🔄 Registrerer ${commandData.length} grupperede slash commands (${getCanonicalLogicalCommands().length} funktioner) i guild ${GUILD_ID}...`);
-    const guildData = await rest.put(
-      Routes.applicationGuildCommands(resolvedApplicationId, GUILD_ID),
-      { body: commandData }
+    const currentGuildCommands = await rest.get(
+      Routes.applicationGuildCommands(resolvedApplicationId, GUILD_ID)
     );
 
-    console.log(`✅ ${guildData.length} commands registreret i guild ${GUILD_ID}`);
-    console.log('📝 Commands:', guildData.map(c => c.name).join(', '));
+    if (commandSetsEqual(currentGuildCommands, commandData)) {
+      console.log(
+        `✅ Guild commands er allerede opdaterede i ${GUILD_ID} (${commandData.length} roots / ${getCanonicalLogicalCommands().length} funktioner)`
+      );
+    } else {
+      console.log(`🔄 Synkroniserer ${commandData.length} grupperede slash commands (${getCanonicalLogicalCommands().length} funktioner) i guild ${GUILD_ID}...`);
+      const guildData = await rest.put(
+        Routes.applicationGuildCommands(resolvedApplicationId, GUILD_ID),
+        { body: commandData }
+      );
+
+      console.log(`✅ ${guildData.length} commands registreret i guild ${GUILD_ID}`);
+      console.log('📝 Commands:', guildData.map(c => c.name).join(', '));
+    }
   } catch (error) {
     console.error('❌ Fejl ved registrering af commands:', error);
     process.exitCode = 1;
