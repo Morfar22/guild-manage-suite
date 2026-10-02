@@ -3,11 +3,11 @@
  * 
  * Requires:
  *   npm install kazagumo shoukaku
- *   A running Lavalink server (default: localhost:2333)
+ *   A running Lavalink server (default: localhost:40191)
  * 
  * Env vars (optional):
  *   LAVALINK_HOST (default: localhost)
- *   LAVALINK_PORT (default: 2333)
+ *   LAVALINK_PORT (default: 40191)
  *   LAVALINK_PASSWORD (default: youshallnotpass)
  *   LAVALINK_NAME (default: Main)
  *   LAVALINK_SECURE (default: false)
@@ -20,7 +20,7 @@ const { EmbedBuilder, PermissionFlagsBits } = require('discord.js');
 // ==================== CONFIG ====================
 
 const LAVALINK_HOST = process.env.LAVALINK_HOST || 'localhost';
-const LAVALINK_PORT = parseInt(process.env.LAVALINK_PORT || '2333', 10);
+const LAVALINK_PORT = parseInt(process.env.LAVALINK_PORT || '40191', 10);
 const LAVALINK_PASSWORD = process.env.LAVALINK_PASSWORD || 'youshallnotpass';
 const LAVALINK_NAME = process.env.LAVALINK_NAME || 'Main';
 const LAVALINK_SECURE = process.env.LAVALINK_SECURE === 'true';
