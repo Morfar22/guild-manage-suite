@@ -272,7 +272,7 @@ __serve(async (req) => {
             member_count: status?.member_count || 0,
             last_heartbeat: status?.last_heartbeat,
             is_custom_bot: !!customBot,
-            bot_name: customBot?.bot_name || 'Default Bot',
+            bot_name: customBot?.bot_name || 'GuildOS Bot',
             bot_avatar_url: customBot?.bot_avatar_url,
           }
         })
@@ -515,7 +515,7 @@ __serve(async (req) => {
             updated_at: status?.updated_at,
             is_custom_bot: customBot?.is_custom_bot || false,
             custom_bot_active: customBot?.is_active || false,
-            bot_name: customBot?.bot_name || 'Default Bot',
+            bot_name: customBot?.bot_name || 'GuildOS Bot',
             bot_avatar_url: customBot?.bot_avatar_url,
           }
         })
@@ -716,7 +716,7 @@ __serve(async (req) => {
             member_count: status?.member_count || 0,
             last_heartbeat: status?.last_heartbeat,
             is_custom_bot: !!customBot,
-            bot_name: customBot?.bot_name || 'Default Bot',
+            bot_name: customBot?.bot_name || 'GuildOS Bot',
             bot_avatar_url: customBot?.bot_avatar_url,
           }
         })
