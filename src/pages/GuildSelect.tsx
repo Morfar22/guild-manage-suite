@@ -124,7 +124,7 @@ export default function GuildSelect() {
             <div className="flex h-9 w-9 items-center justify-center rounded-lg gradient-blurple shadow-glow">
               <Bot className="h-5 w-5 text-primary-foreground" />
             </div>
-            <span className="text-lg font-bold tracking-tight">Paranox</span>
+            <span className="text-lg font-bold tracking-tight">GuildOS Bot</span>
           </Link>
           <div className="flex items-center gap-2 sm:gap-3">
             {isAdmin && (
@@ -160,7 +160,7 @@ export default function GuildSelect() {
               <span className="text-gradient">{en ? 'server' : 'server'}</span>
             </h1>
             <p className="mx-auto mt-4 max-w-xl text-sm text-muted-foreground sm:text-base">
-              {en ? 'Pick a Discord server to manage with Paranox.' : 'Vælg en Discord-server du vil administrere med Paranox.'}
+              {en ? 'Pick a Discord server to manage with GuildOS Bot.' : 'Vælg en Discord-server du vil administrere med GuildOS Bot.'}
             </p>
 
             <div className="mt-7 flex flex-col items-center justify-center gap-3 sm:flex-row">
@@ -172,7 +172,7 @@ export default function GuildSelect() {
                 <a href={BOT_INVITE_URL} target="_blank" rel="noopener noreferrer" className="w-full sm:w-auto">
                   <Button size="lg" variant="outline" className="w-full sm:w-auto">
                     <Bot className="mr-2 h-5 w-5" />
-                    {en ? 'Invite Bot' : 'Inviter Bot'}
+                    {en ? 'Invite GuildOS Bot' : 'Inviter GuildOS Bot'}
                     <ExternalLink className="ml-2 h-3.5 w-3.5" />
                   </Button>
                 </a>
