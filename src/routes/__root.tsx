@@ -17,6 +17,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   errorComponent: ErrorFallback,
   head: () => ({
     meta: [
+      { title: "GuildOS Bot — Discord Server Management" },
       { charSet: "UTF-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1.0" },
       { name: "description", content: "Alt-i-én Discord bot med 49+ moduler: moderation, tickets, AI, leveling, FiveM og mere. Sikker, hurtig og fuldt tilpasselig. Kom i gang gratis." },
