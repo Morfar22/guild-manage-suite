@@ -207,7 +207,7 @@ export default function Index() {
               <div className="surface-card relative overflow-hidden rounded-3xl p-1.5">
                 <img
                   src={heroOrb}
-                  alt="GuildOS Bot bot — abstrakt 3D illustration af en lysende orb med Discord-symbol"
+                  alt="GuildOS Bot — abstrakt 3D illustration af en lysende orb med Discord-symbol"
                   width={1536}
                   height={1024}
                   className="h-auto w-full rounded-[1.25rem]"
