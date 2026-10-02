@@ -34,6 +34,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { NavLink } from '@/components/NavLink';
 import { cn } from '@/lib/utils';
 import { Crown } from 'lucide-react';
+import { PRODUCT_COUNTS } from '@/lib/product';
 
 // Map feature links to premium keys
 const PREMIUM_LINK_MAP: Record<string, PremiumFeatureKey> = {
@@ -174,7 +175,7 @@ const allFeatures: Feature[] = [
     icon: Terminal,
     title: 'Commands',
     description: 'Administrer alle bot kommandoer',
-    features: ['70+ commands', 'Toggle on/off', 'Kategori filter', 'Permission system', 'Søgefunktion'],
+    features: [`${PRODUCT_COUNTS.logicalCommands}+ botfunktioner`, 'Slå til/fra', 'Kategorifilter', 'Rettighedsstyring', 'Søgning'],
     link: '/dashboard/commands',
     category: 'utility',
   },
@@ -184,7 +185,7 @@ const allFeatures: Feature[] = [
     icon: Sparkles,
     title: 'AI Chat',
     description: 'AI-drevet chatbot med kontekst-hukommelse',
-    features: ['Gemini Pro', 'Conversation memory', 'Custom system prompt', 'Kanal-specifik', 'Historik styring'],
+    features: ['GuildOS AI-provider', 'Samtalekontekst', 'Egen systemprompt', 'Kanalspecifik', 'Historikstyring'],
     link: '/dashboard/ai-chat',
     category: 'integration',
     isNew: true,
