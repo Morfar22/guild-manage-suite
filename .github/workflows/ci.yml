@@ -39,6 +39,9 @@ jobs:
       - name: Verify command catalog
         run: bun run check:commands
 
+      - name: Verify Discovery safety
+        run: bun run check:discovery
+
       - name: Lint
         run: bun run lint
 
