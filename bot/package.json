@@ -1,7 +1,7 @@
 {
-  "name": "discord-bot",
+  "name": "guildos-bot",
   "version": "1.0.0",
-  "description": "Discord Bot med dashboard integration",
+  "description": "GuildOS Bot - Discord server management, moderation and automation",
   "main": "bot.js",
   "scripts": {
     "start": "node bot.js",
