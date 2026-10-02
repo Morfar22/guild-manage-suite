@@ -65,6 +65,7 @@ for file in \
   customBotManager.js \
   deployCommands.js \
   commandRouting.js \
+  commandSync.js \
   inviteTracker.js \
   handlers/twitchHandler.js
 do
