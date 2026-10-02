@@ -785,7 +785,7 @@ __serve(async (req) => {
 
       const settingsMap = new Map((settingsData || []).map(s => [s.guild_id, s]))
 
-      const results: Array<{ streamer: string; action: string; success: boolean }> = []
+      const results: Array<{ streamer: string; action: string; success: boolean; guild_id?: string; channel_id?: string }> = []
 
       // Process each streamer
       for (const streamer of streamers) {
@@ -809,11 +809,69 @@ __serve(async (req) => {
             continue
           }
 
+          // Atomically claim this transition before sending anything. Without
+          // this guard, two overlapping poll requests can both read is_live=false
+          // and send the same went-live notification.
+          const claimedAt = new Date().toISOString()
+          const claimUpdate: Record<string, unknown> = {
+            is_live: true,
+            last_stream_id: stream.id,
+            last_went_live_at: claimedAt,
+          }
+
+          if (streamer.is_partner) {
+            claimUpdate.current_stream_started_at = claimedAt
+            claimUpdate.current_week_streams = (streamer.current_week_streams || 0) + 1
+          }
+
+          const { data: claimedRows, error: claimError } = await supabase
+            .from('twitch_streamers')
+            .update(claimUpdate)
+            .eq('id', streamer.id)
+            .or('is_live.eq.false,is_live.is.null')
+            .select('id')
+
+          if (claimError) {
+            console.error(`Failed to claim Twitch live transition for ${streamer.twitch_username}:`, claimError)
+            continue
+          }
+
+          if (!claimedRows || claimedRows.length === 0) {
+            console.log(`${streamer.twitch_username}: Live transition already claimed by another poll, skipping duplicate`)
+            continue
+          }
+
+          const rollbackLiveClaim = async () => {
+            const rollbackUpdate: Record<string, unknown> = {
+              is_live: Boolean(streamer.is_live),
+              last_stream_id: streamer.last_stream_id || null,
+              last_went_live_at: streamer.last_went_live_at || null,
+            }
+
+            if (streamer.is_partner) {
+              rollbackUpdate.current_stream_started_at = streamer.current_stream_started_at || null
+              rollbackUpdate.current_week_streams = streamer.current_week_streams || 0
+            }
+
+            const { error: rollbackError } = await supabase
+              .from('twitch_streamers')
+              .update(rollbackUpdate)
+              .eq('id', streamer.id)
+              .eq('last_stream_id', stream.id)
+
+            if (rollbackError) {
+              console.error(`Failed to rollback Twitch live claim for ${streamer.twitch_username}:`, rollbackError)
+            }
+          }
+
           console.log(`${streamer.twitch_username} went LIVE: ${stream.title}`)
 
           // Get fresh user info for embed
           const twitchUser = await getTwitchUser(streamer.twitch_username, token)
-          if (!twitchUser) continue
+          if (!twitchUser) {
+            await rollbackLiveClaim()
+            continue
+          }
 
           const message = formatMessage(
             settings.live_message || '{streamer} er nu LIVE på Twitch!',
@@ -830,26 +888,14 @@ __serve(async (req) => {
           )
 
           if (success) {
-            // Only save last_stream_id if notification was sent successfully
-            // so it retries on next check if it failed
-            const liveUpdate: Record<string, unknown> = {
-              is_live: true,
-              last_stream_id: stream.id,
-              last_went_live_at: new Date().toISOString(),
-              display_name: twitchUser.display_name,
-              profile_image_url: twitchUser.profile_image_url,
-            }
-
-            // Partner tracking: register a new stream this week
-            if (streamer.is_partner) {
-              liveUpdate.current_stream_started_at = new Date().toISOString()
-              liveUpdate.current_week_streams = (streamer.current_week_streams || 0) + 1
-            }
-
             await supabase
               .from('twitch_streamers')
-              .update(liveUpdate)
+              .update({
+                display_name: twitchUser.display_name,
+                profile_image_url: twitchUser.profile_image_url,
+              })
               .eq('id', streamer.id)
+              .eq('last_stream_id', stream.id)
 
             // Log the real notification
             await supabase
@@ -868,15 +914,8 @@ __serve(async (req) => {
               })
           } else {
             console.error(`FAILED to send live notification for ${streamer.twitch_username} to channel ${streamer.notification_channel_id}`)
-            // Keep is_live=false when delivery fails, otherwise the next check sees
-            // wasLive===isNowLive and never retries the live notification.
-            await supabase
-              .from('twitch_streamers')
-              .update({
-                display_name: twitchUser.display_name,
-                profile_image_url: twitchUser.profile_image_url,
-              })
-              .eq('id', streamer.id)
+            // Release the claim so a later poll can retry the delivery.
+            await rollbackLiveClaim()
           }
 
           // Assign live role if configured
@@ -901,7 +940,13 @@ __serve(async (req) => {
             }
           }
 
-          results.push({ streamer: streamer.twitch_username, action: 'went_live', success })
+          results.push({
+            streamer: streamer.twitch_username,
+            action: 'went_live',
+            success,
+            guild_id: streamer.guild_id,
+            channel_id: streamer.notification_channel_id,
+          })
 
         } else if (!isNowLive && wasLive) {
           // Just went offline
