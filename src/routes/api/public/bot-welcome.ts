@@ -523,7 +523,7 @@ __serve(async (req) => {
       }
 
       case "testWelcome": {
-        const { guildId, username, avatarUrl } = data;
+        const { guildId, username, avatarUrl, settings: settingsOverride } = data;
 
         const { data: guild } = await supabase
           .from("guilds")
@@ -551,7 +551,9 @@ __serve(async (req) => {
           });
         }
 
-        if (!settings.welcome_channel_id) {
+        const effectiveSettings = { ...settings, ...(settingsOverride || {}) };
+
+        if (!effectiveSettings.welcome_channel_id) {
           return new Response(JSON.stringify({ error: "No welcome channel configured" }), {
             status: 400,
             headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -563,12 +565,12 @@ __serve(async (req) => {
         const testAvatar = avatarUrl || "https://cdn.discordapp.com/embed/avatars/0.png";
 
         const testInviter = { discord_id: '987654321', username: 'TestInviter', total: 7 };
-        const payload: any = settings.embed_enabled
-          ? { embeds: [buildWelcomeEmbed(settings, testUsername, "123456789", testAvatar, 42, guild.guild_name, undefined, true, testInviter)] }
-          : { content: `🧪 **TEST** - ${(settings.welcome_message || "Welcome!").replace(/{user}/g, `@${testUsername}`).replace(/{username}/g, testUsername).replace(/{server}/g, guild.guild_name).replace(/{membercount}/g, "42").replace(/{inviter}/g, `@${testInviter.username}`).replace(/{invitercount}/g, String(testInviter.total))}` };
+        const payload: any = effectiveSettings.embed_enabled
+          ? { embeds: [buildWelcomeEmbed(effectiveSettings, testUsername, "123456789", testAvatar, 42, guild.guild_name, undefined, true, testInviter)] }
+          : { content: `🧪 **TEST** - ${(effectiveSettings.welcome_message || "Welcome!").replace(/{user}/g, `@${testUsername}`).replace(/{username}/g, testUsername).replace(/{server}/g, guild.guild_name).replace(/{membercount}/g, "42").replace(/{inviter}/g, `@${testInviter.username}`).replace(/{invitercount}/g, String(testInviter.total))}` };
 
         const res = await fetch(
-          `https://discord.com/api/v10/channels/${settings.welcome_channel_id}/messages`,
+          `https://discord.com/api/v10/channels/${effectiveSettings.welcome_channel_id}/messages`,
           {
             method: "POST",
             headers: {
@@ -596,7 +598,7 @@ __serve(async (req) => {
       }
 
       case "testLeave": {
-        const { guildId, username } = data;
+        const { guildId, username, settings: settingsOverride } = data;
 
         const { data: guild } = await supabase
           .from("guilds")
@@ -624,7 +626,8 @@ __serve(async (req) => {
           });
         }
 
-        const channelId = settings.leave_channel_id || settings.welcome_channel_id;
+        const effectiveSettings = { ...settings, ...(settingsOverride || {}) };
+        const channelId = effectiveSettings.leave_channel_id || effectiveSettings.welcome_channel_id;
         if (!channelId) {
           return new Response(JSON.stringify({ error: "No leave channel configured" }), {
             status: 400,
@@ -635,9 +638,9 @@ __serve(async (req) => {
         const botToken = await getBotToken(supabase, guild.id);
         const testUsername = username || "TestUser";
 
-        const payload: any = settings.leave_embed_enabled
-          ? { embeds: [buildLeaveEmbed(settings, testUsername, guild.guild_name, true)] }
-          : { content: `🧪 **TEST** - ${(settings.leave_message || "{user} has left the server.").replace(/{user}/g, testUsername).replace(/{username}/g, testUsername).replace(/{server}/g, guild.guild_name)}` };
+        const payload: any = effectiveSettings.leave_embed_enabled
+          ? { embeds: [buildLeaveEmbed(effectiveSettings, testUsername, guild.guild_name, true)] }
+          : { content: `🧪 **TEST** - ${(effectiveSettings.leave_message || "{user} has left the server.").replace(/{user}/g, testUsername).replace(/{username}/g, testUsername).replace(/{server}/g, guild.guild_name)}` };
 
         const res = await fetch(
           `https://discord.com/api/v10/channels/${channelId}/messages`,
@@ -708,7 +711,7 @@ __serve(async (req) => {
           ? { embeds: [buildLeaveEmbed(settings, username, guild.guild_name)] }
           : { content: (settings.leave_message || "{user} has left the server.").replace(/{user}/g, username).replace(/{username}/g, username).replace(/{server}/g, guild.guild_name) };
 
-        await fetch(
+        const leaveRes = await fetch(
           `https://discord.com/api/v10/channels/${channelId}/messages`,
           {
             method: "POST",
@@ -719,6 +722,19 @@ __serve(async (req) => {
             body: JSON.stringify(payload),
           }
         );
+
+        if (!leaveRes.ok) {
+          const errorText = await leaveRes.text();
+          console.error("Discord API error (leave):", leaveRes.status, errorText);
+          return new Response(JSON.stringify({
+            success: false,
+            reason: `Discord ${leaveRes.status}`,
+            errors: [errorText.slice(0, 300)],
+          }), {
+            status: 502,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
 
         return new Response(JSON.stringify({ success: true }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
