@@ -208,3 +208,38 @@ set zdiscord_guild_id "DIT_GUILD_UUID"
 | Slash commands virker ikke | Kør `node deployCommands.js` igen |
 | Bot går offline | Tjek `pm2 logs` for fejl |
 | Musik virker ikke | Tjek at Lavalink kører og .env er korrekt |
+
+
+## Production update på `/bot`
+
+Production-mappen behøver ikke selv være et Git repository. Brug updater-scriptet fra bot-mappen:
+
+```bash
+cd /bot
+bash update-from-github.sh --deploy-commands
+```
+
+Scriptet:
+- tager backup af `/bot/.env`
+- henter seneste `main`
+- synkroniserer kun bot-filer og bevarer `.env`, `node_modules` og logs
+- kører `npm ci --omit=dev`
+- syntax-checker kritiske runtime-filer
+- synkroniserer Discord commands, når `--deploy-commands` bruges
+- genstarter `discord-bot` via PM2
+
+Uden ændringer i slash-command kataloget kan `--deploy-commands` udelades.
+
+## Discovery-safe official app
+
+Den officielle GuildOS-app publicerer et Discovery-safe globalt command-katalog. Følgende commands er fortsat tilgængelige på custom/guild-scoped bots, men publiceres ikke på den officielle Discovery-app:
+
+- `crime`
+- `slots`
+- `gamble`
+- `roulette`
+- `blackjack`
+
+Runtime på den officielle bot blokerer dem også, så gamle Discord-command caches eller prefix-aliases ikke kan omgå kataloget.
+
+Offentlige invite-links bruger et eksplicit permissionsæt i stedet for Discord `Administrator`. Eksisterende servere får ikke automatisk nye rolle-permissions ved kodeopdateringer, så manglende rettigheder som `Ban Members` skal gives til bot-rollen på den enkelte server.
