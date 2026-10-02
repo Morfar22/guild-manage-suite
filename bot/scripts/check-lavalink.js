@@ -1,12 +1,14 @@
 'use strict';
 
-require('dotenv').config();
+const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '..', '.env'), override: true });
 const net = require('net');
 
 const host = process.env.LAVALINK_HOST || 'localhost';
-const port = Number(process.env.LAVALINK_PORT || 2333);
+const port = Number(process.env.LAVALINK_PORT || 40191);
 const timeoutMs = Number(process.env.LAVALINK_CHECK_TIMEOUT_MS || 5000);
 
+console.log(`[LavalinkCheck] Env: ${path.join(__dirname, '..', '.env')}`);
 console.log(`[LavalinkCheck] Tester ${host}:${port}...`);
 
 const socket = net.createConnection({ host, port });
