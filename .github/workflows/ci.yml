@@ -43,6 +43,9 @@ jobs:
       - name: Verify Discovery safety
         run: bun run check:discovery
 
+      - name: Verify shared web product imports
+        run: bun run check:web-product
+
       - name: Legacy lint audit
         if: github.event_name == 'workflow_dispatch'
         continue-on-error: true
