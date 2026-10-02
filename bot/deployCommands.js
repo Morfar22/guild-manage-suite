@@ -21,6 +21,7 @@ const { REST, Routes } = require('discord.js');
 const { groupFlatCommandDefinitions, getCanonicalLogicalCommands, routes } = require('./commandRouting');
 const { commands } = require('./commandDefinitions');
 const { buildFiveMCommand } = require('./fivem/commands');
+const { commandSetsEqual } = require('./commandSync');
 
 const TOKEN = process.env.DEFAULT_BOT_TOKEN || process.env.DISCORD_TOKEN;
 const APPLICATION_ID = process.env.APPLICATION_ID;
@@ -34,36 +35,6 @@ const DISCOVERY_EXCLUDED_COMMANDS = new Set([
   'roulette',
   'blackjack',
 ]);
-
-function matchesCommandShape(actual, expected) {
-  if (Array.isArray(expected)) {
-    return Array.isArray(actual)
-      && actual.length === expected.length
-      && expected.every((item, index) => matchesCommandShape(actual[index], item));
-  }
-
-  if (expected && typeof expected === 'object') {
-    if (!actual || typeof actual !== 'object') return false;
-    return Object.keys(expected).every((key) => matchesCommandShape(actual[key], expected[key]));
-  }
-
-  return actual === expected;
-}
-
-function commandSetsEqual(existingCommands, desiredCommands) {
-  if (!Array.isArray(existingCommands) || existingCommands.length !== desiredCommands.length) {
-    return false;
-  }
-
-  const existingByKey = new Map(
-    existingCommands.map((command) => [`${command.type || 1}:${command.name}`, command])
-  );
-
-  return desiredCommands.every((desired) => {
-    const existing = existingByKey.get(`${desired.type || 1}:${desired.name}`);
-    return Boolean(existing) && matchesCommandShape(existing, desired);
-  });
-}
 
 function removeDiscoveryRestrictedRoutes(groupedCommands) {
   const blockedRoutes = routes.filter((route) =>
