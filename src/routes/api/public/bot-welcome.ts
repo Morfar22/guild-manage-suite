@@ -544,14 +544,14 @@ __serve(async (req) => {
           .eq("guild_id", guild.id)
           .maybeSingle();
 
-        if (!settings) {
+        if (!settings && !settingsOverride) {
           return new Response(JSON.stringify({ error: "Welcome settings not configured" }), {
             status: 400,
             headers: { ...corsHeaders, "Content-Type": "application/json" },
           });
         }
 
-        const effectiveSettings = { ...settings, ...(settingsOverride || {}) };
+        const effectiveSettings = { ...(settings || {}), ...(settingsOverride || {}) };
 
         if (!effectiveSettings.welcome_channel_id) {
           return new Response(JSON.stringify({ error: "No welcome channel configured" }), {
@@ -619,14 +619,14 @@ __serve(async (req) => {
           .eq("guild_id", guild.id)
           .maybeSingle();
 
-        if (!settings) {
+        if (!settings && !settingsOverride) {
           return new Response(JSON.stringify({ error: "Welcome settings not configured" }), {
             status: 400,
             headers: { ...corsHeaders, "Content-Type": "application/json" },
           });
         }
 
-        const effectiveSettings = { ...settings, ...(settingsOverride || {}) };
+        const effectiveSettings = { ...(settings || {}), ...(settingsOverride || {}) };
         const channelId = effectiveSettings.leave_channel_id || effectiveSettings.welcome_channel_id;
         if (!channelId) {
           return new Response(JSON.stringify({ error: "No leave channel configured" }), {
