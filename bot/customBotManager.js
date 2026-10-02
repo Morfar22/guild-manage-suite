@@ -20,7 +20,6 @@
 
 const { Client, GatewayIntentBits, Partials, ActivityType, REST, Routes, SlashCommandBuilder, ChannelType } = require('discord.js');
 const { buildFiveMCommand } = require('./fivem/commands');
-const { groupFlatCommandDefinitions } = require('./commandRouting');
 
 const SUPABASE_URL = process.env.SUPABASE_URL || 'https://rkdqunnttcyuybbofkvz.supabase.co';
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -379,26 +378,34 @@ class CustomBotManager {
     const clearGuildIds = Array.isArray(options.clearGuildIds) ? options.clearGuildIds : [];
 
     try {
-      const flatCommandData = CustomBotManager.buildCommands().map(command => command.toJSON());
-      const commandData = groupFlatCommandDefinitions(flatCommandData);
-
-      // /fivem is a passthrough command and is intentionally not grouped.
-      const fiveMCommand = flatCommandData.find(command => command.name === 'fivem');
-      if (fiveMCommand && !commandData.some(command => command.name === 'fivem')) {
-        commandData.push(fiveMCommand);
-      }
-
+      const commandData = CustomBotManager.buildCommands().map(command => command.toJSON());
       const rest = new REST({ version: '10' }).setToken(token);
 
       if (scope === 'global') {
         // The official GuildOS application uses global commands so Discord can
         // expose them consistently across every installed server and Discovery.
-        console.log(`[CustomBotManager] 🔄 Deploying ${commandData.length} global commands for app ${applicationId}...`);
-        const deployed = await rest.put(
-          Routes.applicationCommands(applicationId),
-          { body: commandData }
-        );
-        console.log(`[CustomBotManager] ✅ ${deployed.length} global commands active for app ${applicationId}`);
+        // deployCommands.js owns the complete grouped command catalog. If it has
+        // already populated globals, preserve that catalog instead of replacing
+        // it with this manager's smaller runtime/bootstrap set.
+        let existingGlobals = [];
+        try {
+          existingGlobals = await rest.get(Routes.applicationCommands(applicationId));
+        } catch (error) {
+          console.warn(`[CustomBotManager] Could not inspect global commands for ${applicationId}:`, error.message);
+        }
+
+        if (options.preserveExistingGlobals !== false && existingGlobals.length > 0) {
+          console.log(
+            `[CustomBotManager] ✅ Preserving ${existingGlobals.length} existing global commands for app ${applicationId}`
+          );
+        } else {
+          console.log(`[CustomBotManager] 🔄 Deploying ${commandData.length} global bootstrap commands for app ${applicationId}...`);
+          const deployed = await rest.put(
+            Routes.applicationCommands(applicationId),
+            { body: commandData }
+          );
+          console.log(`[CustomBotManager] ✅ ${deployed.length} global commands active for app ${applicationId}`);
+        }
 
         // Remove old guild-scoped copies to avoid duplicate commands during migration.
         const guildsToClear = [...new Set([...guildIds, ...clearGuildIds])];
@@ -483,12 +490,7 @@ class CustomBotManager {
         return;
       }
 
-      const flatCommandData = CustomBotManager.buildCommands().map(command => command.toJSON());
-      const commandData = groupFlatCommandDefinitions(flatCommandData);
-      const fiveMCommand = flatCommandData.find(command => command.name === 'fivem');
-      if (fiveMCommand && !commandData.some(command => command.name === 'fivem')) {
-        commandData.push(fiveMCommand);
-      }
+      const commandData = CustomBotManager.buildCommands().map(command => command.toJSON());
 
       console.log(`[CustomBotManager] 🔄 Deploying commands to new guild ${guildId}...`);
       const data = await rest.put(
@@ -1191,6 +1193,7 @@ class CustomBotManager {
       const guildIds = this.defaultClient.guilds.cache.map(g => g.id);
       await this.deployCommandsForBot(defaultBotToken, this.defaultClient.user.id, guildIds, {
         scope: 'global',
+        preserveExistingGlobals: true,
       });
     });
 
