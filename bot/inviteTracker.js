@@ -31,6 +31,10 @@ const FAKE_ACCOUNT_DAYS = 7;
 const UNREGISTERED_GUILD_RETRY_MS = 10 * 60 * 1000;
 const unregisteredGuildUntil = new Map();
 
+// Prevent the same Discord client from receiving duplicate invite listeners if a
+// handler factory is accidentally applied more than once during lifecycle sync.
+const initializedClients = new WeakSet();
+
 async function getGuildUuid(discordGuildId) {
   if (!directSupabase || !discordGuildId) return null;
   if (guildUuidCache.has(discordGuildId)) return guildUuidCache.get(discordGuildId);
@@ -244,6 +248,14 @@ async function fetchAndCacheInvites(guild) {
 }
 
 function setupInviteTracker(client, config = {}) {
+  if (!client) return;
+
+  if (initializedClients.has(client)) {
+    console.log('ℹ️ Invite tracker already initialized for this client; skipping duplicate setup');
+    return;
+  }
+  initializedClients.add(client);
+
   const shouldHandleGuild = config.shouldHandleGuild || (() => true);
 
   client.once('clientReady', async () => {
