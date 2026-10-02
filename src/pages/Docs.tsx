@@ -8,10 +8,10 @@ import { Helmet } from 'react-helmet-async';
 export default function Docs() {
   const { language } = useLanguage();
 
-  const title = language === 'da' ? 'Dokumentation – Paranox' : 'Documentation – Paranox';
+  const title = language === 'da' ? 'Dokumentation – GuildOS Bot' : 'Documentation – GuildOS Bot';
   const description = language === 'da'
-    ? 'Komplet dokumentation for Paranox Discord bot — opsætning, moduler, kommandoer og avancerede features.'
-    : 'Complete documentation for the Paranox Discord bot — setup, modules, commands and advanced features.';
+    ? 'Komplet dokumentation for GuildOS Bot Discord bot — opsætning, moduler, kommandoer og avancerede features.'
+    : 'Complete documentation for the GuildOS Bot Discord bot — setup, modules, commands and advanced features.';
 
   return (
     <div>
