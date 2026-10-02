@@ -40,7 +40,7 @@ nano .env
 |----------|-------------|---------------------|
 | `DEFAULT_BOT_TOKEN` | Din bot token | Discord Developer Portal → Bot → Token |
 | `DISCORD_TOKEN` | Samme som DEFAULT_BOT_TOKEN | Discord Developer Portal → Bot → Token |
-| `APPLICATION_ID` | Bot application ID | Discord Developer Portal → General Information |
+| `APPLICATION_ID` | Valgfri kontrolværdi; scriptet bruger ID'et fra det aktive bot-token | Discord Developer Portal → General Information |
 | `SUPABASE_SERVICE_ROLE_KEY` | Database service key | Supabase project settings |
 | `BOT_SECRET_KEY` | Delt hemmelighed | web runtime secrets |
 
