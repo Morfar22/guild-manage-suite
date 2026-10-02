@@ -27,6 +27,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { da } from 'date-fns/locale';
 import { PremiumGate } from '@/components/premium/PremiumGate';
 import { PrefixSettingsCard } from '@/components/dashboard/PrefixSettingsCard';
+import { buildBotInviteUrl } from '@/lib/product';
 
 export default function BotSettings() {
   const { selectedGuild } = useGuild();
@@ -45,6 +46,7 @@ export default function BotSettings() {
   const [botActivityText, setBotActivityText] = useState('');
   const [isActive, setIsActive] = useState(false);
   const [testResult, setTestResult] = useState<BotTestResult | null>(null);
+  const customBotInviteUrl = botClientId ? buildBotInviteUrl(botClientId) : '';
 
   // Load settings when data is fetched, or reset when settings are deleted
   useEffect(() => {
@@ -406,14 +408,14 @@ export default function BotSettings() {
                   <div className="flex gap-2">
                     <Input
                       readOnly
-                      value={`https://discord.com/api/oauth2/authorize?client_id=${botClientId}&permissions=8&scope=bot%20applications.commands`}
+                      value={customBotInviteUrl}
                       className="font-mono text-xs bg-muted"
                     />
                     <Button
                       variant="outline"
                       size="icon"
                       onClick={() => {
-                        navigator.clipboard.writeText(`https://discord.com/api/oauth2/authorize?client_id=${botClientId}&permissions=8&scope=bot%20applications.commands`);
+                        navigator.clipboard.writeText(customBotInviteUrl);
                         toast.success('Link kopieret!');
                       }}
                       title="Kopier link"
@@ -425,7 +427,7 @@ export default function BotSettings() {
                       className="shrink-0"
                     >
                       <a
-                        href={`https://discord.com/api/oauth2/authorize?client_id=${botClientId}&permissions=8&scope=bot%20applications.commands`}
+                        href={customBotInviteUrl}
                         target="_blank"
                         rel="noopener noreferrer"
                       >
