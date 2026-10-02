@@ -14,11 +14,7 @@ import { toast } from 'sonner';
 import { useIsAdmin } from '@/hooks/useAdmin';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { invokeFunction } from '@/lib/functions-client';
-
-const BOT_CLIENT_ID = import.meta.env['VITE_DISCORD_BOT_CLIENT_ID'] || '';
-// Least-privilege oriented feature set: no Administrator bit.
-const BOT_PERMISSIONS = '564593851624694';
-const BOT_INVITE_URL = BOT_CLIENT_ID ? `https://discord.com/api/oauth2/authorize?client_id=${BOT_CLIENT_ID}&permissions=${BOT_PERMISSIONS}&scope=bot%20applications.commands` : '';
+import { PUBLIC_PUBLIC_BOT_INVITE_URL } from '@/lib/product';
 
 export default function GuildSelect() {
   const { user, loading: authLoading, signOut } = useAuth();
@@ -169,14 +165,20 @@ export default function GuildSelect() {
                 {syncing ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <RefreshCw className="mr-2 h-5 w-5" />}
                 {en ? 'Sync Discord' : 'Synkroniser Discord'}
               </Button>
-              {BOT_INVITE_URL && (
-                <a href={BOT_INVITE_URL} target="_blank" rel="noopener noreferrer" className="w-full sm:w-auto">
+              {PUBLIC_BOT_INVITE_URL && (
+                <a href={PUBLIC_BOT_INVITE_URL} target="_blank" rel="noopener noreferrer" className="w-full sm:w-auto">
                   <Button size="lg" variant="outline" className="w-full sm:w-auto">
                     <Bot className="mr-2 h-5 w-5" />
                     {en ? 'Invite GuildOS Bot' : 'Inviter GuildOS Bot'}
                     <ExternalLink className="ml-2 h-3.5 w-3.5" />
                   </Button>
                 </a>
+              )}
+              {guilds.length === 0 && (
+                <Button onClick={handleAddDemoGuild} size="lg" variant="ghost" className="w-full sm:w-auto">
+                  <Sparkles className="mr-2 h-5 w-5" />
+                  {en ? 'Try a demo server' : 'Prøv en demoserver'}
+                </Button>
               )}
             </div>
 
@@ -328,15 +330,23 @@ export default function GuildSelect() {
                 );
               })}
 
-              {/* Add server card */}
+              {/* Add the real GuildOS bot to another Discord server */}
               <li>
-                <button
-                  onClick={handleAddDemoGuild}
-                  className="group flex h-full w-full items-center justify-center gap-2 rounded-xl border border-dashed border-border/60 bg-card/30 p-5 text-muted-foreground transition-all hover:-translate-y-1 hover:border-primary/50 hover:bg-card/60 hover:text-primary"
+                <a
+                  href={PUBLIC_BOT_INVITE_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="group flex h-full w-full items-center justify-center gap-3 rounded-xl border border-dashed border-primary/35 bg-primary/[0.03] p-5 text-primary transition-all hover:-translate-y-1 hover:border-primary/60 hover:bg-primary/[0.07]"
                 >
-                  <Plus className="h-5 w-5 transition-transform group-hover:rotate-90" />
-                  <span className="font-medium">{en ? 'Add Server' : 'Tilføj Server'}</span>
-                </button>
+                  <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10">
+                    <Bot className="h-4 w-4" />
+                  </span>
+                  <span className="text-left">
+                    <span className="block font-medium">{en ? 'Add GuildOS to Discord' : 'Tilføj GuildOS til Discord'}</span>
+                    <span className="mt-0.5 block text-xs text-muted-foreground">{en ? 'Choose a server in Discord' : 'Vælg serveren direkte i Discord'}</span>
+                  </span>
+                  <ExternalLink className="h-4 w-4" />
+                </a>
               </li>
             </ul>
           </>
