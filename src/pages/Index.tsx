@@ -325,7 +325,7 @@ export default function Index() {
             <div className="grid gap-4 sm:grid-cols-2">
               {[
                 { icon: Shield, label: 'OAuth2', desc: 'Sikker login via Discord' },
-                { icon: Lock, label: 'Krypteret', desc: 'AES-256 ved opbevaring' },
+                { icon: Lock, label: 'Beskyttet', desc: 'Sikker credential-opbevaring' },
                 { icon: Crown, label: 'RLS', desc: 'Row-level security' },
                 { icon: Globe, label: 'GDPR', desc: 'EU-compliant' },
               ].map((item) => {
@@ -399,12 +399,15 @@ export default function Index() {
             <a href="#features" className="hover:text-foreground transition-colors">
               Features
             </a>
-            <a
-              href="/docs"
-              className="hover:text-foreground transition-colors"
-            >
+            <Link to="/docs" className="hover:text-foreground transition-colors">
               Docs
-            </a>
+            </Link>
+            <Link to="/terms" className="hover:text-foreground transition-colors">
+              Vilkår
+            </Link>
+            <Link to="/privacy" className="hover:text-foreground transition-colors">
+              Privatliv
+            </Link>
           </nav>
         </div>
       </footer>
