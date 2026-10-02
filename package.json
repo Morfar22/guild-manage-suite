@@ -1,5 +1,5 @@
 {
-  "name": "vite_react_shadcn_ts",
+  "name": "guildos-bot-dashboard",
   "private": true,
   "sideEffects": false,
   "type": "module",
@@ -98,5 +98,6 @@
     "jsdom": "^20.0.3",
     "vitest": "^3.2.4"
   },
-  "version": "0.0.0"
+  "version": "0.0.0",
+  "description": "GuildOS Bot dashboard and Discord server management platform"
 }
