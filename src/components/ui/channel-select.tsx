@@ -17,6 +17,7 @@ interface ChannelSelectProps {
   placeholder?: string;
   includeCategories?: boolean;
   disabled?: boolean;
+  allowedTypes?: number[];
 }
 
 const channelIcons: Record<number, React.ComponentType<{ className?: string }>> = {
@@ -37,10 +38,14 @@ export const ChannelSelect = React.forwardRef<HTMLDivElement, ChannelSelectProps
   placeholder = 'Select channel',
   includeCategories = false,
   disabled = false,
+  allowedTypes,
 }, _ref) {
   const { data, isLoading, error } = useDiscordChannels();
 
-  const channels = data?.channels || [];
+  const allChannels = data?.channels || [];
+  const channels = allowedTypes?.length
+    ? allChannels.filter((channel) => allowedTypes.includes(channel.type))
+    : allChannels;
   const categories = data?.categories || [];
 
   // Group channels by category
