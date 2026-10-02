@@ -59,6 +59,14 @@ cd "$BOT_DIR"
 echo "==> Installing locked production dependencies"
 npm ci --omit=dev
 
+echo "==> Verifying locked Discord.js installation"
+node -e "const d=require('discord.js'); if(!d.Client) throw new Error('discord.js Client export missing'); console.log('discord.js', require('discord.js/package.json').version, 'OK')"
+test -f node_modules/discord.js/src/structures/ThreadChannel.js || {
+  echo "ERROR: discord.js installation is incomplete (ThreadChannel.js missing)."
+  echo "       Do not run npm audit fix directly in production. Re-run this updater to restore the lockfile state."
+  exit 1
+}
+
 echo "==> Syntax checking critical runtime files"
 for file in \
   bot.js \
