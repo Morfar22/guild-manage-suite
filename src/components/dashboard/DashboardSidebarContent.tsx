@@ -139,7 +139,7 @@ export function DashboardSidebarContent({ onNavigate }: DashboardSidebarContentP
           <div className="relative flex h-9 w-9 items-center justify-center rounded-lg gradient-blurple">
             <Bot className="h-5 w-5 text-primary-foreground" />
           </div>
-          <span className="text-lg font-bold text-sidebar-foreground">BotDash</span>
+          <span className="text-lg font-bold text-sidebar-foreground">GuildOS Bot</span>
         </div>
         <BotStatusIndicator />
       </div>
