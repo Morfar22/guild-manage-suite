@@ -65,7 +65,10 @@ export default function WelcomeSettings() {
         dm_message: settings.dm_message || 'Velkommen til {server}! Læs venligst reglerne.',
         auto_role_enabled: settings.auto_role_enabled,
         auto_role_id: settings.auto_role_id || '',
-        auto_role_ids: (settings as any).auto_role_ids || [],
+        auto_role_ids:
+          Array.isArray((settings as any).auto_role_ids) && (settings as any).auto_role_ids.length > 0
+            ? (settings as any).auto_role_ids
+            : (settings.auto_role_id ? [settings.auto_role_id] : []),
         embed_enabled: settings.embed_enabled,
         embed_color: settings.embed_color || '#5865F2',
         embed_title: settings.embed_title || '🎉 Et nyt medlem er ankommet!',
@@ -95,6 +98,17 @@ export default function WelcomeSettings() {
 
       if (selectedIds.length === 0) {
         toast({ title: 'Ingen roller valgt', description: 'Vælg mindst én auto-rolle.', variant: 'destructive' });
+        return;
+      }
+
+      const knownRoleIds = new Set((roles || []).map((role) => role.id));
+      const missingRoleIds = roles ? selectedIds.filter((id) => !knownRoleIds.has(id)) : [];
+      if (missingRoleIds.length > 0) {
+        toast({
+          title: 'Rolle findes ikke længere',
+          description: `Fjern ugyldige rolle-ID'er før du gemmer: ${missingRoleIds.join(', ')}`,
+          variant: 'destructive',
+        });
         return;
       }
 
