@@ -200,6 +200,40 @@ __serve(async (req) => {
         )
       }
 
+      // Clear a permanently invalid custom-bot avatar URL.
+      // This endpoint is bot-secret protected and only accepts the internal guild UUID.
+      if (action === 'clear_invalid_avatar') {
+        const { guild_id, reason } = body as { guild_id?: string; reason?: string };
+
+        if (!guild_id) {
+          return new Response(
+            JSON.stringify({ error: 'Missing guild_id' }),
+            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+
+        const { error: clearAvatarError } = await adminSupabase
+          .from('guild_bot_settings')
+          .update({ bot_avatar_url: null })
+          .eq('guild_id', guild_id)
+          .eq('is_custom_bot', true);
+
+        if (clearAvatarError) {
+          console.error('Failed to clear invalid bot avatar URL:', clearAvatarError);
+          return new Response(
+            JSON.stringify({ error: 'Failed to clear invalid avatar URL' }),
+            { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+
+        console.warn(`Cleared invalid custom-bot avatar for guild ${guild_id}: ${reason || 'invalid avatar source'}`);
+
+        return new Response(
+          JSON.stringify({ success: true }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
       // Get status of all running bots (for dashboard)
       if (action === 'get_status') {
         const { data: botStatuses, error: statusError } = await adminSupabase
