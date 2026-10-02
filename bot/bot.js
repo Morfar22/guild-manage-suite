@@ -16,7 +16,7 @@
  * - SUPABASE_SERVICE_ROLE_KEY (anbefalet til botten)
  */
 
-require('dotenv').config({ path: require('path').join(__dirname, '.env') });
+require('dotenv').config({ path: require('path').join(__dirname, '.env'), override: true });
 require('./utils/consoleLogger').installGlobalConsoleLogger();
 
 const { Events, EmbedBuilder, PermissionFlagsBits, ChannelType } = require('discord.js');
