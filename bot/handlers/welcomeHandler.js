@@ -1,28 +1,31 @@
 /**
- * GuildOS Bot Welcome Handler
+ * GuildOS Bot - Welcome / leave / autorole runtime handler.
  *
- * Runtime join/leave handling is performed directly by the active Discord client.
- * This avoids routing real member events through the public web API / CDN.
- *
- * Requires:
- * - GatewayIntentBits.Guilds
- * - GatewayIntentBits.GuildMembers
- * - Supabase client with access to guilds, welcome_settings and invite_uses
+ * This handler runs directly inside the Discord client that owns the guild.
+ * It reads settings from Supabase and performs Discord actions through discord.js,
+ * so member joins do not depend on the public web API or Cloudflare availability.
  */
 
-const {
-  EmbedBuilder,
-  PermissionFlagsBits,
-} = require('discord.js');
+const { EmbedBuilder, PermissionFlagsBits } = require('discord.js');
+const { createClient } = require('@supabase/supabase-js');
+
+const SUPABASE_URL = process.env.SUPABASE_URL || 'https://rkdqunnttcyuybbofkvz.supabase.co';
+const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY;
+
+const supabase = SUPABASE_KEY
+  ? createClient(SUPABASE_URL, SUPABASE_KEY, {
+      auth: { persistSession: false, autoRefreshToken: false },
+    })
+  : null;
 
 const recentEvents = new Map();
 const DEDUP_WINDOW_MS = 5000;
 
 function isDuplicateEvent(key) {
   const now = Date.now();
-  const lastTime = recentEvents.get(key);
+  const previous = recentEvents.get(key);
 
-  if (lastTime && now - lastTime < DEDUP_WINDOW_MS) {
+  if (previous && now - previous < DEDUP_WINDOW_MS) {
     console.log(`[Welcome] Duplicate event skipped: ${key}`);
     return true;
   }
@@ -38,46 +41,25 @@ function isDuplicateEvent(key) {
   return false;
 }
 
-function validHttpUrl(value) {
-  if (!value) return null;
-  try {
-    const url = new URL(String(value));
-    return ['http:', 'https:'].includes(url.protocol) ? url.toString() : null;
-  } catch {
-    return null;
-  }
+function formatMessage(template, context) {
+  return String(template || '')
+    .replace(/{user}/g, context.userMention || context.username || 'Ukendt')
+    .replace(/{username}/g, context.username || 'Ukendt')
+    .replace(/{server}/g, context.serverName || 'Server')
+    .replace(/{membercount}/g, String(context.memberCount ?? '?'))
+    .replace(/{inviter}/g, context.inviterMention || context.inviterName || 'Ukendt')
+    .replace(/{invitercount}/g, String(context.inviterCount ?? 0));
 }
 
-function parseColor(value, fallback = 0x5865F2) {
-  const normalized = String(value || '').replace('#', '');
-  if (!/^[0-9a-f]{6}$/i.test(normalized)) return fallback;
+function safeHexColor(value, fallback = 0x5865F2) {
+  const normalized = String(value || '').replace('#', '').trim();
+  if (!/^[0-9a-fA-F]{6}$/.test(normalized)) return fallback;
   return parseInt(normalized, 16);
 }
 
-function formatWelcomeText(template, context) {
-  return String(template || '')
-    .replace(/{user}/g, `<@${context.userId}>`)
-    .replace(/{username}/g, context.username)
-    .replace(/{server}/g, context.guildName)
-    .replace(/{membercount}/g, String(context.memberCount ?? '?'))
-    .replace(
-      /{inviter}/g,
-      context.inviter?.discord_id
-        ? `<@${context.inviter.discord_id}>`
-        : (context.inviter?.username || 'Ukendt'),
-    )
-    .replace(/{invitercount}/g, String(context.inviter?.total ?? 0));
-}
+async function getGuildSettings(discordGuildId) {
+  if (!supabase) throw new Error('SUPABASE_SERVICE_ROLE_KEY/SUPABASE_ANON_KEY mangler');
 
-function formatLeaveText(template, context) {
-  return String(template || '')
-    .replace(/{user}/g, context.username)
-    .replace(/{username}/g, context.username)
-    .replace(/{server}/g, context.guildName)
-    .replace(/{membercount}/g, String(context.memberCount ?? '?'));
-}
-
-async function getGuildContext(supabase, discordGuildId) {
   const { data: guild, error: guildError } = await supabase
     .from('guilds')
     .select('id, guild_id, guild_name')
@@ -85,7 +67,7 @@ async function getGuildContext(supabase, discordGuildId) {
     .maybeSingle();
 
   if (guildError) throw guildError;
-  if (!guild) return null;
+  if (!guild) return { guild: null, settings: null };
 
   const { data: settings, error: settingsError } = await supabase
     .from('welcome_settings')
@@ -98,10 +80,8 @@ async function getGuildContext(supabase, discordGuildId) {
   return { guild, settings };
 }
 
-async function getInviterInfo(supabase, internalGuildId, joinedUserId) {
-  // Invite tracker runs on the same member event. A small delay lets it persist
-  // the resolved invite before the welcome embed asks for it.
-  await new Promise((resolve) => setTimeout(resolve, 450));
+async function getInviterInfo(internalGuildId, joinedUserId) {
+  if (!supabase || !internalGuildId || !joinedUserId) return null;
 
   try {
     const { data: latestUse } = await supabase
@@ -117,7 +97,7 @@ async function getInviterInfo(supabase, internalGuildId, joinedUserId) {
 
     if (!latestUse.inviter_discord_id) {
       return {
-        discord_id: null,
+        discordId: null,
         username: latestUse.inviter_username || 'Ukendt',
         total: 0,
       };
@@ -132,9 +112,9 @@ async function getInviterInfo(supabase, internalGuildId, joinedUserId) {
       .eq('is_fake', false);
 
     return {
-      discord_id: latestUse.inviter_discord_id,
-      username: latestUse.inviter_username,
-      total: count ?? 0,
+      discordId: latestUse.inviter_discord_id,
+      username: latestUse.inviter_username || null,
+      total: count || 0,
     };
   } catch (error) {
     console.warn('[Welcome] Inviter lookup failed:', error?.message || error);
@@ -142,393 +122,315 @@ async function getInviterInfo(supabase, internalGuildId, joinedUserId) {
   }
 }
 
-function buildWelcomeEmbed(settings, context, avatarUrl, serverIconUrl) {
-  const title = formatWelcomeText(
-    settings.embed_title || '🎉 Et nyt medlem er ankommet!',
-    context,
-  );
-  const description = formatWelcomeText(
-    settings.welcome_message || 'Velkommen til serveren, {user}! 🎉',
-    context,
-  );
-  const footer = settings.embed_footer
-    ? formatWelcomeText(settings.embed_footer, context)
-    : `${context.guildName} • Vi er glade for at have dig her!`;
-
+function createWelcomeEmbed(settings, context, avatarUrl, serverIconUrl) {
   const embed = new EmbedBuilder()
-    .setColor(parseColor(settings.embed_color))
-    .setAuthor({
-      name: `Velkommen, ${context.username}!`,
-      ...(avatarUrl ? { iconURL: avatarUrl } : {}),
-    })
-    .setTitle(title.slice(0, 256))
-    .setDescription(description.slice(0, 4096))
-    .addFields(
-      { name: '👤 Bruger', value: `<@${context.userId}>`, inline: true },
-      { name: '📊 Medlem #', value: String(context.memberCount ?? '?'), inline: true },
-      { name: '📅 Joined', value: `<t:${Math.floor(Date.now() / 1000)}:R>`, inline: true },
-    )
-    .setFooter({ text: footer.slice(0, 2048) })
+    .setColor(safeHexColor(settings.embed_color))
+    .setTitle(formatMessage(settings.embed_title || '🎉 Et nyt medlem er ankommet!', context))
+    .setDescription(formatMessage(settings.welcome_message || 'Velkommen, {user}! 🎉', context))
     .setTimestamp();
 
-  const thumbnail =
-    settings.thumbnail_type === 'server_icon'
-      ? serverIconUrl
-      : avatarUrl;
+  if (avatarUrl) {
+    embed.setAuthor({ name: `Velkommen, ${context.username}!`, iconURL: avatarUrl });
+  } else {
+    embed.setAuthor({ name: `Velkommen, ${context.username}!` });
+  }
 
-  if (thumbnail) embed.setThumbnail(thumbnail);
+  if (settings.thumbnail_type === 'server_icon' && serverIconUrl) {
+    embed.setThumbnail(serverIconUrl);
+  } else if (avatarUrl) {
+    embed.setThumbnail(avatarUrl);
+  }
 
-  if (context.inviter) {
-    const inviterDisplay = context.inviter.discord_id
-      ? `<@${context.inviter.discord_id}>`
-      : (context.inviter.username || 'Ukendt');
+  embed.addFields(
+    { name: '👤 Bruger', value: context.userMention, inline: true },
+    { name: '📊 Medlem #', value: String(context.memberCount ?? '?'), inline: true },
+    { name: '📅 Joined', value: `<t:${Math.floor(Date.now() / 1000)}:R>`, inline: true },
+  );
 
+  if (context.inviterMention || context.inviterName) {
     embed.addFields({
       name: '🎟️ Inviteret af',
-      value: `${inviterDisplay}\n*(${context.inviter.total} ${context.inviter.total === 1 ? 'invite' : 'invites'} total)*`,
+      value: `${context.inviterMention || context.inviterName}\n*(${context.inviterCount || 0} invites total)*`,
       inline: false,
     });
   }
 
-  const imageUrl = validHttpUrl(settings.embed_image_url);
-  if (imageUrl) embed.setImage(imageUrl);
+  const footer = settings.embed_footer
+    ? formatMessage(settings.embed_footer, context)
+    : `${context.serverName} • Vi er glade for at have dig her!`;
+
+  if (footer) embed.setFooter({ text: footer });
+
+  if (settings.embed_image_url) {
+    try {
+      new URL(settings.embed_image_url);
+      embed.setImage(settings.embed_image_url);
+    } catch {
+      console.warn(`[Welcome] Ignorerer ugyldig embed_image_url i ${context.serverName}`);
+    }
+  }
 
   return embed;
 }
 
-function buildLeaveEmbed(settings, context) {
+function createLeaveEmbed(settings, context) {
   return new EmbedBuilder()
     .setColor(0xED4245)
     .setTitle('👋 Et medlem har forladt os')
-    .setDescription(
-      formatLeaveText(
-        settings.leave_message || '{user} har forladt serveren.',
-        context,
-      ).slice(0, 4096),
-    )
-    .setFooter({ text: context.guildName.slice(0, 2048) })
+    .setDescription(formatMessage(settings.leave_message || '{user} har forladt serveren.', context))
+    .setFooter({ text: context.serverName })
     .setTimestamp();
 }
 
-async function resolveMessageChannel(guild, channelId) {
-  if (!channelId) return null;
-  const channel =
-    guild.channels.cache.get(channelId) ||
-    await guild.channels.fetch(channelId).catch(() => null);
+async function getSendableChannel(guild, channelId, needsEmbed = false) {
+  if (!channelId) return { channel: null, reason: 'ingen kanal valgt' };
 
-  if (!channel || typeof channel.send !== 'function') return null;
-  return channel;
+  const channel = guild.channels.cache.get(channelId)
+    || await guild.channels.fetch(channelId).catch(() => null);
+
+  if (!channel) return { channel: null, reason: 'kanalen findes ikke længere' };
+  if (typeof channel.send !== 'function') {
+    return { channel: null, reason: 'den valgte kanal understøtter ikke almindelige beskeder' };
+  }
+
+  const me = guild.members.me || await guild.members.fetchMe().catch(() => null);
+  if (!me) return { channel: null, reason: 'kunne ikke hente bot-medlemmet' };
+
+  const permissions = channel.permissionsFor(me);
+  if (!permissions?.has(PermissionFlagsBits.ViewChannel)) {
+    return { channel: null, reason: 'mangler View Channel' };
+  }
+  if (!permissions?.has(PermissionFlagsBits.SendMessages)) {
+    return { channel: null, reason: 'mangler Send Messages' };
+  }
+  if (needsEmbed && !permissions?.has(PermissionFlagsBits.EmbedLinks)) {
+    return { channel: null, reason: 'mangler Embed Links' };
+  }
+
+  return { channel, reason: null };
 }
 
-async function sendPublicWelcome(member, settings, context) {
-  if (!settings.enabled) return { attempted: false, sent: false };
+async function sendWelcomeMessage(member, settings, context, avatarUrl, serverIconUrl) {
+  if (!settings.enabled) return { skipped: true, reason: 'welcome_disabled' };
+  if (!settings.welcome_channel_id) return { ok: false, reason: 'ingen velkomstkanal valgt' };
 
-  if (!settings.welcome_channel_id) {
-    return {
-      attempted: true,
-      sent: false,
-      error: 'Velkomst er aktiveret, men ingen velkomstkanal er valgt',
-    };
-  }
+  const { channel, reason } = await getSendableChannel(
+    member.guild,
+    settings.welcome_channel_id,
+    Boolean(settings.embed_enabled),
+  );
 
-  const channel = await resolveMessageChannel(member.guild, settings.welcome_channel_id);
-  if (!channel) {
-    return {
-      attempted: true,
-      sent: false,
-      error: 'Velkomstkanalen findes ikke eller understøtter ikke beskeder',
-    };
-  }
+  if (!channel) return { ok: false, reason };
 
-  const me = member.guild.members.me || await member.guild.members.fetchMe().catch(() => null);
-  const permissions = me ? channel.permissionsFor(me) : null;
+  const payload = settings.embed_enabled
+    ? { embeds: [createWelcomeEmbed(settings, context, avatarUrl, serverIconUrl)] }
+    : { content: formatMessage(settings.welcome_message || 'Velkommen, {user}! 🎉', context) };
 
-  if (!permissions?.has(PermissionFlagsBits.ViewChannel) ||
-      !permissions?.has(PermissionFlagsBits.SendMessages)) {
-    return {
-      attempted: true,
-      sent: false,
-      error: `Mangler View Channel/Send Messages i #${channel.name || settings.welcome_channel_id}`,
-    };
-  }
-
-  if (settings.embed_enabled && !permissions.has(PermissionFlagsBits.EmbedLinks)) {
-    return {
-      attempted: true,
-      sent: false,
-      error: `Mangler Embed Links i #${channel.name || settings.welcome_channel_id}`,
-    };
-  }
-
-  const contextPayload = settings.embed_enabled
-    ? {
-        embeds: [
-          buildWelcomeEmbed(
-            settings,
-            context,
-            member.user.displayAvatarURL({ size: 256 }),
-            member.guild.iconURL({ size: 256, extension: 'png' }) || null,
-          ),
-        ],
-      }
-    : {
-        content: formatWelcomeText(
-          settings.welcome_message || 'Velkommen til serveren, {user}! 🎉',
-          context,
-        ).slice(0, 2000),
-      };
-
-  await channel.send(contextPayload);
-  return { attempted: true, sent: true };
+  await channel.send(payload);
+  return { ok: true };
 }
 
-async function sendWelcomeDm(member, settings, context) {
+async function sendWelcomeDM(member, settings, context) {
   if (!settings.dm_enabled || !settings.dm_message) {
-    return { attempted: false, sent: false };
+    return { skipped: true, reason: 'dm_disabled' };
   }
 
   try {
-    await member.send({
-      content: formatWelcomeText(settings.dm_message, context).slice(0, 2000),
-    });
-    return { attempted: true, sent: true };
+    await member.send(formatMessage(settings.dm_message, context));
+    return { ok: true };
   } catch (error) {
+    // Closed DMs are normal and should not make the entire welcome flow fail.
     return {
-      attempted: true,
-      sent: false,
-      error: `DM kunne ikke sendes: ${error?.message || error}`,
+      ok: false,
+      soft: true,
+      reason: `DM kunne ikke sendes: ${error?.message || error}`,
     };
   }
 }
 
 async function assignAutoRoles(member, settings) {
-  if (!settings.auto_role_enabled) {
-    return { attempted: false, assigned: [], failed: [] };
-  }
+  if (!settings.auto_role_enabled) return { skipped: true, reason: 'autorole_disabled' };
 
-  const configured = Array.isArray(settings.auto_role_ids) && settings.auto_role_ids.length > 0
+  const configured = Array.isArray(settings.auto_role_ids) && settings.auto_role_ids.length
     ? settings.auto_role_ids
     : (settings.auto_role_id ? [settings.auto_role_id] : []);
 
-  const roleIds = [...new Set(configured.map(String).filter(Boolean))];
-  const assigned = [];
-  const failed = [];
+  const roleIds = [...new Set(configured.filter(Boolean).map(String))];
 
-  if (roleIds.length === 0) {
-    return {
-      attempted: true,
-      assigned,
-      failed: [{ roleId: null, error: 'Auto-rolle er aktiveret, men ingen roller er valgt' }],
-    };
+  if (!roleIds.length) {
+    return { ok: false, errors: ['Auto-rolle er slået til, men ingen roller er valgt'] };
   }
 
   const me = member.guild.members.me || await member.guild.members.fetchMe().catch(() => null);
-  if (!me?.permissions?.has(PermissionFlagsBits.ManageRoles)) {
-    return {
-      attempted: true,
-      assigned,
-      failed: roleIds.map((roleId) => ({
-        roleId,
-        error: 'Botten mangler Manage Roles',
-      })),
-    };
+  if (!me) return { ok: false, errors: ['Kunne ikke hente bot-medlemmet'] };
+
+  if (!me.permissions.has(PermissionFlagsBits.ManageRoles)) {
+    return { ok: false, errors: ['Botten mangler Manage Roles'] };
   }
 
+  const errors = [];
+  const assigned = [];
+
   for (const roleId of roleIds) {
+    const role = member.guild.roles.cache.get(roleId)
+      || await member.guild.roles.fetch(roleId).catch(() => null);
+
+    if (!role) {
+      errors.push(`Rolle ${roleId} findes ikke længere`);
+      continue;
+    }
+
+    if (role.id === member.guild.id) {
+      errors.push('@everyone kan ikke tildeles som auto-rolle');
+      continue;
+    }
+
+    if (role.managed) {
+      errors.push(`${role.name}: managed/integration-rolle kan ikke tildeles manuelt`);
+      continue;
+    }
+
+    if (me.roles.highest.comparePositionTo(role) <= 0) {
+      errors.push(`${role.name}: bot-rollen skal ligge højere i rollehierarkiet`);
+      continue;
+    }
+
     try {
-      const role =
-        member.guild.roles.cache.get(roleId) ||
-        await member.guild.roles.fetch(roleId).catch(() => null);
-
-      if (!role) {
-        failed.push({ roleId, error: 'Rollen findes ikke længere' });
-        continue;
-      }
-
-      if (role.managed) {
-        failed.push({ roleId, error: 'Discord-administrerede roller kan ikke tildeles manuelt' });
-        continue;
-      }
-
-      if (role.comparePositionTo(me.roles.highest) >= 0) {
-        failed.push({
-          roleId,
-          error: `Rollen "${role.name}" ligger over eller på niveau med bottens højeste rolle`,
-        });
-        continue;
-      }
-
-      if (member.roles.cache.has(roleId)) {
-        assigned.push(roleId);
-        continue;
-      }
-
       await member.roles.add(role, 'GuildOS Bot auto-role on member join');
-      assigned.push(roleId);
-      console.log(`[AutoRole] ✅ ${role.name} -> ${member.user.tag} in ${member.guild.name}`);
+      assigned.push(role.name);
     } catch (error) {
-      failed.push({
-        roleId,
-        error: error?.message || String(error),
-      });
+      errors.push(`${role.name}: ${error?.message || error}`);
     }
   }
 
-  return { attempted: true, assigned, failed };
-}
-
-async function sendLeaveMessage(member, settings, context) {
-  if (!settings?.leave_enabled) return { attempted: false, sent: false };
-
-  const channelId = settings.leave_channel_id || settings.welcome_channel_id;
-  if (!channelId) {
-    return {
-      attempted: true,
-      sent: false,
-      error: 'Farvelbesked er aktiveret, men ingen kanal er valgt',
-    };
-  }
-
-  const channel = await resolveMessageChannel(member.guild, channelId);
-  if (!channel) {
-    return {
-      attempted: true,
-      sent: false,
-      error: 'Farvelkanalen findes ikke eller understøtter ikke beskeder',
-    };
-  }
-
-  const me = member.guild.members.me || await member.guild.members.fetchMe().catch(() => null);
-  const permissions = me ? channel.permissionsFor(me) : null;
-  if (!permissions?.has(PermissionFlagsBits.ViewChannel) ||
-      !permissions?.has(PermissionFlagsBits.SendMessages)) {
-    return {
-      attempted: true,
-      sent: false,
-      error: `Mangler View Channel/Send Messages i #${channel.name || channelId}`,
-    };
-  }
-
-  if (settings.leave_embed_enabled && !permissions.has(PermissionFlagsBits.EmbedLinks)) {
-    return {
-      attempted: true,
-      sent: false,
-      error: `Mangler Embed Links i #${channel.name || channelId}`,
-    };
-  }
-
-  const payload = settings.leave_embed_enabled
-    ? { embeds: [buildLeaveEmbed(settings, context)] }
-    : {
-        content: formatLeaveText(
-          settings.leave_message || '{user} har forladt serveren.',
-          context,
-        ).slice(0, 2000),
-      };
-
-  await channel.send(payload);
-  return { attempted: true, sent: true };
+  return {
+    ok: errors.length === 0,
+    partial: assigned.length > 0 && errors.length > 0,
+    assigned,
+    errors,
+  };
 }
 
 function setupWelcomeHandler(client, config = {}) {
   const shouldHandleGuild = config.shouldHandleGuild || (() => true);
-  const supabase = config.supabase;
-
-  if (!supabase) {
-    throw new Error('Welcome handler kræver Supabase client');
-  }
 
   const onMemberAdd = async (member) => {
     if (!shouldHandleGuild(member.guild.id)) return;
 
-    const dedupKey = `join:${member.guild.id}:${member.user.id}`;
+    const dedupKey = `join:${member.guild.id}:${member.id}`;
     if (isDuplicateEvent(dedupKey)) return;
 
     try {
-      console.log(`[Welcome] 👋 ${member.user.tag} joined ${member.guild.name}`);
+      const { guild: guildRow, settings } = await getGuildSettings(member.guild.id);
 
-      const db = await getGuildContext(supabase, member.guild.id);
-      if (!db?.settings) {
+      if (!guildRow || !settings) {
         console.log(`[Welcome] Ingen settings for ${member.guild.name}; springer over`);
         return;
       }
 
-      const settings = db.settings;
-      if (!settings.enabled && !settings.dm_enabled && !settings.auto_role_enabled) {
-        return;
-      }
-
-      const inviter = await getInviterInfo(supabase, db.guild.id, member.user.id);
+      const inviter = await getInviterInfo(guildRow.id, member.id);
       const context = {
-        userId: member.user.id,
+        userMention: `<@${member.id}>`,
         username: member.user.username,
-        guildName: db.guild.guild_name || member.guild.name,
+        serverName: guildRow.guild_name || member.guild.name,
         memberCount: member.guild.memberCount,
-        inviter,
+        inviterMention: inviter?.discordId ? `<@${inviter.discordId}>` : null,
+        inviterName: inviter?.username || null,
+        inviterCount: inviter?.total || 0,
       };
 
+      const avatarUrl = member.user.displayAvatarURL({ size: 256, extension: 'png' });
+      const serverIconUrl = member.guild.iconURL({ size: 256, extension: 'png' }) || null;
+
       const [welcomeResult, dmResult, roleResult] = await Promise.all([
-        sendPublicWelcome(member, settings, context).catch((error) => ({
-          attempted: true,
-          sent: false,
-          error: error?.message || String(error),
-        })),
-        sendWelcomeDm(member, settings, context),
-        assignAutoRoles(member, settings),
+        sendWelcomeMessage(member, settings, context, avatarUrl, serverIconUrl)
+          .catch((error) => ({ ok: false, reason: error?.message || String(error) })),
+        sendWelcomeDM(member, settings, context),
+        assignAutoRoles(member, settings)
+          .catch((error) => ({ ok: false, errors: [error?.message || String(error)] })),
       ]);
 
-      const problems = [];
-      if (welcomeResult.error) problems.push(welcomeResult.error);
-      if (dmResult.error) problems.push(dmResult.error);
-      for (const failure of roleResult.failed || []) {
-        problems.push(
-          failure.roleId
-            ? `AutoRole ${failure.roleId}: ${failure.error}`
-            : failure.error,
+      const errors = [];
+
+      if (welcomeResult?.ok === false) {
+        errors.push(`Welcome: ${welcomeResult.reason || 'ukendt fejl'}`);
+      }
+      if (dmResult?.ok === false && !dmResult.soft) {
+        errors.push(`DM: ${dmResult.reason || 'ukendt fejl'}`);
+      }
+      if (dmResult?.ok === false && dmResult.soft) {
+        console.log(`[Welcome] ${member.user.tag}: ${dmResult.reason}`);
+      }
+      if (roleResult?.ok === false) {
+        errors.push(...(roleResult.errors || []).map((item) => `AutoRole: ${item}`));
+      }
+
+      if (roleResult?.assigned?.length) {
+        console.log(
+          `[Welcome] ✅ AutoRole ${member.user.tag}: ${roleResult.assigned.join(', ')}`,
         );
       }
 
-      if (problems.length) {
+      if (errors.length) {
         console.warn(
-          `[Welcome] ⚠️ ${member.user.tag} partial result in ${member.guild.name}: ${problems.join(' | ')}`,
+          `[Welcome] ⚠️ Join-flow for ${member.user.tag} i ${member.guild.name}: ${errors.join(' | ')}`,
         );
       } else {
-        console.log(
-          `[Welcome] ✅ ${member.user.tag}: welcome=${welcomeResult.sent}, dm=${dmResult.sent}, roles=${roleResult.assigned.length}`,
-        );
+        console.log(`[Welcome] ✅ Join-flow completed for ${member.user.tag} in ${member.guild.name}`);
       }
     } catch (error) {
-      console.error('[Welcome] Join flow error:', error?.stack || error);
+      console.error(
+        `[Welcome] ❌ Join-flow failed for ${member.user?.tag || member.id} in ${member.guild?.name || member.guild?.id}:`,
+        error?.message || error,
+      );
     }
   };
 
   const onMemberRemove = async (member) => {
     if (!shouldHandleGuild(member.guild.id)) return;
 
-    const dedupKey = `leave:${member.guild.id}:${member.user.id}`;
+    const dedupKey = `leave:${member.guild.id}:${member.id}`;
     if (isDuplicateEvent(dedupKey)) return;
 
     try {
-      console.log(`[Welcome] 👋 ${member.user.tag} left ${member.guild.name}`);
+      const { guild: guildRow, settings } = await getGuildSettings(member.guild.id);
+      if (!guildRow || !settings?.leave_enabled) return;
 
-      const db = await getGuildContext(supabase, member.guild.id);
-      if (!db?.settings?.leave_enabled) return;
+      const channelId = settings.leave_channel_id || settings.welcome_channel_id;
+      if (!channelId) {
+        console.warn(`[Welcome] Leave enabled in ${member.guild.name}, but no channel is configured`);
+        return;
+      }
 
       const context = {
-        userId: member.user.id,
-        username: member.user.username,
-        guildName: db.guild.guild_name || member.guild.name,
+        userMention: member.user?.username || member.id,
+        username: member.user?.username || member.id,
+        serverName: guildRow.guild_name || member.guild.name,
         memberCount: member.guild.memberCount,
       };
 
-      const result = await sendLeaveMessage(member, db.settings, context);
-      if (result.sent) {
-        console.log(`[Welcome] ✅ Leave message sent for ${member.user.tag}`);
-      } else if (result.error) {
-        console.warn(`[Welcome] ⚠️ Leave message failed for ${member.user.tag}: ${result.error}`);
+      const { channel, reason } = await getSendableChannel(
+        member.guild,
+        channelId,
+        Boolean(settings.leave_embed_enabled),
+      );
+
+      if (!channel) {
+        console.warn(`[Welcome] Leave message not sent in ${member.guild.name}: ${reason}`);
+        return;
       }
+
+      const payload = settings.leave_embed_enabled
+        ? { embeds: [createLeaveEmbed(settings, context)] }
+        : { content: formatMessage(settings.leave_message || '{user} har forladt serveren.', context) };
+
+      await channel.send(payload);
+      console.log(`[Welcome] ✅ Leave message sent for ${context.username} in ${member.guild.name}`);
     } catch (error) {
-      console.error('[Welcome] Leave flow error:', error?.stack || error);
+      console.error(
+        `[Welcome] ❌ Leave-flow failed in ${member.guild?.name || member.guild?.id}:`,
+        error?.message || error,
+      );
     }
   };
 
