@@ -55,7 +55,6 @@ export function DashboardSidebarContent({ onNavigate }: DashboardSidebarContentP
       );
       if (hasActive) openSet.add(idx);
     });
-    openSet.add(0);
     return openSet;
   }, []);
 
