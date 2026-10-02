@@ -71,23 +71,16 @@ export default function Index() {
     return () => { active = false; };
   }, []);
 
-  const stats = useMemo(() => {
-    const dynamic = platformStats
-      ? [
-          { value: formatMetric(platformStats.servers), label: 'Servere i platformen' },
-          { value: formatMetric(platformStats.managedMembers), label: 'Medlemmer på online bots' },
-        ]
-      : [
-          { value: `${PRODUCT_COUNTS.modules}+`, label: 'Moduler' },
-          { value: `${PRODUCT_COUNTS.logicalCommands}+`, label: 'Botfunktioner' },
-        ];
-
-    return [
-      ...dynamic,
-      { value: `${PRODUCT_COUNTS.commandRoots}`, label: 'Slash command roots' },
-      { value: 'DA / EN', label: 'Sprog' },
-    ];
-  }, [platformStats]);
+  const stats = useMemo(() => [
+    platformStats
+      ? { value: formatMetric(platformStats.servers), label: 'Servere i platformen' }
+      : { value: 'Live', label: 'Platformstatus' },
+    platformStats
+      ? { value: formatMetric(platformStats.managedMembers), label: 'Medlemmer på online bots' }
+      : { value: 'DA / EN', label: 'Sprog' },
+    { value: `${PRODUCT_COUNTS.modules}+`, label: 'Moduler' },
+    { value: `${PRODUCT_COUNTS.logicalCommands}+`, label: 'Botfunktioner' },
+  ], [platformStats]);
 
   if (loading) {
     return (
