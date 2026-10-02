@@ -243,3 +243,24 @@ Den officielle GuildOS-app publicerer et Discovery-safe globalt command-katalog.
 Runtime på den officielle bot blokerer dem også, så gamle Discord-command caches eller prefix-aliases ikke kan omgå kataloget.
 
 Offentlige invite-links bruger et eksplicit permissionsæt i stedet for Discord `Administrator`. Eksisterende servere får ikke automatisk nye rolle-permissions ved kodeopdateringer, så manglende rettigheder som `Ban Members` skal gives til bot-rollen på den enkelte server.
+
+
+## Discord Developer Portal endpoints
+
+### Interactions Endpoint URL
+
+Lad feltet være tomt med den nuværende GuildOS-arkitektur. Botten modtager slash commands, buttons og modals via Discord Gateway/discord.js. Discord understøtter enten Gateway-delivery eller HTTP interactions endpoint for interactions, ikke begge som parallel primary delivery.
+
+Sæt først dette felt, hvis GuildOS bevidst migreres til en HTTP-baseret interactions-handler med Discord signature-verifikation.
+
+### Linked Roles Verification URL
+
+Dette felt kan bruges til en fremtidig GuildOS Linked Roles-integration. Sæt ikke en URL endnu, før route + OAuth2-flow + role connection metadata er implementeret.
+
+En planlagt production-route kan fx være:
+
+```text
+https://bot.nethost-solutions.dk/linked-role
+```
+
+Linked Roles kræver bruger-OAuth2 med `role_connections.write` og registrering af application role connection metadata.
