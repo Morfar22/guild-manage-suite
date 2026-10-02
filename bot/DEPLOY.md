@@ -124,23 +124,52 @@ pm2 delete discord-bot    # Fjern fra PM2
 pm2 monit                 # Real-time monitoring
 ```
 
-## Musik (Valgfri)
+## Musik / Lavalink
 
-Musik kræver en kørende **Lavalink** server. Installér:
+GuildOS Bot bruger Lavalink på **localhost:40191**.
+
+Installer og start den versionerede Lavalink-konfiguration:
 
 ```bash
-# Download Lavalink
-wget https://github.com/lavalink-devs/Lavalink/releases/latest/download/Lavalink.jar
-
-# Kør Lavalink (kræver Java 17+)
-java -jar Lavalink.jar
+cd /bot
+npm run lavalink:install
+npm run lavalink:pm2
+npm run lavalink:check
 ```
 
-Tilføj Lavalink-indstillinger i `.env`:
-```
+De relevante værdier i `.env` er:
+
+```env
 LAVALINK_HOST=localhost
 LAVALINK_PORT=40191
 LAVALINK_PASSWORD=youshallnotpass
+LAVALINK_NAME=Main
+LAVALINK_SECURE=false
+
+LAVALINK_RECONNECT_TRIES=120
+LAVALINK_RECONNECT_INTERVAL=30
+LAVALINK_REST_TIMEOUT=30
+```
+
+YouTube OAuth skal **ikke** hardcodes i `application.yml`. Hvis det skal bruges:
+
+```env
+YOUTUBE_OAUTH_ENABLED=true
+YOUTUBE_REFRESH_TOKEN=NYT_REFRESH_TOKEN
+```
+
+Refresh tokens er hemmeligheder og må ikke committes til GitHub.
+
+Lavalink-configen ligger i `lavalink/application.yml`. Botten og `npm run lavalink:check` læser begge `/bot/.env`, så porten ikke kan drive mellem bot og Lavalink.
+
+Nyttige kommandoer:
+
+```bash
+npm run lavalink:check
+npm run lavalink:restart
+npm run lavalink:logs
+pm2 status
+ss -ltnp | grep 40191
 ```
 
 ## FiveM Integration (Valgfri)
