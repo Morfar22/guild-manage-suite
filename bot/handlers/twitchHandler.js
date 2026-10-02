@@ -13,6 +13,7 @@ const CHECK_INTERVAL = 60000;
 const APP_API_BASE = process.env.APP_API_BASE || 'https://bot.nethost-solutions.dk';
 let twitchCheckerStartupTimeout = null;
 let twitchCheckerInterval = null;
+let twitchCheckInFlight = false;
 
 /**
  * Check Twitch streamers for en enkelt guild
@@ -23,6 +24,13 @@ async function checkTwitchStreamers(guildId = null) {
     console.error('[Twitch] BOT_SECRET_KEY er ikke sat i environment variables');
     return;
   }
+
+  if (twitchCheckInFlight) {
+    console.log('[Twitch] Forrige check kører stadig; springer overlappende check over');
+    return;
+  }
+
+  twitchCheckInFlight = true;
 
   try {
     const url = guildId 
@@ -46,13 +54,25 @@ async function checkTwitchStreamers(guildId = null) {
     const result = await response.json();
     
     if (result.notifications && result.notifications.length > 0) {
-      console.log(`[Twitch] Sendte ${result.notifications.length} notifikation(er):`, 
-        result.notifications.map(n => `${n.streamer}: ${n.action}`).join(', '));
+      const uniqueNotifications = [
+        ...new Map(
+          result.notifications.map((n) => [
+            `${n.guild_id || ''}:${n.streamer || ''}:${n.action || ''}:${n.channel_id || ''}`,
+            n,
+          ])
+        ).values(),
+      ];
+      console.log(
+        `[Twitch] Sendte ${uniqueNotifications.length} notifikation(er):`,
+        uniqueNotifications.map(n => `${n.streamer}: ${n.action}`).join(', ')
+      );
     } else {
       console.log(`[Twitch] Checked ${result.checked || 0} streamers, ${result.live || 0} live`);
     }
   } catch (error) {
     console.error('[Twitch] Network fejl:', error.message);
+  } finally {
+    twitchCheckInFlight = false;
   }
 }
 
