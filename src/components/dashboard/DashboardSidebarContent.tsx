@@ -1,4 +1,4 @@
-import { useLocation } from '@tanstack/react-router';
+import { useLocation, useNavigate } from '@tanstack/react-router';
 import { NavLink } from '@/components/NavLink';
 import { cn } from '@/lib/utils';
 import { useGuild } from '@/contexts/GuildContext';
@@ -20,7 +20,7 @@ import {
 import { BotStatusIndicator } from './BotStatusIndicator';
 import { CommandPalette } from './CommandPalette';
 import { useFavoritePages } from '@/hooks/useFavoritePages';
-import { navGroups } from '@/lib/nav-items';
+import { navGroups, getAllNavItems } from '@/lib/nav-items';
 import { useState, useCallback } from 'react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 
@@ -39,6 +39,7 @@ interface DashboardSidebarContentProps {
 
 export function DashboardSidebarContent({ onNavigate }: DashboardSidebarContentProps) {
   const location = useLocation();
+  const navigate = useNavigate();
   const { selectedGuild } = useGuild();
   const { user, signOut } = useAuth();
   const { setTheme, theme } = useTheme();
@@ -68,6 +69,14 @@ export function DashboardSidebarContent({ onNavigate }: DashboardSidebarContentP
       return next;
     });
   };
+
+  const quickAccessPaths = [
+    '/dashboard',
+    '/dashboard/operations',
+    '/dashboard/tickets',
+    '/dashboard/commands',
+  ];
+  const quickAccessItems = getAllNavItems().filter((item) => quickAccessPaths.includes(item.to));
 
   // Find favorite nav items
   const favoriteItems = favorites
@@ -182,6 +191,16 @@ export function DashboardSidebarContent({ onNavigate }: DashboardSidebarContentP
       {/* Grouped Navigation */}
       <ScrollArea className="flex-1">
         <nav className="space-y-1 p-3">
+          <div className="mb-3">
+            <p className="px-3 py-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              {language === 'da' ? 'Hurtig adgang' : 'Quick access'}
+            </p>
+            <div className="space-y-0.5">
+              {quickAccessItems.map((item) => renderNavItem(item))}
+            </div>
+            <div className="my-3 border-b border-sidebar-border" />
+          </div>
+
           {/* Favorites section */}
           {favoriteItems.length > 0 && (
             <div className="mb-2">
@@ -246,7 +265,10 @@ export function DashboardSidebarContent({ onNavigate }: DashboardSidebarContentP
             <ChevronDown className="h-4 w-4 text-muted-foreground" />
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-56 bg-popover border-border">
-            <DropdownMenuItem className="cursor-pointer">
+            <DropdownMenuItem
+              className="cursor-pointer"
+              onClick={() => navigate({ to: '/dashboard/bot-settings' })}
+            >
               <Settings className="mr-2 h-4 w-4" />
               {t('common.settings')}
             </DropdownMenuItem>
