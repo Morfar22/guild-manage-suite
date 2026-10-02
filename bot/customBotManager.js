@@ -997,8 +997,8 @@ class CustomBotManager {
 
   async resolveDefaultBotToken() {
     if (DEFAULT_BOT_TOKEN_CANDIDATES.length === 0) {
-      console.warn('[CustomBotManager] Intet default bot-token fundet. Sætter kun custom bots i drift.');
-      console.warn('[CustomBotManager] Sæt DEFAULT_BOT_TOKEN, DISCORD_TOKEN eller DISCORD_BOT_TOKEN for at aktivere default botten.');
+      console.warn('[CustomBotManager] Intet token til GuildOS Bot fundet. Sætter kun custom bots i drift.');
+      console.warn('[CustomBotManager] Sæt DEFAULT_BOT_TOKEN, DISCORD_TOKEN eller DISCORD_BOT_TOKEN for at aktivere GuildOS Bot.');
       return null;
     }
 
@@ -1013,7 +1013,7 @@ class CustomBotManager {
         clearTimeout(timer);
 
         if (response.ok) {
-          console.log(`[CustomBotManager] ✅ Gyldigt default bot-token fundet via ${candidate.source}`);
+          console.log(`[CustomBotManager] ✅ Gyldigt GuildOS Bot-token fundet via ${candidate.source}`);
           return candidate.token;
         }
 
@@ -1030,7 +1030,7 @@ class CustomBotManager {
       }
     }
 
-    console.error('[CustomBotManager] Ingen gyldige default bot-tokens blev fundet. Custom bots fortsætter.');
+    console.error('[CustomBotManager] Ingen gyldige GuildOS Bot-tokens blev fundet. Custom bots fortsætter.');
     return null;
   }
 
@@ -1103,10 +1103,10 @@ class CustomBotManager {
     } catch (error) {
       const message = error?.message || String(error);
       if (/invalid token/i.test(message)) {
-        console.error('[CustomBotManager] Default bot-tokenet er ugyldigt. Custom bots fortsætter med at starte.');
+        console.error('[CustomBotManager] GuildOS Bot-tokenet er ugyldigt. Custom bots fortsætter med at starte.');
         console.error('[CustomBotManager] Kontrollér DEFAULT_BOT_TOKEN / DISCORD_TOKEN / DISCORD_BOT_TOKEN i /bot/.env.');
       } else {
-        console.error('[CustomBotManager] Failed to start default bot:', message);
+        console.error('[CustomBotManager] Failed to start GuildOS Bot:', message);
       }
 
       try {
