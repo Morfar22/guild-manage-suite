@@ -361,38 +361,53 @@ __serve(async (req) => {
           .replace(/{invitercount}/g, String(inviterInfo?.total ?? 0));
 
         const botToken = await getBotToken(supabase, guild.id);
+        const results: Record<string, any> = {
+          welcome: { attempted: false, sent: false },
+          dm: { attempted: false, sent: false },
+          roles: { attempted: false, assigned: [], failed: [] },
+        };
+        const errors: string[] = [];
 
-        // Send welcome message to channel
-        if (welcomeMessageEnabled && settings.welcome_channel_id) {
-          const payload: any = settings.embed_enabled
-            ? { embeds: [buildWelcomeEmbed(settings, username, userId, avatarUrl, memberCount, guild.guild_name, serverIconUrl, false, inviterInfo)] }
-            : { content: formatMessage(settings.welcome_message) };
-
-          const res = await fetch(
-            `https://discord.com/api/v10/channels/${settings.welcome_channel_id}/messages`,
-            {
-              method: "POST",
-              headers: {
-                Authorization: `Bot ${botToken}`,
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify(payload),
-            }
-          );
-          
-          if (!res.ok) {
-            const errorText = await res.text();
-            console.error("Discord API error (welcome):", res.status, errorText);
+        // Public welcome message is independent from DM/auto-role.
+        if (welcomeMessageEnabled) {
+          if (!settings.welcome_channel_id) {
+            errors.push("Velkomst er aktiveret, men ingen velkomstkanal er valgt");
           } else {
-            console.log(`✅ Welcome message sent for ${username} in guild ${guildId}`);
+            results.welcome.attempted = true;
+            const payload: any = settings.embed_enabled
+              ? { embeds: [buildWelcomeEmbed(settings, username, userId, avatarUrl, memberCount, guild.guild_name, serverIconUrl, false, inviterInfo)] }
+              : { content: formatMessage(settings.welcome_message || "Velkommen {user}!") };
+
+            const res = await fetch(
+              `https://discord.com/api/v10/channels/${settings.welcome_channel_id}/messages`,
+              {
+                method: "POST",
+                headers: {
+                  Authorization: `Bot ${botToken}`,
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify(payload),
+              }
+            );
+
+            if (!res.ok) {
+              const errorText = await res.text();
+              const message = `Velkomstbesked fejlede (Discord ${res.status}): ${errorText.slice(0, 300)}`;
+              errors.push(message);
+              console.error("[Welcome]", message);
+            } else {
+              results.welcome.sent = true;
+              console.log(`✅ Welcome message sent for ${username} in guild ${guildId}`);
+            }
           }
         }
 
-        // Send DM if enabled
-        if (welcomeMessageEnabled && settings.dm_enabled && settings.dm_message) {
+        // DM is intentionally independent of the public welcome switch.
+        if (settings.dm_enabled && settings.dm_message) {
+          results.dm.attempted = true;
           try {
             const dmChannelRes = await fetch(
-              `https://discord.com/api/v10/users/@me/channels`,
+              "https://discord.com/api/v10/users/@me/channels",
               {
                 method: "POST",
                 headers: {
@@ -402,40 +417,63 @@ __serve(async (req) => {
                 body: JSON.stringify({ recipient_id: userId }),
               }
             );
-            const dmChannel = await dmChannelRes.json();
 
-            if (dmChannel.id) {
-              const dmMessage = formatMessage(settings.dm_message);
-              await fetch(
-                `https://discord.com/api/v10/channels/${dmChannel.id}/messages`,
-                {
-                  method: "POST",
-                  headers: {
-                    Authorization: `Bot ${botToken}`,
-                    "Content-Type": "application/json",
-                  },
-                  body: JSON.stringify({ content: dmMessage }),
-                }
-              );
+            if (!dmChannelRes.ok) {
+              const body = await dmChannelRes.text();
+              throw new Error(`Kunne ikke åbne DM (Discord ${dmChannelRes.status}): ${body.slice(0, 200)}`);
             }
+
+            const dmChannel = await dmChannelRes.json();
+            if (!dmChannel?.id) throw new Error("Discord returnerede ingen DM-kanal");
+
+            const dmRes = await fetch(
+              `https://discord.com/api/v10/channels/${dmChannel.id}/messages`,
+              {
+                method: "POST",
+                headers: {
+                  Authorization: `Bot ${botToken}`,
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify({ content: formatMessage(settings.dm_message) }),
+              }
+            );
+
+            if (!dmRes.ok) {
+              const body = await dmRes.text();
+              throw new Error(`DM kunne ikke sendes (Discord ${dmRes.status}): ${body.slice(0, 200)}`);
+            }
+
+            results.dm.sent = true;
           } catch (e) {
-            console.error("Failed to send DM:", e);
+            const message = e instanceof Error ? e.message : String(e);
+            errors.push(message);
+            console.warn("[Welcome DM]", message);
           }
         }
 
-        // Assign auto roles if enabled
+        // Assign auto roles if enabled. Discord itself remains the final
+        // authority on Manage Roles and role hierarchy.
         if (settings.auto_role_enabled) {
-          const roleIds: string[] = [];
-          if (settings.auto_role_ids && Array.isArray(settings.auto_role_ids) && settings.auto_role_ids.length > 0) {
-            roleIds.push(...settings.auto_role_ids);
-          } else if (settings.auto_role_id) {
-            roleIds.push(settings.auto_role_id);
+          const configuredRoleIds = Array.isArray(settings.auto_role_ids)
+            ? settings.auto_role_ids
+            : [];
+          const roleIds = [...new Set(
+            configuredRoleIds.length > 0
+              ? configuredRoleIds
+              : (settings.auto_role_id ? [settings.auto_role_id] : [])
+          )].filter(Boolean);
+
+          results.roles.attempted = true;
+
+          if (roleIds.length === 0) {
+            errors.push("Auto-rolle er aktiveret, men ingen roller er valgt");
           }
 
-          console.log(`[AutoRole] Assigning ${roleIds.length} role(s) to ${userId} in guild ${guildId}: ${JSON.stringify(roleIds)}`);
+          console.log(
+            `[AutoRole] Assigning ${roleIds.length} role(s) to ${userId} in guild ${guildId}: ${JSON.stringify(roleIds)}`
+          );
 
           for (const roleId of roleIds) {
-            if (!roleId) continue;
             try {
               const roleRes = await fetch(
                 `https://discord.com/api/v10/guilds/${guildId}/members/${userId}/roles/${roleId}`,
@@ -444,25 +482,42 @@ __serve(async (req) => {
                   headers: {
                     Authorization: `Bot ${botToken}`,
                     "Content-Length": "0",
-                    "X-Audit-Log-Reason": "Auto-role on welcome",
+                    "X-Audit-Log-Reason": encodeURIComponent("GuildOS Bot auto-role on member join"),
                   },
                 }
               );
+
               if (!roleRes.ok) {
                 const errText = await roleRes.text();
-                console.error(`[AutoRole] Failed role ${roleId} for ${userId}: ${roleRes.status} ${errText}`);
+                const roleError = `Rolle ${roleId} fejlede (Discord ${roleRes.status}): ${errText.slice(0, 240)}`;
+                results.roles.failed.push({ roleId, status: roleRes.status, error: errText.slice(0, 240) });
+                errors.push(roleError);
+                console.error(`[AutoRole] ${roleError}`);
               } else {
+                results.roles.assigned.push(roleId);
                 console.log(`[AutoRole] ✅ Assigned role ${roleId} to ${userId}`);
               }
             } catch (e) {
+              const message = e instanceof Error ? e.message : String(e);
+              results.roles.failed.push({ roleId, error: message });
+              errors.push(`Rolle ${roleId}: ${message}`);
               console.error(`[AutoRole] Exception assigning role ${roleId}:`, e);
             }
           }
-        } else {
-          console.log(`[AutoRole] auto_role_enabled=false for guild ${guildId}, skipping`);
         }
 
-        return new Response(JSON.stringify({ success: true }), {
+        const anySuccess =
+          results.welcome.sent ||
+          results.dm.sent ||
+          results.roles.assigned.length > 0 ||
+          (!welcomeMessageEnabled && !settings.dm_enabled && !settings.auto_role_enabled);
+
+        return new Response(JSON.stringify({
+          success: errors.length === 0,
+          partial: errors.length > 0 && anySuccess,
+          errors,
+          results,
+        }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
