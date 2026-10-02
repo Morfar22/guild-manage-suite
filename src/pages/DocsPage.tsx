@@ -27,7 +27,7 @@ export default function DocsPage() {
     return (
       <div className="text-center">
         <Helmet>
-          <title>{language === 'da' ? 'Side ikke fundet – Paranox Docs' : 'Page not found – Paranox Docs'}</title>
+          <title>{language === 'da' ? 'Side ikke fundet – GuildOS Bot Docs' : 'Page not found – GuildOS Bot Docs'}</title>
           <meta name="robots" content="noindex" />
         </Helmet>
         <h1 className="text-2xl font-bold">{language === 'da' ? 'Side ikke fundet' : 'Page not found'}</h1>
@@ -38,7 +38,7 @@ export default function DocsPage() {
     );
   }
 
-  const pageTitle = `${page.title[language]} – Paranox Docs`;
+  const pageTitle = `${page.title[language]} – GuildOS Bot Docs`;
   const pageDescription = page.description[language].slice(0, 155);
   const pageUrl = `https://bot.nethost-solutions.dk/docs/${category}/${slug}`;
   const articleLd = {
@@ -46,7 +46,7 @@ export default function DocsPage() {
     '@type': 'TechArticle',
     headline: page.title[language],
     description: pageDescription,
-    author: { '@type': 'Organization', name: 'Paranox' },
+    author: { '@type': 'Organization', name: 'GuildOS Bot' },
     mainEntityOfPage: pageUrl,
   };
 
