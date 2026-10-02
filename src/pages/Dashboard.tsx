@@ -13,6 +13,7 @@ import { SetupProgress } from '@/components/dashboard/SetupProgress';
 import { useConfigurationAlerts } from '@/hooks/useConfigurationAlerts';
 import { DashboardWidgetSettings } from '@/components/dashboard/DashboardWidgetSettings';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import {
   Activity,
   BarChart3,
