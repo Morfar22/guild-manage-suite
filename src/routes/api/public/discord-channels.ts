@@ -126,12 +126,20 @@ __serve(async (req) => {
     let botToken: string | null = null;
 
     // Use custom bot token if available and active, otherwise fall back to global bot
-    if (customBotSettings?.bot_token_encrypted && customBotSettings.is_custom_bot) {
+    if (
+      customBotSettings?.bot_token_encrypted &&
+      customBotSettings.is_custom_bot &&
+      customBotSettings.is_active
+    ) {
       botToken = simpleDecrypt(customBotSettings.bot_token_encrypted, encryptionKey);
       console.log(`Using custom bot token for guild ${guild.guild_id}`);
     } else {
-      botToken = __env("DISCORD_BOT_TOKEN") || null;
-      console.log(`Using global bot token for guild ${guild.guild_id}`);
+      botToken =
+        __env("DEFAULT_BOT_TOKEN") ||
+        __env("DISCORD_TOKEN") ||
+        __env("DISCORD_BOT_TOKEN") ||
+        null;
+      console.log(`Using GuildOS Bot token for guild ${guild.guild_id}`);
     }
 
     if (!botToken) {
