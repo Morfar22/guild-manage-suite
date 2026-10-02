@@ -60,7 +60,7 @@ echo "==> Installing locked production dependencies"
 npm ci --omit=dev
 
 echo "==> Verifying locked Discord.js installation"
-node -e "const d=require('discord.js'); if(!d.Client) throw new Error('discord.js Client export missing'); console.log('discord.js', require('discord.js/package.json').version, 'OK')"
+node -e "const d=require('discord.js'); if(!d.Client) throw new Error('discord.js Client export missing'); console.log('discord.js', d.version || '(version unavailable)', 'OK')"
 test -f node_modules/discord.js/src/structures/ThreadChannel.js || {
   echo "ERROR: discord.js installation is incomplete (ThreadChannel.js missing)."
   echo "       Do not run npm audit fix directly in production. Re-run this updater to restore the lockfile state."
@@ -75,7 +75,8 @@ for file in \
   commandRouting.js \
   commandSync.js \
   inviteTracker.js \
-  handlers/twitchHandler.js
+  handlers/twitchHandler.js \
+  handlers/pollHandler.js
 do
   node --check "$file"
 done
