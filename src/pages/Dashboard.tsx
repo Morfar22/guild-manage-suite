@@ -9,6 +9,8 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { StatusCard } from '@/components/dashboard/StatusCard';
 import { QuickActions } from '@/components/dashboard/QuickActions';
 import { ConfigurationAlerts } from '@/components/dashboard/ConfigurationAlerts';
+import { SetupProgress } from '@/components/dashboard/SetupProgress';
+import { useConfigurationAlerts } from '@/hooks/useConfigurationAlerts';
 import { DashboardWidgetSettings } from '@/components/dashboard/DashboardWidgetSettings';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -54,6 +56,7 @@ export default function Dashboard() {
   const { logs, loading: logsLoading } = useModerationLogs({ limit: 5 });
   const { chartData, summary, hasData } = useAnalytics(7);
   const { data: opsSummary } = useOperationsSummary();
+  const { alerts: configurationAlerts } = useConfigurationAlerts();
   const prefs = useDashboardPreferences();
   const { t, language } = useLanguage();
   const dateFnsLocale = language === 'da' ? da : enUS;
@@ -67,12 +70,19 @@ export default function Dashboard() {
     { name: t('dashboard.modActions'), value: summary.mod_actions, color: 'hsl(var(--chart-4))' },
   ].filter((item) => item.value > 0);
 
-  const getUptime = () => {
+  const getHeartbeatAge = () => {
     if (!status?.last_heartbeat) return 'N/A';
-    const lastBeat = new Date(status.last_heartbeat);
-    if (Date.now() - lastBeat.getTime() < 120000) return '100%';
-    return t('common.offline');
+    return formatDistanceToNow(new Date(status.last_heartbeat), {
+      addSuffix: true,
+      locale: dateFnsLocale,
+    });
   };
+
+  const attentionCount =
+    configurationAlerts.length
+    + (opsSummary?.openAlerts ?? 0)
+    + (opsSummary?.overdueSla ?? 0)
+    + (opsSummary?.commandIssues ?? 0);
 
   return (
     <div className={`${prefs.compactMode ? 'space-y-4' : 'space-y-8'} animate-fade-in`}>
@@ -97,6 +107,35 @@ export default function Dashboard() {
           <DashboardWidgetSettings />
         </div>
       </div>
+
+      <SetupProgress />
+
+      {attentionCount > 0 && (
+        <Card className="border-warning/25 bg-warning/[0.035]">
+          <CardContent className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-start gap-3">
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-warning/10 text-warning">
+                <Bell className="h-5 w-5" />
+              </span>
+              <div>
+                <div className="font-display text-lg font-semibold">
+                  {attentionCount} {language === 'da' ? 'ting kræver opmærksomhed' : 'items need attention'}
+                </div>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  {language === 'da'
+                    ? 'Konfiguration, alerts og SLA-signaler er samlet her, før du går videre til graferne.'
+                    : 'Configuration, alerts and SLA signals are surfaced before analytics.'}
+                </p>
+              </div>
+            </div>
+            <a href="/dashboard/operations">
+              <Button variant="outline" size="sm">
+                {language === 'da' ? 'Åbn Operations Center' : 'Open Operations Center'}
+              </Button>
+            </a>
+          </CardContent>
+        </Card>
+      )}
 
       <ConfigurationAlerts />
 
@@ -133,9 +172,9 @@ export default function Dashboard() {
             pulse={isOnline}
           />
           <StatusCard
-            title={t('dashboard.uptime')}
-            value={statusLoading ? '...' : getUptime()}
-            description={t('dashboard.basedOnHeartbeat')}
+            title={language === 'da' ? 'Seneste heartbeat' : 'Last heartbeat'}
+            value={statusLoading ? '...' : getHeartbeatAge()}
+            description={language === 'da' ? 'Faktisk seneste signal fra bot-processen' : 'Actual latest signal from the bot process'}
             icon={Clock}
             variant="default"
           />
