@@ -71,7 +71,7 @@ function webFlatCommands() {
 }
 
 function botFlatNames() {
-  const source = read('bot/deployCommands.js');
+  const source = read('bot/commandDefinitions.js');
   return [...source.matchAll(/new\s+SlashCommandBuilder\s*\(\s*\)\s*\.setName\s*\(\s*['"]([^'"]+)['"]\s*\)/g)]
     .map((match) => match[1]);
 }
