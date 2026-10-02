@@ -1,12 +1,12 @@
-# Paranox
+# GuildOS Bot
 
 > Alt-i-én Discord bot platform med 49+ moduler — moderation, tickets, AI, leveling, FiveM integration og mere. Sikker, hurtig og fuldt tilpasselig.
 
-Paranox er en Discord bot management platform hvor server-ejere kan konfigurere avancerede moduler via et web-dashboard: moderation, ticket-systemer, ansøgningsformularer, leveling/XP, giveaways, AI-chat, FiveM-integration, Twitch/YouTube/TikTok notifikationer og meget mere.
+GuildOS Bot er en Discord bot management platform hvor server-ejere kan konfigurere avancerede moduler via et web-dashboard: moderation, ticket-systemer, ansøgningsformularer, leveling/XP, giveaways, AI-chat, FiveM-integration, Twitch/YouTube/TikTok notifikationer og meget mere.
 
 ## Pages
 
-- [Forside](/): Oversigt over Paranox platformen og features.
+- [Forside](/): Oversigt over GuildOS Bot platformen og features.
 - [Log ind](/auth): Log ind med Discord OAuth for at komme i gang.
 - [Dokumentation](/docs): Komplet dokumentation for alle moduler og kommandoer.
 
