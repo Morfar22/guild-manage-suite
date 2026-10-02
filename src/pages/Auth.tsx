@@ -7,7 +7,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Bot, Loader2, AlertCircle } from 'lucide-react';
+import { Bot, Loader2, AlertCircle, ChevronDown, Mail } from 'lucide-react';
 import { toast } from 'sonner';
 import { Helmet } from 'react-helmet-async';
 import { z } from 'zod';
@@ -32,13 +32,14 @@ DiscordIcon.displayName = 'DiscordIcon';
 
 export default function Auth() {
   const { user, loading } = useAuth();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const [searchParams] = useSearchParams();
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [discordLoading, setDiscordLoading] = useState(false);
+  const [showEmailLogin, setShowEmailLogin] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const processingCodeRef = useRef(false);
 
@@ -177,52 +178,67 @@ export default function Auth() {
           <p className="mt-2 text-muted-foreground">{t('auth.subtitle')}</p>
         </div>
 
-        <div className="mb-6">
-          <Button onClick={handleDiscordLogin} disabled={discordLoading} className="w-full bg-[#5865F2] text-white hover:bg-[#4752C4] h-12 text-base font-medium">
+        <div className="rounded-2xl border border-primary/20 bg-primary/[0.04] p-5 shadow-card">
+          <Button
+            onClick={handleDiscordLogin}
+            disabled={discordLoading}
+            className="h-12 w-full bg-[#5865F2] text-base font-semibold text-white hover:bg-[#4752C4]"
+          >
             {discordLoading ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <DiscordIcon className="mr-2 h-5 w-5" />}
             {t('auth.continueDiscord')}
           </Button>
-          <p className="mt-2 text-center text-xs text-muted-foreground">{t('auth.discordRecommended')}</p>
-        </div>
-
-        <div className="relative mb-6">
-          <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-border" /></div>
-          <div className="relative flex justify-center text-xs uppercase">
-            <span className="bg-background px-2 text-muted-foreground">{t('auth.orEmail')}</span>
+          <div className="mt-3 flex items-center justify-center gap-2 text-xs text-muted-foreground">
+            <Bot className="h-3.5 w-3.5" />
+            <span>{language === 'da' ? 'Anbefalet. Synkroniserer de servere du administrerer.' : 'Recommended. Syncs the servers you manage.'}</span>
           </div>
         </div>
 
-        <div className="rounded-xl border border-border bg-card p-6 shadow-card">
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {error && (
-              <div className="flex items-center gap-2 rounded-lg bg-destructive/10 p-3 text-sm text-destructive">
-                <AlertCircle className="h-4 w-4 flex-shrink-0" /><p>{error}</p>
+        <div className="mt-5">
+          <button
+            type="button"
+            onClick={() => setShowEmailLogin((value) => !value)}
+            className="flex w-full items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-secondary/50 hover:text-foreground"
+            aria-expanded={showEmailLogin}
+          >
+            <Mail className="h-4 w-4" />
+            {language === 'da' ? 'Andre loginmuligheder' : 'Other sign-in options'}
+            <ChevronDown className={`h-4 w-4 transition-transform ${showEmailLogin ? 'rotate-180' : ''}`} />
+          </button>
+        </div>
+
+        {showEmailLogin && (
+          <div className="mt-4 rounded-xl border border-border bg-card p-6 shadow-card">
+            <form onSubmit={handleSubmit} className="space-y-4">
+              {error && (
+                <div className="flex items-center gap-2 rounded-lg bg-destructive/10 p-3 text-sm text-destructive">
+                  <AlertCircle className="h-4 w-4 flex-shrink-0" /><p>{error}</p>
+                </div>
+              )}
+              <div className="space-y-2">
+                <Label htmlFor="email" className="text-foreground">Email</Label>
+                <Input id="email" type="email" placeholder="dig@eksempel.dk" value={email} onChange={(e) => setEmail(e.target.value)} required />
               </div>
-            )}
-            <div className="space-y-2">
-              <Label htmlFor="email" className="text-foreground">Email</Label>
-              <Input id="email" type="email" placeholder="you@example.com" value={email} onChange={(e) => setEmail(e.target.value)} className="bg-input border-border text-foreground placeholder:text-muted-foreground focus:ring-primary" required />
+              <div className="space-y-2">
+                <Label htmlFor="password" className="text-foreground">{language === 'da' ? 'Adgangskode' : 'Password'}</Label>
+                <Input id="password" type="password" placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} required />
+              </div>
+              <Button type="submit" variant="secondary" className="w-full" disabled={submitting}>
+                {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : isLogin ? t('auth.login') : t('auth.signup')}
+              </Button>
+            </form>
+            <div className="mt-4 text-center">
+              <button type="button" onClick={() => { setIsLogin(!isLogin); setError(null); }} className="text-sm text-muted-foreground transition-colors hover:text-primary">
+                {isLogin ? t('auth.noAccount') : t('auth.hasAccount')}
+              </button>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="password" className="text-foreground">Password</Label>
-              <Input id="password" type="password" placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} className="bg-input border-border text-foreground placeholder:text-muted-foreground focus:ring-primary" required />
-            </div>
-            <Button type="submit" variant="secondary" className="w-full" disabled={submitting}>
-              {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : isLogin ? t('auth.login') : t('auth.signup')}
-            </Button>
-          </form>
-          <div className="mt-4 text-center">
-            <button type="button" onClick={() => { setIsLogin(!isLogin); setError(null); }} className="text-sm text-muted-foreground hover:text-primary transition-colors">
-              {isLogin ? t('auth.noAccount') : t('auth.hasAccount')}
-            </button>
           </div>
-        </div>
+        )}
 
         <p className="mt-6 text-center text-xs leading-5 text-muted-foreground">
-          Ved at fortsætte accepterer du vores{' '}
-          <Link to="/terms" className="text-primary hover:underline">Terms of Service</Link>
-          {' '}og{' '}
-          <Link to="/privacy" className="text-primary hover:underline">Privacy Policy</Link>.
+          {language === 'da' ? 'Ved at fortsætte accepterer du vores ' : 'By continuing you accept our '}
+          <Link to="/terms" className="text-primary hover:underline">{language === 'da' ? 'Vilkår' : 'Terms of Service'}</Link>
+          {language === 'da' ? ' og ' : ' and '}
+          <Link to="/privacy" className="text-primary hover:underline">{language === 'da' ? 'Privatlivspolitik' : 'Privacy Policy'}</Link>.
         </p>
       </div>
     </main>
