@@ -6,6 +6,10 @@ export interface DiscordRole {
   id: string;
   name: string;
   color: number;
+  position?: number;
+  managed?: boolean;
+  assignable?: boolean;
+  reason?: string | null;
 }
 
 export function useDiscordRoles() {
