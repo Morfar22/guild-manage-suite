@@ -2441,7 +2441,8 @@ manager.registerHandler((client, guildId, assignedDiscordGuildId) => {
   }
 
   try {
-    setupWelcomeHandler(client, { shouldHandleGuild });
+    const welcomeHandler = setupWelcomeHandler(client, { shouldHandleGuild, supabase });
+    handlerInstances.set(`welcome_${clientLabel}`, welcomeHandler);
     console.log(`[Bot] ✅ Welcome handler for ${clientLabel}`);
   } catch (e) {
     console.error(`[Bot] ❌ Welcome handler fejl:`, e.message);
