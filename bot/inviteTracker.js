@@ -8,9 +8,19 @@
  * Bot Permission: ManageGuild (for at læse invites)
  */
 
+const { createClient } = require('@supabase/supabase-js');
+
 const APP_API_BASE = (process.env.APP_API_BASE || 'https://bot.nethost-solutions.dk').replace(/\/$/, '');
 const API_URL = process.env.INVITE_TRACKER_API_URL || `${APP_API_BASE}/api/public/invite-tracker`;
 const BOT_SECRET = process.env.BOT_SECRET_KEY;
+const SUPABASE_URL = process.env.SUPABASE_URL || 'https://rkdqunnttcyuybbofkvz.supabase.co';
+const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY;
+const directSupabase = SUPABASE_KEY
+  ? createClient(SUPABASE_URL, SUPABASE_KEY, {
+      auth: { persistSession: false, autoRefreshToken: false },
+    })
+  : null;
+const guildUuidCache = new Map();
 
 // Map<guildId, Map<inviteCode, { uses, inviterId, inviterName, channelId, maxUses, expiresAt }>>
 const inviteCache = new Map();
@@ -21,6 +31,112 @@ const FAKE_ACCOUNT_DAYS = 7;
 const UNREGISTERED_GUILD_RETRY_MS = 10 * 60 * 1000;
 const unregisteredGuildUntil = new Map();
 
+async function getGuildUuid(discordGuildId) {
+  if (!directSupabase || !discordGuildId) return null;
+  if (guildUuidCache.has(discordGuildId)) return guildUuidCache.get(discordGuildId);
+
+  const { data, error } = await directSupabase
+    .from('guilds')
+    .select('id')
+    .eq('guild_id', discordGuildId)
+    .maybeSingle();
+
+  if (error) throw error;
+  const uuid = data?.id || null;
+  if (uuid) guildUuidCache.set(discordGuildId, uuid);
+  return uuid;
+}
+
+async function callDirect(action, data) {
+  if (!directSupabase) return null;
+
+  const uuid = await getGuildUuid(data?.guildId);
+  if (!uuid) {
+    const error = new Error('Guild not found');
+    error.code = 'GUILD_NOT_FOUND';
+    throw error;
+  }
+
+  if (action === 'syncInvites') {
+    const rows = (data.invites || []).map((inv) => ({
+      guild_id: uuid,
+      invite_code: inv.invite_code,
+      inviter_discord_id: inv.inviter_discord_id,
+      inviter_username: inv.inviter_username,
+      channel_id: inv.channel_id,
+      uses: inv.uses,
+      max_uses: inv.max_uses,
+      expires_at: inv.expires_at,
+    }));
+
+    if (rows.length) {
+      const { error } = await directSupabase
+        .from('invite_tracker')
+        .upsert(rows, { onConflict: 'guild_id,invite_code' });
+      if (error) throw error;
+    }
+
+    return { success: true, count: rows.length };
+  }
+
+  if (action === 'logInviteUse') {
+    const { error: insertError } = await directSupabase
+      .from('invite_uses')
+      .insert({
+        guild_id: uuid,
+        invite_code: data.inviteCode,
+        inviter_discord_id: data.inviterDiscordId,
+        inviter_username: data.inviterUsername,
+        joined_user_id: data.joinedUserId,
+        joined_username: data.joinedUsername,
+        joined_account_created_at: data.joinedAccountCreatedAt,
+        is_fake: Boolean(data.isFake),
+      });
+
+    if (insertError) throw insertError;
+
+    if (data.inviteCode) {
+      const { data: existing, error: existingError } = await directSupabase
+        .from('invite_tracker')
+        .select('uses')
+        .eq('guild_id', uuid)
+        .eq('invite_code', data.inviteCode)
+        .maybeSingle();
+
+      if (existingError) throw existingError;
+
+      if (existing) {
+        const { error: updateError } = await directSupabase
+          .from('invite_tracker')
+          .update({ uses: (existing.uses || 0) + 1 })
+          .eq('guild_id', uuid)
+          .eq('invite_code', data.inviteCode);
+
+        if (updateError) throw updateError;
+      }
+    }
+
+    return { success: true };
+  }
+
+  if (action === 'markInviteLeft') {
+    const { error } = await directSupabase
+      .from('invite_uses')
+      .update({
+        has_left: true,
+        left_at: new Date().toISOString(),
+      })
+      .eq('guild_id', uuid)
+      .eq('joined_user_id', data.joinedUserId)
+      .eq('has_left', false);
+
+    if (error) throw error;
+    return { success: true };
+  }
+
+  return null;
+}
+
 async function callApi(action, data) {
   const guildId = data?.guildId;
   if (guildId) {
@@ -29,12 +145,37 @@ async function callApi(action, data) {
     if (retryAt) unregisteredGuildUntil.delete(guildId);
   }
 
+  // Primary path: direct database access. This keeps invite attribution working
+  // even if the web dashboard / Cloudflare is temporarily unavailable.
+  if (directSupabase) {
+    try {
+      const result = await callDirect(action, data);
+      if (guildId) unregisteredGuildUntil.delete(guildId);
+      if (result) return result;
+    } catch (error) {
+      if (error?.code === 'GUILD_NOT_FOUND') {
+        const wasBackedOff = unregisteredGuildUntil.has(guildId);
+        unregisteredGuildUntil.set(guildId, Date.now() + UNREGISTERED_GUILD_RETRY_MS);
+        if (!wasBackedOff) {
+          console.warn(`[InviteTracker] Guild ${guildId} er ikke registreret i databasen; sync pauses i 10 min.`);
+        }
+        return null;
+      }
+
+      console.warn(
+        `[InviteTracker] Direct Supabase ${action} failed; prøver API fallback:`,
+        error?.message || error,
+      );
+    }
+  }
+
   try {
     const res = await fetch(API_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-bot-secret': BOT_SECRET },
       body: JSON.stringify({ action, data }),
     });
+
     if (!res.ok) {
       const err = await res.text();
 
@@ -53,8 +194,8 @@ async function callApi(action, data) {
 
     if (guildId) unregisteredGuildUntil.delete(guildId);
     return await res.json();
-  } catch (e) {
-    console.error(`[InviteTracker] API ${action} error:`, e.message);
+  } catch (error) {
+    console.error(`[InviteTracker] API ${action} error:`, error?.message || error);
     return null;
   }
 }
