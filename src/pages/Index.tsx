@@ -22,6 +22,11 @@ import {
 } from 'lucide-react';
 import heroOrb from '@/assets/hero-orb.jpg';
 
+const PUBLIC_BOT_CLIENT_ID =
+  import.meta.env['VITE_DISCORD_BOT_CLIENT_ID'] || '1555371176224628787';
+const PUBLIC_BOT_INVITE_URL =
+  `https://discord.com/api/oauth2/authorize?client_id=${PUBLIC_BOT_CLIENT_ID}&permissions=8&scope=bot%20applications.commands`;
+
 const FEATURES = [
   {
     icon: Shield,
@@ -166,7 +171,12 @@ export default function Index() {
               </p>
 
               <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row sm:justify-center lg:justify-start">
-                <Link to="/auth" className="w-full sm:w-auto">
+                <a
+                  href={PUBLIC_BOT_INVITE_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full sm:w-auto"
+                >
                   <Button
                     size="lg"
                     className="w-full gradient-blurple text-primary-foreground shadow-glow hover:opacity-90 sm:w-auto"
@@ -174,7 +184,7 @@ export default function Index() {
                     <Bot className="mr-2 h-5 w-5" aria-hidden="true" />
                     Tilføj til din server
                   </Button>
-                </Link>
+                </a>
                 <a
                   href="#features"
                   className="w-full sm:w-auto"
