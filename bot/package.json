@@ -17,13 +17,13 @@
     "lavalink:logs": "pm2 logs guildos-lavalink --lines 100"
   },
   "dependencies": {
-    "discord.js": "^14.16.3",
-    "@supabase/supabase-js": "^2.49.1",
-    "dotenv": "^16.4.7"
+    "discord.js": "14.26.4",
+    "@supabase/supabase-js": "2.107.0",
+    "dotenv": "16.6.1"
   },
   "optionalDependencies": {
-    "kazagumo": "^3.2.0",
-    "shoukaku": "^4.1.1"
+    "kazagumo": "3.4.3",
+    "shoukaku": "4.3.0"
   },
   "engines": {
     "node": ">=18.0.0"
