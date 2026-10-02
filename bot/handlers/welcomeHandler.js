@@ -14,13 +14,13 @@
  * - GatewayIntentBits.Guilds
  */
 
-const API_URL = process.env.WELCOME_API_URL || '${APP_API_BASE}/api/public/bot-welcome';
+const APP_API_BASE = process.env.APP_API_BASE || 'https://bot.nethost-solutions.dk';
+const API_URL = process.env.WELCOME_API_URL || `${APP_API_BASE}/api/public/bot-welcome`;
 const BOT_SECRET = process.env.BOT_SECRET_KEY;
 
 // Deduplication: track recently processed events to prevent double handling
 const recentEvents = new Map();
 const DEDUP_WINDOW_MS = 5000; // 5 second window
-const APP_API_BASE = process.env.APP_API_BASE || 'https://bot.nethost-solutions.dk';
 
 function isDuplicateEvent(key) {
   const now = Date.now();
@@ -49,6 +49,10 @@ function isDuplicateEvent(key) {
  * Call the Lovable API for welcome actions
  */
 async function callWelcomeAPI(action, data) {
+  if (!BOT_SECRET) {
+    throw new Error('BOT_SECRET_KEY mangler');
+  }
+
   const response = await fetch(API_URL, {
     method: 'POST',
     headers: {
@@ -57,13 +61,20 @@ async function callWelcomeAPI(action, data) {
     },
     body: JSON.stringify({ action, data })
   });
-  
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.error || 'API request failed');
+
+  const raw = await response.text();
+  let payload = {};
+  try {
+    payload = raw ? JSON.parse(raw) : {};
+  } catch {
+    payload = { error: raw || 'Ugyldigt API-svar' };
   }
-  
-  return response.json();
+
+  if (!response.ok) {
+    throw new Error(payload.error || `Welcome API fejl (HTTP ${response.status})`);
+  }
+
+  return payload;
 }
 
 /**
@@ -100,9 +111,13 @@ function setupWelcomeHandler(client, config = {}) {
       });
       
       if (result.success) {
-        console.log(`✅ Welcome sent for ${member.user.username}`);
+        console.log(`✅ Welcome flow completed for ${member.user.username}`);
+      } else if (result.partial) {
+        console.warn(
+          `⚠️ Welcome flow partially completed for ${member.user.username}: ${(result.errors || []).join(' | ')}`
+        );
       } else {
-        console.log(`ℹ️ Welcome not sent: ${result.reason}`);
+        console.log(`ℹ️ Welcome flow not completed: ${result.reason || (result.errors || []).join(' | ') || 'unknown'}`);
       }
     } catch (error) {
       console.error('Welcome error:', error.message);
@@ -130,7 +145,7 @@ function setupWelcomeHandler(client, config = {}) {
       if (result.success) {
         console.log(`✅ Leave message sent for ${member.user.username}`);
       } else {
-        console.log(`ℹ️ Leave message not sent: ${result.reason}`);
+        console.warn(`⚠️ Leave message not sent: ${result.reason || (result.errors || []).join(' | ') || 'unknown'}`);
       }
     } catch (error) {
       console.error('Leave message error:', error.message);
