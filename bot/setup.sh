@@ -1,6 +1,6 @@
 #!/bin/bash
 # ==========================================
-# Discord Bot - Setup Script
+# GuildOS Bot - Setup Script
 # ==========================================
 # Organiserer handler-filer i den korrekte mappestruktur
 # og installerer dependencies.
@@ -10,7 +10,7 @@
 
 set -e
 
-echo "🔧 Discord Bot Setup"
+echo "🔧 GuildOS Bot Setup"
 echo "===================="
 
 # Opret mapper
