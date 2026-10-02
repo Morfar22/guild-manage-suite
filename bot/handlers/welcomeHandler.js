@@ -350,7 +350,7 @@ async function assignAutoRoles(member, settings) {
         continue;
       }
 
-      if (role.position >= me.roles.highest.position) {
+      if (role.comparePositionTo(me.roles.highest) >= 0) {
         failed.push({
           roleId,
           error: `Rollen "${role.name}" ligger over eller på niveau med bottens højeste rolle`,
