@@ -1,0 +1,80 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  dashboard:
+    name: Dashboard checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      SUPABASE_URL: https://example.supabase.co
+      SUPABASE_PUBLISHABLE_KEY: test-key
+      VITE_SUPABASE_URL: https://example.supabase.co
+      VITE_SUPABASE_PUBLISHABLE_KEY: test-key
+      VITE_DISCORD_BOT_CLIENT_ID: "1555371176224628787"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dashboard dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Verify command catalog
+        run: bun run check:commands
+
+      - name: Lint
+        run: bun run lint
+
+      - name: Tests
+        run: bunx vitest run --passWithNoTests
+
+      - name: Build
+        run: bun run build
+
+  bot:
+    name: Bot checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: bot/package-lock.json
+
+      - name: Install bot dependencies
+        working-directory: bot
+        run: npm ci
+
+      - name: Syntax-check bot JavaScript
+        run: |
+          find bot \
+            -type f \
+            -name '*.js' \
+            -not -path '*/node_modules/*' \
+            -print0 | xargs -0 -n1 node --check
+
+      - name: Verify grouped command catalog
+        run: node scripts/check-command-sync.mjs
