@@ -29,35 +29,48 @@ function simpleDecrypt(encoded: string, key: string): string {
   }
 }
 
+function getDefaultBotToken(): string {
+  return (
+    __env("DEFAULT_BOT_TOKEN") ||
+    __env("DISCORD_TOKEN") ||
+    __env("DISCORD_BOT_TOKEN") ||
+    ""
+  );
+}
+
 async function getBotToken(supabase: any, guildId: string): Promise<string> {
-  const encryptionKey = __env("BOT_SECRET_KEY") || "";
-  
-  const { data: guild } = await supabase
-    .from("guilds")
-    .select("guild_id")
-    .eq("id", guildId)
-    .single();
-  
-  if (guild) {
-    const { data: customBotSettings } = await supabase
-      .from("guild_bot_settings")
-      .select("bot_token_encrypted, is_custom_bot, is_active")
-      .eq("guild_id", guildId)
-      .eq("is_custom_bot", true)
-      .eq("is_active", true)
-      .maybeSingle();
-    
-    if (customBotSettings?.bot_token_encrypted && encryptionKey) {
-      const decryptedToken = simpleDecrypt(customBotSettings.bot_token_encrypted, encryptionKey);
-      if (decryptedToken) {
-        console.log(`Using custom bot token for guild ${guildId}`);
-        return decryptedToken;
-      }
+  const encryptionKey = __env("BOT_SECRET_KEY") || "default-encryption-key";
+
+  const { data: customBotSettings } = await supabase
+    .from("guild_bot_settings")
+    .select("bot_token_encrypted, is_custom_bot, is_active")
+    .eq("guild_id", guildId)
+    .eq("is_custom_bot", true)
+    .eq("is_active", true)
+    .maybeSingle();
+
+  if (
+    customBotSettings?.bot_token_encrypted &&
+    customBotSettings.is_custom_bot &&
+    customBotSettings.is_active
+  ) {
+    const decryptedToken = simpleDecrypt(
+      customBotSettings.bot_token_encrypted,
+      encryptionKey,
+    );
+    if (decryptedToken) {
+      console.log(`Using custom bot token for guild ${guildId}`);
+      return decryptedToken;
     }
   }
-  
-  console.log(`Using default bot token for guild ${guildId}`);
-  return __env("DISCORD_BOT_TOKEN") || "";
+
+  const defaultToken = getDefaultBotToken();
+  if (!defaultToken) {
+    throw new Error("No active bot token available for this guild");
+  }
+
+  console.log(`Using GuildOS Bot token for guild ${guildId}`);
+  return defaultToken;
 }
 
 async function checkIPWhitelist(req: Request, supabase: any): Promise<{ allowed: boolean; ip: string }> {
@@ -186,7 +199,8 @@ __serve(async (req) => {
     const { action, data } = await req.json();
 
     const dashboardActions = ["testWelcome", "testLeave"];
-    
+    let dashboardUserId: string | null = null;
+
     if (dashboardActions.includes(action)) {
       const authHeader = req.headers.get("Authorization");
       if (!authHeader?.startsWith("Bearer ")) {
@@ -202,6 +216,35 @@ __serve(async (req) => {
           status: 401,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
+      }
+
+      dashboardUserId = claims.user.id;
+
+      const requestedGuildId = data?.guildId;
+      if (!requestedGuildId) {
+        return new Response(JSON.stringify({ error: "Missing guildId" }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      const { data: isGlobalAdmin } = await supabase
+        .rpc("has_admin_or_staff_role", { _user_id: dashboardUserId });
+
+      if (!isGlobalAdmin) {
+        const { data: userGuild } = await supabase
+          .from("user_guilds")
+          .select("has_admin_permission")
+          .eq("guild_id", requestedGuildId)
+          .eq("user_id", dashboardUserId)
+          .maybeSingle();
+
+        if (!userGuild?.has_admin_permission) {
+          return new Response(JSON.stringify({ error: "Forbidden" }), {
+            status: 403,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
       }
     } else {
       const botSecret = req.headers.get("x-bot-secret");
