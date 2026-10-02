@@ -84,14 +84,29 @@ async function getInviterInfo(internalGuildId, joinedUserId) {
   if (!supabase || !internalGuildId || !joinedUserId) return null;
 
   try {
-    const { data: latestUse } = await supabase
-      .from('invite_uses')
-      .select('inviter_discord_id, inviter_username')
-      .eq('guild_id', internalGuildId)
-      .eq('joined_user_id', joinedUserId)
-      .order('joined_at', { ascending: false })
-      .limit(1)
-      .maybeSingle();
+    let latestUse = null;
+
+    // InviteTracker and Welcome receive the same guildMemberAdd event.
+    // Give the tracker a short window to persist attribution before we build
+    // the welcome embed.
+    for (let attempt = 0; attempt < 4; attempt += 1) {
+      const { data, error } = await supabase
+        .from('invite_uses')
+        .select('inviter_discord_id, inviter_username')
+        .eq('guild_id', internalGuildId)
+        .eq('joined_user_id', joinedUserId)
+        .order('joined_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (error) throw error;
+      latestUse = data;
+
+      if (latestUse) break;
+      if (attempt < 3) {
+        await new Promise((resolve) => setTimeout(resolve, 300 * (attempt + 1)));
+      }
+    }
 
     if (!latestUse) return null;
 
@@ -103,13 +118,15 @@ async function getInviterInfo(internalGuildId, joinedUserId) {
       };
     }
 
-    const { count } = await supabase
+    const { count, error: countError } = await supabase
       .from('invite_uses')
       .select('id', { count: 'exact', head: true })
       .eq('guild_id', internalGuildId)
       .eq('inviter_discord_id', latestUse.inviter_discord_id)
       .eq('has_left', false)
       .eq('is_fake', false);
+
+    if (countError) throw countError;
 
     return {
       discordId: latestUse.inviter_discord_id,
