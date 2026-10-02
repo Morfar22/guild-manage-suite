@@ -58,7 +58,7 @@ const da: Record<string, string> = {
   'common.pending': 'Afventer',
 
   // Auth
-  'auth.title': 'BotDash',
+  'auth.title': 'GuildOS Bot',
   'auth.subtitle': 'Log ind for at administrere din Discord-bot',
   'auth.continueDiscord': 'Fortsæt med Discord',
   'auth.discordRecommended': 'Anbefalet — synkroniserer dine servere automatisk',
@@ -743,7 +743,7 @@ const en: Record<string, string> = {
   'common.pending': 'Pending',
 
   // Auth
-  'auth.title': 'BotDash',
+  'auth.title': 'GuildOS Bot',
   'auth.subtitle': 'Sign in to manage your Discord bot',
   'auth.continueDiscord': 'Continue with Discord',
   'auth.discordRecommended': 'Recommended — syncs your servers automatically',
