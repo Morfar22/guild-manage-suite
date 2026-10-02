@@ -76,6 +76,45 @@ __serve(async (req) => {
       return new Response(JSON.stringify({ error: 'No channel_id set' }), { status: 400, headers: corsHeaders });
     }
 
+    if (poll.message_id) {
+      return new Response(
+        JSON.stringify({ success: true, alreadyDelivered: true, messageId: poll.message_id }),
+        { headers: corsHeaders }
+      );
+    }
+
+    const deliveryClaim = `pending:http:${poll.id}:${Date.now()}`;
+    const { data: claimedRows, error: claimError } = await supabase
+      .from('polls')
+      .update({ message_id: deliveryClaim })
+      .eq('id', poll.id)
+      .is('message_id', null)
+      .select('id');
+
+    if (claimError) {
+      return new Response(
+        JSON.stringify({ error: `Failed to claim poll delivery: ${claimError.message}` }),
+        { status: 500, headers: corsHeaders }
+      );
+    }
+
+    if (!claimedRows?.length) {
+      const { data: latestPoll } = await supabase
+        .from('polls')
+        .select('message_id')
+        .eq('id', poll.id)
+        .maybeSingle();
+
+      return new Response(
+        JSON.stringify({
+          success: true,
+          alreadyDelivered: true,
+          messageId: latestPoll?.message_id ?? null,
+        }),
+        { headers: corsHeaders }
+      );
+    }
+
     const botToken = await getBotTokenForGuild(supabase, poll.guild_id);
 
     // Build the embed
@@ -129,6 +168,13 @@ __serve(async (req) => {
     if (!response.ok) {
       const err = await response.text();
       console.error('Discord API error:', err);
+
+      await supabase
+        .from('polls')
+        .update({ message_id: null })
+        .eq('id', poll.id)
+        .eq('message_id', deliveryClaim);
+
       return new Response(JSON.stringify({ error: `Discord API error: ${err}` }), { status: response.status, headers: corsHeaders });
     }
 
@@ -138,7 +184,8 @@ __serve(async (req) => {
     await supabase
       .from('polls')
       .update({ message_id: data.id })
-      .eq('id', pollId);
+      .eq('id', pollId)
+      .eq('message_id', deliveryClaim);
 
     console.log(`[SendPoll] ✅ Sent poll "${poll.question}" to channel ${poll.channel_id}, message ${data.id}`);
 
