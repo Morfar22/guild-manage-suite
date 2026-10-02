@@ -140,25 +140,16 @@ const DEPLOY_SCOPE = String(process.env.DEPLOY_SCOPE || (GUILD_ID ? 'guild' : 'g
       ? removeDiscoveryRestrictedRoutes(groupedCommandData)
       : groupedCommandData;
 
+    // /fivem is a passthrough root in commandRouting, so append its canonical
+    // definition explicitly for both official and guild-scoped deployments.
+    commandData.push(buildFiveMCommand().toJSON());
+
     if (DEPLOY_SCOPE === 'global') {
-      // Preserve an existing global /fivem command because it is managed by the
-      // dedicated FiveM command route rather than this flat command catalog.
       let existingGlobals = [];
       try {
         existingGlobals = await rest.get(Routes.applicationCommands(resolvedApplicationId));
-        const existingFiveM = existingGlobals.find(command => command.name === 'fivem');
-        if (existingFiveM) {
-          commandData.push({
-            name: existingFiveM.name,
-            description: existingFiveM.description,
-            type: existingFiveM.type,
-            options: existingFiveM.options || [],
-            default_member_permissions: existingFiveM.default_member_permissions ?? null,
-            nsfw: Boolean(existingFiveM.nsfw),
-          });
-        }
       } catch (error) {
-        console.warn('⚠️ Kunne ikke kontrollere eksisterende global /fivem command:', error.message);
+        console.warn('⚠️ Kunne ikke kontrollere eksisterende globale commands:', error.message);
       }
 
       const publicLogicalCount = getCanonicalLogicalCommands().filter(
@@ -195,26 +186,7 @@ const DEPLOY_SCOPE = String(process.env.DEPLOY_SCOPE || (GUILD_ID ? 'guild' : 'g
     }
 
     // Guild-scoped deployment remains available for testing and custom bots.
-    try {
-      const existingGuildCommands = await rest.get(
-        Routes.applicationGuildCommands(resolvedApplicationId, GUILD_ID)
-      );
-      const existingFiveM = existingGuildCommands.find(command => command.name === 'fivem');
-      if (existingFiveM) {
-        commandData.push({
-          name: existingFiveM.name,
-          description: existingFiveM.description,
-          type: existingFiveM.type,
-          options: existingFiveM.options || [],
-          default_member_permissions: existingFiveM.default_member_permissions ?? null,
-          nsfw: Boolean(existingFiveM.nsfw),
-        });
-      }
-    } catch (error) {
-      console.warn('⚠️ Kunne ikke kontrollere eksisterende /fivem command:', error.message);
-    }
-
-    // A guild-scoped test/custom deployment must not keep same-name globals.
+    // A guild-scoped test/custom deployment must not keep global commands.
     const existingGlobals = await rest.get(Routes.applicationCommands(resolvedApplicationId));
     if (existingGlobals.length > 0) {
       await rest.put(
