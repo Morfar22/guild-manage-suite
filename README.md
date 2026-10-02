@@ -1,73 +1,52 @@
-# Welcome to your Lovable project
+# GuildOS Bot
 
-## Project info
+GuildOS Bot is an all-in-one Discord server management platform with a web dashboard and a multi-client Discord bot runtime.
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+## Platform
 
-## How can I edit this code?
+GuildOS Bot includes moderation, tickets, AutoMod, anti-raid protection, appeals, workflows, custom commands, leveling, economy, giveaways, analytics, notifications, FiveM integrations, social integrations and server administration tools.
 
-There are several ways of editing your application.
+The web application is built with React, TanStack Router, TypeScript, Tailwind CSS and Supabase. The bot runtime uses Node.js and discord.js.
 
-**Use Lovable**
+## Development
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
-
-Changes made via Lovable will be committed automatically to this repo.
-
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
+```bash
+npm install
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+Build the dashboard with:
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+```bash
+npm run build
+```
 
-**Use GitHub Codespaces**
+Validate the canonical Discord command catalog with:
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+```bash
+npm run check:commands
+```
 
-## What technologies are used for this project?
+## Bot runtime
 
-This project is built with:
+The bot lives in `bot/`.
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+```bash
+cd bot
+npm install
+node --check bot.js
+node bot.js
+```
 
-## How can I deploy this project?
+For PM2 deployments, the existing process identifier remains `discord-bot` for backwards compatibility. The visible product and default Discord bot name are **GuildOS Bot**.
 
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
+## Configuration
 
-## Can I connect a custom domain to my Lovable project?
+Runtime secrets and infrastructure identifiers intentionally keep their existing names, including Discord/Supabase environment variables and API hostnames. They are implementation details and are not part of the public brand.
 
-Yes, you can!
+## Brand
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+**Product:** GuildOS Bot  
+**Dashboard:** GuildOS Bot  
+**Default Discord bot:** GuildOS Bot  
+**Operations workspace:** GuildOS Bot Operations Center
