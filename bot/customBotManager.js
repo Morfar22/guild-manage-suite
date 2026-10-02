@@ -22,6 +22,7 @@ const { Client, GatewayIntentBits, Partials, ActivityType, REST, Routes } = requ
 const { buildFiveMCommand } = require('./fivem/commands');
 const { commands } = require('./commandDefinitions');
 const { groupFlatCommandDefinitions } = require('./commandRouting');
+const { commandSetsEqual } = require('./commandSync');
 
 const SUPABASE_URL = process.env.SUPABASE_URL || 'https://rkdqunnttcyuybbofkvz.supabase.co';
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -44,36 +45,6 @@ const APP_API_BASE = process.env.APP_API_BASE || 'https://bot.nethost-solutions.
 const GUILDOS_BRAND_NAME = 'GuildOS Bot';
 const GUILDOS_ACTIVITY = process.env.DEFAULT_BOT_ACTIVITY || 'GuildOS Bot • /help';
 const GUILDOS_DISCOVERY_APPLICATION_ID = process.env.GUILDOS_DISCOVERY_APPLICATION_ID || '1555371176224628787';
-
-function matchesCommandShape(actual, expected) {
-  if (Array.isArray(expected)) {
-    return Array.isArray(actual)
-      && actual.length === expected.length
-      && expected.every((item, index) => matchesCommandShape(actual[index], item));
-  }
-
-  if (expected && typeof expected === 'object') {
-    if (!actual || typeof actual !== 'object') return false;
-    return Object.keys(expected).every((key) => matchesCommandShape(actual[key], expected[key]));
-  }
-
-  return actual === expected;
-}
-
-function commandSetsEqual(existingCommands, desiredCommands) {
-  if (!Array.isArray(existingCommands) || existingCommands.length !== desiredCommands.length) {
-    return false;
-  }
-
-  const existingByKey = new Map(
-    existingCommands.map((command) => [`${command.type || 1}:${command.name}`, command])
-  );
-
-  return desiredCommands.every((desired) => {
-    const existing = existingByKey.get(`${desired.type || 1}:${desired.name}`);
-    return Boolean(existing) && matchesCommandShape(existing, desired);
-  });
-}
 
 function getWsPing(client) {
   const ping = Number(client?.ws?.ping);
