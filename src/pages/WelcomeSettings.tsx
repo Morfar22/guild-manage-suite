@@ -78,8 +78,45 @@ export default function WelcomeSettings() {
   }, [settings]);
 
   const handleSave = async () => {
+    if (formData.enabled && !formData.welcome_channel_id) {
+      toast({ title: 'Manglende kanal', description: 'Vælg en velkomstkanal først.', variant: 'destructive' });
+      return;
+    }
+
+    if (formData.leave_enabled && !formData.leave_channel_id && !formData.welcome_channel_id) {
+      toast({ title: 'Manglende farvelkanal', description: 'Vælg en farvelkanal eller en velkomstkanal.', variant: 'destructive' });
+      return;
+    }
+
+    if (formData.auto_role_enabled) {
+      const selectedIds = formData.auto_role_ids.length > 0
+        ? formData.auto_role_ids
+        : (formData.auto_role_id ? [formData.auto_role_id] : []);
+
+      if (selectedIds.length === 0) {
+        toast({ title: 'Ingen roller valgt', description: 'Vælg mindst én auto-rolle.', variant: 'destructive' });
+        return;
+      }
+
+      const blocked = (roles || []).filter(
+        (role) => selectedIds.includes(role.id) && role.assignable === false
+      );
+      if (blocked.length > 0) {
+        toast({
+          title: 'Rollen kan ikke tildeles',
+          description: blocked.map((role) => `${role.name}: ${role.reason || 'ukendt årsag'}`).join(' · '),
+          variant: 'destructive',
+        });
+        return;
+      }
+    }
+
     try {
-      await updateSettings.mutateAsync(formData);
+      const payload = {
+        ...formData,
+        auto_role_ids: [...new Set(formData.auto_role_ids.filter(Boolean))],
+      };
+      await updateSettings.mutateAsync(payload);
       toast({ title: 'Gemt!', description: 'Velkomstindstillinger er opdateret.' });
     } catch (error) {
       toast({ title: 'Fejl', description: 'Kunne ikke gemme indstillinger.', variant: 'destructive' });
@@ -98,7 +135,7 @@ export default function WelcomeSettings() {
     setIsTesting(true);
     try {
       const { data, error } = await invokeFunction('bot-welcome', {
-        body: { action: 'testWelcome', data: { guildId: selectedGuild.id, username: 'TestUser' } },
+        body: { action: 'testWelcome', data: { guildId: selectedGuild.id, username: 'TestUser', settings: formData } },
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
@@ -123,7 +160,7 @@ export default function WelcomeSettings() {
     setIsTestingLeave(true);
     try {
       const { data, error } = await invokeFunction('bot-welcome', {
-        body: { action: 'testLeave', data: { guildId: selectedGuild.id, username: 'TestUser' } },
+        body: { action: 'testLeave', data: { guildId: selectedGuild.id, username: 'TestUser', settings: formData } },
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
@@ -196,6 +233,7 @@ export default function WelcomeSettings() {
                 value={formData.welcome_channel_id}
                 onValueChange={(value) => setFormData({ ...formData, welcome_channel_id: value })}
                 placeholder="Vælg velkomstkanal"
+                allowedTypes={[0, 5]}
               />
             </div>
             <div>
@@ -356,6 +394,7 @@ export default function WelcomeSettings() {
                 value={formData.leave_channel_id}
                 onValueChange={(value) => setFormData({ ...formData, leave_channel_id: value })}
                 placeholder="Vælg farvelkanal (eller brug samme som velkomst)"
+                allowedTypes={[0, 5]}
               />
             </div>
             <div>
@@ -461,22 +500,34 @@ export default function WelcomeSettings() {
                   {roles.map((role) => {
                     const isChecked = formData.auto_role_ids.includes(role.id);
                     return (
-                      <div key={role.id} className="flex items-center gap-2">
+                      <div key={role.id} className="flex items-start gap-2">
                         <Checkbox
                           id={`role-${role.id}`}
                           checked={isChecked}
+                          disabled={role.assignable === false}
                           onCheckedChange={(checked) => {
+                            if (role.assignable === false) return;
                             const newIds = checked
-                              ? [...formData.auto_role_ids, role.id]
+                              ? [...new Set([...formData.auto_role_ids, role.id])]
                               : formData.auto_role_ids.filter(id => id !== role.id);
                             setFormData({ ...formData, auto_role_ids: newIds, auto_role_id: newIds[0] || '' });
                           }}
                         />
                         <div
-                          className="w-3 h-3 rounded-full"
+                          className="w-3 h-3 rounded-full mt-0.5"
                           style={{ backgroundColor: getColorHex(role.color) }}
                         />
-                        <label htmlFor={`role-${role.id}`} className="text-sm cursor-pointer">{role.name}</label>
+                        <div className="min-w-0">
+                          <label
+                            htmlFor={`role-${role.id}`}
+                            className={`text-sm ${role.assignable === false ? 'text-muted-foreground cursor-not-allowed' : 'cursor-pointer'}`}
+                          >
+                            {role.name}
+                          </label>
+                          {role.assignable === false && role.reason && (
+                            <p className="text-xs text-destructive/80">{role.reason}</p>
+                          )}
+                        </div>
                       </div>
                     );
                   })}
@@ -494,7 +545,7 @@ export default function WelcomeSettings() {
                 </div>
               )}
               <p className="text-xs text-muted-foreground mt-2">
-                Botten skal have en rolle højere end den valgte rolle for at tildele den
+                Utilgængelige roller deaktiveres automatisk. Botten skal have <strong>Manage Roles</strong> og en højere rolle end alle valgte auto-roller.
               </p>
             </div>
           </CardContent>
