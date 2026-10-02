@@ -19,7 +19,8 @@
 require('dotenv').config({ path: require('path').join(__dirname, '.env'), override: true });
 require('./utils/consoleLogger').installGlobalConsoleLogger();
 
-const { Events, EmbedBuilder, PermissionFlagsBits, ChannelType } = require('discord.js');
+const { Events, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, PermissionFlagsBits, ChannelType } = require('discord.js');
+const { randomUUID } = require('node:crypto');
 const { createClient } = require('@supabase/supabase-js');
 
 // Import manager
@@ -1169,25 +1170,124 @@ function createSlashHandlers(client) {
     },
 
     poll: async (interaction) => {
-      const question = interaction.options.getString('question');
-      const options = interaction.options.getString('options').split('|').map(o => o.trim());
+      const question = interaction.options.getString('question')?.trim();
+      const options = (interaction.options.getString('options') || '')
+        .split('|')
+        .map((option) => option.trim())
+        .filter(Boolean);
 
-      if (options.length < 2 || options.length > 10) {
-        return interaction.reply({ content: '❌ Angiv 2-10 muligheder separeret med |', flags: 64 });
+      if (!question) {
+        return interaction.reply({ content: '❌ Du skal skrive et spørgsmål.', flags: 64 });
       }
 
-      const emojis = ['1️⃣', '2️⃣', '3️⃣', '4️⃣', '5️⃣', '6️⃣', '7️⃣', '8️⃣', '9️⃣', '🔟'];
+      if (options.length < 2 || options.length > 10) {
+        return interaction.reply({
+          content: '❌ Angiv 2-10 muligheder separeret med |, f.eks. Ja | Nej | Måske.',
+          flags: 64,
+        });
+      }
+
+      const uniqueOptions = new Set(options.map((option) => option.toLocaleLowerCase('da-DK')));
+      if (uniqueOptions.size !== options.length) {
+        return interaction.reply({ content: '❌ Valgmulighederne skal være forskellige.', flags: 64 });
+      }
+
+      const discordGuildId = interaction.guild?.id;
+      const channelId = interaction.channelId || interaction.channel?.id;
+
+      if (!discordGuildId || !channelId) {
+        return interaction.reply({ content: '❌ Polls kan kun oprettes i en serverkanal.', flags: 64 });
+      }
+
+      const { data: guildRow, error: guildError } = await supabase
+        .from('guilds')
+        .select('id')
+        .eq('guild_id', discordGuildId)
+        .maybeSingle();
+
+      if (guildError) throw guildError;
+      if (!guildRow) {
+        return interaction.reply({
+          content: '❌ Serveren er ikke synkroniseret med GuildOS endnu.',
+          flags: 64,
+        });
+      }
+
+      const pollId = randomUUID();
+      const deliveryClaim = `pending:command:${pollId}`;
+      const pollOptions = options.map((label) => ({ label, votes: 0, voters: [] }));
+      const pollVotes = {
+        allow_multiple: false,
+        created_by_name: interaction.user?.tag || interaction.user?.username || 'Discord bruger',
+      };
+
+      const { error: insertError } = await supabase.from('polls').insert({
+        id: pollId,
+        guild_id: guildRow.id,
+        channel_id: channelId,
+        message_id: deliveryClaim,
+        question,
+        options: pollOptions,
+        votes: pollVotes,
+        created_by: `discord:${interaction.user?.id || 'unknown'}`,
+        ended: false,
+      });
+
+      if (insertError) throw insertError;
 
       const embed = new EmbedBuilder()
         .setColor('#5865F2')
         .setTitle(`📊 ${question}`)
-        .setDescription(options.map((opt, i) => `${emojis[i]} ${opt}`).join('\n'))
-        .setFooter({ text: `Poll af ${interaction.user.tag}` });
+        .setDescription(options.map((option, index) => `**${index + 1}.** ${option}`).join('\n'))
+        .setAuthor({ name: `Oprettet af ${pollVotes.created_by_name}` })
+        .setFooter({ text: 'Ingen tidsfrist' })
+        .setTimestamp();
 
-      const msg = await interaction.reply({ embeds: [embed], fetchReply: true });
+      const rows = [];
+      for (let i = 0; i < options.length; i += 5) {
+        const row = new ActionRowBuilder();
+        options.slice(i, i + 5).forEach((option, offset) => {
+          row.addComponents(
+            new ButtonBuilder()
+              .setCustomId(`poll_vote_${pollId}_${i + offset}`)
+              .setLabel(option.slice(0, 80))
+              .setStyle(ButtonStyle.Primary)
+          );
+        });
+        rows.push(row);
+      }
 
-      for (let i = 0; i < options.length; i++) {
-        await msg.react(emojis[i]);
+      try {
+        const message = await interaction.reply({
+          embeds: [embed],
+          components: rows,
+          fetchReply: true,
+        });
+
+        const messageId = message?.id || interaction._lastReply?.id;
+        if (!messageId) throw new Error('Poll-beskeden mangler Discord message ID');
+
+        const { error: messageIdError } = await supabase
+          .from('polls')
+          .update({ message_id: messageId })
+          .eq('id', pollId)
+          .eq('message_id', deliveryClaim);
+
+        if (messageIdError) {
+          console.error('[Poll] Kunne ikke gemme message_id:', messageIdError.message);
+        }
+
+        console.log(
+          `[Poll] ✅ Command poll "${question}" oprettet i guild ${discordGuildId}, channel ${channelId}, message ${messageId}`
+        );
+      } catch (error) {
+        await supabase
+          .from('polls')
+          .delete()
+          .eq('id', pollId)
+          .eq('message_id', deliveryClaim)
+          .catch(() => {});
+        throw error;
       }
     },
 
