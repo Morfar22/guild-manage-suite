@@ -53,6 +53,11 @@ function setupPollHandler(client, supabase, options = {}) {
       return;
     }
 
+    if (poll.message_id) {
+      console.log(`[Poll] Poll ${poll.id} already claimed/delivered, skipping realtime send`);
+      return;
+    }
+
     // Look up the guild's Discord ID
     const { data: guildRow } = await supabase
       .from('guilds')
@@ -73,23 +78,53 @@ function setupPollHandler(client, supabase, options = {}) {
       return;
     }
 
+    const deliveryClaim = `pending:realtime:${client.user?.id || 'bot'}:${Date.now()}`;
+
     try {
+      const { data: claimedRows, error: claimError } = await supabase
+        .from('polls')
+        .update({ message_id: deliveryClaim })
+        .eq('id', poll.id)
+        .is('message_id', null)
+        .select('id');
+
+      if (claimError) throw claimError;
+      if (!claimedRows?.length) {
+        console.log(`[Poll] Poll ${poll.id} delivery already claimed by another sender`);
+        return;
+      }
+
       const channel = await guild.channels.fetch(poll.channel_id);
       if (!channel || !channel.isTextBased()) {
+        await supabase
+          .from('polls')
+          .update({ message_id: null })
+          .eq('id', poll.id)
+          .eq('message_id', deliveryClaim);
         console.error('[Poll] Channel not found or not text-based:', poll.channel_id);
         return;
       }
 
       const message = await channel.send(buildPollMessage(poll));
 
-      // Save the message_id so voting buttons reference the right message
-      await supabase
+      const { error: updateError } = await supabase
         .from('polls')
         .update({ message_id: message.id })
-        .eq('id', poll.id);
+        .eq('id', poll.id)
+        .eq('message_id', deliveryClaim);
+
+      if (updateError) {
+        console.error('[Poll] Failed to save delivered message_id:', updateError.message);
+      }
 
       console.log(`[Poll] ✅ Sent poll "${poll.question}" to #${channel.name}`);
     } catch (err) {
+      await supabase
+        .from('polls')
+        .update({ message_id: null })
+        .eq('id', poll.id)
+        .eq('message_id', deliveryClaim)
+        .catch(() => {});
       console.error('[Poll] Failed to send poll:', err.message);
     }
   }
