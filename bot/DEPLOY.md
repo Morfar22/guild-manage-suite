@@ -1,4 +1,4 @@
-# 🤖 Discord Bot - VPS Deployment Guide
+# 🤖 GuildOS Bot - VPS Deployment Guide
 
 ## Krav
 
