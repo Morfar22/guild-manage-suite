@@ -23,3 +23,6 @@ GuildOS Bot er en Discord bot management platform hvor server-ejere kan konfigur
 - [FAQ](/docs/faq/general): Ofte stillede spørgsmål.
 - [Changelog](/docs/changelog/latest): Seneste opdateringer.
 - [Kontakt](/docs/contact/support): Support og kontakt.
+
+- [Terms of Service](/terms): Vilkår for brug af GuildOS Bot.
+- [Privacy Policy](/privacy): Oplysninger om databehandling og privatliv.
