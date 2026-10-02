@@ -678,6 +678,56 @@ class CustomBotManager {
   }
 
   /**
+   * Clear a permanently invalid avatar URL from the persisted custom-bot config.
+   * Keeps transient network/5xx failures untouched.
+   */
+  async clearInvalidAvatarConfig(config, reason) {
+    if (!config?.guild_id || !config?.bot_avatar_url) return;
+
+    const oldUrl = config.bot_avatar_url;
+    // Prevent repeated attempts in the current process even if API cleanup fails.
+    config.bot_avatar_url = null;
+
+    if (!BOT_SECRET_KEY) {
+      console.warn(
+        `[CustomBotManager] Invalid avatar cleared in memory for ${config.guild_id}, but BOT_SECRET_KEY is missing; DB config was not updated`
+      );
+      return;
+    }
+
+    try {
+      const response = await fetch(`${APP_API_BASE}/api/public/guild-bot-config`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-bot-secret': BOT_SECRET_KEY,
+        },
+        body: JSON.stringify({
+          action: 'clear_invalid_avatar',
+          guild_id: config.guild_id,
+          reason: String(reason || 'invalid avatar source').slice(0, 500),
+        }),
+      });
+
+      if (!response.ok) {
+        const details = await response.text().catch(() => '');
+        console.warn(
+          `[CustomBotManager] Could not persist avatar cleanup for ${config.guild_id}: HTTP ${response.status} ${details.slice(0, 180)}`
+        );
+        return;
+      }
+
+      console.log(
+        `[CustomBotManager] 🧹 Removed invalid avatar URL from config for ${config.bot_name || config.guild_id}: ${oldUrl}`
+      );
+    } catch (error) {
+      console.warn(
+        `[CustomBotManager] Avatar cleanup API failed for ${config.guild_id}: ${error?.message || error}`
+      );
+    }
+  }
+
+  /**
    * Set bot presence based on config
    */
   async setPresence(client, config) {
@@ -742,7 +792,11 @@ class CustomBotManager {
         try {
           parsedAvatarUrl = new URL(avatarUrl);
         } catch {
-          warnAvatarOnce(`invalid:${avatarUrl}`, `[CustomBotManager] Skipping invalid avatar URL for ${client.user.tag}`);
+          warnAvatarOnce(
+            `invalid:${avatarUrl}`,
+            `[CustomBotManager] Invalid avatar URL for ${client.user.tag}; removing it from config`
+          );
+          await this.clearInvalidAvatarConfig(config, 'Invalid URL');
         }
 
         if (parsedAvatarUrl && ['http:', 'https:'].includes(parsedAvatarUrl.protocol)) {
@@ -751,7 +805,14 @@ class CustomBotManager {
             if (response.ok) {
               const contentType = response.headers.get('content-type') || '';
               if (!contentType.startsWith('image/')) {
-                warnAvatarOnce(`content-type:${parsedAvatarUrl.toString()}:${contentType}`, `[CustomBotManager] Avatar URL for ${client.user.tag} has non-image content type: ${contentType || 'unknown'}`);
+                warnAvatarOnce(
+                  `content-type:${parsedAvatarUrl.toString()}:${contentType}`,
+                  `[CustomBotManager] Avatar URL for ${client.user.tag} is not an image; removing it from config`
+                );
+                await this.clearInvalidAvatarConfig(
+                  config,
+                  `Non-image content type: ${contentType || 'unknown'}`
+                );
               } else {
                 const buffer = await response.arrayBuffer();
                 const base64 = Buffer.from(buffer).toString('base64');
@@ -761,7 +822,19 @@ class CustomBotManager {
                 console.log(`[CustomBotManager] Updated bot avatar from configured URL`);
               }
             } else {
-              warnAvatarOnce(`http:${parsedAvatarUrl.toString()}:${response.status}`, `[CustomBotManager] Avatar URL for ${client.user.tag} returned HTTP ${response.status}; keeping current avatar`);
+              const permanentMissing = response.status === 404 || response.status === 410;
+              if (permanentMissing) {
+                warnAvatarOnce(
+                  `http:${parsedAvatarUrl.toString()}:${response.status}`,
+                  `[CustomBotManager] Avatar URL for ${client.user.tag} returned HTTP ${response.status}; removing it from config`
+                );
+                await this.clearInvalidAvatarConfig(config, `HTTP ${response.status}`);
+              } else {
+                warnAvatarOnce(
+                  `http:${parsedAvatarUrl.toString()}:${response.status}`,
+                  `[CustomBotManager] Avatar URL for ${client.user.tag} returned HTTP ${response.status}; treating as transient and keeping config`
+                );
+              }
             }
           } catch (error) {
             if (error.code === 50035 || error.message.includes('rate limit')) {
