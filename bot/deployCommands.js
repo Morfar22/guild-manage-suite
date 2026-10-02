@@ -8,7 +8,11 @@
  * 
  * Required environment variables:
  * - DEFAULT_BOT_TOKEN (or DISCORD_TOKEN)
- * - APPLICATION_ID (your bot's application/client ID)
+ *
+ * Optional:
+ * - APPLICATION_ID (validated against the active bot token; token identity wins)
+ * - DEPLOY_SCOPE=global|guild
+ * - DEPLOY_GUILD_ID (required only for guild scope)
  */
 
 require('dotenv').config();
