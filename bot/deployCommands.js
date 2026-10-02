@@ -19,8 +19,8 @@ const { groupFlatCommandDefinitions, getCanonicalLogicalCommands } = require('./
 const TOKEN = process.env.DEFAULT_BOT_TOKEN || process.env.DISCORD_TOKEN;
 const APPLICATION_ID = process.env.APPLICATION_ID;
 
-if (!TOKEN || !APPLICATION_ID) {
-  console.error('❌ Missing DEFAULT_BOT_TOKEN or APPLICATION_ID in environment variables');
+if (!TOKEN) {
+  console.error('❌ Missing DEFAULT_BOT_TOKEN or DISCORD_TOKEN in environment variables');
   process.exit(1);
 }
 
@@ -808,6 +808,16 @@ const DEPLOY_SCOPE = String(process.env.DEPLOY_SCOPE || (GUILD_ID ? 'guild' : 'g
 
 (async () => {
   try {
+    // Resolve the application from the bot token itself. This prevents a stale
+    // resolvedApplicationId value from deploying commands to the wrong Discord app.
+    const currentBot = await rest.get(Routes.user('@me'));
+    const resolvedApplicationId = currentBot.id;
+
+    if (resolvedApplicationId && resolvedApplicationId !== resolvedApplicationId) {
+      console.warn(
+        `⚠️ resolvedApplicationId (${resolvedApplicationId}) matcher ikke bot-tokenets application/user ID (${resolvedApplicationId}). Bruger tokenets ID.`
+      );
+    }
     if (!['global', 'guild'].includes(DEPLOY_SCOPE)) {
       throw new Error('DEPLOY_SCOPE skal være "global" eller "guild"');
     }
@@ -826,7 +836,7 @@ const DEPLOY_SCOPE = String(process.env.DEPLOY_SCOPE || (GUILD_ID ? 'guild' : 'g
       // Preserve an existing global /fivem command because it is managed by the
       // dedicated FiveM command route rather than this flat command catalog.
       try {
-        const existingGlobals = await rest.get(Routes.applicationCommands(APPLICATION_ID));
+        const existingGlobals = await rest.get(Routes.applicationCommands(resolvedApplicationId));
         const existingFiveM = existingGlobals.find(command => command.name === 'fivem');
         if (existingFiveM) {
           commandData.push({
@@ -844,7 +854,7 @@ const DEPLOY_SCOPE = String(process.env.DEPLOY_SCOPE || (GUILD_ID ? 'guild' : 'g
 
       console.log(`🔄 Registrerer ${commandData.length} globale slash commands (${getCanonicalLogicalCommands().length} funktioner)...`);
       const globalData = await rest.put(
-        Routes.applicationCommands(APPLICATION_ID),
+        Routes.applicationCommands(resolvedApplicationId),
         { body: commandData }
       );
 
@@ -855,7 +865,7 @@ const DEPLOY_SCOPE = String(process.env.DEPLOY_SCOPE || (GUILD_ID ? 'guild' : 'g
       // so Discord does not display duplicate global + guild commands.
       if (GUILD_ID) {
         await rest.put(
-          Routes.applicationGuildCommands(APPLICATION_ID, GUILD_ID),
+          Routes.applicationGuildCommands(resolvedApplicationId, GUILD_ID),
           { body: [] }
         );
         console.log(`✅ Legacy guild commands ryddet i ${GUILD_ID}`);
@@ -866,7 +876,7 @@ const DEPLOY_SCOPE = String(process.env.DEPLOY_SCOPE || (GUILD_ID ? 'guild' : 'g
     // Guild-scoped deployment remains available for testing and custom bots.
     try {
       const existingGuildCommands = await rest.get(
-        Routes.applicationGuildCommands(APPLICATION_ID, GUILD_ID)
+        Routes.applicationGuildCommands(resolvedApplicationId, GUILD_ID)
       );
       const existingFiveM = existingGuildCommands.find(command => command.name === 'fivem');
       if (existingFiveM) {
@@ -884,16 +894,16 @@ const DEPLOY_SCOPE = String(process.env.DEPLOY_SCOPE || (GUILD_ID ? 'guild' : 'g
     }
 
     // A guild-scoped test/custom deployment must not keep same-name globals.
-    const existingGlobals = await rest.get(Routes.applicationCommands(APPLICATION_ID));
+    const existingGlobals = await rest.get(Routes.applicationCommands(resolvedApplicationId));
     await rest.put(
-      Routes.applicationCommands(APPLICATION_ID),
+      Routes.applicationCommands(resolvedApplicationId),
       { body: [] }
     );
     console.log(`✅ Global command scope ryddet (${existingGlobals.length || 0} gamle command(s))`);
 
     console.log(`🔄 Registrerer ${commandData.length} grupperede slash commands (${getCanonicalLogicalCommands().length} funktioner) i guild ${GUILD_ID}...`);
     const guildData = await rest.put(
-      Routes.applicationGuildCommands(APPLICATION_ID, GUILD_ID),
+      Routes.applicationGuildCommands(resolvedApplicationId, GUILD_ID),
       { body: commandData }
     );
 
