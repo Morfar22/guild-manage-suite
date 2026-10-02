@@ -24,6 +24,9 @@ const LAVALINK_PORT = parseInt(process.env.LAVALINK_PORT || '2333', 10);
 const LAVALINK_PASSWORD = process.env.LAVALINK_PASSWORD || 'youshallnotpass';
 const LAVALINK_NAME = process.env.LAVALINK_NAME || 'Main';
 const LAVALINK_SECURE = process.env.LAVALINK_SECURE === 'true';
+const LAVALINK_RECONNECT_TRIES = Math.max(1, Number(process.env.LAVALINK_RECONNECT_TRIES || 120));
+const LAVALINK_RECONNECT_INTERVAL = Math.max(5, Number(process.env.LAVALINK_RECONNECT_INTERVAL || 30));
+const LAVALINK_REST_TIMEOUT = Math.max(10, Number(process.env.LAVALINK_REST_TIMEOUT || 30));
 
 const Nodes = [
   {
@@ -46,7 +49,7 @@ const lavalinkHealthByClient = new WeakMap();
 // Process-wide throttling so 8+ custom bots don't print the same Lavalink outage
 // every second. Each bot still keeps its own connection/session.
 const lavalinkErrorThrottle = new Map();
-const LAVALINK_ERROR_LOG_INTERVAL_MS = Number(process.env.LAVALINK_ERROR_LOG_INTERVAL_MS || 30000);
+const LAVALINK_ERROR_LOG_INTERVAL_MS = Number(process.env.LAVALINK_ERROR_LOG_INTERVAL_MS || 300000);
 
 // ==================== HELPERS ====================
 
@@ -107,7 +110,9 @@ function normalizeLavalinkError(error) {
 
 function logLavalinkErrorThrottled(name, error, client) {
   const details = normalizeLavalinkError(error);
-  const key = `${name}:${details}`;
+  // Collapse ECONNREFUSED / websocket-close variants into one process-wide
+  // outage bucket per node so 8+ bot clients don't flood PM2 logs.
+  const key = String(name || LAVALINK_NAME);
   const now = Date.now();
   const previous = lavalinkErrorThrottle.get(key);
 
@@ -147,7 +152,15 @@ function initMusic(client) {
       },
     },
     connector,
-    Nodes
+    Nodes,
+    {
+      resume: true,
+      resumeTimeout: 60,
+      reconnectTries: LAVALINK_RECONNECT_TRIES,
+      reconnectInterval: LAVALINK_RECONNECT_INTERVAL,
+      restTimeout: LAVALINK_REST_TIMEOUT,
+      moveOnDisconnect: false,
+    }
   );
 
   // Forward raw voice packets to Shoukaku when nodes are added manually
@@ -161,6 +174,7 @@ function initMusic(client) {
     health.lastError = null;
     health.connectedAt = new Date().toISOString();
 
+    lavalinkErrorThrottle.delete(String(name || LAVALINK_NAME));
     console.log(`[Music] ✅ Lavalink node "${name}" connected for ${client.user?.tag || client.user?.id || 'bot'}`);
   });
 
@@ -242,7 +256,11 @@ function initMusic(client) {
 
   kazagumoByClient.set(client, kazagumo);
 
-  console.log(`[Music] Kazagumo initialiseret for ${client.user?.tag || client.user?.id || 'pending client'}`);
+  console.log(
+    `[Music] Kazagumo initialiseret for ${client.user?.tag || client.user?.id || 'pending client'} · ` +
+    `Lavalink ${LAVALINK_SECURE ? 'wss' : 'ws'}://${LAVALINK_HOST}:${LAVALINK_PORT} · ` +
+    `reconnect ${LAVALINK_RECONNECT_TRIES}x/${LAVALINK_RECONNECT_INTERVAL}s`
+  );
 
   return kazagumo;
 }
