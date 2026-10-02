@@ -16,7 +16,8 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { invokeFunction } from '@/lib/functions-client';
 
 const BOT_CLIENT_ID = import.meta.env['VITE_DISCORD_BOT_CLIENT_ID'] || '';
-const BOT_PERMISSIONS = '8';
+// Least-privilege oriented feature set: no Administrator bit.
+const BOT_PERMISSIONS = '564593851624694';
 const BOT_INVITE_URL = BOT_CLIENT_ID ? `https://discord.com/api/oauth2/authorize?client_id=${BOT_CLIENT_ID}&permissions=${BOT_PERMISSIONS}&scope=bot%20applications.commands` : '';
 
 export default function GuildSelect() {
