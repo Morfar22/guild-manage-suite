@@ -43,6 +43,36 @@ const GUILDOS_BRAND_NAME = 'GuildOS Bot';
 const GUILDOS_ACTIVITY = process.env.DEFAULT_BOT_ACTIVITY || 'GuildOS Bot • /help';
 const GUILDOS_DISCOVERY_APPLICATION_ID = process.env.GUILDOS_DISCOVERY_APPLICATION_ID || '1555371176224628787';
 
+function matchesCommandShape(actual, expected) {
+  if (Array.isArray(expected)) {
+    return Array.isArray(actual)
+      && actual.length === expected.length
+      && expected.every((item, index) => matchesCommandShape(actual[index], item));
+  }
+
+  if (expected && typeof expected === 'object') {
+    if (!actual || typeof actual !== 'object') return false;
+    return Object.keys(expected).every((key) => matchesCommandShape(actual[key], expected[key]));
+  }
+
+  return actual === expected;
+}
+
+function commandSetsEqual(existingCommands, desiredCommands) {
+  if (!Array.isArray(existingCommands) || existingCommands.length !== desiredCommands.length) {
+    return false;
+  }
+
+  const existingByKey = new Map(
+    existingCommands.map((command) => [`${command.type || 1}:${command.name}`, command])
+  );
+
+  return desiredCommands.every((desired) => {
+    const existing = existingByKey.get(`${desired.type || 1}:${desired.name}`);
+    return Boolean(existing) && matchesCommandShape(existing, desired);
+  });
+}
+
 const avatarWarningKeys = new Set();
 function warnAvatarOnce(key, message) {
   if (avatarWarningKeys.has(key)) return;
@@ -370,7 +400,7 @@ class CustomBotManager {
 
     // Only deploy once per session per application ID
     if (CustomBotManager._deployedAppIds.has(applicationId)) {
-      console.log(`[CustomBotManager] Commands already deployed for ${applicationId} this session`);
+      console.log(`[CustomBotManager] Commands already checked for ${applicationId} this session`);
       return;
     }
 
@@ -398,6 +428,8 @@ class CustomBotManager {
           console.log(
             `[CustomBotManager] ✅ Preserving ${existingGlobals.length} existing global commands for app ${applicationId}`
           );
+        } else if (commandSetsEqual(existingGlobals, commandData)) {
+          console.log(`[CustomBotManager] ✅ Global bootstrap commands already up to date for app ${applicationId}`);
         } else {
           console.log(`[CustomBotManager] 🔄 Deploying ${commandData.length} global bootstrap commands for app ${applicationId}...`);
           const deployed = await rest.put(
@@ -411,11 +443,16 @@ class CustomBotManager {
         const guildsToClear = [...new Set([...guildIds, ...clearGuildIds])];
         for (const guildId of guildsToClear) {
           try {
+            const existingGuildCommands = await rest.get(
+              Routes.applicationGuildCommands(applicationId, guildId)
+            );
+            if (!existingGuildCommands.length) continue;
+
             await rest.put(
               Routes.applicationGuildCommands(applicationId, guildId),
               { body: [] }
             );
-            console.log(`[CustomBotManager] ✅ Cleared legacy guild commands from ${guildId}`);
+            console.log(`[CustomBotManager] ✅ Cleared ${existingGuildCommands.length} legacy guild command(s) from ${guildId}`);
           } catch (guildError) {
             console.warn(`[CustomBotManager] Could not clear legacy guild commands from ${guildId}:`, guildError.message);
           }
@@ -423,23 +460,34 @@ class CustomBotManager {
       } else {
         // Custom per-server bot applications stay guild-scoped so each custom
         // application only exposes commands inside its assigned server.
-        await rest.put(
-          Routes.applicationCommands(applicationId),
-          { body: [] }
-        );
+        const existingGlobals = await rest.get(Routes.applicationCommands(applicationId));
+        if (existingGlobals.length > 0) {
+          await rest.put(
+            Routes.applicationCommands(applicationId),
+            { body: [] }
+          );
+          console.log(`[CustomBotManager] ✅ Cleared ${existingGlobals.length} stale global command(s) for custom app ${applicationId}`);
+        }
 
-        if (guildIds.length > 0) {
-          console.log(`[CustomBotManager] 🔄 Deploying ${commandData.length} commands to ${guildIds.length} assigned guild(s)...`);
-          for (const guildId of guildIds) {
-            try {
-              const deployed = await rest.put(
-                Routes.applicationGuildCommands(applicationId, guildId),
-                { body: commandData }
-              );
-              console.log(`[CustomBotManager] ✅ ${deployed.length} commands active in guild ${guildId}`);
-            } catch (guildError) {
-              console.error(`[CustomBotManager] Failed guild deploy for ${guildId}:`, guildError.message);
+        for (const guildId of guildIds) {
+          try {
+            const existingGuildCommands = await rest.get(
+              Routes.applicationGuildCommands(applicationId, guildId)
+            );
+
+            if (commandSetsEqual(existingGuildCommands, commandData)) {
+              console.log(`[CustomBotManager] ✅ ${commandData.length} commands already up to date in guild ${guildId}`);
+              continue;
             }
+
+            console.log(`[CustomBotManager] 🔄 Syncing ${commandData.length} commands to guild ${guildId}...`);
+            const deployed = await rest.put(
+              Routes.applicationGuildCommands(applicationId, guildId),
+              { body: commandData }
+            );
+            console.log(`[CustomBotManager] ✅ ${deployed.length} commands active in guild ${guildId}`);
+          } catch (guildError) {
+            console.error(`[CustomBotManager] Failed guild deploy for ${guildId}:`, guildError.message);
           }
         }
 
@@ -448,11 +496,16 @@ class CustomBotManager {
         for (const guildId of clearGuildIds) {
           if (guildIds.includes(guildId)) continue;
           try {
+            const existingGuildCommands = await rest.get(
+              Routes.applicationGuildCommands(applicationId, guildId)
+            );
+            if (!existingGuildCommands.length) continue;
+
             await rest.put(
               Routes.applicationGuildCommands(applicationId, guildId),
               { body: [] }
             );
-            console.log(`[CustomBotManager] ✅ Cleared commands from unassigned guild ${guildId}`);
+            console.log(`[CustomBotManager] ✅ Cleared ${existingGuildCommands.length} command(s) from unassigned guild ${guildId}`);
           } catch (guildError) {
             console.warn(`[CustomBotManager] Could not clear commands from unassigned guild ${guildId}:`, guildError.message);
           }
@@ -461,7 +514,7 @@ class CustomBotManager {
 
       CustomBotManager._deployedAppIds.add(applicationId);
     } catch (error) {
-      console.error(`[CustomBotManager] ❌ Failed to deploy commands for ${applicationId}:`, error.message);
+      console.error(`[CustomBotManager] ❌ Failed to sync commands for ${applicationId}:`, error.message);
     }
   }
 
@@ -478,28 +531,32 @@ class CustomBotManager {
 
     try {
       const rest = new REST({ version: '10' }).setToken(token);
+      const route = Routes.applicationGuildCommands(applicationId, guildId);
+      const existingGuildCommands = await rest.get(route);
 
       if (scope === 'global') {
-        // Global commands are already registered at application scope. A newly
-        // joined guild only needs stale guild-specific copies removed.
-        await rest.put(
-          Routes.applicationGuildCommands(applicationId, guildId),
-          { body: [] }
-        );
-        console.log(`[CustomBotManager] ✅ Global commands apply to new guild ${guildId}; guild overrides cleared`);
+        // Global commands already apply automatically. Only remove stale guild
+        // overrides when there is actually something to remove.
+        if (existingGuildCommands.length > 0) {
+          await rest.put(route, { body: [] });
+          console.log(`[CustomBotManager] ✅ Cleared ${existingGuildCommands.length} stale guild override(s) from ${guildId}`);
+        } else {
+          console.log(`[CustomBotManager] ✅ Global commands already apply cleanly to guild ${guildId}`);
+        }
         return;
       }
 
       const commandData = CustomBotManager.buildCommands().map(command => command.toJSON());
+      if (commandSetsEqual(existingGuildCommands, commandData)) {
+        console.log(`[CustomBotManager] ✅ Commands already up to date in guild ${guildId}`);
+        return;
+      }
 
-      console.log(`[CustomBotManager] 🔄 Deploying commands to new guild ${guildId}...`);
-      const data = await rest.put(
-        Routes.applicationGuildCommands(applicationId, guildId),
-        { body: commandData }
-      );
-      console.log(`[CustomBotManager] ✅ ${data.length} commands deployed to guild ${guildId}`);
+      console.log(`[CustomBotManager] 🔄 Syncing commands to guild ${guildId}...`);
+      const data = await rest.put(route, { body: commandData });
+      console.log(`[CustomBotManager] ✅ ${data.length} commands active in guild ${guildId}`);
     } catch (error) {
-      console.error(`[CustomBotManager] ❌ Failed to deploy commands to guild ${guildId}:`, error.message);
+      console.error(`[CustomBotManager] ❌ Failed to sync commands to guild ${guildId}:`, error.message);
     }
   }
 
@@ -684,6 +741,7 @@ class CustomBotManager {
         GatewayIntentBits.GuildMembers,
         GatewayIntentBits.GuildMessages,
         GatewayIntentBits.GuildMessageReactions,
+        GatewayIntentBits.GuildInvites,
         GatewayIntentBits.GuildVoiceStates,
         GatewayIntentBits.GuildBans,
         GatewayIntentBits.GuildPresences,
