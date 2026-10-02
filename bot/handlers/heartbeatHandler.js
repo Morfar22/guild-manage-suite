@@ -23,6 +23,11 @@ const unregisteredGuildUntil = new Map();
 const dailyMessageCount = new Map();
 const APP_API_BASE = process.env.APP_API_BASE || 'https://bot.nethost-solutions.dk';
 
+function getWsPing(client) {
+  const ping = Number(client?.ws?.ping);
+  return Number.isFinite(ping) && ping >= 0 ? Math.round(ping) : null;
+}
+
 /**
  * Nulstil besked tæller ved midnat
  */
@@ -124,7 +129,7 @@ async function sendHeartbeat(client, guild, metrics) {
     const payload = {
       guild_id: guild.id,
       is_online: true,
-      latency_ms: client.ws.ping,
+      latency_ms: getWsPing(client),
       member_count: guild.memberCount,
       message_count_today: dailyMessageCount.get(guild.id) || 0,
       ...(metrics || {})
@@ -154,7 +159,12 @@ async function sendHeartbeat(client, guild, metrics) {
       console.error(`[Heartbeat] Fejl for guild ${guild.name}:`, error);
     } else {
       unregisteredGuildUntil.delete(guild.id);
-      console.log(`[Heartbeat] Sendt for ${guild.name} (${client.ws.ping}ms latency)`);
+      const ping = getWsPing(client);
+      console.log(
+        ping === null
+          ? `[Heartbeat] Sendt for ${guild.name} (latency afventer)`
+          : `[Heartbeat] Sendt for ${guild.name} (${ping}ms latency)`
+      );
     }
   } catch (error) {
     console.error(`[Heartbeat] Network fejl for guild ${guild.name}:`, error.message);
