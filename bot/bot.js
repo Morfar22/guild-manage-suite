@@ -104,6 +104,14 @@ const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY;
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const BOT_SECRET_KEY = process.env.BOT_SECRET_KEY;
 
+const DISCOVERY_EXCLUDED_COMMANDS = new Set([
+  'crime',
+  'slots',
+  'gamble',
+  'roulette',
+  'blackjack',
+]);
+
 // Supabase client for database operations
 const supabase = createClient(
   SUPABASE_URL,
@@ -2885,6 +2893,18 @@ manager.registerHandler((client, guildId, assignedDiscordGuildId) => {
     console.error(`[Bot] ❌ Platform V3 handler fejl:`, e.message);
   }
 
+
+  // The official GuildOS application is Discovery-enabled and must not expose
+  // gambling/illegal-themed commands. Custom bots intentionally keep the full
+  // per-guild catalog.
+  if (!guildId) {
+    for (const commandName of DISCOVERY_EXCLUDED_COMMANDS) {
+      delete slashHandlers[commandName];
+    }
+    console.log(
+      `[Bot] ✅ Discovery-safe runtime for default: disabled ${[...DISCOVERY_EXCLUDED_COMMANDS].join(', ')}`
+    );
+  }
 
   // Register prefix command handler (mirrors all slash commands)
   try {
