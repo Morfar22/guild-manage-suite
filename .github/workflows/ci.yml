@@ -49,7 +49,7 @@ jobs:
         run: bun run lint
 
       - name: Tests
-        run: bunx vitest run --passWithNoTests
+        run: bunx vitest run --config vitest.config.ts --passWithNoTests
 
       - name: Build
         run: bun run build
