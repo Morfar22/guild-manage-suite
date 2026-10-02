@@ -9,7 +9,12 @@
     "setup": "bash setup.sh",
     "kickbot:scan": "node scripts/kick-bot-everywhere.js 1067179642391363654",
     "kickbot:execute": "node scripts/kick-bot-everywhere.js 1067179642391363654 --execute",
-    "lavalink:check": "node scripts/check-lavalink.js"
+    "lavalink:check": "node scripts/check-lavalink.js",
+    "lavalink:install": "bash scripts/install-lavalink.sh",
+    "lavalink:start": "bash scripts/start-lavalink.sh",
+    "lavalink:pm2": "pm2 start ecosystem.lavalink.config.js",
+    "lavalink:restart": "pm2 restart guildos-lavalink --update-env",
+    "lavalink:logs": "pm2 logs guildos-lavalink --lines 100"
   },
   "dependencies": {
     "discord.js": "^14.16.3",
