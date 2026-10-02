@@ -424,10 +424,16 @@ class CustomBotManager {
           console.warn(`[CustomBotManager] Could not inspect global commands for ${applicationId}:`, error.message);
         }
 
-        if (options.preserveExistingGlobals !== false && existingGlobals.length > 0) {
-          console.log(
-            `[CustomBotManager] ✅ Preserving ${existingGlobals.length} existing global commands for app ${applicationId}`
-          );
+        if (options.preserveExistingGlobals !== false) {
+          if (existingGlobals.length > 0) {
+            console.log(
+              `[CustomBotManager] ✅ Preserving ${existingGlobals.length} existing global commands for app ${applicationId}`
+            );
+          } else {
+            console.warn(
+              `[CustomBotManager] ⚠️ No canonical global commands found for app ${applicationId}. Run "node deployCommands.js" to publish the Discovery-safe grouped catalog.`
+            );
+          }
         } else if (commandSetsEqual(existingGlobals, commandData)) {
           console.log(`[CustomBotManager] ✅ Global bootstrap commands already up to date for app ${applicationId}`);
         } else {
