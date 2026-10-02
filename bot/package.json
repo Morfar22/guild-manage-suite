@@ -8,7 +8,8 @@
     "deploy-commands": "node deployCommands.js",
     "setup": "bash setup.sh",
     "kickbot:scan": "node scripts/kick-bot-everywhere.js 1067179642391363654",
-    "kickbot:execute": "node scripts/kick-bot-everywhere.js 1067179642391363654 --execute"
+    "kickbot:execute": "node scripts/kick-bot-everywhere.js 1067179642391363654 --execute",
+    "lavalink:check": "node scripts/check-lavalink.js"
   },
   "dependencies": {
     "discord.js": "^14.16.3",
