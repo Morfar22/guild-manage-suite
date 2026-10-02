@@ -24,8 +24,11 @@ import heroOrb from '@/assets/hero-orb.jpg';
 
 const PUBLIC_BOT_CLIENT_ID =
   import.meta.env['VITE_DISCORD_BOT_CLIENT_ID'] || '1555371176224628787';
+// Broad feature permission set without Administrator. GuildOS still needs explicit
+// moderation/channel/role permissions, but no longer bypasses channel overwrites.
+const PUBLIC_BOT_PERMISSIONS = '564593851624694';
 const PUBLIC_BOT_INVITE_URL =
-  `https://discord.com/api/oauth2/authorize?client_id=${PUBLIC_BOT_CLIENT_ID}&permissions=8&scope=bot%20applications.commands`;
+  `https://discord.com/api/oauth2/authorize?client_id=${PUBLIC_BOT_CLIENT_ID}&permissions=${PUBLIC_BOT_PERMISSIONS}&scope=bot%20applications.commands`;
 
 const FEATURES = [
   {
@@ -73,8 +76,8 @@ const FEATURES = [
 const STATS = [
   { value: '49+', label: 'Moduler' },
   { value: '150+', label: 'Kommandoer' },
-  { value: '99.9%', label: 'Oppetid' },
-  { value: '24/7', label: 'Support' },
+  { value: 'DA / EN', label: 'Sprog' },
+  { value: '1', label: 'Samlet dashboard' },
 ];
 
 const SECURITY_POINTS = [
@@ -312,7 +315,7 @@ export default function Index() {
                 <span>Sikkerhed i centrum</span>
               </div>
               <h2 id="security-title" className="text-3xl font-bold tracking-tight sm:text-4xl">
-                Bygget med <span className="text-gradient">enterprise-grade</span> sikkerhed
+                Bygget med <span className="text-gradient">sikkerhed som standard</span>
               </h2>
               <p className="mt-4 text-base text-muted-foreground sm:text-lg">
                 Vi tager dine data alvorligt. Hver del af platformen er bygget efter
