@@ -14,7 +14,8 @@
     "format": "prettier --write .",
     "check:commands": "node scripts/check-command-sync.mjs",
     "check:discovery": "node scripts/check-discovery-safety.mjs",
-    "check:web-product": "node scripts/check-web-product-imports.mjs"
+    "check:web-product": "node scripts/check-web-product-imports.mjs",
+    "check:web-runtime": "node scripts/check-web-runtime-symbols.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
