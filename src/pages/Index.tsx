@@ -104,11 +104,11 @@ export default function Index() {
           className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-6 lg:px-8"
           aria-label="Hovednavigation"
         >
-          <Link to="/" className="flex items-center gap-2" aria-label="Paranox forside">
+          <Link to="/" className="flex items-center gap-2" aria-label="GuildOS Bot forside">
             <div className="flex h-9 w-9 items-center justify-center rounded-lg gradient-blurple shadow-glow">
               <Bot className="h-5 w-5 text-primary-foreground" aria-hidden="true" />
             </div>
-            <span className="font-display text-lg font-bold tracking-tight">Paranox</span>
+            <span className="font-display text-lg font-bold tracking-tight">GuildOS Bot</span>
           </Link>
           <div className="flex items-center gap-2 sm:gap-3">
             <Link to="/docs">
@@ -160,7 +160,7 @@ export default function Index() {
               </h1>
 
               <p className="mx-auto mt-6 max-w-xl text-base text-muted-foreground sm:text-lg lg:mx-0">
-                Paranox er en alt-i-én Discord bot platform med over 49 moduler — moderation,
+                GuildOS Bot er en alt-i-én Discord bot platform med over 49 moduler — moderation,
                 tickets, AI, leveling, FiveM integration og meget mere. Sikker, hurtig og
                 fuldt tilpasselig.
               </p>
@@ -207,7 +207,7 @@ export default function Index() {
               <div className="surface-card relative overflow-hidden rounded-3xl p-1.5">
                 <img
                   src={heroOrb}
-                  alt="Paranox bot — abstrakt 3D illustration af en lysende orb med Discord-symbol"
+                  alt="GuildOS Bot bot — abstrakt 3D illustration af en lysende orb med Discord-symbol"
                   width={1536}
                   height={1024}
                   className="h-auto w-full rounded-[1.25rem]"
@@ -387,7 +387,7 @@ export default function Index() {
             <div className="flex h-7 w-7 items-center justify-center rounded-md gradient-blurple">
               <Bot className="h-4 w-4 text-primary-foreground" aria-hidden="true" />
             </div>
-            <span className="text-sm font-semibold">Paranox</span>
+            <span className="text-sm font-semibold">GuildOS Bot</span>
             <span className="text-xs text-muted-foreground">
               © {new Date().getFullYear()}
             </span>
@@ -400,12 +400,10 @@ export default function Index() {
               Features
             </a>
             <a
-              href="https://discord.gg/lovable-dev"
-              target="_blank"
-              rel="noopener noreferrer"
+              href="/docs"
               className="hover:text-foreground transition-colors"
             >
-              Discord
+              Docs
             </a>
           </nav>
         </div>
