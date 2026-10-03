@@ -91,6 +91,7 @@ import CommandPanel from '@/components/fivem/CommandPanel';
 import ServerStatusWidget from '@/components/fivem/ServerStatusWidget';
 import SetupWizard from '@/components/fivem/SetupWizard';
 import { PremiumGate } from '@/components/premium/PremiumGate';
+import { useFiveMServerStatus } from '@/hooks/useFiveMServerStatus';
 
 export default function FiveMSettings() {
   const { toast } = useToast();
@@ -101,6 +102,8 @@ export default function FiveMSettings() {
   const { data: onlinePlayers, isLoading: playersLoading } = useFiveMOnlinePlayers();
   const { data: actionLogs, isLoading: logsLoading } = useFiveMActionLogs();
   const { data: rolePermissions, isLoading: permissionsLoading } = useFiveMRolePermissions();
+  const { data: serverStatus } = useFiveMServerStatus();
+  const nrpAceMode = serverStatus?.metadata?.permissionMode === 'nrp_ace';
   
   const updateSettings = useUpdateFiveMSettings();
   const addToWhitelist = useAddToWhitelist();
@@ -942,21 +945,48 @@ export default function FiveMSettings() {
 
         {/* Permissions Tab */}
         <TabsContent value="permissions" className="space-y-4">
+          {nrpAceMode && (
+            <Card className="border-green-500/30 bg-green-500/[0.04]">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Shield className="h-5 w-5 text-green-500" />
+                  Nordisk RP ACE er aktiv
+                </CardTitle>
+                <CardDescription>
+                  FiveM-bridgen bruger serverens eksisterende nrp.staff.* hierarchy som autoritativ adgangskontrol.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3 text-sm text-muted-foreground">
+                <p>
+                  Discord-kommandoer valideres mod <code className="rounded bg-muted px-1">identifier.discord:&lt;Discord ID&gt;</code>
+                  {' '}og arver automatisk jeres Founder, Management, Senior Staff, Moderator, Support og Whitelist principals.
+                </p>
+                <p>
+                  Rolle-mappingen nedenfor er kun legacy/fallback og bruges ikke til at tilsidesætte Nordisk RP ACE.
+                </p>
+              </CardContent>
+            </Card>
+          )}
+
           <Card>
             <CardHeader>
               <div className="flex items-center justify-between">
                 <div>
                   <CardTitle className="flex items-center gap-2">
                     <Key className="h-5 w-5" />
-                    Rolle Permissions
+                    {nrpAceMode ? 'Legacy rolle permissions' : 'Rolle Permissions'}
                   </CardTitle>
-                  <CardDescription>Map Discord roller til FiveM permissions og ACE</CardDescription>
+                  <CardDescription>
+                    {nrpAceMode
+                      ? 'Fallback for servere uden Nordisk RP ACE. Ændrer ikke nrp.staff.* hierarchy.'
+                      : 'Map Discord roller til FiveM permissions og ACE'}
+                  </CardDescription>
                 </div>
                 <Dialog open={isPermissionDialogOpen} onOpenChange={setIsPermissionDialogOpen}>
                   <DialogTrigger asChild>
-                    <Button>
+                    <Button disabled={nrpAceMode} title={nrpAceMode ? 'Nordisk RP ACE er autoritativ' : undefined}>
                       <Plus className="h-4 w-4 mr-2" />
-                      Tilføj Rolle
+                      {nrpAceMode ? 'Styres af server.cfg' : 'Tilføj Rolle'}
                     </Button>
                   </DialogTrigger>
                   <DialogContent>
