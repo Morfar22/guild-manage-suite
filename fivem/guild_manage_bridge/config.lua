@@ -6,6 +6,7 @@ Config.GuildId = GetConvar('gms_guild_id', '')
 Config.ApiKey = GetConvar('gms_api_key', '')
 Config.ServerId = GetConvar('gms_server_id', 'main')
 Config.Framework = GetConvar('gms_framework', 'auto'):lower()
+Config.PermissionMode = GetConvar('gms_permission_mode', 'auto'):lower()
 
 Config.CommandPollMs = tonumber(GetConvar('gms_command_poll_ms', '1500')) or 1500
 Config.PlayerSyncMs = tonumber(GetConvar('gms_player_sync_ms', '15000')) or 15000
