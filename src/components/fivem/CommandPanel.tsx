@@ -43,6 +43,7 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { useExecuteFiveMCommand, useFiveMOnlinePlayers, useFiveMServerInstances } from '@/hooks/useFiveM';
 import { useFiveMCommandQueueEntry } from '@/hooks/fivem/useFiveMCommandQueueEntry';
+import { useFiveMServerStatus } from '@/hooks/useFiveMServerStatus';
 
 interface CommandDef {
   name: string;
@@ -596,6 +597,8 @@ export default function CommandPanel() {
   const { data: serverInstances } = useFiveMServerInstances();
   const [selectedServerId, setSelectedServerId] = useState<string>('');
   const { data: onlinePlayers } = useFiveMOnlinePlayers(selectedServerId || undefined);
+  const { data: serverStatus } = useFiveMServerStatus();
+  const nrpAceMode = serverStatus?.metadata?.permissionMode === 'nrp_ace';
   const executeCommand = useExecuteFiveMCommand();
 
   useEffect(() => {
@@ -823,6 +826,10 @@ export default function CommandPanel() {
   };
 
   const getPermissionBadge = (permission: string) => {
+    if (nrpAceMode) {
+      return <Badge variant="outline">Server ACE</Badge>;
+    }
+
     switch (permission) {
       case 'god': return <Badge variant="destructive">GOD</Badge>;
       case 'admin': return <Badge>Admin</Badge>;
