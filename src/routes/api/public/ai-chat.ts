@@ -90,9 +90,11 @@ const ILLEGAL_CONTENT_CATEGORIES: BlockCategory[] = [
     category: 'terrorism',
     severity: 'critical',
     keywords: [
-      'bombe', 'terrorangreb', 'massakre', 'masseskyderi', 'jihad',
-      'bomb', 'terror attack', 'massacre', 'mass shooting', 'lav en bombe',
-      'make a bomb', 'build a bomb', 'byg en bombe',
+      'bombe', 'terrorangreb', 'terror handling', 'terrorhandling', 'terror handlinger',
+      'terrorhandlinger', 'terroraktion', 'terroraktioner', 'terroristisk angreb',
+      'terroristiske angreb', 'massakre', 'masseskyderi', 'jihad',
+      'bomb', 'terror attack', 'terror action', 'terrorist attack', 'massacre',
+      'mass shooting', 'lav en bombe', 'make a bomb', 'build a bomb', 'byg en bombe',
     ],
   },
   {
@@ -168,6 +170,57 @@ function detectIllegalCategories(text: string): { category: string; severity: st
   return results;
 }
 
+const MODEL_SAFETY_REFUSAL_MARKERS = [
+  'jeg kan ikke hjælpe med at planlægge',
+  'jeg kan ikke hjælpe med at udføre',
+  'jeg kan ikke hjælpe med det',
+  'jeg kan ikke hjælpe med den slags',
+  "i can't help with planning",
+  "i can't help with carrying out",
+  "i can't assist with",
+  "i can’t help with",
+];
+
+function detectModelRefusalCategories(
+  input: string,
+  output: string,
+): { category: string; severity: string; matched: string[] }[] {
+  const response = String(output || '').toLowerCase();
+  if (!MODEL_SAFETY_REFUSAL_MARKERS.some(marker => response.includes(marker))) return [];
+
+  const lower = String(input || '').toLowerCase();
+  const results: { category: string; severity: string; matched: string[] }[] = [];
+  const add = (category: string, severity: string, marker: string) => {
+    if (!results.some(item => item.category === category)) {
+      results.push({ category, severity, matched: [`model-refusal:${marker}`] });
+    }
+  };
+
+  if (/\bterror/.test(lower) || /\bjihad/.test(lower)) {
+    add('terrorism', 'critical', 'terror');
+  }
+  if (/dræb|mord|slå ihjel|\bkill\b|\bmurder\b|\bshoot\b|\bstab\b|tortur/.test(lower)) {
+    add('murder_violence', 'high', 'violence');
+  }
+  if (/selvmord|selvskad|suicid|self[- ]?harm|kill myself|end my life/.test(lower)) {
+    add('self_harm', 'high', 'self-harm');
+  }
+  if (/meth|heroin|kokain|cocaine|amfetamin|amphetamine|\blsd\b/.test(lower)) {
+    add('drugs_manufacturing', 'high', 'drugs');
+  }
+  if (/våben|pistol|gevær|\bgun\b|weapon|ghost gun/.test(lower)) {
+    add('weapons_manufacturing', 'high', 'weapons');
+  }
+  if (/menneskehandel|human trafficking|sex trafficking|slavehandel|slave trade/.test(lower)) {
+    add('human_trafficking', 'critical', 'trafficking');
+  }
+  if (/voldtægt|voldtag|\brape\b|sexual assault|forced sex/.test(lower)) {
+    add('sexual_violence', 'critical', 'sexual-violence');
+  }
+
+  return results;
+}
+
 /** Log illegal content attempt to database */
 async function logIllegalContent(
   supabase: any,
@@ -202,7 +255,7 @@ async function logIllegalContent(
     }
   } catch (_) { /* ignore */ }
 
-  await supabase.from('ai_safety_logs').insert({
+  const { error: insertError } = await supabase.from('ai_safety_logs').insert({
     guild_id: guildId,
     discord_user_id: userId,
     discord_username: userName,
@@ -215,7 +268,18 @@ async function logIllegalContent(
     discord_guild_id: discordGuildId,
   });
 
+  if (insertError) {
+    console.error('🚨 AI SAFETY LOG INSERT FAILED', {
+      userId,
+      guildId,
+      categories: allCategories,
+      error: insertError.message,
+    });
+    return false;
+  }
+
   console.warn(`🚨 ILLEGAL CONTENT LOGGED | User: ${userName} (${userId}) | Categories: ${allCategories} | Severity: ${highestSeverity} | Guild: ${guildName}`);
+  return true;
 }
 
 const SAFETY_RESPONSE_DA = "⚠️ Jeg kan ikke hjælpe med det emne. Hvis du har det svært, så kontakt en voksen du stoler på eller ring til Børnetelefonen (116 111) eller Livslinien (70 201 201).";
@@ -458,6 +522,27 @@ __serve(async (req) => {
 
 
         let assistantMessage = aiData.choices?.[0]?.message?.content || 'Sorry, I could not generate a response.';
+
+        // Fallback safety logging: the model can correctly refuse a harmful request
+        // even when a wording variant was not caught by the deterministic detector.
+        // In that case, infer a narrow category from the user's input and persist it.
+        const refusalCategories = detectModelRefusalCategories(message, assistantMessage);
+        if (refusalCategories.length > 0) {
+          const logged = await logIllegalContent(
+            supabase,
+            internalGuildId,
+            normalizedUserId,
+            userName || null,
+            channelId || null,
+            message,
+            refusalCategories
+          );
+          console.warn(
+            logged
+              ? `🚨 Model safety refusal logged for user ${normalizedUserId}`
+              : `🚨 Model safety refusal detected but DB logging failed for user ${normalizedUserId}`
+          );
+        }
 
         // Content safety: scan AI output for harmful content
         if (containsBlockedContent(assistantMessage, BLOCKED_TOPICS_OUTPUT)) {
