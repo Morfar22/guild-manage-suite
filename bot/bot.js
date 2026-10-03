@@ -424,7 +424,7 @@ async function getFiveMRuntime(internalGuildId) {
       .maybeSingle(),
     supabase
       .from('fivem_server_status')
-      .select('server_id, is_online, player_count, max_players, uptime_seconds, server_name, last_heartbeat, updated_at')
+      .select('server_id, is_online, player_count, max_players, uptime_seconds, server_name, last_heartbeat, updated_at, metadata')
       .eq('guild_id', internalGuildId)
       .order('updated_at', { ascending: false })
       .limit(1)
@@ -2293,17 +2293,23 @@ function createSlashHandlers(client) {
           return interaction.editReply('❌ Denne FiveM-command findes ikke i den aktive command-schema.');
         }
 
-        const requiredLevel = getFiveMPermission(group, subcommand);
-        const actualLevel = await getFiveMAccessLevel(internalGuildId, interaction);
-        if (!permissionAtLeast(actualLevel, requiredLevel)) {
-          return interaction.editReply(
-            `🔒 Du mangler FiveM-rettighed. Kræver **${requiredLevel}**, du har **${actualLevel}**.\n` +
-            'En serveradministrator kan tildele roller under **FiveM → Permissions**.'
-          );
-        }
-
         const runtime = await getFiveMRuntime(internalGuildId);
         const serverId = runtime.status?.server_id || 'main';
+        const permissionMode = runtime.status?.metadata?.permissionMode || 'legacy';
+
+        // Nordisk RP uses the FXServer ACE tree as the authority. The bridge
+        // evaluates identifier.discord:<id> server-side, including inherited
+        // nrp_* principals. Other GuildOS servers keep the legacy role levels.
+        if (permissionMode !== 'nrp_ace') {
+          const requiredLevel = getFiveMPermission(group, subcommand);
+          const actualLevel = await getFiveMAccessLevel(internalGuildId, interaction);
+          if (!permissionAtLeast(actualLevel, requiredLevel)) {
+            return interaction.editReply(
+              `🔒 Du mangler FiveM-rettighed. Kræver **${requiredLevel}**, du har **${actualLevel}**.\n` +
+              'En serveradministrator kan tildele roller under **FiveM → Permissions**.'
+            );
+          }
+        }
         if (!runtime.enabled) {
           return interaction.editReply(
             '⚙️ FiveM-integrationen er ikke aktiveret endnu. Åbn **Dashboard → FiveM → Opsætning** og gennemfør guiden.'
