@@ -28,3 +28,10 @@ setr gms_framework "auto"
 # setr gms_event_clothing "dit_clothing:client:open"
 
 ensure guild_manage_bridge
+
+
+# Permission mode:
+# auto    = detect Nordisk RP ACE hierarchy when present, otherwise use legacy GuildOS permissions
+# nrp_ace = force Nordisk RP ACE checks using identifier.discord:<Discord ID>
+# legacy  = keep the old GuildOS role-level authorization
+set gms_permission_mode "auto"
