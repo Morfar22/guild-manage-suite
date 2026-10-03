@@ -1,6 +1,6 @@
 Config = {}
 
-Config.Version = '1.1.0'
+Config.Version = '1.2.0'
 Config.ApiBase = GetConvar('gms_api_base', 'https://bot.nethost-solutions.dk')
 Config.GuildId = GetConvar('gms_guild_id', '')
 Config.ApiKey = GetConvar('gms_api_key', '')
