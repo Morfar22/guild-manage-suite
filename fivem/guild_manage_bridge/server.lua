@@ -525,11 +525,833 @@ local function normalizeCommand(commandName, data)
     return nil, nil
 end
 
+
+local NRP_COMMAND_ACES = {
+    ['moderation:kick'] = 'nrp.staff.moderation.kick',
+    ['moderation:kickall'] = 'nrp.staff.server.manage',
+    ['moderation:warn'] = 'nrp.staff.moderation.warn',
+    ['moderation:jail'] = 'nrp.staff.moderation.ban.temporary',
+    ['moderation:unjail'] = 'nrp.staff.moderation.ban.temporary',
+    ['moderation:freeze'] = 'nrp.staff.player.freeze',
+    ['moderation:unfreeze'] = 'nrp.staff.player.freeze',
+    ['moderation:spectate'] = 'nrp.staff.player.spectate',
+    ['moderation:delwarn'] = 'nrp.staff.moderation.warn',
+
+    ['player:kill'] = 'nrp.staff.server.manage',
+    ['player:revive'] = 'nrp.staff.player.revive',
+    ['player:revive-all'] = 'nrp.staff.server.manage',
+    ['player:heal'] = 'nrp.staff.player.heal',
+    ['player:armor'] = 'nrp.staff.player.heal',
+    ['player:sethealth'] = 'nrp.staff.player.heal',
+    ['player:setarmor'] = 'nrp.staff.player.heal',
+    ['player:sethunger'] = 'nrp.staff.player.metadata',
+    ['player:setthirst'] = 'nrp.staff.player.metadata',
+    ['player:setstress'] = 'nrp.staff.player.metadata',
+    ['player:setmodel'] = 'nrp.staff.world.manage',
+    ['player:logout'] = 'nrp.staff.player.metadata',
+    ['player:identifiers'] = 'nrp.staff.player.inspect',
+    ['player:permissions'] = 'nrp.staff.audit.view',
+    ['player:charinfo'] = 'nrp.staff.player.inspect',
+    ['player:godmode'] = 'nrp.staff.server.manage',
+    ['player:invisible'] = 'nrp.staff.server.manage',
+    ['player:noclip'] = 'nrp.staff.tool.noclip',
+
+    ['teleport:player'] = 'nrp.staff.world.manage',
+    ['teleport:all'] = 'nrp.staff.world.manage',
+    ['teleport:bring'] = 'nrp.staff.player.bring',
+    ['teleport:goto'] = 'nrp.staff.player.goto',
+
+    ['vehicle:spawn'] = 'nrp.staff.tool.vehicle.spawn',
+    ['vehicle:delete'] = 'nrp.staff.tool.vehicle.delete',
+    ['vehicle:repair'] = 'nrp.staff.tool.vehicle.repair',
+
+    ['weapon:give'] = 'nrp.staff.server.manage',
+    ['weapon:remove'] = 'nrp.staff.server.manage',
+    ['weapon:clear'] = 'nrp.staff.server.manage',
+
+    ['economy:money'] = 'nrp.staff.economy.manage',
+    ['economy:inventory'] = 'nrp.staff.economy.manage',
+
+    ['jobs:job'] = 'nrp.staff.player.job',
+    ['jobs:clothing-menu'] = 'nrp.staff.player.metadata',
+
+    ['server:players'] = 'nrp.staff.player.view',
+    ['server:announcement'] = 'nrp.staff.announcement.send',
+    ['server:message'] = 'nrp.staff.report.reply',
+    ['server:time'] = 'nrp.staff.world.manage',
+    ['server:weather'] = 'nrp.staff.world.manage',
+    ['server:resource'] = 'nrp.staff.server.manage',
+    ['server:screenshot'] = 'nrp.staff.player.inspect',
+    ['server:embed'] = 'nrp.staff.announcement.send',
+
+    ['whitelist:toggle'] = 'nrp.staff.allowlist.decide',
+    ['whitelist:add'] = 'nrp.staff.allowlist.decide',
+    ['whitelist:remove'] = 'nrp.staff.allowlist.decide',
+    ['whitelist:check'] = 'nrp.staff.allowlist.review',
+    ['whitelist:addrole'] = 'nrp.staff.allowlist.manage',
+    ['whitelist:removerole'] = 'nrp.staff.allowlist.manage',
+}
+
+local function aceResultAllowed(value)
+    return value == true or value == 1
+end
+
+local function resolvePermissionMode()
+    local requested = tostring(Config.PermissionMode or 'auto'):lower()
+    if requested == 'legacy' or requested == 'nrp_ace' then
+        return requested
+    end
+
+    -- Auto-detect the Nordisk RP hierarchy from the static server.cfg ACE tree.
+    -- This is deliberately read-only: the bridge never mutates ACE/principal state.
+    local ok, allowed = pcall(IsPrincipalAceAllowed, 'group.nrp_founder', 'nrp.staff.role.founder')
+    if ok and aceResultAllowed(allowed) then
+        return 'nrp_ace'
+    end
+
+    ok, allowed = pcall(IsPrincipalAceAllowed, 'group.nrp_report_handler', 'nrp.staff.access')
+    if ok and aceResultAllowed(allowed) then
+        return 'nrp_ace'
+    end
+
+    return 'legacy'
+end
+
+local function requiredNrpAce(group, sub, data)
+    if group == 'moderation' and sub == 'ban' then
+        local duration = tostring(data.duration or ''):lower()
+        if duration == 'permanent' or duration == 'perm' or duration == '0' then
+            return 'nrp.staff.moderation.ban.permanent'
+        end
+        return 'nrp.staff.moderation.ban.temporary'
+    end
+
+    if group == 'jobs' and sub == 'gang' then
+        if tostring(data.action or ''):lower() == 'inspect' then
+            return 'nrp.staff.underworld.view'
+        end
+        return 'nrp.staff.underworld.manage'
+    end
+
+    return NRP_COMMAND_ACES[('%s:%s'):format(group, sub)]
+end
+
+local function moderatorHasAce(discordId, ace)
+    if not ace or ace == '' then return true, 'public' end
+
+    local normalizedDiscordId = tostring(discordId or ''):match('^(%d+)
+    if group == 'moderation' then
+        if sub == 'kick' then
+            if not playerExists(target) then return false, 'Spilleren er ikke online.' end
+            DropPlayer(target, data.reason or 'Kicked by staff')
+            return true, ('Spiller %s kicked.'):format(target)
+        elseif sub == 'kickall' then
+            local count = 0
+            for _, source in ipairs(GetPlayers()) do
+                DropPlayer(source, data.reason or 'Server staff kick')
+                count = count + 1
+            end
+            return true, ('Kickede %s spiller(e).'):format(count)
+        elseif sub == 'ban' then
+            if not playerExists(target) then return false, 'Spilleren er ikke online.' end
+            local ids = identifiers(target)
+            if not ids.discordId then return false, 'Spilleren har intet Discord identifier. Ban blev ikke gemt.' end
+            local response = api('ban', {
+                targetDiscordId = ids.discordId,
+                targetName = characterName(target),
+                steamHex = ids.steamHex,
+                license = ids.license,
+                ipAddress = ids.ipAddress,
+                moderatorDiscordId = data.moderatorDiscordId,
+                moderatorName = data.moderatorName,
+                reason = data.reason or 'Ingen årsag',
+                durationSeconds = durationSeconds(data.duration),
+            })
+            if not response.ok then return false, response.data and response.data.error or 'Kunne ikke gemme ban.' end
+            DropPlayer(target, data.reason or 'Banned')
+            return true, 'Ban gemt og spiller fjernet.'
+        elseif sub == 'warn' then
+            return clientAction(target, 'notify', { message = ('Advarsel: %s'):format(data.reason or 'Ingen årsag'), kind = 'warning' })
+        elseif sub == 'freeze' then
+            return clientAction(target, 'freeze', { state = true })
+        elseif sub == 'unfreeze' then
+            return clientAction(target, 'freeze', { state = false })
+        elseif sub == 'spectate' then
+            local modSource = moderatorSource(data.moderatorDiscordId)
+            if not modSource then return false, 'Moderator skal være online i FiveM for at spectate.' end
+            return clientAction(modSource, 'spectate', { target = target })
+        elseif sub == 'jail' then
+            if Config.Events.Jail == '' then return false, 'Jail-adapter mangler. Sæt gms_event_jail i server.cfg.' end
+            TriggerClientEvent(Config.Events.Jail, target, tonumber(data.time) or 10, data.reason or '')
+            return true, 'Jail-event sendt.'
+        elseif sub == 'unjail' then
+            if Config.Events.Unjail == '' then return false, 'Unjail-adapter mangler. Sæt gms_event_unjail i server.cfg.' end
+            TriggerClientEvent(Config.Events.Unjail, target)
+            return true, 'Unjail-event sendt.'
+        end
+    elseif group == 'player' then
+        if sub == 'identifiers' then
+            if not playerExists(target) then return false, 'Spilleren er ikke online.' end
+            return true, json.encode(identifiers(target))
+        elseif sub == 'permissions' then
+            if framework == 'qbox' then
+                local ok, groups = pcall(function() return exports.qbx_core:GetGroups(target) end)
+                return ok, ok and json.encode(groups or {}) or tostring(groups)
+            end
+            return true, ('Framework: %s | ACE admin: %s'):format(framework, tostring(IsPlayerAceAllowed(tostring(target), 'command')))
+        elseif sub == 'logout' then
+            if framework == 'qbox' then exports.qbx_core:Logout(target); return true, 'QBox logout udført.' end
+            return false, 'Remote logout er kun implementeret direkte for QBox.'
+        elseif sub == 'sethunger' or sub == 'setthirst' or sub == 'setstress' then
+            local metadata = sub:gsub('^set', '')
+            local amount = math.max(0, math.min(100, tonumber(data.amount) or 0))
+            if framework == 'qbox' then
+                exports.qbx_core:SetMetadata(target, metadata, amount)
+                return true, ('%s sat til %s.'):format(metadata, amount)
+            end
+            local player = qbPlayer(target)
+            if player and player.Functions and player.Functions.SetMetaData then
+                player.Functions.SetMetaData(metadata, amount)
+                return true, ('%s sat til %s.'):format(metadata, amount)
+            end
+            return false, ('Metadata understøttes ikke af %s.'):format(framework)
+        elseif sub == 'revive-all' then
+            for _, source in ipairs(GetPlayers()) do TriggerClientEvent('guild_manage_bridge:client:action', tonumber(source), 'revive', {}) end
+            return true, 'Revive sendt til alle spillere.'
+        elseif sub == 'charinfo' then
+            if framework == 'qbox' then
+                local player = qboxPlayer(target)
+                return player ~= nil, player and json.encode(player.PlayerData and player.PlayerData.charinfo or {}) or 'Spiller ikke fundet.'
+            elseif framework == 'qbcore' then
+                local player = qbPlayer(target)
+                return player ~= nil, player and json.encode(player.PlayerData and player.PlayerData.charinfo or {}) or 'Spiller ikke fundet.'
+            end
+            return false, 'Charinfo understøttes kun direkte på QBox/QBCore.'
+        end
+
+        local actionMap = {
+            kill = 'kill', revive = 'revive', heal = 'heal', armor = 'armor',
+            sethealth = 'sethealth', setarmor = 'setarmor', setmodel = 'setmodel',
+            godmode = 'godmode', invisible = 'invisible', noclip = 'noclip',
+        }
+        if actionMap[sub] then return clientAction(target, actionMap[sub], data) end
+    elseif group == 'teleport' then
+        if sub == 'bring' or sub == 'goto' then
+            local modSource = moderatorSource(data.moderatorDiscordId)
+            if not modSource then return false, 'Moderator skal være online i FiveM for bring/goto.' end
+            if not playerExists(target) then return false, 'Spilleren er ikke online.' end
+            local from = sub == 'bring' and modSource or target
+            local to = sub == 'bring' and target or modSource
+            local ped = GetPlayerPed(from)
+            if ped == 0 then return false, 'Kunne ikke læse position.' end
+            local coords = GetEntityCoords(ped)
+            return clientAction(to, 'teleport', { x = coords.x, y = coords.y, z = coords.z, keepvehicle = true })
+        end
+
+        local coords = nil
+        local coordData = type(data.coords) == 'table' and data.coords or data
+        local wantsPreset = tostring(data.type or '') == 'preset' or (data.location and tostring(data.location) ~= '')
+        if wantsPreset then
+            coords = presetCoords(data.location)
+            if not coords then return false, 'Ukendt preset-lokation.' end
+        else
+            local x, y, z = tonumber(coordData.x), tonumber(coordData.y), tonumber(coordData.z)
+            if not x or not y or not z then return false, 'x, y og z eller et preset er påkrævet.' end
+            coords = vector3(x, y, z)
+        end
+
+        if sub == 'all' then
+            for _, source in ipairs(GetPlayers()) do
+                TriggerClientEvent('guild_manage_bridge:client:action', tonumber(source), 'teleport', {
+                    x = coords.x, y = coords.y, z = coords.z, keepvehicle = data.keepvehicle == true
+                })
+            end
+            return true, 'Alle spillere teleporteret.'
+        end
+
+        return clientAction(target, 'teleport', {
+            x = coords.x, y = coords.y, z = coords.z, keepvehicle = data.keepvehicle == true
+        })
+    elseif group == 'vehicle' then
+        local actionMap = { spawn = 'vehicle_spawn', delete = 'vehicle_delete', repair = 'vehicle_repair' }
+        if not target then target = moderatorSource(data.moderatorDiscordId) end
+        if sub == 'spawn' and not data.spawncode then data.spawncode = data.vehicleCode end
+        return clientAction(target, actionMap[sub], data)
+    elseif group == 'weapon' then
+        if resourceStarted('ox_inventory') and playerExists(target) then
+            local weapon = tostring(data.weapon or ''):upper()
+            if sub == 'give' then
+                local ok, success, response = pcall(function()
+                    return exports.ox_inventory:AddItem(target, weapon, 1, { ammo = tonumber(data.ammo) or 100 })
+                end)
+                if ok and success then return true, ('Gav %s via ox_inventory.'):format(weapon) end
+                if ok then return false, tostring(response) end
+            elseif sub == 'remove' then
+                local ok, success, response = pcall(function()
+                    return exports.ox_inventory:RemoveItem(target, weapon, 1)
+                end)
+                if ok and success then return true, ('Fjernede %s via ox_inventory.'):format(weapon) end
+                if ok then return false, tostring(response) end
+            elseif sub == 'clear' then
+                return clientAction(target, 'weapons_clear', {})
+            end
+        end
+        local actionMap = { give = 'weapon_give', remove = 'weapon_remove', clear = 'weapons_clear' }
+        return clientAction(target, actionMap[sub], data)
+    elseif group == 'economy' then
+        if sub == 'money' then return moneyAction(target, data.action, data.type, data.amount) end
+        if sub == 'inventory' then return inventoryAction(target, data.action, data.item, data.count) end
+    elseif group == 'jobs' then
+        if sub == 'job' then return jobAction(target, 'job', data.action, data.job, data.grade) end
+        if sub == 'gang' then return jobAction(target, 'gang', data.action, data.gang, data.grade) end
+        if sub == 'clothing-menu' then
+            if Config.Events.Clothing == '' then return false, 'Clothing-adapter mangler. Sæt gms_event_clothing i server.cfg.' end
+            TriggerClientEvent(Config.Events.Clothing, target)
+            return true, 'Tøjmenu-event sendt.'
+        end
+    elseif group == 'server' then
+        if sub == 'announcement' then
+            TriggerClientEvent('guild_manage_bridge:client:action', -1, 'notify', { message = data.message or '', kind = 'announcement' })
+            return true, 'Announcement sendt.'
+        elseif sub == 'message' then
+            return clientAction(target, 'notify', { message = data.message or '', kind = 'private' })
+        elseif sub == 'time' then
+            TriggerClientEvent('guild_manage_bridge:client:action', -1, 'time', { hour = tonumber(data.hour) or 12 })
+            return true, 'Tid opdateret på klienterne.'
+        elseif sub == 'weather' then
+            TriggerClientEvent('guild_manage_bridge:client:action', -1, 'weather', data)
+            return true, 'Vejr/blackout opdateret på klienterne.'
+        elseif sub == 'resource' then
+            local action = tostring(data.action or '')
+            if action == 'list' then return true, listResources() end
+            if action == 'refresh' then ExecuteCommand('refresh'); return true, 'Resource-listen opdateres.' end
+            local name = tostring(data.name or data.resourceName or '')
+            if not safeResourceName(name) then return false, 'Ugyldigt resource-navn.' end
+            if action == 'inspect' then return true, ('%s: %s'):format(name, GetResourceState(name)) end
+            if name == RESOURCE and (action == 'stop' or action == 'restart') then
+                return false, 'Bridgen kan ikke stoppe/genstarte sig selv via remote command. Brug serverkonsollen.'
+            end
+            if action == 'ensure' or action == 'start' or action == 'stop' or action == 'restart' then
+                ExecuteCommand(('%s %s'):format(action, name))
+                return true, ('%s %s udført.'):format(action, name)
+            end
+            return false, 'Ugyldig resource-action.'
+        elseif sub == 'screenshot' then
+            if not resourceStarted('screenshot-basic') then return false, 'screenshot-basic er ikke startet.' end
+            if not playerExists(target) then return false, 'Spilleren er ikke online.' end
+            local p = promise.new()
+            exports['screenshot-basic']:requestClientScreenshot(target, { encoding = 'jpg', quality = 0.8 }, function(err, dataUri)
+                if err then p:resolve({ false, tostring(err) }) else p:resolve({ true, dataUri }) end
+            end)
+            local result = Citizen.Await(p)
+            if not result[1] then return false, result[2] end
+            local response = api('screenshotResult', {
+                targetPlayerId = target,
+                targetName = characterName(target),
+                targetDiscordId = identifiers(target).discordId,
+                moderatorDiscordId = data.moderatorDiscordId,
+                moderatorName = data.moderatorName,
+                imageBase64 = result[2],
+            })
+            if not response.ok then
+                return false, response.data and response.data.error or 'Screenshot taget, men upload/logning fejlede.'
+            end
+            local url = response.data and response.data.url
+            return true, url and ('Screenshot: ' .. url) or 'Screenshot modtaget og logget.'
+        elseif sub == 'embed' then
+            local message = tostring(data.message or '')
+            if data.title and tostring(data.title) ~= '' then
+                message = ('%s\n%s'):format(data.title, message)
+            end
+            TriggerClientEvent('guild_manage_bridge:client:action', -1, 'notify', { message = message, kind = 'announcement' })
+            return true, 'Beskeden er sendt til alle spillere.'
+        elseif sub == 'info' then
+            return true, ('%s | framework=%s | players=%s/%s | uptime=%ss'):format(
+                GetConvar('sv_hostname', 'FiveM Server'), framework, #GetPlayers(), GetConvarInt('sv_maxclients', 48), os.time() - startedAt
+            )
+        elseif sub == 'players' then
+            local rows = {}
+            for _, source in ipairs(GetPlayers()) do rows[#rows + 1] = ('[%s] %s'):format(source, characterName(source)) end
+            return true, #rows > 0 and table.concat(rows, '\n') or 'Ingen spillere online.'
+        elseif sub == 'count' then
+            return true, tostring(#GetPlayers())
+        end
+    elseif group == 'whitelist' then
+        if sub == 'toggle' then
+            local response = api('toggleWhitelist', { moderatorDiscordId = data.moderatorDiscordId })
+            if response.ok and response.data then
+                cachedSettings.whitelist_enabled = response.data.whitelistEnabled
+                return true, ('Whitelist er nu %s.'):format(response.data.whitelistEnabled and 'TIL' or 'FRA')
+            end
+            return false, 'Kunne ikke toggle whitelist.'
+        elseif sub == 'add' then
+            local response = api('setWhitelistEntry', {
+                discordId = data.discord_id or data.discordId,
+                whitelisted = true,
+                moderatorDiscordId = data.moderatorDiscordId,
+                reason = data.reason,
+            })
+            return response.ok, response.ok and 'Bruger tilføjet til whitelist.' or (response.data and response.data.error or 'Whitelist add fejlede.')
+        elseif sub == 'remove' then
+            local response = api('removeWhitelistEntry', { discordId = data.discord_id or data.discordId })
+            return response.ok, response.ok and 'Bruger fjernet fra whitelist.' or 'Whitelist remove fejlede.'
+        elseif sub == 'check' then
+            local response = api('getWhitelistEntry', { discordId = data.discord_id or data.discordId })
+            if not response.ok then return false, 'Whitelist check fejlede.' end
+            local entry = response.data and response.data.entry
+            return true, entry and ('Whitelisted: %s | navn: %s'):format(tostring(entry.is_whitelisted), entry.discord_username or 'ukendt') or 'Ikke registreret.'
+        end
+    end
+
+    return false, ('Command ikke implementeret: %s %s'):format(group, sub)
+end
+
+local function markCommand(commandId, success, result)
+    local response = api('markCommandExecuted', {
+        commandId = commandId,
+        serverId = Config.ServerId,
+        success = success == true,
+        result = tostring(result or '')
+    })
+    if not response.ok then
+        log('WARN', ('Kunne ikke rapportere resultat for command %s'):format(commandId))
+    end
+end
+
+local function pollCommands()
+    if not configured() then return end
+    local response = api('getPendingCommands', { serverId = Config.ServerId })
+    if not response.ok then
+        if response.status ~= 401 then throttledWarn('command-poll', ('Command poll fejlede (HTTP %s)'):format(response.status), 30000) end
+        return
+    end
+
+    for _, command in ipairs((response.data and response.data.commands) or {}) do
+        if not processing[command.id] then
+            processing[command.id] = true
+            CreateThread(function()
+                local claim = api('claimCommand', { commandId = command.id, serverId = Config.ServerId })
+                if claim.ok and claim.data and claim.data.claimed then
+                    local ok, success, result = pcall(executeCommand, command)
+                    if not ok then
+                        markCommand(command.id, false, success)
+                    else
+                        markCommand(command.id, success, result)
+                    end
+                end
+                processing[command.id] = nil
+            end)
+        end
+    end
+end
+
+local function buildPlayerList()
+    local rows = {}
+    for _, source in ipairs(GetPlayers()) do
+        local numericSource = tonumber(source)
+        local ids = identifiers(numericSource)
+        local ped = GetPlayerPed(numericSource)
+        local coords = ped ~= 0 and GetEntityCoords(ped) or nil
+
+        rows[#rows + 1] = {
+            playerId = numericSource,
+            discordId = ids.discordId,
+            discordUsername = ids.discordUsername,
+            steamHex = ids.steamHex,
+            license = ids.license,
+            characterName = characterName(numericSource),
+            ping = GetPlayerPing(numericSource),
+            coords = coords and { x = coords.x, y = coords.y, z = coords.z } or nil,
+        }
+    end
+    return rows
+end
+
+local function syncPlayers()
+    if not configured() then return end
+    local response = api('syncOnlinePlayers', {
+        serverId = Config.ServerId,
+        players = buildPlayerList(),
+    })
+    if not response.ok and response.status ~= 401 then
+        throttledWarn('player-sync', ('Player sync fejlede (HTTP %s)'):format(response.status), 30000)
+    end
+end
+
+local function updateStatus()
+    if not configured() then return end
+
+    local response = api('updateServerStatus', {
+        serverId = Config.ServerId,
+        serverName = GetConvar('sv_hostname', 'FiveM Server'),
+        maxPlayers = GetConvarInt('sv_maxclients', 48),
+        playerCount = #GetPlayers(),
+        uptimeSeconds = os.time() - startedAt,
+        serverStartedAt = os.date('!%Y-%m-%dT%H:%M:%SZ', startedAt),
+        gameType = 'fivem',
+        resourcesCount = GetNumResources(),
+        fxserverVersion = GetConvar('version', ''),
+        serverIp = GetConvar('endpoint_add_tcp', ''),
+        serverPort = tonumber(GetConvar('netPort', '30120')) or 30120,
+        metadata = {
+            bridgeVersion = Config.Version,
+            framework = framework,
+            permissionMode = resolvePermissionMode(),
+            resource = RESOURCE,
+            serverId = Config.ServerId,
+            oxInventory = resourceStarted('ox_inventory'),
+            screenshotBasic = resourceStarted('screenshot-basic'),
+            reviveAdapter = Config.Events.Revive ~= '',
+            jailAdapter = Config.Events.Jail ~= '',
+            unjailAdapter = Config.Events.Unjail ~= '',
+            clothingAdapter = Config.Events.Clothing ~= '',
+        },
+    })
+
+    if not response.ok then
+        throttledWarn('heartbeat', ('Heartbeat fejlede (HTTP %s): %s'):format(response.status, response.body or ''), 30000)
+    end
+end
+
+local function refreshSettings()
+    if not configured() then return end
+    local response = api('getSettings', {})
+    if response.ok and response.data then
+        cachedSettings = response.data.settings or cachedSettings
+        cachedSettings.enabled = response.data.enabled ~= false
+        cachedSettings.whitelist_enabled = response.data.whitelistEnabled == true
+    end
+end
+
+AddEventHandler('playerConnecting', function(name, setKickReason, deferrals)
+    if not configured() then return end
+
+    local source = source
+    deferrals.defer()
+    Wait(0)
+    deferrals.update('Kontrollerer Guild Manage Suite…')
+
+    local ids = identifiers(source)
+    local settingsResponse = api('getSettings', {})
+    if settingsResponse.ok and settingsResponse.data then
+        cachedSettings = settingsResponse.data.settings or cachedSettings
+        cachedSettings.whitelist_enabled = settingsResponse.data.whitelistEnabled == true
+    elseif not Config.FailOpen then
+        deferrals.done('Kunne ikke kontakte serverens adgangssystem. Prøv igen om et øjeblik.')
+        return
+    end
+
+    local banResponse = api('checkBan', {
+        discordId = ids.discordId,
+        steamHex = ids.steamHex,
+        license = ids.license,
+        ipAddress = ids.ipAddress,
+    })
+
+    if banResponse.ok and banResponse.data and banResponse.data.banned then
+        local ban = banResponse.data.ban or {}
+        deferrals.done(('Du er banned fra serveren.\nÅrsag: %s'):format(ban.reason or 'Ingen årsag'))
+        return
+    elseif not banResponse.ok and not Config.FailOpen then
+        deferrals.done('Ban-kontrol kunne ikke gennemføres. Prøv igen.')
+        return
+    end
+
+    if cachedSettings.whitelist_enabled then
+        deferrals.update('Kontrollerer whitelist…')
+        local whitelistResponse = api('checkWhitelist', {
+            discordId = ids.discordId,
+            steamHex = ids.steamHex,
+            license = ids.license,
+        })
+
+        if not whitelistResponse.ok then
+            if not Config.FailOpen then
+                deferrals.done('Whitelist-kontrol kunne ikke gennemføres. Prøv igen.')
+                return
+            end
+        elseif not whitelistResponse.data or not whitelistResponse.data.whitelisted then
+            if not ids.discordId then
+                deferrals.done('Discord kunne ikke registreres. Hav Discord åbent og forbundet til FiveM, og prøv igen.')
+            else
+                deferrals.done(('Du er ikke whitelisted. Discord ID: %s'):format(ids.discordId))
+            end
+            return
+        end
+    end
+
+    if ids.discordId then
+        api('registerPlayer', {
+            discordId = ids.discordId,
+            discordUsername = ids.discordUsername,
+            steamHex = ids.steamHex,
+            license = ids.license,
+            fivemId = ids.fivemId,
+            ip = ids.ipAddress,
+        })
+    end
+
+    deferrals.done()
+end)
+
+AddEventHandler('playerJoining', function()
+    local source = source
+    if not configured() then return end
+    CreateThread(function()
+        Wait(1500)
+        local ids = identifiers(source)
+        if ids.discordId then
+            api('sessionStart', {
+                discordId = ids.discordId,
+                serverId = Config.ServerId,
+            })
+        end
+        syncPlayers()
+    end)
+end)
+
+AddEventHandler('playerDropped', function()
+    local source = source
+    if not configured() then return end
+    local ids = identifiers(source)
+
+    CreateThread(function()
+        if ids.discordId then
+            api('sessionEnd', { discordId = ids.discordId, serverId = Config.ServerId })
+        end
+        api('removeOnlinePlayer', {
+            playerId = tonumber(source),
+            serverId = Config.ServerId,
+        })
+    end)
+end)
+
+RegisterCommand('gmsbridge', function(source)
+    if source ~= 0 and not IsPlayerAceAllowed(tostring(source), 'command.gmsbridge') then
+        return
+    end
+
+    CreateThread(function()
+        detectFramework()
+        log('INFO', '----- Guild Manage Suite Bridge diagnostics -----')
+        log('INFO', ('Version: %s'):format(Config.Version))
+        log('INFO', ('Framework: %s'):format(framework))
+        log('INFO', ('Guild ID: %s'):format(Config.GuildId ~= '' and Config.GuildId or 'MANGLER'))
+        log('INFO', ('Server ID: %s'):format(Config.ServerId))
+        log('INFO', ('API: %s'):format(API_URL))
+        log('INFO', ('API key: %s'):format(Config.ApiKey ~= '' and 'SAT' or 'MANGLER'))
+        log('INFO', ('Intervals: poll=%sms players=%sms heartbeat=%sms settings=%sms'):format(
+            Config.CommandPollMs, Config.PlayerSyncMs, Config.HeartbeatMs, Config.SettingsRefreshMs
+        ))
+        log('INFO', ('Client ACK timeout: %sms | API timeout: %sms'):format(Config.ClientActionTimeoutMs, Config.ApiTimeoutMs))
+        log('INFO', ('ox_inventory: %s | screenshot-basic: %s'):format(
+            resourceStarted('ox_inventory') and 'JA' or 'NEJ',
+            resourceStarted('screenshot-basic') and 'JA' or 'NEJ'
+        ))
+        log('INFO', ('Adapters: revive=%s jail=%s unjail=%s clothing=%s'):format(
+            Config.Events.Revive ~= '' and 'SAT' or 'MANGLER',
+            Config.Events.Jail ~= '' and 'SAT' or 'MANGLER',
+            Config.Events.Unjail ~= '' and 'SAT' or 'MANGLER',
+            Config.Events.Clothing ~= '' and 'SAT' or 'MANGLER'
+        ))
+
+        if not configured() then
+            log('ERROR', 'Bridge er ikke konfigureret. Brug Dashboard → FiveM → Opsætning.')
+            return
+        end
+
+        local response = api('getSettings', {})
+        if response.ok then
+            log('INFO', ('API test: OK | whitelist=%s | enabled=%s'):format(
+                tostring(response.data and response.data.whitelistEnabled),
+                tostring(response.data and response.data.enabled)
+            ))
+        else
+            log('ERROR', ('API test: FEJL HTTP %s | %s'):format(response.status, response.body or ''))
+        end
+    end)
+end, true)
+
+AddEventHandler('onResourceStop', function(resourceName)
+    if resourceName ~= RESOURCE or not configured() then return end
+    api('serverOffline', { serverId = Config.ServerId })
+end)
+
+CreateThread(function()
+    detectFramework()
+
+    if not configured() then
+        log('ERROR', 'Ikke konfigureret. Sæt gms_guild_id og gms_api_key i server.cfg. Se dashboard → FiveM → Opsætning.')
+        return
+    end
+
+    log('INFO', ('Starter v%s | framework=%s | guild=%s | server=%s'):format(
+        Config.Version, framework, Config.GuildId, Config.ServerId
+    ))
+
+    if not tostring(Config.GuildId):match('^%d+
+    updateStatus()
+    syncPlayers()
+
+    while true do
+        Wait(Config.CommandPollMs)
+        pollCommands()
+    end
+end)
+
+CreateThread(function()
+    while true do
+        Wait(Config.PlayerSyncMs)
+        syncPlayers()
+    end
+end)
+
+CreateThread(function()
+    while true do
+        Wait(Config.HeartbeatMs)
+        updateStatus()
+    end
+end)
+
+CreateThread(function()
+    while true do
+        Wait(Config.SettingsRefreshMs)
+        refreshSettings()
+        detectFramework()
+    end
+end)
+) then
+        log('WARN', 'gms_guild_id ligner ikke et Discord server ID. Kontrollér Opsætning-guiden.')
+    end
+    if not tostring(Config.ApiKey):match('^gms_') then
+        log('WARN', 'gms_api_key har uventet format. Rotér nøglen i Dashboard → FiveM → Opsætning hvis auth fejler.')
+    end
+    if not tostring(Config.ServerId):match('^[%w_%-]+
+    updateStatus()
+    syncPlayers()
+
+    while true do
+        Wait(Config.CommandPollMs)
+        pollCommands()
+    end
+end)
+
+CreateThread(function()
+    while true do
+        Wait(Config.PlayerSyncMs)
+        syncPlayers()
+    end
+end)
+
+CreateThread(function()
+    while true do
+        Wait(Config.HeartbeatMs)
+        updateStatus()
+    end
+end)
+
+CreateThread(function()
+    while true do
+        Wait(Config.SettingsRefreshMs)
+        refreshSettings()
+        detectFramework()
+    end
+end)
+) then
+        log('ERROR', 'gms_server_id må kun indeholde bogstaver, tal, _ og -.')
+        return
+    end
+
+    refreshSettings()
+    updateStatus()
+    syncPlayers()
+
+    while true do
+        Wait(Config.CommandPollMs)
+        pollCommands()
+    end
+end)
+
+CreateThread(function()
+    while true do
+        Wait(Config.PlayerSyncMs)
+        syncPlayers()
+    end
+end)
+
+CreateThread(function()
+    while true do
+        Wait(Config.HeartbeatMs)
+        updateStatus()
+    end
+end)
+
+CreateThread(function()
+    while true do
+        Wait(Config.SettingsRefreshMs)
+        refreshSettings()
+        detectFramework()
+    end
+end)
+)
+    if not normalizedDiscordId then
+        return false, 'missing-discord-id'
+    end
+
+    -- Primary check: static identifier.discord principal from server.cfg.
+    -- This works even when the moderator is not connected to FiveM.
+    local principal = 'identifier.discord:' .. normalizedDiscordId
+    local ok, allowed = pcall(IsPrincipalAceAllowed, principal, ace)
+    if ok and aceResultAllowed(allowed) then
+        return true, principal
+    end
+
+    -- Fallback for staff assigned through license/fivem principals: if that
+    -- Discord user is currently online, evaluate the player's complete ACE graph.
+    local source = moderatorSource(normalizedDiscordId)
+    if source then
+        ok, allowed = pcall(IsPlayerAceAllowed, tostring(source), ace)
+        if ok and aceResultAllowed(allowed) then
+            return true, ('player.%s'):format(source)
+        end
+    end
+
+    return false, principal
+end
+
+local function authorizeRemoteCommand(command, group, sub, data)
+    if resolvePermissionMode() ~= 'nrp_ace' then
+        return true
+    end
+
+    local requiredAce = requiredNrpAce(group, sub, data)
+    if not requiredAce then
+        -- Commands without a mapped ACE are intentionally read-only/public.
+        return true
+    end
+
+    local moderatorDiscordId = data.moderatorDiscordId
+        or command.moderator_discord_id
+        or command.moderatorDiscordId
+
+    local allowed, principal = moderatorHasAce(moderatorDiscordId, requiredAce)
+    if allowed then
+        debugLog(('ACE allow %s -> %s (%s %s)'):format(principal, requiredAce, group, sub))
+        return true
+    end
+
+    log('WARN', ('ACE deny %s -> %s (%s %s)'):format(principal, requiredAce, group, sub))
+    return false, ('Adgang nægtet. Kræver ACE: %s'):format(requiredAce)
+end
+
 local function executeCommand(command)
     local data = command.command_data or {}
     local target = tonumber(command.target_player_id or data.targetPlayerId or data.id)
     local group, sub = normalizeCommand(command.command_name, data)
     if not group then return false, ('Ukendt command: %s'):format(command.command_name) end
+
+    local authorized, authError = authorizeRemoteCommand(command, group, sub, data)
+    if not authorized then return false, authError end
 
     if group == 'moderation' then
         if sub == 'kick' then
