@@ -66,7 +66,7 @@ __serve(async (req) => {
     // Verify user has admin permission for this guild
     const { data: userGuild, error: permError } = await supabase
       .from("user_guilds")
-      .select("has_admin_permission")
+      .select("has_admin_permission, discord_user_id")
       .eq("user_id", user.id)
       .eq("guild_id", guild_id)
       .single();
@@ -149,9 +149,29 @@ __serve(async (req) => {
       });
     }
 
-    const moderatorName = data.moderatorName || "Dashboard";
-    const moderatorDiscordId = data.moderatorDiscordId || "dashboard";
+    const moderatorName =
+      user.user_metadata?.full_name ||
+      user.user_metadata?.name ||
+      user.email ||
+      "Dashboard";
+    const moderatorDiscordId = String(userGuild.discord_user_id || "").trim();
+
+    if (!/^\d{15,22}$/.test(moderatorDiscordId)) {
+      return new Response(JSON.stringify({
+        error: "Din Discord-identitet mangler på GuildOS-kontoen. Log ud og ind med Discord igen."
+      }), {
+        status: 403,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const serverId = String(data.serverId || serverStatus?.server_id || "main");
+    const trustedCommandData = {
+      ...data,
+      moderatorName,
+      moderatorDiscordId,
+      serverId,
+    };
 
     // Queue the command for the FiveM server to pick up (return inserted row id)
     const { data: queuedRow, error: queueError } = await supabase
@@ -160,7 +180,7 @@ __serve(async (req) => {
         guild_id,
         server_id: serverId,
         command_name: commandName,
-        command_data: { ...data, serverId },
+        command_data: trustedCommandData,
         target_player_id: data.targetPlayerId || null,
         target_discord_id: data.targetDiscordId || null,
         target_name: data.targetName || null,
@@ -189,7 +209,7 @@ __serve(async (req) => {
       moderator_name: moderatorName,
       reason: data.reason || null,
       duration_seconds: data.duration ? parseDuration(String(data.duration)) : null,
-      metadata: { ...data, serverId },
+      metadata: trustedCommandData,
     });
 
     // Optional webhook logging works for both the default bot and custom-bot guilds.
