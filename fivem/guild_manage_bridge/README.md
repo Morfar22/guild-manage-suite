@@ -190,3 +190,60 @@ gmsbridge
 ```
 
 Bridge v1.1 rapporterer sin version til dashboardet, så det er nemt at se, om en server stadig kører en gammel bridge.
+
+
+## Nordisk RP ACE permissions
+
+Bridge v1.2.0 can use the FiveM ACE tree as the authoritative permission source for remote
+Discord/dashboard commands.
+
+`gms_permission_mode` supports:
+
+- `auto` (default): detects Nordisk RP by checking the configured `nrp.staff.*` ACE tree.
+- `nrp_ace`: forces Nordisk RP ACE authorization.
+- `legacy`: keeps the old GuildOS `user/mod/admin/god` role-level checks.
+
+Nordisk RP does **not** need a second GuildOS rank hierarchy. The bridge checks the moderator
+with `identifier.discord:<Discord ID>` directly. If the staff member is online, it also checks
+the player's complete ACE graph, which allows staff assigned through another identifier such as
+`license:` to work while connected.
+
+Examples:
+
+| FiveM action | Required ACE |
+| --- | --- |
+| kick | `nrp.staff.moderation.kick` |
+| temporary ban / jail | `nrp.staff.moderation.ban.temporary` |
+| permanent ban | `nrp.staff.moderation.ban.permanent` |
+| warn | `nrp.staff.moderation.warn` |
+| freeze | `nrp.staff.player.freeze` |
+| spectate | `nrp.staff.player.spectate` |
+| goto | `nrp.staff.player.goto` |
+| bring | `nrp.staff.player.bring` |
+| revive | `nrp.staff.player.revive` |
+| heal / health / armor | `nrp.staff.player.heal` |
+| noclip | `nrp.staff.tool.noclip` |
+| repair vehicle | `nrp.staff.tool.vehicle.repair` |
+| delete vehicle | `nrp.staff.tool.vehicle.delete` |
+| spawn vehicle | `nrp.staff.tool.vehicle.spawn` |
+| player identifiers / screenshot | `nrp.staff.player.inspect` |
+| edit job | `nrp.staff.player.job` |
+| economy / inventory changes | `nrp.staff.economy.manage` |
+| gang inspect | `nrp.staff.underworld.view` |
+| gang changes | `nrp.staff.underworld.manage` |
+| announcements | `nrp.staff.announcement.send` |
+| time / weather / bulk teleport | `nrp.staff.world.manage` |
+| resource management / dangerous global actions | `nrp.staff.server.manage` |
+| whitelist check | `nrp.staff.allowlist.review` |
+| whitelist add/remove/toggle | `nrp.staff.allowlist.decide` |
+
+Read-only server info/count commands stay public inside the Discord command access rules.
+
+To debug a staff member from the FXServer console:
+
+```text
+test_ace identifier.discord:DISCORD_ID nrp.staff.moderation.kick
+test_ace identifier.discord:DISCORD_ID nrp.staff.server.manage
+```
+
+The bridge only reads the ACE tree. It does not add/remove ACEs or principals.
