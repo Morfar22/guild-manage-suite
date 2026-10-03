@@ -81,6 +81,8 @@ export function AISafetyLogViewer() {
       if (error) throw error;
       return data as SafetyLog[];
     },
+    refetchInterval: 5_000,
+    refetchOnWindowFocus: true,
   });
 
   const markReviewed = useMutation({
@@ -202,7 +204,7 @@ export function AISafetyLogViewer() {
               AI Sikkerhedslog — Ulovligt Indhold
             </CardTitle>
             <CardDescription>
-              Logger alle forsøg på ulovligt indhold via AI-chatten på tværs af alle servere
+              Logger registrerede forsøg på ulovligt indhold via AI-chatten på tværs af alle servere
             </CardDescription>
           </div>
           <div className="flex items-center gap-2">
