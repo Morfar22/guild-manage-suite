@@ -67,4 +67,4 @@ Check the Cloudflare dashboard's channel select after deployment. The channel AP
 
 ## Scope
 
-This version routes the **shared channel-fetching endpoint** through the VPS. Other Discord operations (roles, members, moderation) still use their existing implementation. Guilds with separately configured custom bots also currently use the main bot for channel reads; those require a subsequent per-custom-bot bridge integration. Do not remove the old bot secrets from unrelated Cloudflare APIs until those endpoints are migrated.
+This version routes **shared channel lookups, role lookups, bot hierarchy lookups, member listing, and member role add/remove** through the VPS. Other Discord operations (including moderation APIs and any other endpoint not named here) still use their existing implementation. Guilds with separately configured custom bots currently use the main bot for these bridge operations, and will need a per-custom-bot bridge integration. Do not remove old bot secrets from unrelated Cloudflare APIs until those endpoints are migrated.
