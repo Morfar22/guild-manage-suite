@@ -114,119 +114,58 @@ __serve(async (req) => {
       });
     }
 
-    // Check if this guild has a custom bot configured
-    const { data: customBotSettings } = await supabaseAdmin
-      .from("guild_bot_settings")
-      .select("bot_token_encrypted, is_custom_bot, is_active")
-      .eq("guild_id", guildId)
-      .eq("is_custom_bot", true)
-      .maybeSingle();
-
-    const encryptionKey = __env("BOT_SECRET_KEY");
-    let botToken: string | null = null;
-
-    // Use custom bot token if available and active, otherwise fall back to global bot
-    if (
-      customBotSettings?.bot_token_encrypted &&
-      customBotSettings.is_custom_bot &&
-      customBotSettings.is_active
-    ) {
-      if (!encryptionKey) {
-        console.error('BOT_SECRET_KEY is missing for custom bot decryption');
-        return new Response(JSON.stringify({ error: 'Custom bot configuration is incomplete (BOT_SECRET_KEY missing)' }), { status: 503, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
-      }
-      botToken = simpleDecrypt(customBotSettings.bot_token_encrypted, encryptionKey);
-      console.log(`Using custom bot token for guild ${guild.guild_id}`);
-    } else {
-      botToken =
-        __env("DEFAULT_BOT_TOKEN") ||
-        __env("DISCORD_TOKEN") ||
-        __env("DISCORD_BOT_TOKEN") ||
-        null;
-      console.log(`Using GuildOS Bot token for guild ${guild.guild_id}`);
+    // Channel requests go through the authenticated VPS bridge. Discord tokens never leave the VPS.
+    const bridgeUrl = __env("GUILDOS_BRIDGE_URL");
+    const bridgeSecret = __env("GUILDOS_BRIDGE_SECRET");
+    if (!bridgeUrl || !bridgeSecret) {
+      return new Response(JSON.stringify({ error: "GuildOS VPS bridge is not configured (GUILDOS_BRIDGE_URL / GUILDOS_BRIDGE_SECRET)" }), {
+        status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
-
-    if (!botToken) {
-      return new Response(JSON.stringify({ error: "No bot token available for this guild" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+    let target: URL;
+    try {
+      target = new URL(bridgeUrl);
+      if (target.protocol !== "https:" || target.username || target.password || target.search || target.hash) throw new Error("Invalid bridge URL");
+      target.pathname = target.pathname.replace(/\\/$/, "") + "/v1/guilds/" + encodeURIComponent(guild.guild_id) + "/channels";
+    } catch {
+      return new Response(JSON.stringify({ error: "GUILDOS_BRIDGE_URL must be an HTTPS base URL" }), {
+        status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // Fetch channels from Discord API
-    const discordResponse = await fetch(
-      `https://discord.com/api/v10/guilds/${guild.guild_id}/channels`,
-      {
-        headers: {
-          Authorization: `Bot ${botToken}`,
-        },
-      }
-    );
-
-    if (!discordResponse.ok) {
-      const errorText = await discordResponse.text();
-      console.error("Discord API error:", discordResponse.status, errorText);
-      
-      // Provide more helpful error message
-      if (discordResponse.status === 404) {
-        return new Response(JSON.stringify({ 
-          error: "Bot is not a member of this Discord server. Please invite the bot first.",
-          details: "Unknown Guild (404)"
-        }), {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      
-      const explanation = discordResponse.status === 401 ? "Discord rejected the bot token (401). Check the server bot token." : discordResponse.status === 403 ? "Discord denied access to channels (403). Check bot membership and permissions." : discordResponse.status === 429 ? "Discord rate limited channel requests (429). Try again shortly." : `Discord channel request failed (${discordResponse.status}).`;
-      return new Response(JSON.stringify({ error: explanation }), {
-        status: discordResponse.status,
+    let bridgeResponse: Response;
+    try {
+      bridgeResponse = await fetch(target.toString(), {
+        method: "GET",
+        headers: { Authorization: "Bearer " + bridgeSecret },
+        signal: AbortSignal.timeout(12000),
+      });
+    } catch (error) {
+      console.error("VPS bridge unreachable:", error);
+      return new Response(JSON.stringify({ error: "GuildOS VPS bridge is unreachable. Verify HTTPS tunnel and bot bridge service." }), {
+        status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    const payload = await bridgeResponse.json().catch(() => null);
+    if (!bridgeResponse.ok) {
+      console.error("VPS bridge returned status", bridgeResponse.status, payload?.code);
+      const safeMessage = bridgeResponse.status === 404 ? "GuildOS bot is not in the selected Discord server" :
+        bridgeResponse.status === 401 ? "VPS bridge authentication failed. Check matching GUILDOS_BRIDGE_SECRET values" :
+        bridgeResponse.status === 429 ? "Discord rate limited channel requests" :
+        "VPS bridge failed to fetch channels (" + bridgeResponse.status + ")";
+      return new Response(JSON.stringify({ error: safeMessage }), {
+        status: bridgeResponse.status === 401 ? 502 : bridgeResponse.status,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-
-    const allChannels: DiscordChannel[] = await discordResponse.json();
-    
-    // Channel types: 0 = text, 2 = voice, 4 = category, 5 = announcement, 13 = stage, 15 = forum
-    // Return text channels, voice channels, and categories
-    const textChannels = allChannels
-      .filter((c) => [0, 5, 15].includes(c.type))
-      .sort((a, b) => a.position - b.position)
-      .map((c) => ({
-        id: c.id,
-        name: c.name,
-        type: c.type,
-        parent_id: c.parent_id,
-      }));
-
-    const voiceChannels = allChannels
-      .filter((c) => [2, 13].includes(c.type)) // 2 = voice, 13 = stage
-      .sort((a, b) => a.position - b.position)
-      .map((c) => ({
-        id: c.id,
-        name: c.name,
-        type: c.type,
-        parent_id: c.parent_id,
-      }));
-
-    const categories = allChannels
-      .filter((c) => c.type === 4)
-      .sort((a, b) => a.position - b.position)
-      .map((c) => ({
-        id: c.id,
-        name: c.name,
-        type: c.type,
-      }));
-
-    // Combine text and voice channels for backwards compatibility
-    const channels = [...textChannels, ...voiceChannels];
-
-    console.log(`Fetched ${textChannels.length} text channels, ${voiceChannels.length} voice channels and ${categories.length} categories for guild ${guild.guild_id}`);
-
-    return new Response(
-      JSON.stringify({ channels, categories }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+    if (!payload || !Array.isArray(payload.channels) || !Array.isArray(payload.categories)) {
+      return new Response(JSON.stringify({ error: "VPS bridge returned invalid channel data" }), {
+        status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    return new Response(JSON.stringify({ channels: payload.channels, categories: payload.categories }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json", "Cache-Control": "private, no-store" },
+    });
   } catch (error) {
     console.error("Error:", error);
     return new Response(
