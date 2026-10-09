@@ -2,6 +2,7 @@
 // Migrated from Supabase Edge Function `discord-members` to a TanStack server route.
 import { createFileRoute } from '@tanstack/react-router'
 import { createClient } from '@supabase/supabase-js'
+import { vpsDiscordRequest } from '@/lib/vps-discord-bridge'
 
 const __env = (k: string) => process.env[k] ?? (k === 'SUPABASE_ANON_KEY' ? process.env['SUPABASE_PUBLISHABLE_KEY'] : undefined)
 let __handler: (req: Request) => Response | Promise<Response>
@@ -102,82 +103,34 @@ __serve(async (req) => {
     if (!guildId) throw new Error("Missing guildId");
 
     const discordGuildId = await verifyGuildAccess(supabaseAdmin, guildId, userId);
-    const botToken = await getBotToken(supabaseAdmin, guildId);
-
-    const discordHeaders = {
-      Authorization: `Bot ${botToken}`,
-      "Content-Type": "application/json",
-    };
-
-    // --- GET: list members ---
-    if (req.method === "GET") {
-      const limit = url.searchParams.get("limit") || "100";
-      const after = url.searchParams.get("after") || "0";
-
-      const discordRes = await fetch(
-        `https://discord.com/api/v10/guilds/${discordGuildId}/members?limit=${limit}&after=${after}`,
-        { headers: { Authorization: `Bot ${botToken}` } },
-      );
-
-      if (!discordRes.ok) {
-        const errText = await discordRes.text();
-        console.error("Discord members error:", discordRes.status, errText);
-        throw new Error(`Discord API error (${discordRes.status})`);
+    if (req.method === 'GET') {
+      const requestedLimit = Number(url.searchParams.get('limit') || 100);
+      const limit = Number.isFinite(requestedLimit) ? Math.max(1, Math.min(1000, Math.floor(requestedLimit))) : 100;
+      const after = url.searchParams.get('after') || '0';
+      if (!/^\\d{1,22}$/.test(after)) {
+        return new Response(JSON.stringify({ error: 'Invalid pagination cursor' }), {
+          status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
       }
-
-      const members = await discordRes.json();
-
-      // Also fetch roles for display
-      const rolesRes = await fetch(
-        `https://discord.com/api/v10/guilds/${discordGuildId}/roles`,
-        { headers: { Authorization: `Bot ${botToken}` } },
-      );
-      const roles = rolesRes.ok ? await rolesRes.json() : [];
-
+      const members = await vpsDiscordRequest(discordGuildId, '/members?limit=' + limit + '&after=' + after);
+      const roles = await vpsDiscordRequest(discordGuildId, '/roles');
       return new Response(JSON.stringify({ members, roles }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    // --- POST: add or remove role ---
-    if (req.method === "POST") {
+    if (req.method === 'POST') {
       const body = await req.json();
-      const { memberId, roleId, action } = body;
-
-      if (!memberId || !roleId || !["add", "remove"].includes(action)) {
-        return new Response(JSON.stringify({ error: "Invalid parameters" }), {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+      const { memberId, roleId, action } = body || {};
+      if (!/^\\d{16,22}$/.test(String(memberId)) || !/^\\d{16,22}$/.test(String(roleId)) ||
+          !['add', 'remove'].includes(action)) {
+        return new Response(JSON.stringify({ error: 'Invalid role action parameters' }), {
+          status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
-
-      const method = action === "add" ? "PUT" : "DELETE";
-      const url = `https://discord.com/api/v10/guilds/${discordGuildId}/members/${memberId}/roles/${roleId}`;
-
-      let res = await fetch(url, { method, headers: discordHeaders });
-
-      // Retry on rate limit (max 3 attempts)
-      for (let attempt = 0; attempt < 3 && res.status === 429; attempt++) {
-        const retryData = await res.json().catch(() => ({}));
-        const retryAfter = (retryData.retry_after || 2) * 1000;
-        console.log(`Rate limited, waiting ${retryAfter}ms before retry ${attempt + 1}`);
-        await new Promise((r) => setTimeout(r, retryAfter));
-        res = await fetch(url, { method, headers: discordHeaders });
-      }
-
-      if (!res.ok) {
-        const errText = await res.text();
-        console.error(`Role ${action} failed:`, res.status, errText);
-        return new Response(JSON.stringify({ error: `Failed to ${action} role (${res.status})` }), {
-          status: res.status,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-
-      await res.text().catch(() => "");
-
+      await vpsDiscordRequest(discordGuildId, '/members/' + memberId + '/roles/' + roleId, action === 'add' ? 'PUT' : 'DELETE');
       return new Response(JSON.stringify({ success: true, action, memberId, roleId }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
