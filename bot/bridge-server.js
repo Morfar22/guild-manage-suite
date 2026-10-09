@@ -24,33 +24,53 @@ const server = http.createServer(async (req, res) => {
   if (!authorized(req.headers.authorization)) return reply(res, 401, { error: 'Unauthorized' });
   if (req.method !== 'GET') return reply(res, 405, { error: 'Method not allowed' });
   const path = new URL(req.url || '/', 'http://localhost').pathname;
-  const match = /^\/v1\/guilds\/(\d{16,22})\/channels$/.exec(path);
-  if (!match) return reply(res, 404, { error: 'Not found' });
+  const guildResource = /^\\/v1\\/guilds\\/(\\d{16,22})\\/(channels|roles|members|bot-member)$/.exec(path);
+  const roleAction = /^\\/v1\\/guilds\\/(\\d{16,22})\\/members\\/(\\d{16,22})\\/roles\\/(\\d{16,22})$/.exec(path);
+  if (!guildResource && !roleAction) return reply(res, 404, { error: 'Not found' });
+  const guildId = guildResource?.[1] || roleAction?.[1];
+  if (roleAction ? !['PUT', 'DELETE'].includes(req.method) : req.method !== 'GET') {
+    return reply(res, 405, { error: 'Method not allowed' });
+  }
   try {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 12000);
-    let upstream;
+    const discordHeaders = { Authorization: 'Bot ' + token };
+    const call = async (suffix, method = 'GET') => {
+      const response = await fetch('https://discord.com/api/v10/guilds/' + guildId + suffix, {
+        method, headers: discordHeaders, signal: controller.signal,
+      });
+      if (!response.ok) {
+        console.error('[guildos-bridge] Discord HTTP', response.status, suffix.replace(/\\d{16,22}/g, ':id'));
+        return { status: response.status, error: true };
+      }
+      return { status: response.status, data: response.status === 204 ? null : await response.json() };
+    };
     try {
-      upstream = await fetch('https://discord.com/api/v10/guilds/' + match[1] + '/channels', {
-        headers: { Authorization: 'Bot ' + token },
-        signal: controller.signal,
-      });
+      let result;
+      if (roleAction) {
+        result = await call('/members/' + roleAction[2] + '/roles/' + roleAction[3], req.method);
+      } else if (guildResource[2] === 'bot-member') {
+        const identity = await fetch('https://discord.com/api/v10/users/@me', {
+          headers: discordHeaders, signal: controller.signal,
+        });
+        if (!identity.ok) return reply(res, identity.status, { error: 'Unable to resolve bot identity' });
+        const me = await identity.json();
+        result = await call('/members/' + me.id);
+      } else if (guildResource[2] === 'members') {
+        const params = new URL(req.url, 'http://localhost').searchParams;
+        const limit = Math.max(1, Math.min(1000, Number(params.get('limit')) || 100));
+        const after = params.get('after') || '0';
+        if (!/^\\d{1,22}$/.test(after)) return reply(res, 400, { error: 'Invalid cursor' });
+        result = await call('/members?limit=' + limit + '&after=' + after);
+      } else {
+        result = await call('/' + guildResource[2]);
+      }
+      if (result.error) {
+        const status = [401, 403, 404, 429].includes(result.status) ? result.status : 502;
+        return reply(res, status, { error: 'Discord API request failed', code: 'DISCORD_' + result.status });
+      }
+      return reply(res, 200, { data: result.data });
     } finally { clearTimeout(timeout); }
-    if (!upstream.ok) {
-      console.error('[guildos-bridge] Discord channel request failed:', upstream.status);
-      return reply(res, [401, 403, 404, 429].includes(upstream.status) ? upstream.status : 502, {
-        error: upstream.status === 404 ? 'Bot is not a member of this guild' : 'Discord channel request failed',
-        code: 'DISCORD_' + upstream.status,
-      });
-    }
-    const all = await upstream.json();
-    if (!Array.isArray(all)) return reply(res, 502, { error: 'Invalid Discord response' });
-    const allowed = new Set([0, 2, 5, 13, 15]);
-    const ordered = all.slice().sort((a, b) => (a.position || 0) - (b.position || 0));
-    return reply(res, 200, {
-      channels: ordered.filter(c => allowed.has(c.type)).map(c => ({ id: c.id, name: c.name, type: c.type, parent_id: c.parent_id || null })),
-      categories: ordered.filter(c => c.type === 4).map(c => ({ id: c.id, name: c.name, type: c.type })),
-    });
   } catch (error) {
     console.error('[guildos-bridge] Failed to retrieve channels:', error.message);
     return reply(res, 502, { error: 'Bot bridge could not contact Discord' });
