@@ -22,10 +22,9 @@ function reply(res, code, body) {
 }
 const server = http.createServer(async (req, res) => {
   if (!authorized(req.headers.authorization)) return reply(res, 401, { error: 'Unauthorized' });
-  if (req.method !== 'GET') return reply(res, 405, { error: 'Method not allowed' });
   const path = new URL(req.url || '/', 'http://localhost').pathname;
-  const guildResource = /^\\/v1\\/guilds\\/(\\d{16,22})\\/(channels|roles|members|bot-member)$/.exec(path);
-  const roleAction = /^\\/v1\\/guilds\\/(\\d{16,22})\\/members\\/(\\d{16,22})\\/roles\\/(\\d{16,22})$/.exec(path);
+  const guildResource = /^\/v1\/guilds\/(\d{16,22})\/(channels|roles|members|bot-member)$/.exec(path);
+  const roleAction = /^\/v1\/guilds\/(\d{16,22})\/members\/(\d{16,22})\/roles\/(\d{16,22})$/.exec(path);
   if (!guildResource && !roleAction) return reply(res, 404, { error: 'Not found' });
   const guildId = guildResource?.[1] || roleAction?.[1];
   if (roleAction ? !['PUT', 'DELETE'].includes(req.method) : req.method !== 'GET') {
@@ -40,7 +39,7 @@ const server = http.createServer(async (req, res) => {
         method, headers: discordHeaders, signal: controller.signal,
       });
       if (!response.ok) {
-        console.error('[guildos-bridge] Discord HTTP', response.status, suffix.replace(/\\d{16,22}/g, ':id'));
+        console.error('[guildos-bridge] Discord HTTP', response.status, suffix.replace(/\d{16,22}/g, ':id'));
         return { status: response.status, error: true };
       }
       return { status: response.status, data: response.status === 204 ? null : await response.json() };
@@ -60,7 +59,7 @@ const server = http.createServer(async (req, res) => {
         const params = new URL(req.url, 'http://localhost').searchParams;
         const limit = Math.max(1, Math.min(1000, Number(params.get('limit')) || 100));
         const after = params.get('after') || '0';
-        if (!/^\\d{1,22}$/.test(after)) return reply(res, 400, { error: 'Invalid cursor' });
+        if (!/^\d{1,22}$/.test(after)) return reply(res, 400, { error: 'Invalid cursor' });
         result = await call('/members?limit=' + limit + '&after=' + after);
       } else {
         result = await call('/' + guildResource[2]);
