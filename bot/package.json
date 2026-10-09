@@ -14,7 +14,8 @@
     "lavalink:start": "bash scripts/start-lavalink.sh",
     "lavalink:pm2": "pm2 start ecosystem.lavalink.config.js",
     "lavalink:restart": "pm2 restart guildos-lavalink --update-env",
-    "lavalink:logs": "pm2 logs guildos-lavalink --lines 100"
+    "lavalink:logs": "pm2 logs guildos-lavalink --lines 100",
+    "bridge:start": "node bridge-server.js"
   },
   "dependencies": {
     "discord.js": "14.26.4",
