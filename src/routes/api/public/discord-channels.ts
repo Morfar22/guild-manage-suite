@@ -122,7 +122,7 @@ __serve(async (req) => {
       .eq("is_custom_bot", true)
       .maybeSingle();
 
-    const encryptionKey = __env("BOT_SECRET_KEY") || "default-encryption-key";
+    const encryptionKey = __env("BOT_SECRET_KEY");
     let botToken: string | null = null;
 
     // Use custom bot token if available and active, otherwise fall back to global bot
@@ -131,6 +131,10 @@ __serve(async (req) => {
       customBotSettings.is_custom_bot &&
       customBotSettings.is_active
     ) {
+      if (!encryptionKey) {
+        console.error('BOT_SECRET_KEY is missing for custom bot decryption');
+        return new Response(JSON.stringify({ error: 'Custom bot configuration is incomplete (BOT_SECRET_KEY missing)' }), { status: 503, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
       botToken = simpleDecrypt(customBotSettings.bot_token_encrypted, encryptionKey);
       console.log(`Using custom bot token for guild ${guild.guild_id}`);
     } else {
@@ -174,7 +178,8 @@ __serve(async (req) => {
         });
       }
       
-      return new Response(JSON.stringify({ error: "Failed to fetch channels from Discord" }), {
+      const explanation = discordResponse.status === 401 ? "Discord rejected the bot token (401). Check the server bot token." : discordResponse.status === 403 ? "Discord denied access to channels (403). Check bot membership and permissions." : discordResponse.status === 429 ? "Discord rate limited channel requests (429). Try again shortly." : `Discord channel request failed (${discordResponse.status}).`;
+      return new Response(JSON.stringify({ error: explanation }), {
         status: discordResponse.status,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
