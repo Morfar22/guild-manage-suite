@@ -69,6 +69,15 @@ const server = http.createServer(async (req, res) => {
         const status = [401, 403, 404, 429].includes(result.status) ? result.status : 502;
         return reply(res, status, { error: 'Discord API request failed', code: 'DISCORD_' + result.status });
       }
+      if (guildResource?.[2] === 'channels') {
+        const all = result.data;
+        if (!Array.isArray(all)) return reply(res, 502, { error: 'Invalid Discord channels response' });
+        const sorted = all.slice().sort((a, b) => (a.position || 0) - (b.position || 0));
+        return reply(res, 200, {
+          channels: sorted.filter(c => [0, 2, 5, 13, 15].includes(c.type)).map(c => ({ id: c.id, name: c.name, type: c.type, parent_id: c.parent_id || null })),
+          categories: sorted.filter(c => c.type === 4).map(c => ({ id: c.id, name: c.name, type: c.type })),
+        });
+      }
       return reply(res, 200, { data: result.data });
     } finally { clearTimeout(timeout); }
   } catch (error) {
