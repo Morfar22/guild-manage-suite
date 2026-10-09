@@ -2,6 +2,7 @@
 // Migrated from Supabase Edge Function `discord-roles` to a TanStack server route.
 import { createFileRoute } from '@tanstack/react-router'
 import { createClient } from '@supabase/supabase-js'
+import { vpsDiscordRequest } from '@/lib/vps-discord-bridge'
 
 const __env = (k: string) => process.env[k] ?? (k === 'SUPABASE_ANON_KEY' ? process.env['SUPABASE_PUBLISHABLE_KEY'] : undefined)
 let __handler: (req: Request) => Response | Promise<Response>
@@ -117,88 +118,12 @@ __serve(async (req) => {
       });
     }
 
-    // Check if this guild has a custom bot configured
-    const { data: customBotSettings } = await supabaseAdmin
-      .from("guild_bot_settings")
-      .select("bot_token_encrypted, is_custom_bot, is_active")
-      .eq("guild_id", guildId)
-      .eq("is_custom_bot", true)
-      .maybeSingle();
-
-    const encryptionKey = __env("BOT_SECRET_KEY") || "default-encryption-key";
-    let botToken: string | null = null;
-
-    // Use custom bot token if available and active, otherwise fall back to global bot
-    if (
-      customBotSettings?.bot_token_encrypted &&
-      customBotSettings.is_custom_bot &&
-      customBotSettings.is_active
-    ) {
-      botToken = simpleDecrypt(customBotSettings.bot_token_encrypted, encryptionKey);
-      console.log(`Using custom bot token for guild ${guild.guild_id}`);
-    } else {
-      botToken =
-        __env("DEFAULT_BOT_TOKEN") ||
-        __env("DISCORD_TOKEN") ||
-        __env("DISCORD_BOT_TOKEN") ||
-        null;
-      console.log(`Using GuildOS Bot token for guild ${guild.guild_id}`);
-    }
-
-    if (!botToken) {
-      return new Response(JSON.stringify({ error: "No bot token available for this guild" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    const discordRes = await fetch(
-      `https://discord.com/api/v10/guilds/${guild.guild_id}/roles`,
-      {
-        headers: {
-          Authorization: `Bot ${botToken}`,
-        },
-      },
-    );
-
-    if (!discordRes.ok) {
-      const errorText = await discordRes.text();
-      console.error("Discord API error", discordRes.status, errorText);
-      
-      // Provide more helpful error message
-      if (discordRes.status === 404) {
-        return new Response(JSON.stringify({ 
-          error: "Bot is not a member of this Discord server. Please invite the bot first.",
-          details: "Unknown Guild (404)"
-        }), {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      
-      throw new Error(`Discord API error (${discordRes.status})`);
-    }
-
-    const roles: DiscordRole[] = await discordRes.json();
-
-    // Resolve the active bot's member + role hierarchy so the dashboard can
-    // prevent selection of roles Discord will reject.
-    let botMember: any = null;
-    try {
-      const meRes = await fetch("https://discord.com/api/v10/users/@me", {
-        headers: { Authorization: `Bot ${botToken}` },
-      });
-      if (meRes.ok) {
-        const me = await meRes.json();
-        const memberRes = await fetch(
-          `https://discord.com/api/v10/guilds/${guild.guild_id}/members/${me.id}`,
-          { headers: { Authorization: `Bot ${botToken}` } },
-        );
-        if (memberRes.ok) botMember = await memberRes.json();
-      }
-    } catch (error) {
-      console.warn("Could not resolve bot member role hierarchy:", error);
-    }
+    // Discord operations are performed by the VPS. Cloudflare never holds bot tokens.
+    const roles: DiscordRole[] = await vpsDiscordRequest(guild.guild_id, '/roles');
+    const botMember = await vpsDiscordRequest(guild.guild_id, '/bot-member').catch((error) => {
+      console.warn('Could not resolve bot member roles:', error);
+      return null;
+    });
 
     const botRoleIds = new Set<string>([
       guild.guild_id,
