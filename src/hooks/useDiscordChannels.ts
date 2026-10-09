@@ -28,11 +28,17 @@ export function useDiscordChannels() {
     queryFn: async (): Promise<ChannelsResponse> => {
       if (!selectedGuild?.id) return { channels: [], categories: [] };
 
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+      const accessToken = sessionData.session?.access_token;
+      if (sessionError || !accessToken) {
+        throw new Error('Your session has expired. Please sign in again.');
+      }
+
       const response = await fetch(
         `/api/public/discord-channels?guildId=${selectedGuild.id}`,
         {
           headers: {
-            Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
+            Authorization: `Bearer ${accessToken}`,
             'Content-Type': 'application/json',
           },
         }
@@ -43,9 +49,14 @@ export function useDiscordChannels() {
         throw new Error(errorData.error || 'Failed to fetch channels');
       }
 
-      return response.json();
+      const payload = await response.json();
+      if (!Array.isArray(payload.channels) || !Array.isArray(payload.categories)) {
+        throw new Error('Invalid channels response from server');
+      }
+      return payload;
     },
     enabled: !!selectedGuild?.id,
     staleTime: 5 * 60 * 1000, // Cache for 5 minutes
+    retry: (count, error) => count < 2 && !/Unauthorized|Forbidden|session|bot token|not a member/i.test(error.message),
   });
 }
