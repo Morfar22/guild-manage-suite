@@ -107,7 +107,7 @@ __serve(async (req) => {
       const requestedLimit = Number(url.searchParams.get('limit') || 100);
       const limit = Number.isFinite(requestedLimit) ? Math.max(1, Math.min(1000, Math.floor(requestedLimit))) : 100;
       const after = url.searchParams.get('after') || '0';
-      if (!/^\\d{1,22}$/.test(after)) {
+      if (!/^\d{1,22}$/.test(after)) {
         return new Response(JSON.stringify({ error: 'Invalid pagination cursor' }), {
           status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
@@ -122,7 +122,7 @@ __serve(async (req) => {
     if (req.method === 'POST') {
       const body = await req.json();
       const { memberId, roleId, action } = body || {};
-      if (!/^\\d{16,22}$/.test(String(memberId)) || !/^\\d{16,22}$/.test(String(roleId)) ||
+      if (!/^\d{16,22}$/.test(String(memberId)) || !/^\d{16,22}$/.test(String(roleId)) ||
           !['add', 'remove'].includes(action)) {
         return new Response(JSON.stringify({ error: 'Invalid role action parameters' }), {
           status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
