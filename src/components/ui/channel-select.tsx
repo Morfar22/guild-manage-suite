@@ -40,7 +40,7 @@ export const ChannelSelect = React.forwardRef<HTMLDivElement, ChannelSelectProps
   disabled = false,
   allowedTypes,
 }, _ref) {
-  const { data, isLoading, error } = useDiscordChannels();
+  const { data, isLoading, error, refetch, isFetching } = useDiscordChannels();
 
   const allChannels = data?.channels || [];
   const channels = allowedTypes?.length
@@ -80,7 +80,10 @@ export const ChannelSelect = React.forwardRef<HTMLDivElement, ChannelSelectProps
   if (error) {
     return (
       <div className="flex h-10 w-full items-center rounded-md border border-destructive bg-background px-3 py-2 text-sm text-destructive">
-        Could not fetch channels
+        <span className="min-w-0 flex-1 truncate" title={error.message}>{error.message || "Could not fetch channels"}</span>
+        <button type="button" className="ml-2 shrink-0 rounded border border-destructive/40 px-2 py-1 text-xs hover:bg-destructive/10 disabled:opacity-50" disabled={isFetching} onClick={() => void refetch()} aria-label="Retry fetching channels">
+          {isFetching ? "Retrying..." : "Retry"}
+        </button>
       </div>
     );
   }
