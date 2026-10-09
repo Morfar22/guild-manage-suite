@@ -126,7 +126,7 @@ __serve(async (req) => {
     try {
       target = new URL(bridgeUrl);
       if (target.protocol !== "https:" || target.username || target.password || target.search || target.hash) throw new Error("Invalid bridge URL");
-      target.pathname = target.pathname.replace(/\\/$/, "") + "/v1/guilds/" + encodeURIComponent(guild.guild_id) + "/channels";
+      target.pathname = (target.pathname.endsWith("/") ? target.pathname.slice(0, -1) : target.pathname) + "/v1/guilds/" + encodeURIComponent(guild.guild_id) + "/channels";
     } catch {
       return new Response(JSON.stringify({ error: "GUILDOS_BRIDGE_URL must be an HTTPS base URL" }), {
         status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" },
