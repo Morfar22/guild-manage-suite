@@ -1,3 +1,4 @@
+import type { TablesUpdate } from '@/integrations/supabase/types';
 import { useState, useEffect, useCallback } from 'react';
 import { useGuild } from '@/contexts/GuildContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -128,7 +129,7 @@ export function useTwitchSchedule() {
     }
   };
 
-  const updateEntry = async (id: string, updates: Partial<TwitchScheduleEntry>): Promise<boolean> => {
+  const updateEntry = async (id: string, updates: TablesUpdate<'twitch_stream_schedules'>): Promise<boolean> => {
     setSaving(true);
     try {
       const { error } = await supabase.from('twitch_stream_schedules').update(updates).eq('id', id);

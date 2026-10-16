@@ -1,4 +1,5 @@
 // @ts-nocheck
+import { decryptBotToken as simpleDecrypt } from '@/lib/server/bot-token-crypto'
 // Migrated from Supabase Edge Function `discord-interactions` to a TanStack server route.
 import { createFileRoute } from '@tanstack/react-router'
 import { createClient } from '@supabase/supabase-js'
@@ -158,14 +159,6 @@ async function sendFollowupEphemeral(interaction: any, content: string) {
   }
 }
 
-function simpleDecrypt(encoded: string, key: string): string {
-  const decoded = atob(encoded);
-  let result = "";
-  for (let i = 0; i < decoded.length; i++) {
-    result += String.fromCharCode(decoded.charCodeAt(i) ^ key.charCodeAt(i % key.length));
-  }
-  return result;
-}
 
 async function getBotTokenForGuild(innerSupabase: any, discordGuildId: string): Promise<string> {
   let botToken = __env("DISCORD_BOT_TOKEN")!;
@@ -187,7 +180,7 @@ async function getBotTokenForGuild(innerSupabase: any, discordGuildId: string): 
     .maybeSingle();
 
   if (customBot?.bot_token_encrypted) {
-    const encKey = __env("BOT_SECRET_KEY") || "default-encryption-key";
+    const encKey = __env("BOT_SECRET_KEY") || "";
     botToken = simpleDecrypt(customBot.bot_token_encrypted, encKey);
   }
 
@@ -2920,13 +2913,8 @@ __serve(async (req) => {
                     .eq("is_active", true)
                     .maybeSingle();
                   if (customBot?.bot_token_encrypted) {
-                    const encKey = __env("BOT_SECRET_KEY") || "default-encryption-key";
-                    const decText = atob(customBot.bot_token_encrypted);
-                    let dec = "";
-                    for (let i = 0; i < decText.length; i++) {
-                      dec += String.fromCharCode(decText.charCodeAt(i) ^ encKey.charCodeAt(i % encKey.length));
-                    }
-                    botToken = dec;
+                    const encKey = __env("BOT_SECRET_KEY") || "";
+                    botToken = simpleDecrypt(customBot.bot_token_encrypted, encKey);
                     console.log("Using custom bot token for reaction role toggle");
                   }
                 }

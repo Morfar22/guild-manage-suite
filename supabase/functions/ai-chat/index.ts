@@ -1,3 +1,4 @@
+import { requireUser, requireGuildAdmin } from '../_shared/api-auth.ts';
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
@@ -313,7 +314,7 @@ serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     const requestBotSecret = req.headers.get('x-bot-secret');
-    const isBotRequest = requestBotSecret === botSecretKey;
+    const isBotRequest = Boolean(botSecretKey && requestBotSecret && requestBotSecret === botSecretKey);
 
     if (isBotRequest) {
       const ipCheck = await checkIPWhitelist(req, supabase);
@@ -347,6 +348,11 @@ serve(async (req) => {
       internalGuildId = guild.id;
     }
 
+    if (!isBotRequest) {
+      const user = await requireUser(req, supabase);
+      await requireGuildAdmin(supabase, user.id, internalGuildId);
+    }
+
     switch (action) {
       case 'get_settings': {
         const { data: settings } = await supabase
@@ -370,7 +376,7 @@ serve(async (req) => {
         if (existing) {
           await supabase
             .from('ai_chat_settings')
-            .update(newSettings)
+            .update(Object.fromEntries(Object.entries(newSettings || {}).filter(([key]) => !['id', 'guild_id'].includes(key))))
             .eq('guild_id', internalGuildId);
         } else {
           await supabase
@@ -654,6 +660,7 @@ serve(async (req) => {
         });
     }
   } catch (error) {
+    if (error instanceof Response) return error;
     console.error('AI Chat Handler error:', error);
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return new Response(JSON.stringify({ error: errorMessage }), {

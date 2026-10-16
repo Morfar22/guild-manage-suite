@@ -1,7 +1,9 @@
 // @ts-nocheck
+import { decryptBotToken as simpleDecrypt } from '@/lib/server/bot-token-crypto'
 // Migrated from Supabase Edge Function `send-embed` to a TanStack server route.
 import { createFileRoute } from '@tanstack/react-router'
 import { createClient } from '@supabase/supabase-js'
+import { requireUser, requireGuildAdmin, requireGuildChannel } from '@/lib/server/api-auth'
 
 const __env = (k: string) => process.env[k] ?? (k === 'SUPABASE_ANON_KEY' ? process.env['SUPABASE_PUBLISHABLE_KEY'] : undefined)
 let __handler: (req: Request) => Response | Promise<Response>
@@ -13,14 +15,6 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-function simpleDecrypt(encoded: string, key: string): string {
-  const text = atob(encoded);
-  let result = '';
-  for (let i = 0; i < text.length; i++) {
-    result += String.fromCharCode(text.charCodeAt(i) ^ key.charCodeAt(i % key.length));
-  }
-  return result;
-}
 
 async function getBotTokenForGuild(supabase: any, guildId: string): Promise<string> {
   const { data: settings } = await supabase
@@ -31,12 +25,13 @@ async function getBotTokenForGuild(supabase: any, guildId: string): Promise<stri
     .eq('is_active', true)
     .maybeSingle();
 
-  const encryptionKey = __env('BOT_SECRET_KEY') || 'default-encryption-key';
+  const encryptionKey = __env('BOT_SECRET_KEY') || '';
 
   if (settings?.bot_token_encrypted) {
     try {
       return simpleDecrypt(settings.bot_token_encrypted, encryptionKey);
     } catch (e) {
+    if (e instanceof Response) return e;
       console.error('Failed to decrypt custom bot token, falling back to global:', e.message);
     }
   }
@@ -60,9 +55,13 @@ __serve(async (req) => {
     const supabaseUrl = __env('SUPABASE_URL')!;
     const supabaseKey = __env('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
+    const user = await requireUser(req, supabase);
+
+    const guild = await requireGuildAdmin(supabase, user.id, guildId);
 
     // guild_bot_settings is keyed by the internal guild UUID from the app
     const botToken = await getBotTokenForGuild(supabase, guildId);
+    await requireGuildChannel(botToken, guild.guild_id, channelId);
 
     // Build Discord embed object
     const discordEmbed: any = {};
@@ -127,6 +126,7 @@ __serve(async (req) => {
     const data = await response.json();
     return new Response(JSON.stringify({ success: true, messageId: data.id }), { headers: corsHeaders });
   } catch (e) {
+    if (e instanceof Response) return e;
     return new Response(JSON.stringify({ error: e.message }), { status: 500, headers: corsHeaders });
   }
 });

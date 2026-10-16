@@ -176,7 +176,7 @@ export default function OperationsCenter() {
     const triggerConfig =
       triggerType === 'message_keyword' ? { keyword: triggerValue, case_sensitive: false } : {};
 
-    const action: Record<string, unknown> = { type: workflowAction };
+    const action: { type: string; channel_id?: string; role_id?: string; message?: string } = { type: workflowAction };
     if (workflowChannel) action.channel_id = workflowChannel;
     if (workflowRole) action.role_id = workflowRole;
     if (workflowMessage) action.message = workflowMessage;

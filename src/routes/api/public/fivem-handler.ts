@@ -1,4 +1,5 @@
 // @ts-nocheck
+import { decryptBotToken as simpleDecrypt } from '@/lib/server/bot-token-crypto'
 // Migrated from Supabase Edge Function `fivem-handler` to a TanStack server route.
 import { createFileRoute } from '@tanstack/react-router'
 import { createClient } from '@supabase/supabase-js'
@@ -43,14 +44,6 @@ async function checkIPWhitelist(req: Request, supabaseClient: any): Promise<{ al
   return { allowed: isWhitelisted, ip };
 }
 
-function simpleDecrypt(encoded: string, key: string): string {
-  const decoded = atob(encoded);
-  let output = "";
-  for (let i = 0; i < decoded.length; i++) {
-    output += String.fromCharCode(decoded.charCodeAt(i) ^ key.charCodeAt(i % key.length));
-  }
-  return output;
-}
 
 async function getDiscordBotToken(supabase: any, internalGuildId: string, encryptionKey?: string) {
   if (encryptionKey) {

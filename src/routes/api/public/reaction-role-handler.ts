@@ -1,4 +1,5 @@
 // @ts-nocheck
+import { decryptBotToken as simpleDecrypt } from '@/lib/server/bot-token-crypto'
 // Migrated from Supabase Edge Function `reaction-role-handler` to a TanStack server route.
 import { createFileRoute } from '@tanstack/react-router'
 import { createClient } from '@supabase/supabase-js'
@@ -7,16 +8,6 @@ const __env = (k: string) => process.env[k] ?? (k === 'SUPABASE_ANON_KEY' ? proc
 let __handler: (req: Request) => Response | Promise<Response>
 const __serve = (fn: any, _opts?: any) => { __handler = fn }
 
-
-// Simple decryption using XOR with a key
-function simpleDecrypt(encoded: string, key: string): string {
-  const text = atob(encoded);
-  let result = '';
-  for (let i = 0; i < text.length; i++) {
-    result += String.fromCharCode(text.charCodeAt(i) ^ key.charCodeAt(i % key.length));
-  }
-  return result;
-}
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -240,7 +231,7 @@ __serve(async (req) => {
         .eq('is_custom_bot', true)
         .maybeSingle();
 
-      const encryptionKey = __env('BOT_SECRET_KEY') || 'default-encryption-key';
+      const encryptionKey = __env('BOT_SECRET_KEY') || '';
       let DISCORD_BOT_TOKEN: string | null = null;
 
       if (customBotSettings?.bot_token_encrypted && customBotSettings.is_custom_bot) {

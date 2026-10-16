@@ -1,3 +1,4 @@
+import { decryptBotToken as simpleDecrypt } from '../_shared/bot-token-crypto.ts';
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
@@ -28,14 +29,6 @@ async function checkIPWhitelist(req: Request, supabase: any): Promise<{ allowed:
   return { allowed: !!whitelistData, ip: clientIp };
 }
 
-function simpleDecrypt(encoded: string, key: string): string {
-  const text = atob(encoded);
-  let result = "";
-  for (let i = 0; i < text.length; i++) {
-    result += String.fromCharCode(text.charCodeAt(i) ^ key.charCodeAt(i % key.length));
-  }
-  return result;
-}
 
 async function getBotTokenForGuild(supabase: any, guildId: string, fallbackToken?: string | null): Promise<string> {
   const { data: settings } = await supabase
@@ -46,7 +39,7 @@ async function getBotTokenForGuild(supabase: any, guildId: string, fallbackToken
     .eq("is_active", true)
     .maybeSingle();
 
-  const encryptionKey = Deno.env.get("BOT_SECRET_KEY") || "default-encryption-key";
+  const encryptionKey = Deno.env.get("BOT_SECRET_KEY") || "";
 
   if (settings?.bot_token_encrypted) {
     try {

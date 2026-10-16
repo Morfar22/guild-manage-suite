@@ -1,3 +1,4 @@
+import { decryptBotToken as simpleDecrypt } from '../_shared/bot-token-crypto.ts';
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
@@ -5,21 +6,6 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-bot-secret, cf-connecting-ip, x-forwarded-for, x-real-ip",
 };
 
-function simpleDecrypt(encoded: string, key: string): string {
-  try {
-    const text = atob(encoded);
-    let result = "";
-    for (let i = 0; i < text.length; i++) {
-      result += String.fromCharCode(
-        text.charCodeAt(i) ^ key.charCodeAt(i % key.length),
-      );
-    }
-    return result;
-  } catch (e) {
-    console.error("Failed to decrypt bot token:", e);
-    return "";
-  }
-}
 
 async function getBotToken(supabase: any, guildId: string): Promise<string> {
   const encryptionKey = Deno.env.get("BOT_SECRET_KEY") || "";

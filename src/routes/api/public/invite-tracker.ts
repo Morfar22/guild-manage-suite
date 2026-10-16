@@ -1,6 +1,7 @@
 // @ts-nocheck
 // Migrated from Supabase Edge Function `invite-tracker` to a TanStack server route.
 import { createFileRoute } from '@tanstack/react-router'
+import { requireUser, requireGuildAdmin, requireBotSecret } from '@/lib/server/api-auth';
 import { createClient } from '@supabase/supabase-js'
 
 const __env = (k: string) => process.env[k] ?? (k === 'SUPABASE_ANON_KEY' ? process.env['SUPABASE_PUBLISHABLE_KEY'] : undefined)
@@ -24,21 +25,17 @@ __serve(async (req) => {
   try {
     const { action, data } = await req.json();
 
-    // Bot-only endpoints require bot secret
+    const isBot = Boolean(req.headers.get('x-bot-secret'));
+    let dashboardUser = null;
+    if (isBot) requireBotSecret(req);
+    else dashboardUser = await requireUser(req, supabase);
     const botActions = ["syncInvites", "logInviteUse", "markInviteLeft"];
-    if (botActions.includes(action)) {
-      const botSecret = req.headers.get("x-bot-secret");
-      if (botSecret !== __env("BOT_SECRET_KEY")) {
-        return new Response(JSON.stringify({ error: "Unauthorized" }), {
-          status: 401,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-    }
+    if (botActions.includes(action) && !isBot) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
     // Get internal guild UUID from Discord guild_id
     const getGuildUuid = async (discordGuildId: string): Promise<string | null> => {
       const { data: g } = await supabase.from("guilds").select("id").eq("guild_id", discordGuildId).maybeSingle();
+      if (g?.id && dashboardUser) await requireGuildAdmin(supabase, dashboardUser.id, g.id);
       return g?.id ?? null;
     };
 
@@ -180,6 +177,7 @@ __serve(async (req) => {
         });
     }
   } catch (e: any) {
+    if (e instanceof Response) return e;
     console.error("invite-tracker error:", e?.message);
     return new Response(JSON.stringify({ error: e?.message || "Unknown error" }), {
       status: 500,

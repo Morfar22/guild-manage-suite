@@ -48,7 +48,7 @@ export default function Auth() {
     if (code && !processingCodeRef.current) {
       processingCodeRef.current = true;
       window.history.replaceState({}, document.title, '/auth');
-      handleDiscordCallback(code);
+      handleDiscordCallback(code, searchParams.get('state'));
       return;
     }
 
@@ -58,13 +58,13 @@ export default function Auth() {
     }
   }, [searchParams]);
 
-  const handleDiscordCallback = async (code: string) => {
+  const handleDiscordCallback = async (code: string, state: string | null) => {
     setDiscordLoading(true);
     setError(null);
     try {
       const redirectUri = DISCORD_REDIRECT_URI;
       const response = await invokeFunction('discord-oauth?action=callback', {
-        body: { code, redirectUri },
+        body: { code, redirectUri, state },
         headers: { 'Content-Type': 'application/json' },
       });
       if (response.error) throw new Error(response.error.message || 'Discord OAuth failed');

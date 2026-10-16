@@ -1,35 +1,27 @@
+import { decryptBotToken as simpleDecrypt, encryptBotToken as simpleEncrypt } from '../_shared/bot-token-crypto.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+
+const __env = (key: string) => Deno.env.get(key) ?? (key === 'SUPABASE_ANON_KEY' ? Deno.env.get('SUPABASE_PUBLISHABLE_KEY') : undefined)
+let __handler: (req: Request) => Response | Promise<Response>
+const __serve = (fn: any, _opts?: any) => { __handler = fn }
+
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-bot-secret, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 }
 
-// Simple encryption using XOR with a key - for production use proper encryption
-function simpleEncrypt(text: string, key: string): string {
-  let result = '';
-  for (let i = 0; i < text.length; i++) {
-    result += String.fromCharCode(text.charCodeAt(i) ^ key.charCodeAt(i % key.length));
-  }
-  return btoa(result);
-}
 
-function simpleDecrypt(encoded: string, key: string): string {
-  const text = atob(encoded);
-  let result = '';
-  for (let i = 0; i < text.length; i++) {
-    result += String.fromCharCode(text.charCodeAt(i) ^ key.charCodeAt(i % key.length));
-  }
-  return result;
-}
-
-Deno.serve(async (req) => {
+__serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
 
   try {
-    const encryptionKey = Deno.env.get('BOT_SECRET_KEY') || 'default-encryption-key'
+    const encryptionKey = __env('BOT_SECRET_KEY') || ''
+    if (!encryptionKey || encryptionKey === 'default-encryption-key') {
+      return new Response(JSON.stringify({ error: 'Bot secret is not configured' }), { status: 503, headers: corsHeaders })
+    }
     const botSecret = req.headers.get('x-bot-secret')
     const authHeader = req.headers.get('Authorization')
 
@@ -55,8 +47,8 @@ Deno.serve(async (req) => {
       }
 
       const adminSupabase = createClient(
-        Deno.env.get('SUPABASE_URL')!,
-        Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+        __env('SUPABASE_URL')!,
+        __env('SUPABASE_SERVICE_ROLE_KEY')!
       )
 
       const { action } = (body || {}) as { action?: string }
@@ -192,6 +184,40 @@ Deno.serve(async (req) => {
         )
       }
 
+      // Clear a permanently invalid custom-bot avatar URL.
+      // This endpoint is bot-secret protected and only accepts the internal guild UUID.
+      if (action === 'clear_invalid_avatar') {
+        const { guild_id, reason } = body as { guild_id?: string; reason?: string };
+
+        if (!guild_id) {
+          return new Response(
+            JSON.stringify({ error: 'Missing guild_id' }),
+            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+
+        const { error: clearAvatarError } = await adminSupabase
+          .from('guild_bot_settings')
+          .update({ bot_avatar_url: null })
+          .eq('guild_id', guild_id)
+          .eq('is_custom_bot', true);
+
+        if (clearAvatarError) {
+          console.error('Failed to clear invalid bot avatar URL:', clearAvatarError);
+          return new Response(
+            JSON.stringify({ error: 'Failed to clear invalid avatar URL' }),
+            { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+
+        console.warn(`Cleared invalid custom-bot avatar for guild ${guild_id}: ${reason || 'invalid avatar source'}`);
+
+        return new Response(
+          JSON.stringify({ success: true }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
       // Get status of all running bots (for dashboard)
       if (action === 'get_status') {
         const { data: botStatuses, error: statusError } = await adminSupabase
@@ -264,7 +290,7 @@ Deno.serve(async (req) => {
             member_count: status?.member_count || 0,
             last_heartbeat: status?.last_heartbeat,
             is_custom_bot: !!customBot,
-            bot_name: customBot?.bot_name || 'Default Bot',
+            bot_name: customBot?.bot_name || 'GuildOS Bot',
             bot_avatar_url: customBot?.bot_avatar_url,
           }
         })
@@ -352,8 +378,8 @@ Deno.serve(async (req) => {
     const token = authHeader.replace('Bearer ', '')
 
     const supabase = createClient(
-      Deno.env.get('SUPABASE_URL')!,
-      Deno.env.get('SUPABASE_ANON_KEY')!,
+      __env('SUPABASE_URL')!,
+      __env('SUPABASE_ANON_KEY')!,
       { global: { headers: { Authorization: authHeader } } }
     )
 
@@ -429,8 +455,8 @@ Deno.serve(async (req) => {
       // Admin-only: Get ALL active bots across all guilds
       if (action === 'admin_get_all_bots') {
         const adminSupabase = createClient(
-          Deno.env.get('SUPABASE_URL')!,
-          Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+          __env('SUPABASE_URL')!,
+          __env('SUPABASE_SERVICE_ROLE_KEY')!
         )
 
         // Check if user has admin OR staff role using the database function (handles enum properly)
@@ -507,7 +533,7 @@ Deno.serve(async (req) => {
             updated_at: status?.updated_at,
             is_custom_bot: customBot?.is_custom_bot || false,
             custom_bot_active: customBot?.is_active || false,
-            bot_name: customBot?.bot_name || 'Default Bot',
+            bot_name: customBot?.bot_name || 'GuildOS Bot',
             bot_avatar_url: customBot?.bot_avatar_url,
           }
         })
@@ -533,8 +559,8 @@ Deno.serve(async (req) => {
       // Admin-only: Remove bot from a guild (leave the Discord server + clean up DB)
       if (action === 'admin_leave_guild') {
         const adminSupabase = createClient(
-          Deno.env.get('SUPABASE_URL')!,
-          Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+          __env('SUPABASE_URL')!,
+          __env('SUPABASE_SERVICE_ROLE_KEY')!
         )
 
         const { data: hasRole } = await adminSupabase
@@ -554,24 +580,17 @@ Deno.serve(async (req) => {
           )
         }
 
-        // Get discord guild id from our guilds table
+        // Get discord guild id from our guilds table (may be missing for stale rows)
         const { data: guildRow } = await adminSupabase
           .from('guilds')
           .select('id, guild_id')
           .eq('id', targetGuildId)
           .maybeSingle()
 
-        if (!guildRow) {
-          return new Response(
-            JSON.stringify({ error: 'Guild not found' }),
-            { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-          )
-        }
-
-        const discordGuildId = guildRow.guild_id
+        const discordGuildId = guildRow?.guild_id as string | undefined
 
         // Determine which bot token to use: custom bot or default
-        let botToken = Deno.env.get('DISCORD_BOT_TOKEN')
+        let botToken = __env('DISCORD_BOT_TOKEN')
         const { data: customBotSettings } = await adminSupabase
           .from('guild_bot_settings')
           .select('bot_token_encrypted, is_custom_bot, is_active')
@@ -581,8 +600,14 @@ Deno.serve(async (req) => {
           .maybeSingle()
 
         if (customBotSettings?.bot_token_encrypted) {
-          botToken = simpleDecrypt(customBotSettings.bot_token_encrypted, encryptionKey)
+          try {
+            botToken = simpleDecrypt(customBotSettings.bot_token_encrypted, encryptionKey)
+          } catch (err) {
+            console.error('Failed to decrypt custom bot token:', err)
+          }
         }
+
+        let discordWarning: string | null = null
 
         // Call Discord API to leave the guild
         if (botToken && discordGuildId) {
@@ -595,18 +620,26 @@ Deno.serve(async (req) => {
               const errText = await leaveRes.text()
               console.error(`Discord leave guild failed (${leaveRes.status}):`, errText)
               return new Response(
-                JSON.stringify({ error: `Discord API error: ${leaveRes.status}` }),
-                { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+                JSON.stringify({ error: `Discord afviste anmodningen (${leaveRes.status}): ${errText.slice(0, 200)}` }),
+                { status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
               )
+            }
+            if (leaveRes.status === 404) {
+              discordWarning = 'Botten var ikke medlem af serveren – rydder kun op i databasen.'
             }
             console.log(`[Admin] Bot left Discord guild ${discordGuildId}`)
           } catch (err) {
             console.error('Error calling Discord leave guild:', err)
             return new Response(
-              JSON.stringify({ error: 'Failed to contact Discord API' }),
-              { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+              JSON.stringify({ error: 'Kunne ikke kontakte Discord API' }),
+              { status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
             )
           }
+        } else {
+          discordWarning = !discordGuildId
+            ? 'Serveren findes ikke længere i databasen – rydder kun op i bot-data.'
+            : 'Intet bot-token tilgængeligt – rydder kun op i bot-data.'
+          console.warn(`[Admin] leave_guild without Discord call: ${discordWarning}`)
         }
 
         // Clean up DB: bot_status, guild_bot_settings
@@ -616,15 +649,15 @@ Deno.serve(async (req) => {
         console.log(`[Admin] Cleaned up DB for guild ${targetGuildId}`)
 
         return new Response(
-          JSON.stringify({ success: true }),
+          JSON.stringify({ success: true, warning: discordWarning }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         )
       }
 
       if (action === 'get_status') {
         const adminSupabase = createClient(
-          Deno.env.get('SUPABASE_URL')!,
-          Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+          __env('SUPABASE_URL')!,
+          __env('SUPABASE_SERVICE_ROLE_KEY')!
         )
 
         // Only show bots for guilds the user is admin in
@@ -701,7 +734,7 @@ Deno.serve(async (req) => {
             member_count: status?.member_count || 0,
             last_heartbeat: status?.last_heartbeat,
             is_custom_bot: !!customBot,
-            bot_name: customBot?.bot_name || 'Default Bot',
+            bot_name: customBot?.bot_name || 'GuildOS Bot',
             bot_avatar_url: customBot?.bot_avatar_url,
           }
         })
@@ -726,8 +759,8 @@ Deno.serve(async (req) => {
     // Verify user has admin permission for this guild
     // First check if user is a platform admin/staff — they bypass guild-level checks
     const adminSupabaseForCheck = createClient(
-      Deno.env.get('SUPABASE_URL')!,
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+      __env('SUPABASE_URL')!,
+      __env('SUPABASE_SERVICE_ROLE_KEY')!
     )
     const { data: isPlatformAdmin } = await adminSupabaseForCheck
       .rpc('has_admin_or_staff_role', { _user_id: userId })
@@ -905,3 +938,6 @@ Deno.serve(async (req) => {
     )
   }
 })
+
+
+Deno.serve(__handler);

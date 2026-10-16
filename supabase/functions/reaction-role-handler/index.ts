@@ -1,14 +1,6 @@
+import { decryptBotToken as simpleDecrypt } from '../_shared/bot-token-crypto.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
-// Simple decryption using XOR with a key
-function simpleDecrypt(encoded: string, key: string): string {
-  const text = atob(encoded);
-  let result = '';
-  for (let i = 0; i < text.length; i++) {
-    result += String.fromCharCode(text.charCodeAt(i) ^ key.charCodeAt(i % key.length));
-  }
-  return result;
-}
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -232,7 +224,7 @@ Deno.serve(async (req) => {
         .eq('is_custom_bot', true)
         .maybeSingle();
 
-      const encryptionKey = Deno.env.get('BOT_SECRET_KEY') || 'default-encryption-key';
+      const encryptionKey = Deno.env.get('BOT_SECRET_KEY') || '';
       let DISCORD_BOT_TOKEN: string | null = null;
 
       if (customBotSettings?.bot_token_encrypted && customBotSettings.is_custom_bot) {

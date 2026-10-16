@@ -1,3 +1,4 @@
+import type { TablesUpdate } from '@/integrations/supabase/types';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useGuild } from '@/contexts/GuildContext';
@@ -132,7 +133,7 @@ export function useUpdateApplicationForm() {
     mutationFn: async ({ id, ...form }: Partial<ApplicationForm> & { id: string }) => {
       if (!selectedGuild?.id) throw new Error('No guild selected');
 
-      const updateData: Record<string, any> = {};
+      const updateData: TablesUpdate<'application_forms'> = {};
       if (form.name !== undefined) updateData.name = form.name;
       if (form.description !== undefined) updateData.description = form.description;
       if (form.emoji !== undefined) updateData.emoji = form.emoji;

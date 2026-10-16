@@ -1,21 +1,28 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { decryptBotToken } from '../_shared/bot-token-crypto.ts'
+import { requireUser, requireGuildAdmin, requireGuildChannel } from '../_shared/api-auth.ts'
+
+const __env = (key: string) => Deno.env.get(key) ?? (key === 'SUPABASE_ANON_KEY' ? Deno.env.get('SUPABASE_PUBLISHABLE_KEY') : undefined)
+let __handler: (req: Request) => Response | Promise<Response>
+const __serve = (fn: any, _opts?: any) => { __handler = fn }
+
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-bot-secret',
 };
 
-serve(async (req) => {
+__serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
   }
 
   try {
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const botToken = Deno.env.get('DISCORD_BOT_TOKEN')!;
+    const supabaseUrl = __env('SUPABASE_URL')!;
+    const supabaseServiceKey = __env('SUPABASE_SERVICE_ROLE_KEY')!;
+    const botToken = __env('DISCORD_BOT_TOKEN')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    const user = await requireUser(req, supabase);
 
     const { guildId } = await req.json();
     if (!guildId) {
@@ -24,18 +31,7 @@ serve(async (req) => {
       });
     }
 
-    // Get guild's Discord ID
-    const { data: guild } = await supabase
-      .from('guilds')
-      .select('id, guild_id')
-      .eq('id', guildId)
-      .single();
-
-    if (!guild) {
-      return new Response(JSON.stringify({ error: 'Guild not found' }), {
-        status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
-    }
+    const guild = await requireGuildAdmin(supabase, user.id, guildId);
 
     // Get verification settings
     const { data: settings } = await supabase
@@ -50,15 +46,15 @@ serve(async (req) => {
       });
     }
 
-    // Check if guild has a custom bot token
-    const { data: customBot } = await supabase
-      .from('custom_bots')
-      .select('bot_token')
-      .eq('guild_id', guild.id)
-      .eq('is_active', true)
-      .maybeSingle();
-
-    const token = customBot?.bot_token || botToken;
+    const { data: customBot, error: customBotError } = await supabase
+      .from('guild_bot_settings').select('bot_token_encrypted')
+      .eq('guild_id', guild.id).eq('is_custom_bot', true).eq('is_active', true).maybeSingle();
+    if (customBotError) throw customBotError;
+    const token = customBot?.bot_token_encrypted
+      ? decryptBotToken(customBot.bot_token_encrypted, __env('BOT_SECRET_KEY') || '')
+      : botToken;
+    if (!token) throw new Error('Bot token not configured');
+    await requireGuildChannel(token, guild.guild_id, settings.channel_id);
 
     // Send verification panel embed via Discord API
     const embed = {
@@ -107,9 +103,13 @@ serve(async (req) => {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
   } catch (error) {
+    if (error instanceof Response) return error;
     console.error('Send verification panel error:', error);
     return new Response(JSON.stringify({ error: error.message }), {
       status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
   }
 });
+
+
+Deno.serve(__handler);

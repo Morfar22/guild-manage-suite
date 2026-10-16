@@ -1,3 +1,4 @@
+import type { TablesUpdate } from '@/integrations/supabase/types';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import type { Json, Tables } from '@/integrations/supabase/types';
@@ -341,7 +342,7 @@ export function useOperationsCenter() {
   const updateAlert = useMutation({
     mutationFn: async ({ id, status }: { id: string; status: 'open' | 'acknowledged' | 'resolved' }) => {
       if (!guildId) throw new Error('Ingen guild valgt');
-      const values: Record<string, unknown> = { status, is_read: true };
+      const values: TablesUpdate<'dashboard_notifications'> = { status, is_read: true };
       if (status === 'acknowledged') {
         values.acknowledged_at = new Date().toISOString();
         values.acknowledged_by = user?.id ?? null;
@@ -485,7 +486,7 @@ export function useOperationsCenter() {
       if (!guildId) throw new Error('Ingen guild valgt');
       if (!profile.command_names.length) throw new Error('Profilen har ingen commands');
 
-      const updates: Record<string, unknown> = {
+      const updates: TablesUpdate<'guild_commands'> = {
         allowed_role_ids: profile.role_ids,
         allowed_channel_ids: profile.allowed_channel_ids,
         updated_at: new Date().toISOString(),

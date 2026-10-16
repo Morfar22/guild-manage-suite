@@ -1,3 +1,4 @@
+import type { TablesUpdate } from '@/integrations/supabase/types';
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -87,7 +88,7 @@ export function AISafetyLogViewer() {
 
   const markReviewed = useMutation({
     mutationFn: async ({ ids, notes }: { ids: string[]; notes?: string }) => {
-      const update: Record<string, any> = { reviewed: true };
+      const update: TablesUpdate<'ai_safety_logs'> = { reviewed: true };
       if (notes) update.admin_notes = notes;
       const { error } = await supabase
         .from('ai_safety_logs')

@@ -3,35 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useGuild } from '@/contexts/GuildContext';
 import { invokeFunction } from '@/lib/functions-client';
 
-const FIVEM_SETTINGS_PUBLIC_COLUMNS = [
-  'id',
-  'guild_id',
-  'enabled',
-  'server_name',
-  'server_ip',
-  'cfx_code',
-  'whitelist_enabled',
-  'auto_whitelist_role_id',
-  'whitelisted_role_id',
-  'sync_discord_roles',
-  'sync_playtime',
-  'log_channel_id',
-  'whitelist_application_form_id',
-  'status_webhook_url',
-  'log_webhook_url',
-  'staff_chat_channel_id',
-  'announcement_channel_id',
-  'staff_role_ids',
-  'mod_role_ids',
-  'admin_role_ids',
-  'god_role_ids',
-  'bridge_token_created_at',
-  'bridge_last_seen_at',
-  'bridge_version',
-  'bridge_framework',
-  'created_at',
-  'updated_at',
-].join(',');
+const FIVEM_SETTINGS_PUBLIC_COLUMNS = 'id,guild_id,enabled,server_name,server_ip,cfx_code,whitelist_enabled,auto_whitelist_role_id,whitelisted_role_id,sync_discord_roles,sync_playtime,log_channel_id,whitelist_application_form_id,status_webhook_url,log_webhook_url,staff_chat_channel_id,announcement_channel_id,staff_role_ids,mod_role_ids,admin_role_ids,god_role_ids,bridge_token_created_at,bridge_last_seen_at,bridge_version,bridge_framework,created_at,updated_at' as const;
 
 
 export interface FiveMSettings {

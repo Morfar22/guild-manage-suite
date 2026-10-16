@@ -1,18 +1,17 @@
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { decryptBotToken as simpleDecrypt } from '../_shared/bot-token-crypto.ts'
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { requireUser, requireGuildAdmin, requireGuildChannel } from '../_shared/api-auth.ts'
+
+const __env = (key: string) => Deno.env.get(key) ?? (key === 'SUPABASE_ANON_KEY' ? Deno.env.get('SUPABASE_PUBLISHABLE_KEY') : undefined)
+let __handler: (req: Request) => Response | Promise<Response>
+const __serve = (fn: any, _opts?: any) => { __handler = fn }
+
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-function simpleDecrypt(encoded: string, key: string): string {
-  const text = atob(encoded);
-  let result = '';
-  for (let i = 0; i < text.length; i++) {
-    result += String.fromCharCode(text.charCodeAt(i) ^ key.charCodeAt(i % key.length));
-  }
-  return result;
-}
 
 async function getBotTokenForGuild(supabase: any, guildId: string): Promise<string> {
   const { data: settings } = await supabase
@@ -23,22 +22,23 @@ async function getBotTokenForGuild(supabase: any, guildId: string): Promise<stri
     .eq('is_active', true)
     .maybeSingle();
 
-  const encryptionKey = Deno.env.get('BOT_SECRET_KEY') || 'default-encryption-key';
+  const encryptionKey = __env('BOT_SECRET_KEY') || '';
 
   if (settings?.bot_token_encrypted) {
     try {
       return simpleDecrypt(settings.bot_token_encrypted, encryptionKey);
     } catch (e) {
+    if (e instanceof Response) return e;
       console.error('Failed to decrypt custom bot token, falling back to global:', e instanceof Error ? e.message : String(e));
     }
   }
 
-  const globalToken = Deno.env.get('DISCORD_BOT_TOKEN');
+  const globalToken = __env('DISCORD_BOT_TOKEN');
   if (!globalToken) throw new Error('Bot token not configured');
   return globalToken;
 }
 
-Deno.serve(async (req) => {
+__serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -49,9 +49,10 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: 'Missing pollId' }), { status: 400, headers: corsHeaders });
     }
 
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const supabaseUrl = __env('SUPABASE_URL')!;
+    const supabaseKey = __env('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
+    const user = await requireUser(req, supabase);
 
     // Fetch the poll
     const { data: poll, error: pollError } = await supabase
@@ -64,11 +65,53 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: 'Poll not found' }), { status: 404, headers: corsHeaders });
     }
 
+    const guild = await requireGuildAdmin(supabase, user.id, poll.guild_id);
+
     if (!poll.channel_id) {
       return new Response(JSON.stringify({ error: 'No channel_id set' }), { status: 400, headers: corsHeaders });
     }
 
+    if (poll.message_id) {
+      return new Response(
+        JSON.stringify({ success: true, alreadyDelivered: true, messageId: poll.message_id }),
+        { headers: corsHeaders }
+      );
+    }
+
     const botToken = await getBotTokenForGuild(supabase, poll.guild_id);
+    await requireGuildChannel(botToken, guild.guild_id, poll.channel_id);
+
+    const deliveryClaim = `pending:http:${poll.id}:${Date.now()}`;
+    const { data: claimedRows, error: claimError } = await supabase
+      .from('polls')
+      .update({ message_id: deliveryClaim })
+      .eq('id', poll.id)
+      .is('message_id', null)
+      .select('id');
+
+    if (claimError) {
+      return new Response(
+        JSON.stringify({ error: `Failed to claim poll delivery: ${claimError.message}` }),
+        { status: 500, headers: corsHeaders }
+      );
+    }
+
+    if (!claimedRows?.length) {
+      const { data: latestPoll } = await supabase
+        .from('polls')
+        .select('message_id')
+        .eq('id', poll.id)
+        .maybeSingle();
+
+      return new Response(
+        JSON.stringify({
+          success: true,
+          alreadyDelivered: true,
+          messageId: latestPoll?.message_id ?? null,
+        }),
+        { headers: corsHeaders }
+      );
+    }
 
     // Build the embed
     const options = (poll.options || []) as Array<{ label: string; votes: number; voters: string[] }>;
@@ -121,6 +164,13 @@ Deno.serve(async (req) => {
     if (!response.ok) {
       const err = await response.text();
       console.error('Discord API error:', err);
+
+      await supabase
+        .from('polls')
+        .update({ message_id: null })
+        .eq('id', poll.id)
+        .eq('message_id', deliveryClaim);
+
       return new Response(JSON.stringify({ error: `Discord API error: ${err}` }), { status: response.status, headers: corsHeaders });
     }
 
@@ -130,13 +180,18 @@ Deno.serve(async (req) => {
     await supabase
       .from('polls')
       .update({ message_id: data.id })
-      .eq('id', pollId);
+      .eq('id', pollId)
+      .eq('message_id', deliveryClaim);
 
     console.log(`[SendPoll] ✅ Sent poll "${poll.question}" to channel ${poll.channel_id}, message ${data.id}`);
 
     return new Response(JSON.stringify({ success: true, messageId: data.id }), { headers: corsHeaders });
   } catch (e) {
+    if (e instanceof Response) return e;
     console.error('[SendPoll] Error:', e.message);
     return new Response(JSON.stringify({ error: e.message }), { status: 500, headers: corsHeaders });
   }
 });
+
+
+Deno.serve(__handler);

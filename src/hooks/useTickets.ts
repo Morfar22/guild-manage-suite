@@ -1,3 +1,4 @@
+import type { TablesUpdate } from '@/integrations/supabase/types';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useGuild } from '@/contexts/GuildContext';
@@ -336,7 +337,7 @@ export function useUpdateCategory() {
   return useMutation({
     mutationFn: async ({ id, ...updates }: Partial<CategoryInput> & { id: string }) => {
       // Build update object manually to handle questions properly
-      const updateData: Record<string, unknown> = {};
+      const updateData: TablesUpdate<'ticket_categories'> = {};
       if (updates.name !== undefined) updateData.name = updates.name;
       if (updates.description !== undefined) updateData.description = updates.description;
       if (updates.ticket_type !== undefined) updateData.ticket_type = updates.ticket_type;

@@ -1,4 +1,5 @@
 // @ts-nocheck
+import { decryptBotToken as simpleDecrypt } from '@/lib/server/bot-token-crypto'
 // Migrated from Supabase Edge Function `generate-ticket-transcript` to a TanStack server route.
 import { createFileRoute } from '@tanstack/react-router'
 import { createClient } from '@supabase/supabase-js'
@@ -71,17 +72,11 @@ async function fetchDMChannel(botToken: string, userId: string) {
   return r.json();
 }
 
-function simpleDecrypt(encoded: string, key: string): string {
-  const text = atob(encoded);
-  let result = "";
-  for (let i = 0; i < text.length; i++) result += String.fromCharCode(text.charCodeAt(i) ^ key.charCodeAt(i % key.length));
-  return result;
-}
 
 async function getBotToken(supabase: any, guildId: string): Promise<string> {
   const { data } = await supabase.from("guild_bot_settings").select("bot_token_encrypted")
     .eq("guild_id", guildId).eq("is_custom_bot", true).eq("is_active", true).maybeSingle();
-  const k = __env("BOT_SECRET_KEY") || "default-encryption-key";
+  const k = __env("BOT_SECRET_KEY") || "";
   if (data?.bot_token_encrypted) {
     try { return simpleDecrypt(data.bot_token_encrypted, k); } catch (_) {}
   }

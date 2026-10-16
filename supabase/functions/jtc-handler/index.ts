@@ -1,5 +1,11 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { decryptBotToken as simpleDecrypt } from '../_shared/bot-token-crypto.ts'
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { requireUser, requireGuildAdmin } from '../_shared/api-auth.ts'
+
+const __env = (key: string) => Deno.env.get(key) ?? (key === 'SUPABASE_ANON_KEY' ? Deno.env.get('SUPABASE_PUBLISHABLE_KEY') : undefined)
+let __handler: (req: Request) => Response | Promise<Response>
+const __serve = (fn: any, _opts?: any) => { __handler = fn }
+
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -7,14 +13,6 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-bot-secret, cf-connecting-ip, x-forwarded-for, x-real-ip",
 };
 
-function simpleDecrypt(encoded: string, key: string): string {
-  const text = atob(encoded);
-  let result = "";
-  for (let i = 0; i < text.length; i++) {
-    result += String.fromCharCode(text.charCodeAt(i) ^ key.charCodeAt(i % key.length));
-  }
-  return result;
-}
 
 async function getBotTokenForGuild(supabase: any, guildId: string): Promise<string> {
   const { data: settings } = await supabase
@@ -25,7 +23,7 @@ async function getBotTokenForGuild(supabase: any, guildId: string): Promise<stri
     .eq("is_active", true)
     .maybeSingle();
 
-  const encryptionKey = Deno.env.get("BOT_SECRET_KEY") || "default-encryption-key";
+  const encryptionKey = __env("BOT_SECRET_KEY") || "";
 
   if (settings?.bot_token_encrypted) {
     try {
@@ -35,11 +33,12 @@ async function getBotTokenForGuild(supabase: any, guildId: string): Promise<stri
         return token;
       }
     } catch (e) {
+    if (e instanceof Response) return e;
       console.error("JTC failed to decrypt custom bot token, falling back to default:", e instanceof Error ? e.message : String(e));
     }
   }
 
-  const globalToken = Deno.env.get("DISCORD_BOT_TOKEN");
+  const globalToken = __env("DISCORD_BOT_TOKEN");
   if (!globalToken) throw new Error("Discord bot token not configured");
   return globalToken;
 }
@@ -65,21 +64,21 @@ async function checkIPWhitelist(req: Request, supabase: any): Promise<{ allowed:
   return { allowed: !!whitelistData, ip: clientIp };
 }
 
-serve(async (req) => {
+__serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
 
   try {
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const botSecretKey = Deno.env.get("BOT_SECRET_KEY");
+    const supabaseUrl = __env("SUPABASE_URL")!;
+    const supabaseServiceKey = __env("SUPABASE_SERVICE_ROLE_KEY")!;
+    const botSecretKey = __env("BOT_SECRET_KEY");
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     // Verify bot secret for bot-initiated requests
     const requestBotSecret = req.headers.get("x-bot-secret");
-    const isBotRequest = requestBotSecret === botSecretKey;
+    const isBotRequest = Boolean(botSecretKey && requestBotSecret && requestBotSecret === botSecretKey);
 
     // Check IP whitelist for bot requests
     if (isBotRequest) {
@@ -115,6 +114,11 @@ serve(async (req) => {
       }
       internalGuildId = guild.id;
       discordGuildIdResolved = guild.guild_id;
+    }
+
+    if (!isBotRequest) {
+      const user = await requireUser(req, supabase);
+      await requireGuildAdmin(supabase, user.id, internalGuildId);
     }
 
     switch (action) {
@@ -649,6 +653,7 @@ serve(async (req) => {
         });
     }
   } catch (error) {
+    if (error instanceof Response) return error;
     console.error("JTC Handler error:", error);
     const errorMessage = error instanceof Error ? error.message : "Unknown error";
     return new Response(JSON.stringify({ error: errorMessage }), {
@@ -657,3 +662,6 @@ serve(async (req) => {
     });
   }
 });
+
+
+Deno.serve(__handler);

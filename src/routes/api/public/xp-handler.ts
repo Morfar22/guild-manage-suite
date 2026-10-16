@@ -1,6 +1,7 @@
 // @ts-nocheck
 // Migrated from Supabase Edge Function `xp-handler` to a TanStack server route.
 import { createFileRoute } from '@tanstack/react-router'
+import { decryptBotToken } from '@/lib/server/bot-token-crypto'
 import { createClient } from '@supabase/supabase-js'
 
 const __env = (k: string) => process.env[k] ?? (k === 'SUPABASE_ANON_KEY' ? process.env['SUPABASE_PUBLISHABLE_KEY'] : undefined)
@@ -136,11 +137,7 @@ __serve(async (req) => {
 
       if (customBotSettings?.bot_token_encrypted && encryptionKey) {
         try {
-          const text = atob(customBotSettings.bot_token_encrypted);
-          let decrypted = '';
-          for (let i = 0; i < text.length; i++) {
-            decrypted += String.fromCharCode(text.charCodeAt(i) ^ encryptionKey.charCodeAt(i % encryptionKey.length));
-          }
+          const decrypted = decryptBotToken(customBotSettings.bot_token_encrypted, encryptionKey);
           if (decrypted) {
             botToken = decrypted;
             console.log(`Using custom bot token for guild ${guild.id}`);

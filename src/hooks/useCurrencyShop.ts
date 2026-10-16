@@ -1,3 +1,4 @@
+import type { TablesUpdate } from '@/integrations/supabase/types';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useGuild } from '@/contexts/GuildContext';
@@ -45,7 +46,7 @@ export function useCurrencyShop() {
   });
 
   const updateItem = useMutation({
-    mutationFn: async ({ id, ...updates }: { id: string } & Record<string, unknown>) => {
+    mutationFn: async ({ id, ...updates }: { id: string } & TablesUpdate<'economy_shop_items'>) => {
       const { error } = await supabase.from('economy_shop_items').update(updates).eq('id', id);
       if (error) throw error;
     },

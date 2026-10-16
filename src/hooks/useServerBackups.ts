@@ -71,7 +71,9 @@ export function useServerBackups() {
         }
       );
       if (!response.ok) throw new Error('Gendannelse fejlede');
-      return response.json();
+      const result = await response.json();
+      if (result.restored !== true) throw new Error('Gendannelse blev ikke gennemført');
+      return result;
     },
     onSuccess: () => {
       toast.success('Server gendannet fra backup!');

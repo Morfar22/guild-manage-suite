@@ -1,4 +1,10 @@
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { DISCORD_REDIRECT_URI, createOAuthState, validOAuthState, clearOAuthStateCookie, findAuthUserByEmail } from '../_shared/discord-oauth-security.ts'
+
+const __env = (key: string) => Deno.env.get(key) ?? (key === 'SUPABASE_ANON_KEY' ? Deno.env.get('SUPABASE_PUBLISHABLE_KEY') : undefined)
+let __handler: (req: Request) => Response | Promise<Response>
+const __serve = (fn: any, _opts?: any) => { __handler = fn }
+
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -18,22 +24,27 @@ interface DiscordUser {
   id: string;
   username: string;
   email: string;
+  verified: boolean;
   avatar: string | null;
 }
 
-Deno.serve(async (req) => {
+__serve(async (req) => {
   // Handle CORS preflight
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
 
+  if (req.method !== 'POST') return Response.json({ error: 'Method not allowed' }, { status: 405 });
+  if (req.headers.get('origin') !== new URL(DISCORD_REDIRECT_URI).origin) {
+    return Response.json({ error: 'Invalid login origin' }, { status: 403 });
+  }
   const url = new URL(req.url);
   const action = url.searchParams.get("action");
 
-  const DISCORD_CLIENT_ID = Deno.env.get("DISCORD_CLIENT_ID");
-  const DISCORD_CLIENT_SECRET = Deno.env.get("DISCORD_CLIENT_SECRET");
-  const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
-  const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+  const DISCORD_CLIENT_ID = __env("DISCORD_CLIENT_ID")?.trim();
+  const DISCORD_CLIENT_SECRET = __env("DISCORD_CLIENT_SECRET")?.trim();
+  const SUPABASE_URL = __env("SUPABASE_URL");
+  const SUPABASE_SERVICE_ROLE_KEY = __env("SUPABASE_SERVICE_ROLE_KEY");
 
   if (!DISCORD_CLIENT_ID || !DISCORD_CLIENT_SECRET) {
     console.error("Discord credentials not configured");
@@ -47,12 +58,15 @@ Deno.serve(async (req) => {
     // Action: Get authorization URL
     if (action === "authorize") {
       const { redirectUri } = await req.json();
+      if (redirectUri !== DISCORD_REDIRECT_URI) return Response.json({ error: 'Invalid redirect URI' }, { status: 400 });
+      const oauth = createOAuthState();
       
       const params = new URLSearchParams({
         client_id: DISCORD_CLIENT_ID,
         redirect_uri: redirectUri,
         response_type: "code",
         scope: "identify email guilds",
+        state: oauth.state,
       });
 
       const authUrl = `https://discord.com/api/oauth2/authorize?${params}`;
@@ -60,13 +74,16 @@ Deno.serve(async (req) => {
       console.log("Generated Discord auth URL");
       return new Response(
         JSON.stringify({ url: authUrl }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        { headers: { ...corsHeaders, "Content-Type": "application/json", "Set-Cookie": oauth.cookie, "Cache-Control": "no-store" } }
       );
     }
 
     // Action: Exchange code for tokens and fetch user data
     if (action === "callback") {
-      const { code, redirectUri } = await req.json();
+      const { code, redirectUri, state } = await req.json();
+      if (redirectUri !== DISCORD_REDIRECT_URI || !validOAuthState(req, state)) {
+        return Response.json({ error: 'Loginforsøget er udløbet eller ugyldigt. Start Discord-login igen.' }, { status: 403 });
+      }
 
       if (!code) {
         return new Response(
@@ -118,6 +135,9 @@ Deno.serve(async (req) => {
       }
 
       const discordUser: DiscordUser = await userResponse.json();
+      if (discordUser.email && !discordUser.verified) {
+        return Response.json({ error: 'Bekræft din e-mail hos Discord før du logger ind.' }, { status: 403 });
+      }
       console.log("Discord user fetched:", discordUser.username);
 
       // Fetch user's guilds
@@ -156,8 +176,7 @@ Deno.serve(async (req) => {
       // Try to sign in or create user
       let userId: string;
       
-      const { data: existingUsers } = await supabase.auth.admin.listUsers();
-      const existingUser = existingUsers?.users?.find(u => u.email === email);
+      const existingUser = await findAuthUserByEmail(supabase, email);
 
       if (existingUser) {
         userId = existingUser.id;
@@ -222,7 +241,7 @@ Deno.serve(async (req) => {
       const adminGuildDiscordIds = adminGuilds.map((g) => g.id);
       const { data: currentGuildRows } = await supabase
         .from("guilds")
-        .select("id, guild_id")
+        .select("id, guild_id, owner_id")
         .in("guild_id", adminGuildDiscordIds.length > 0 ? adminGuildDiscordIds : ["__none__"]);
       const keepInternalIds = new Set((currentGuildRows || []).map((g) => g.id));
 
@@ -242,58 +261,72 @@ Deno.serve(async (req) => {
         console.log(`Removed ${toRemove.length} stale guild links for user`);
       }
 
-      // Sync guilds to database
-      for (const guild of adminGuilds) {
-        // Upsert guild
-        const { data: guildData, error: guildError } = await supabase
+      // Sync guilds to database — batched to stay under Cloudflare's subrequest limit.
+      // 1) Upsert all guilds in ONE call.
+      let guildRows = currentGuildRows || [];
+      if (adminGuilds.length > 0) {
+        const { data: upserted, error: guildError } = await supabase
           .from("guilds")
           .upsert(
-            {
+            adminGuilds.map((guild) => ({
               guild_id: guild.id,
               guild_name: guild.name,
               guild_icon: guild.icon,
-              owner_id: guild.owner ? discordUser.id : guild.id,
-            },
+              owner_id: guild.owner ? discordUser.id :
+                (currentGuildRows || []).find(row => row.guild_id === guild.id)?.owner_id || "unknown",
+            })),
             { onConflict: "guild_id" }
           )
-          .select()
-          .single();
+          .select("id, guild_id");
 
         if (guildError) {
-          console.error("Failed to upsert guild:", guildError);
-          continue;
+          console.error("Failed to upsert guilds:", guildError);
+        } else if (upserted) {
+          guildRows = upserted;
         }
+      }
 
-        // Link user to guild
+      const internalIdByDiscordId = new Map(guildRows.map((g) => [g.guild_id, g.id]));
+
+      // 2) Link user to all guilds in ONE call.
+      const linkRows = adminGuilds
+        .map((guild) => internalIdByDiscordId.get(guild.id))
+        .filter(Boolean)
+        .map((internalId) => ({
+          user_id: userId,
+          guild_id: internalId,
+          discord_user_id: discordUser.id,
+          has_admin_permission: true,
+        }));
+      if (linkRows.length > 0) {
         const { error: linkError } = await supabase
           .from("user_guilds")
-          .upsert(
-            {
-              user_id: userId,
-              guild_id: guildData.id,
-              discord_user_id: discordUser.id,
-              has_admin_permission: true,
-            },
-            { onConflict: "user_id,guild_id" }
-          );
-
+          .upsert(linkRows, { onConflict: "user_id,guild_id" });
         if (linkError) {
-          console.error("Failed to link user to guild:", linkError);
+          console.error("Failed to link user to guilds:", linkError);
         }
+      }
 
-        // Initialize default modules if not exist
-        const modules = ["moderation", "music", "leveling", "utility", "fun"];
-        for (const module of modules) {
-          await supabase
-            .from("guild_modules")
-            .upsert(
-              {
-                guild_id: guildData.id,
-                module_type: module,
-                enabled: true,
-              },
-              { onConflict: "guild_id,module_type" }
-            );
+      // 3) Initialize default modules ONLY for guilds that didn't exist before, in ONE call.
+      const existingDiscordIds = new Set((currentGuildRows || []).map((g) => g.guild_id));
+      const modules = ["moderation", "music", "leveling", "utility", "fun"];
+      const moduleRows = adminGuilds
+        .filter((guild) => !existingDiscordIds.has(guild.id))
+        .flatMap((guild) => {
+          const internalId = internalIdByDiscordId.get(guild.id);
+          if (!internalId) return [];
+          return modules.map((module) => ({
+            guild_id: internalId,
+            module_type: module,
+            enabled: true,
+          }));
+        });
+      if (moduleRows.length > 0) {
+        const { error: moduleError } = await supabase
+          .from("guild_modules")
+          .upsert(moduleRows, { onConflict: "guild_id,module_type" });
+        if (moduleError) {
+          console.error("Failed to init guild modules:", moduleError);
         }
       }
 
@@ -306,7 +339,7 @@ Deno.serve(async (req) => {
       if (sessionError) {
         console.error("Failed to generate session:", sessionError);
         return new Response(
-          JSON.stringify({ error: "Failed to create session" }),
+          JSON.stringify({ error: `Failed to create session: ${sessionError.message}` }),
           { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
@@ -342,3 +375,15 @@ Deno.serve(async (req) => {
     );
   }
 });
+
+
+const __call = async ({ request }: { request: Request }) => {
+  const response = await __handler(request);
+  response.headers.set('Cache-Control', 'no-store');
+  if (new URL(request.url).searchParams.get('action') === 'callback') {
+    response.headers.set('Set-Cookie', clearOAuthStateCookie());
+  }
+  return response;
+}
+
+Deno.serve((request) => __call({ request }));

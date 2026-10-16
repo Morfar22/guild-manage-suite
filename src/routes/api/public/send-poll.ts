@@ -1,7 +1,9 @@
 // @ts-nocheck
+import { decryptBotToken as simpleDecrypt } from '@/lib/server/bot-token-crypto'
 // Migrated from Supabase Edge Function `send-poll` to a TanStack server route.
 import { createFileRoute } from '@tanstack/react-router'
 import { createClient } from '@supabase/supabase-js'
+import { requireUser, requireGuildAdmin, requireGuildChannel } from '@/lib/server/api-auth'
 
 const __env = (k: string) => process.env[k] ?? (k === 'SUPABASE_ANON_KEY' ? process.env['SUPABASE_PUBLISHABLE_KEY'] : undefined)
 let __handler: (req: Request) => Response | Promise<Response>
@@ -13,14 +15,6 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-function simpleDecrypt(encoded: string, key: string): string {
-  const text = atob(encoded);
-  let result = '';
-  for (let i = 0; i < text.length; i++) {
-    result += String.fromCharCode(text.charCodeAt(i) ^ key.charCodeAt(i % key.length));
-  }
-  return result;
-}
 
 async function getBotTokenForGuild(supabase: any, guildId: string): Promise<string> {
   const { data: settings } = await supabase
@@ -31,12 +25,13 @@ async function getBotTokenForGuild(supabase: any, guildId: string): Promise<stri
     .eq('is_active', true)
     .maybeSingle();
 
-  const encryptionKey = __env('BOT_SECRET_KEY') || 'default-encryption-key';
+  const encryptionKey = __env('BOT_SECRET_KEY') || '';
 
   if (settings?.bot_token_encrypted) {
     try {
       return simpleDecrypt(settings.bot_token_encrypted, encryptionKey);
     } catch (e) {
+    if (e instanceof Response) return e;
       console.error('Failed to decrypt custom bot token, falling back to global:', e instanceof Error ? e.message : String(e));
     }
   }
@@ -60,6 +55,7 @@ __serve(async (req) => {
     const supabaseUrl = __env('SUPABASE_URL')!;
     const supabaseKey = __env('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
+    const user = await requireUser(req, supabase);
 
     // Fetch the poll
     const { data: poll, error: pollError } = await supabase
@@ -72,6 +68,8 @@ __serve(async (req) => {
       return new Response(JSON.stringify({ error: 'Poll not found' }), { status: 404, headers: corsHeaders });
     }
 
+    const guild = await requireGuildAdmin(supabase, user.id, poll.guild_id);
+
     if (!poll.channel_id) {
       return new Response(JSON.stringify({ error: 'No channel_id set' }), { status: 400, headers: corsHeaders });
     }
@@ -82,6 +80,9 @@ __serve(async (req) => {
         { headers: corsHeaders }
       );
     }
+
+    const botToken = await getBotTokenForGuild(supabase, poll.guild_id);
+    await requireGuildChannel(botToken, guild.guild_id, poll.channel_id);
 
     const deliveryClaim = `pending:http:${poll.id}:${Date.now()}`;
     const { data: claimedRows, error: claimError } = await supabase
@@ -114,8 +115,6 @@ __serve(async (req) => {
         { headers: corsHeaders }
       );
     }
-
-    const botToken = await getBotTokenForGuild(supabase, poll.guild_id);
 
     // Build the embed
     const options = (poll.options || []) as Array<{ label: string; votes: number; voters: string[] }>;
@@ -191,6 +190,7 @@ __serve(async (req) => {
 
     return new Response(JSON.stringify({ success: true, messageId: data.id }), { headers: corsHeaders });
   } catch (e) {
+    if (e instanceof Response) return e;
     console.error('[SendPoll] Error:', e.message);
     return new Response(JSON.stringify({ error: e.message }), { status: 500, headers: corsHeaders });
   }

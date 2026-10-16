@@ -1,7 +1,9 @@
 // @ts-nocheck
+import { decryptBotToken as simpleDecrypt } from '@/lib/server/bot-token-crypto'
 // Migrated from Supabase Edge Function `jtc-handler` to a TanStack server route.
 import { createFileRoute } from '@tanstack/react-router'
 import { createClient } from '@supabase/supabase-js'
+import { requireUser, requireGuildAdmin } from '@/lib/server/api-auth'
 
 const __env = (k: string) => process.env[k] ?? (k === 'SUPABASE_ANON_KEY' ? process.env['SUPABASE_PUBLISHABLE_KEY'] : undefined)
 let __handler: (req: Request) => Response | Promise<Response>
@@ -14,14 +16,6 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-bot-secret, cf-connecting-ip, x-forwarded-for, x-real-ip",
 };
 
-function simpleDecrypt(encoded: string, key: string): string {
-  const text = atob(encoded);
-  let result = "";
-  for (let i = 0; i < text.length; i++) {
-    result += String.fromCharCode(text.charCodeAt(i) ^ key.charCodeAt(i % key.length));
-  }
-  return result;
-}
 
 async function getBotTokenForGuild(supabase: any, guildId: string): Promise<string> {
   const { data: settings } = await supabase
@@ -32,7 +26,7 @@ async function getBotTokenForGuild(supabase: any, guildId: string): Promise<stri
     .eq("is_active", true)
     .maybeSingle();
 
-  const encryptionKey = __env("BOT_SECRET_KEY") || "default-encryption-key";
+  const encryptionKey = __env("BOT_SECRET_KEY") || "";
 
   if (settings?.bot_token_encrypted) {
     try {
@@ -42,6 +36,7 @@ async function getBotTokenForGuild(supabase: any, guildId: string): Promise<stri
         return token;
       }
     } catch (e) {
+    if (e instanceof Response) return e;
       console.error("JTC failed to decrypt custom bot token, falling back to default:", e instanceof Error ? e.message : String(e));
     }
   }
@@ -86,7 +81,7 @@ __serve(async (req) => {
 
     // Verify bot secret for bot-initiated requests
     const requestBotSecret = req.headers.get("x-bot-secret");
-    const isBotRequest = requestBotSecret === botSecretKey;
+    const isBotRequest = Boolean(botSecretKey && requestBotSecret && requestBotSecret === botSecretKey);
 
     // Check IP whitelist for bot requests
     if (isBotRequest) {
@@ -122,6 +117,11 @@ __serve(async (req) => {
       }
       internalGuildId = guild.id;
       discordGuildIdResolved = guild.guild_id;
+    }
+
+    if (!isBotRequest) {
+      const user = await requireUser(req, supabase);
+      await requireGuildAdmin(supabase, user.id, internalGuildId);
     }
 
     switch (action) {
@@ -656,6 +656,7 @@ __serve(async (req) => {
         });
     }
   } catch (error) {
+    if (error instanceof Response) return error;
     console.error("JTC Handler error:", error);
     const errorMessage = error instanceof Error ? error.message : "Unknown error";
     return new Response(JSON.stringify({ error: errorMessage }), {

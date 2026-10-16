@@ -1,3 +1,4 @@
+import { decryptBotToken as decryptToken } from '../_shared/bot-token-crypto.ts';
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
@@ -5,15 +6,6 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 };
 
-function decryptToken(encrypted: string, key: string): string {
-  const bytes = Uint8Array.from(atob(encrypted), c => c.charCodeAt(0));
-  const keyBytes = new TextEncoder().encode(key);
-  const decrypted = new Uint8Array(bytes.length);
-  for (let i = 0; i < bytes.length; i++) {
-    decrypted[i] = bytes[i] ^ keyBytes[i % keyBytes.length];
-  }
-  return new TextDecoder().decode(decrypted);
-}
 
 async function resolveGuildBotToken(supabase: any, guildId: string): Promise<string | null> {
   try {

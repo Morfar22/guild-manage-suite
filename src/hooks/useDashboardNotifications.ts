@@ -1,3 +1,4 @@
+import type { TablesUpdate } from '@/integrations/supabase/types';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useGuild } from '@/contexts/GuildContext';
@@ -85,7 +86,7 @@ export function useDashboardNotifications() {
   const updateStatus = useMutation({
     mutationFn: async ({ id, status }: { id: string; status: 'open' | 'acknowledged' | 'resolved' }) => {
       if (!selectedGuild?.id) return;
-      const values: Record<string, unknown> = { status, is_read: true };
+      const values: TablesUpdate<'dashboard_notifications'> = { status, is_read: true };
       if (status === 'acknowledged') values.acknowledged_at = new Date().toISOString();
       if (status === 'resolved') values.resolved_at = new Date().toISOString();
 
