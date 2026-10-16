@@ -29,7 +29,9 @@ npm run check:commands
 
 ## Validation
 
-Use Node.js 22.16 or later (Node.js 24 in CI).
+Use Node.js 22.16 or later (Node.js 24 in CI). `package-lock.json` is the
+authoritative dependency lockfile; install with npm so CI and local builds use
+the same dependency versions.
 
 ```bash
 npm test
