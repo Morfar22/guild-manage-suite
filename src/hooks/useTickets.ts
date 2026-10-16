@@ -344,7 +344,7 @@ export function useUpdateCategory() {
       if (updates.emoji !== undefined) updateData.emoji = updates.emoji;
       if (updates.welcome_message !== undefined) updateData.welcome_message = updates.welcome_message;
       if (updates.staff_role_id !== undefined) updateData.staff_role_id = updates.staff_role_id;
-      if (updates.questions !== undefined) updateData.questions = updates.questions;
+      if (updates.questions !== undefined) updateData.questions = updates.questions.map(question => ({ ...question }));
 
       const { data, error } = await supabase
         .from('ticket_categories')
