@@ -41,6 +41,16 @@ for (const file of [
       },
     ).outputText;
     const require = (name) => {
+      if (
+        name.startsWith("https://deno.land/") &&
+        name.endsWith("/http/server.ts")
+      ) {
+        return {
+          serve: (callback) => {
+            handler = callback;
+          },
+        };
+      }
       if (name.includes("@supabase/supabase-js"))
         return { createClient: () => client };
       if (name === "@tanstack/react-router")
