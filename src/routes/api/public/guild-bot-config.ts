@@ -1,4 +1,5 @@
 // @ts-nocheck
+import { decryptBotToken as simpleDecrypt, encryptBotToken as simpleEncrypt } from '@/lib/server/bot-token-crypto'
 // Migrated from Supabase Edge Function `guild-bot-config` to a TanStack server route.
 import { createFileRoute } from '@tanstack/react-router'
 import { createClient } from '@supabase/supabase-js'
@@ -13,23 +14,6 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-bot-secret, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 }
 
-// Simple encryption using XOR with a key - for production use proper encryption
-function simpleEncrypt(text: string, key: string): string {
-  let result = '';
-  for (let i = 0; i < text.length; i++) {
-    result += String.fromCharCode(text.charCodeAt(i) ^ key.charCodeAt(i % key.length));
-  }
-  return btoa(result);
-}
-
-function simpleDecrypt(encoded: string, key: string): string {
-  const text = atob(encoded);
-  let result = '';
-  for (let i = 0; i < text.length; i++) {
-    result += String.fromCharCode(text.charCodeAt(i) ^ key.charCodeAt(i % key.length));
-  }
-  return result;
-}
 
 __serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -37,7 +21,10 @@ __serve(async (req) => {
   }
 
   try {
-    const encryptionKey = __env('BOT_SECRET_KEY') || 'default-encryption-key'
+    const encryptionKey = __env('BOT_SECRET_KEY') || ''
+    if (!encryptionKey || encryptionKey === 'default-encryption-key') {
+      return new Response(JSON.stringify({ error: 'Bot secret is not configured' }), { status: 503, headers: corsHeaders })
+    }
     const botSecret = req.headers.get('x-bot-secret')
     const authHeader = req.headers.get('Authorization')
 

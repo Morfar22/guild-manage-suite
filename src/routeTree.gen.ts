@@ -13,7 +13,11 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as SplatRouteImport } from './routes/$'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as DashboardRouteImport } from './routes/dashboard'
+import { Route as FeaturesRouteImport } from './routes/features'
 import { Route as GuildsRouteImport } from './routes/guilds'
+import { Route as PrivacyRouteImport } from './routes/privacy'
+import { Route as SecurityRouteImport } from './routes/security'
+import { Route as TermsRouteImport } from './routes/terms'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as AdminGlobalBansRouteImport } from './routes/admin.global-bans'
 import { Route as DashboardIndexRouteImport } from './routes/dashboard/index'
@@ -55,6 +59,7 @@ import { Route as DashboardModmailRouteImport } from './routes/dashboard/modmail
 import { Route as DashboardModulesRouteImport } from './routes/dashboard/modules'
 import { Route as DashboardMusicQuizRouteImport } from './routes/dashboard/music-quiz'
 import { Route as DashboardNotificationsRouteImport } from './routes/dashboard/notifications'
+import { Route as DashboardOperationsRouteImport } from './routes/dashboard/operations'
 import { Route as DashboardPollsRouteImport } from './routes/dashboard/polls'
 import { Route as DashboardQuarantineRouteImport } from './routes/dashboard/quarantine'
 import { Route as DashboardRaidProtectionRouteImport } from './routes/dashboard/raid-protection'
@@ -85,6 +90,7 @@ import { Route as ApiPublicAdminUsersRouteImport } from './routes/api/public/adm
 import { Route as ApiPublicAiAutoRespondRouteImport } from './routes/api/public/ai-auto-respond'
 import { Route as ApiPublicAiAutomodRouteImport } from './routes/api/public/ai-automod'
 import { Route as ApiPublicAiChatRouteImport } from './routes/api/public/ai-chat'
+import { Route as ApiPublicAiHealthRouteImport } from './routes/api/public/ai-health'
 import { Route as ApiPublicAiPolishTextRouteImport } from './routes/api/public/ai-polish-text'
 import { Route as ApiPublicAiScreenApplicationRouteImport } from './routes/api/public/ai-screen-application'
 import { Route as ApiPublicAiTicketSummaryRouteImport } from './routes/api/public/ai-ticket-summary'
@@ -108,6 +114,7 @@ import { Route as ApiPublicDiscordOauthRouteImport } from './routes/api/public/d
 import { Route as ApiPublicDiscordRolesRouteImport } from './routes/api/public/discord-roles'
 import { Route as ApiPublicExecuteFivemCommandRouteImport } from './routes/api/public/execute-fivem-command'
 import { Route as ApiPublicFivemHandlerRouteImport } from './routes/api/public/fivem-handler'
+import { Route as ApiPublicFivemSetupKeyRouteImport } from './routes/api/public/fivem-setup-key'
 import { Route as ApiPublicGenerateTicketTranscriptRouteImport } from './routes/api/public/generate-ticket-transcript'
 import { Route as ApiPublicGiveawayHandlerRouteImport } from './routes/api/public/giveaway-handler'
 import { Route as ApiPublicGlobalBanHandlerRouteImport } from './routes/api/public/global-ban-handler'
@@ -116,6 +123,7 @@ import { Route as ApiPublicInviteTrackerRouteImport } from './routes/api/public/
 import { Route as ApiPublicJtcHandlerRouteImport } from './routes/api/public/jtc-handler'
 import { Route as ApiPublicLogActionRouteImport } from './routes/api/public/log-action'
 import { Route as ApiPublicModmailHandlerRouteImport } from './routes/api/public/modmail-handler'
+import { Route as ApiPublicPlatformStatsRouteImport } from './routes/api/public/platform-stats'
 import { Route as ApiPublicPremiumApiRouteImport } from './routes/api/public/premium-api'
 import { Route as ApiPublicReactionRoleHandlerRouteImport } from './routes/api/public/reaction-role-handler'
 import { Route as ApiPublicRegisterFivemCommandsRouteImport } from './routes/api/public/register-fivem-commands'
@@ -162,9 +170,29 @@ const DashboardRoute = DashboardRouteImport.update({
   path: '/dashboard',
   getParentRoute: () => rootRouteImport,
 } as any)
+const FeaturesRoute = FeaturesRouteImport.update({
+  id: '/features',
+  path: '/features',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const GuildsRoute = GuildsRouteImport.update({
   id: '/guilds',
   path: '/guilds',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PrivacyRoute = PrivacyRouteImport.update({
+  id: '/privacy',
+  path: '/privacy',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SecurityRoute = SecurityRouteImport.update({
+  id: '/security',
+  path: '/security',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TermsRoute = TermsRouteImport.update({
+  id: '/terms',
+  path: '/terms',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminIndexRoute = AdminIndexRouteImport.update({
@@ -373,6 +401,11 @@ const DashboardNotificationsRoute = DashboardNotificationsRouteImport.update({
   path: '/notifications',
   getParentRoute: () => DashboardRoute,
 } as any)
+const DashboardOperationsRoute = DashboardOperationsRouteImport.update({
+  id: '/operations',
+  path: '/operations',
+  getParentRoute: () => DashboardRoute,
+} as any)
 const DashboardPollsRoute = DashboardPollsRouteImport.update({
   id: '/polls',
   path: '/polls',
@@ -525,6 +558,11 @@ const ApiPublicAiChatRoute = ApiPublicAiChatRouteImport.update({
   path: '/api/public/ai-chat',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicAiHealthRoute = ApiPublicAiHealthRouteImport.update({
+  id: '/api/public/ai-health',
+  path: '/api/public/ai-health',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicAiPolishTextRoute = ApiPublicAiPolishTextRouteImport.update({
   id: '/api/public/ai-polish-text',
   path: '/api/public/ai-polish-text',
@@ -649,6 +687,11 @@ const ApiPublicFivemHandlerRoute = ApiPublicFivemHandlerRouteImport.update({
   path: '/api/public/fivem-handler',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicFivemSetupKeyRoute = ApiPublicFivemSetupKeyRouteImport.update({
+  id: '/api/public/fivem-setup-key',
+  path: '/api/public/fivem-setup-key',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicGenerateTicketTranscriptRoute =
   ApiPublicGenerateTicketTranscriptRouteImport.update({
     id: '/api/public/generate-ticket-transcript',
@@ -690,6 +733,11 @@ const ApiPublicLogActionRoute = ApiPublicLogActionRouteImport.update({
 const ApiPublicModmailHandlerRoute = ApiPublicModmailHandlerRouteImport.update({
   id: '/api/public/modmail-handler',
   path: '/api/public/modmail-handler',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicPlatformStatsRoute = ApiPublicPlatformStatsRouteImport.update({
+  id: '/api/public/platform-stats',
+  path: '/api/public/platform-stats',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiPublicPremiumApiRoute = ApiPublicPremiumApiRouteImport.update({
@@ -837,7 +885,11 @@ export interface FileRoutesByFullPath {
   '/$': typeof SplatRoute
   '/auth': typeof AuthRoute
   '/dashboard': typeof DashboardRouteWithChildren
+  '/features': typeof FeaturesRoute
   '/guilds': typeof GuildsRoute
+  '/privacy': typeof PrivacyRoute
+  '/security': typeof SecurityRoute
+  '/terms': typeof TermsRoute
   '/admin/global-bans': typeof AdminGlobalBansRoute
   '/dashboard/activity-heatmap': typeof DashboardActivityHeatmapRoute
   '/dashboard/ai-automod': typeof DashboardAiAutomodRoute
@@ -877,6 +929,7 @@ export interface FileRoutesByFullPath {
   '/dashboard/modules': typeof DashboardModulesRoute
   '/dashboard/music-quiz': typeof DashboardMusicQuizRoute
   '/dashboard/notifications': typeof DashboardNotificationsRoute
+  '/dashboard/operations': typeof DashboardOperationsRoute
   '/dashboard/polls': typeof DashboardPollsRoute
   '/dashboard/quarantine': typeof DashboardQuarantineRoute
   '/dashboard/raid-protection': typeof DashboardRaidProtectionRoute
@@ -909,6 +962,7 @@ export interface FileRoutesByFullPath {
   '/api/public/ai-auto-respond': typeof ApiPublicAiAutoRespondRoute
   '/api/public/ai-automod': typeof ApiPublicAiAutomodRoute
   '/api/public/ai-chat': typeof ApiPublicAiChatRoute
+  '/api/public/ai-health': typeof ApiPublicAiHealthRoute
   '/api/public/ai-polish-text': typeof ApiPublicAiPolishTextRoute
   '/api/public/ai-screen-application': typeof ApiPublicAiScreenApplicationRoute
   '/api/public/ai-ticket-summary': typeof ApiPublicAiTicketSummaryRoute
@@ -932,6 +986,7 @@ export interface FileRoutesByFullPath {
   '/api/public/discord-roles': typeof ApiPublicDiscordRolesRoute
   '/api/public/execute-fivem-command': typeof ApiPublicExecuteFivemCommandRoute
   '/api/public/fivem-handler': typeof ApiPublicFivemHandlerRoute
+  '/api/public/fivem-setup-key': typeof ApiPublicFivemSetupKeyRoute
   '/api/public/generate-ticket-transcript': typeof ApiPublicGenerateTicketTranscriptRoute
   '/api/public/giveaway-handler': typeof ApiPublicGiveawayHandlerRoute
   '/api/public/global-ban-handler': typeof ApiPublicGlobalBanHandlerRoute
@@ -940,6 +995,7 @@ export interface FileRoutesByFullPath {
   '/api/public/jtc-handler': typeof ApiPublicJtcHandlerRoute
   '/api/public/log-action': typeof ApiPublicLogActionRoute
   '/api/public/modmail-handler': typeof ApiPublicModmailHandlerRoute
+  '/api/public/platform-stats': typeof ApiPublicPlatformStatsRoute
   '/api/public/premium-api': typeof ApiPublicPremiumApiRoute
   '/api/public/reaction-role-handler': typeof ApiPublicReactionRoleHandlerRoute
   '/api/public/register-fivem-commands': typeof ApiPublicRegisterFivemCommandsRoute
@@ -970,7 +1026,11 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/$': typeof SplatRoute
   '/auth': typeof AuthRoute
+  '/features': typeof FeaturesRoute
   '/guilds': typeof GuildsRoute
+  '/privacy': typeof PrivacyRoute
+  '/security': typeof SecurityRoute
+  '/terms': typeof TermsRoute
   '/admin/global-bans': typeof AdminGlobalBansRoute
   '/dashboard/activity-heatmap': typeof DashboardActivityHeatmapRoute
   '/dashboard/ai-automod': typeof DashboardAiAutomodRoute
@@ -1010,6 +1070,7 @@ export interface FileRoutesByTo {
   '/dashboard/modules': typeof DashboardModulesRoute
   '/dashboard/music-quiz': typeof DashboardMusicQuizRoute
   '/dashboard/notifications': typeof DashboardNotificationsRoute
+  '/dashboard/operations': typeof DashboardOperationsRoute
   '/dashboard/polls': typeof DashboardPollsRoute
   '/dashboard/quarantine': typeof DashboardQuarantineRoute
   '/dashboard/raid-protection': typeof DashboardRaidProtectionRoute
@@ -1041,6 +1102,7 @@ export interface FileRoutesByTo {
   '/api/public/ai-auto-respond': typeof ApiPublicAiAutoRespondRoute
   '/api/public/ai-automod': typeof ApiPublicAiAutomodRoute
   '/api/public/ai-chat': typeof ApiPublicAiChatRoute
+  '/api/public/ai-health': typeof ApiPublicAiHealthRoute
   '/api/public/ai-polish-text': typeof ApiPublicAiPolishTextRoute
   '/api/public/ai-screen-application': typeof ApiPublicAiScreenApplicationRoute
   '/api/public/ai-ticket-summary': typeof ApiPublicAiTicketSummaryRoute
@@ -1064,6 +1126,7 @@ export interface FileRoutesByTo {
   '/api/public/discord-roles': typeof ApiPublicDiscordRolesRoute
   '/api/public/execute-fivem-command': typeof ApiPublicExecuteFivemCommandRoute
   '/api/public/fivem-handler': typeof ApiPublicFivemHandlerRoute
+  '/api/public/fivem-setup-key': typeof ApiPublicFivemSetupKeyRoute
   '/api/public/generate-ticket-transcript': typeof ApiPublicGenerateTicketTranscriptRoute
   '/api/public/giveaway-handler': typeof ApiPublicGiveawayHandlerRoute
   '/api/public/global-ban-handler': typeof ApiPublicGlobalBanHandlerRoute
@@ -1072,6 +1135,7 @@ export interface FileRoutesByTo {
   '/api/public/jtc-handler': typeof ApiPublicJtcHandlerRoute
   '/api/public/log-action': typeof ApiPublicLogActionRoute
   '/api/public/modmail-handler': typeof ApiPublicModmailHandlerRoute
+  '/api/public/platform-stats': typeof ApiPublicPlatformStatsRoute
   '/api/public/premium-api': typeof ApiPublicPremiumApiRoute
   '/api/public/reaction-role-handler': typeof ApiPublicReactionRoleHandlerRoute
   '/api/public/register-fivem-commands': typeof ApiPublicRegisterFivemCommandsRoute
@@ -1104,7 +1168,11 @@ export interface FileRoutesById {
   '/$': typeof SplatRoute
   '/auth': typeof AuthRoute
   '/dashboard': typeof DashboardRouteWithChildren
+  '/features': typeof FeaturesRoute
   '/guilds': typeof GuildsRoute
+  '/privacy': typeof PrivacyRoute
+  '/security': typeof SecurityRoute
+  '/terms': typeof TermsRoute
   '/admin/global-bans': typeof AdminGlobalBansRoute
   '/dashboard/activity-heatmap': typeof DashboardActivityHeatmapRoute
   '/dashboard/ai-automod': typeof DashboardAiAutomodRoute
@@ -1144,6 +1212,7 @@ export interface FileRoutesById {
   '/dashboard/modules': typeof DashboardModulesRoute
   '/dashboard/music-quiz': typeof DashboardMusicQuizRoute
   '/dashboard/notifications': typeof DashboardNotificationsRoute
+  '/dashboard/operations': typeof DashboardOperationsRoute
   '/dashboard/polls': typeof DashboardPollsRoute
   '/dashboard/quarantine': typeof DashboardQuarantineRoute
   '/dashboard/raid-protection': typeof DashboardRaidProtectionRoute
@@ -1176,6 +1245,7 @@ export interface FileRoutesById {
   '/api/public/ai-auto-respond': typeof ApiPublicAiAutoRespondRoute
   '/api/public/ai-automod': typeof ApiPublicAiAutomodRoute
   '/api/public/ai-chat': typeof ApiPublicAiChatRoute
+  '/api/public/ai-health': typeof ApiPublicAiHealthRoute
   '/api/public/ai-polish-text': typeof ApiPublicAiPolishTextRoute
   '/api/public/ai-screen-application': typeof ApiPublicAiScreenApplicationRoute
   '/api/public/ai-ticket-summary': typeof ApiPublicAiTicketSummaryRoute
@@ -1199,6 +1269,7 @@ export interface FileRoutesById {
   '/api/public/discord-roles': typeof ApiPublicDiscordRolesRoute
   '/api/public/execute-fivem-command': typeof ApiPublicExecuteFivemCommandRoute
   '/api/public/fivem-handler': typeof ApiPublicFivemHandlerRoute
+  '/api/public/fivem-setup-key': typeof ApiPublicFivemSetupKeyRoute
   '/api/public/generate-ticket-transcript': typeof ApiPublicGenerateTicketTranscriptRoute
   '/api/public/giveaway-handler': typeof ApiPublicGiveawayHandlerRoute
   '/api/public/global-ban-handler': typeof ApiPublicGlobalBanHandlerRoute
@@ -1207,6 +1278,7 @@ export interface FileRoutesById {
   '/api/public/jtc-handler': typeof ApiPublicJtcHandlerRoute
   '/api/public/log-action': typeof ApiPublicLogActionRoute
   '/api/public/modmail-handler': typeof ApiPublicModmailHandlerRoute
+  '/api/public/platform-stats': typeof ApiPublicPlatformStatsRoute
   '/api/public/premium-api': typeof ApiPublicPremiumApiRoute
   '/api/public/reaction-role-handler': typeof ApiPublicReactionRoleHandlerRoute
   '/api/public/register-fivem-commands': typeof ApiPublicRegisterFivemCommandsRoute
@@ -1240,7 +1312,11 @@ export interface FileRouteTypes {
     | '/$'
     | '/auth'
     | '/dashboard'
+    | '/features'
     | '/guilds'
+    | '/privacy'
+    | '/security'
+    | '/terms'
     | '/admin/global-bans'
     | '/dashboard/activity-heatmap'
     | '/dashboard/ai-automod'
@@ -1280,6 +1356,7 @@ export interface FileRouteTypes {
     | '/dashboard/modules'
     | '/dashboard/music-quiz'
     | '/dashboard/notifications'
+    | '/dashboard/operations'
     | '/dashboard/polls'
     | '/dashboard/quarantine'
     | '/dashboard/raid-protection'
@@ -1312,6 +1389,7 @@ export interface FileRouteTypes {
     | '/api/public/ai-auto-respond'
     | '/api/public/ai-automod'
     | '/api/public/ai-chat'
+    | '/api/public/ai-health'
     | '/api/public/ai-polish-text'
     | '/api/public/ai-screen-application'
     | '/api/public/ai-ticket-summary'
@@ -1335,6 +1413,7 @@ export interface FileRouteTypes {
     | '/api/public/discord-roles'
     | '/api/public/execute-fivem-command'
     | '/api/public/fivem-handler'
+    | '/api/public/fivem-setup-key'
     | '/api/public/generate-ticket-transcript'
     | '/api/public/giveaway-handler'
     | '/api/public/global-ban-handler'
@@ -1343,6 +1422,7 @@ export interface FileRouteTypes {
     | '/api/public/jtc-handler'
     | '/api/public/log-action'
     | '/api/public/modmail-handler'
+    | '/api/public/platform-stats'
     | '/api/public/premium-api'
     | '/api/public/reaction-role-handler'
     | '/api/public/register-fivem-commands'
@@ -1373,7 +1453,11 @@ export interface FileRouteTypes {
     | '/'
     | '/$'
     | '/auth'
+    | '/features'
     | '/guilds'
+    | '/privacy'
+    | '/security'
+    | '/terms'
     | '/admin/global-bans'
     | '/dashboard/activity-heatmap'
     | '/dashboard/ai-automod'
@@ -1413,6 +1497,7 @@ export interface FileRouteTypes {
     | '/dashboard/modules'
     | '/dashboard/music-quiz'
     | '/dashboard/notifications'
+    | '/dashboard/operations'
     | '/dashboard/polls'
     | '/dashboard/quarantine'
     | '/dashboard/raid-protection'
@@ -1444,6 +1529,7 @@ export interface FileRouteTypes {
     | '/api/public/ai-auto-respond'
     | '/api/public/ai-automod'
     | '/api/public/ai-chat'
+    | '/api/public/ai-health'
     | '/api/public/ai-polish-text'
     | '/api/public/ai-screen-application'
     | '/api/public/ai-ticket-summary'
@@ -1467,6 +1553,7 @@ export interface FileRouteTypes {
     | '/api/public/discord-roles'
     | '/api/public/execute-fivem-command'
     | '/api/public/fivem-handler'
+    | '/api/public/fivem-setup-key'
     | '/api/public/generate-ticket-transcript'
     | '/api/public/giveaway-handler'
     | '/api/public/global-ban-handler'
@@ -1475,6 +1562,7 @@ export interface FileRouteTypes {
     | '/api/public/jtc-handler'
     | '/api/public/log-action'
     | '/api/public/modmail-handler'
+    | '/api/public/platform-stats'
     | '/api/public/premium-api'
     | '/api/public/reaction-role-handler'
     | '/api/public/register-fivem-commands'
@@ -1506,7 +1594,11 @@ export interface FileRouteTypes {
     | '/$'
     | '/auth'
     | '/dashboard'
+    | '/features'
     | '/guilds'
+    | '/privacy'
+    | '/security'
+    | '/terms'
     | '/admin/global-bans'
     | '/dashboard/activity-heatmap'
     | '/dashboard/ai-automod'
@@ -1546,6 +1638,7 @@ export interface FileRouteTypes {
     | '/dashboard/modules'
     | '/dashboard/music-quiz'
     | '/dashboard/notifications'
+    | '/dashboard/operations'
     | '/dashboard/polls'
     | '/dashboard/quarantine'
     | '/dashboard/raid-protection'
@@ -1578,6 +1671,7 @@ export interface FileRouteTypes {
     | '/api/public/ai-auto-respond'
     | '/api/public/ai-automod'
     | '/api/public/ai-chat'
+    | '/api/public/ai-health'
     | '/api/public/ai-polish-text'
     | '/api/public/ai-screen-application'
     | '/api/public/ai-ticket-summary'
@@ -1601,6 +1695,7 @@ export interface FileRouteTypes {
     | '/api/public/discord-roles'
     | '/api/public/execute-fivem-command'
     | '/api/public/fivem-handler'
+    | '/api/public/fivem-setup-key'
     | '/api/public/generate-ticket-transcript'
     | '/api/public/giveaway-handler'
     | '/api/public/global-ban-handler'
@@ -1609,6 +1704,7 @@ export interface FileRouteTypes {
     | '/api/public/jtc-handler'
     | '/api/public/log-action'
     | '/api/public/modmail-handler'
+    | '/api/public/platform-stats'
     | '/api/public/premium-api'
     | '/api/public/reaction-role-handler'
     | '/api/public/register-fivem-commands'
@@ -1641,7 +1737,11 @@ export interface RootRouteChildren {
   SplatRoute: typeof SplatRoute
   AuthRoute: typeof AuthRoute
   DashboardRoute: typeof DashboardRouteWithChildren
+  FeaturesRoute: typeof FeaturesRoute
   GuildsRoute: typeof GuildsRoute
+  PrivacyRoute: typeof PrivacyRoute
+  SecurityRoute: typeof SecurityRoute
+  TermsRoute: typeof TermsRoute
   AdminGlobalBansRoute: typeof AdminGlobalBansRoute
   DocsLayoutRoute: typeof DocsLayoutRoute
   AdminIndexRoute: typeof AdminIndexRoute
@@ -1651,6 +1751,7 @@ export interface RootRouteChildren {
   ApiPublicAiAutoRespondRoute: typeof ApiPublicAiAutoRespondRoute
   ApiPublicAiAutomodRoute: typeof ApiPublicAiAutomodRoute
   ApiPublicAiChatRoute: typeof ApiPublicAiChatRoute
+  ApiPublicAiHealthRoute: typeof ApiPublicAiHealthRoute
   ApiPublicAiPolishTextRoute: typeof ApiPublicAiPolishTextRoute
   ApiPublicAiScreenApplicationRoute: typeof ApiPublicAiScreenApplicationRoute
   ApiPublicAiTicketSummaryRoute: typeof ApiPublicAiTicketSummaryRoute
@@ -1674,6 +1775,7 @@ export interface RootRouteChildren {
   ApiPublicDiscordRolesRoute: typeof ApiPublicDiscordRolesRoute
   ApiPublicExecuteFivemCommandRoute: typeof ApiPublicExecuteFivemCommandRoute
   ApiPublicFivemHandlerRoute: typeof ApiPublicFivemHandlerRoute
+  ApiPublicFivemSetupKeyRoute: typeof ApiPublicFivemSetupKeyRoute
   ApiPublicGenerateTicketTranscriptRoute: typeof ApiPublicGenerateTicketTranscriptRoute
   ApiPublicGiveawayHandlerRoute: typeof ApiPublicGiveawayHandlerRoute
   ApiPublicGlobalBanHandlerRoute: typeof ApiPublicGlobalBanHandlerRoute
@@ -1682,6 +1784,7 @@ export interface RootRouteChildren {
   ApiPublicJtcHandlerRoute: typeof ApiPublicJtcHandlerRoute
   ApiPublicLogActionRoute: typeof ApiPublicLogActionRoute
   ApiPublicModmailHandlerRoute: typeof ApiPublicModmailHandlerRoute
+  ApiPublicPlatformStatsRoute: typeof ApiPublicPlatformStatsRoute
   ApiPublicPremiumApiRoute: typeof ApiPublicPremiumApiRoute
   ApiPublicReactionRoleHandlerRoute: typeof ApiPublicReactionRoleHandlerRoute
   ApiPublicRegisterFivemCommandsRoute: typeof ApiPublicRegisterFivemCommandsRoute
@@ -1731,11 +1834,39 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/features': {
+      id: '/features'
+      path: '/features'
+      fullPath: '/features'
+      preLoaderRoute: typeof FeaturesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/guilds': {
       id: '/guilds'
       path: '/guilds'
       fullPath: '/guilds'
       preLoaderRoute: typeof GuildsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/privacy': {
+      id: '/privacy'
+      path: '/privacy'
+      fullPath: '/privacy'
+      preLoaderRoute: typeof PrivacyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/security': {
+      id: '/security'
+      path: '/security'
+      fullPath: '/security'
+      preLoaderRoute: typeof SecurityRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/terms': {
+      id: '/terms'
+      path: '/terms'
+      fullPath: '/terms'
+      preLoaderRoute: typeof TermsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin/': {
@@ -2025,6 +2156,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardNotificationsRouteImport
       parentRoute: typeof DashboardRoute
     }
+    '/dashboard/operations': {
+      id: '/dashboard/operations'
+      path: '/operations'
+      fullPath: '/dashboard/operations'
+      preLoaderRoute: typeof DashboardOperationsRouteImport
+      parentRoute: typeof DashboardRoute
+    }
     '/dashboard/polls': {
       id: '/dashboard/polls'
       path: '/polls'
@@ -2235,6 +2373,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicAiChatRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/ai-health': {
+      id: '/api/public/ai-health'
+      path: '/api/public/ai-health'
+      fullPath: '/api/public/ai-health'
+      preLoaderRoute: typeof ApiPublicAiHealthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/ai-polish-text': {
       id: '/api/public/ai-polish-text'
       path: '/api/public/ai-polish-text'
@@ -2396,6 +2541,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicFivemHandlerRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/fivem-setup-key': {
+      id: '/api/public/fivem-setup-key'
+      path: '/api/public/fivem-setup-key'
+      fullPath: '/api/public/fivem-setup-key'
+      preLoaderRoute: typeof ApiPublicFivemSetupKeyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/generate-ticket-transcript': {
       id: '/api/public/generate-ticket-transcript'
       path: '/api/public/generate-ticket-transcript'
@@ -2450,6 +2602,13 @@ declare module '@tanstack/react-router' {
       path: '/api/public/modmail-handler'
       fullPath: '/api/public/modmail-handler'
       preLoaderRoute: typeof ApiPublicModmailHandlerRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/platform-stats': {
+      id: '/api/public/platform-stats'
+      path: '/api/public/platform-stats'
+      fullPath: '/api/public/platform-stats'
+      preLoaderRoute: typeof ApiPublicPlatformStatsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/public/premium-api': {
@@ -2669,6 +2828,7 @@ interface DashboardRouteChildren {
   DashboardModulesRoute: typeof DashboardModulesRoute
   DashboardMusicQuizRoute: typeof DashboardMusicQuizRoute
   DashboardNotificationsRoute: typeof DashboardNotificationsRoute
+  DashboardOperationsRoute: typeof DashboardOperationsRoute
   DashboardPollsRoute: typeof DashboardPollsRoute
   DashboardQuarantineRoute: typeof DashboardQuarantineRoute
   DashboardRaidProtectionRoute: typeof DashboardRaidProtectionRoute
@@ -2742,6 +2902,7 @@ const DashboardRouteChildren: DashboardRouteChildren = {
   DashboardModulesRoute: DashboardModulesRoute,
   DashboardMusicQuizRoute: DashboardMusicQuizRoute,
   DashboardNotificationsRoute: DashboardNotificationsRoute,
+  DashboardOperationsRoute: DashboardOperationsRoute,
   DashboardPollsRoute: DashboardPollsRoute,
   DashboardQuarantineRoute: DashboardQuarantineRoute,
   DashboardRaidProtectionRoute: DashboardRaidProtectionRoute,
@@ -2786,7 +2947,11 @@ const rootRouteChildren: RootRouteChildren = {
   SplatRoute: SplatRoute,
   AuthRoute: AuthRoute,
   DashboardRoute: DashboardRouteWithChildren,
+  FeaturesRoute: FeaturesRoute,
   GuildsRoute: GuildsRoute,
+  PrivacyRoute: PrivacyRoute,
+  SecurityRoute: SecurityRoute,
+  TermsRoute: TermsRoute,
   AdminGlobalBansRoute: AdminGlobalBansRoute,
   DocsLayoutRoute: DocsLayoutRoute,
   AdminIndexRoute: AdminIndexRoute,
@@ -2796,6 +2961,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicAiAutoRespondRoute: ApiPublicAiAutoRespondRoute,
   ApiPublicAiAutomodRoute: ApiPublicAiAutomodRoute,
   ApiPublicAiChatRoute: ApiPublicAiChatRoute,
+  ApiPublicAiHealthRoute: ApiPublicAiHealthRoute,
   ApiPublicAiPolishTextRoute: ApiPublicAiPolishTextRoute,
   ApiPublicAiScreenApplicationRoute: ApiPublicAiScreenApplicationRoute,
   ApiPublicAiTicketSummaryRoute: ApiPublicAiTicketSummaryRoute,
@@ -2819,6 +2985,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicDiscordRolesRoute: ApiPublicDiscordRolesRoute,
   ApiPublicExecuteFivemCommandRoute: ApiPublicExecuteFivemCommandRoute,
   ApiPublicFivemHandlerRoute: ApiPublicFivemHandlerRoute,
+  ApiPublicFivemSetupKeyRoute: ApiPublicFivemSetupKeyRoute,
   ApiPublicGenerateTicketTranscriptRoute:
     ApiPublicGenerateTicketTranscriptRoute,
   ApiPublicGiveawayHandlerRoute: ApiPublicGiveawayHandlerRoute,
@@ -2828,6 +2995,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicJtcHandlerRoute: ApiPublicJtcHandlerRoute,
   ApiPublicLogActionRoute: ApiPublicLogActionRoute,
   ApiPublicModmailHandlerRoute: ApiPublicModmailHandlerRoute,
+  ApiPublicPlatformStatsRoute: ApiPublicPlatformStatsRoute,
   ApiPublicPremiumApiRoute: ApiPublicPremiumApiRoute,
   ApiPublicReactionRoleHandlerRoute: ApiPublicReactionRoleHandlerRoute,
   ApiPublicRegisterFivemCommandsRoute: ApiPublicRegisterFivemCommandsRoute,

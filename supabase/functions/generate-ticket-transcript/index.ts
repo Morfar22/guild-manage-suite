@@ -1,3 +1,4 @@
+import { decryptBotToken as simpleDecrypt } from '../_shared/bot-token-crypto.ts';
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
@@ -64,17 +65,11 @@ async function fetchDMChannel(botToken: string, userId: string) {
   return r.json();
 }
 
-function simpleDecrypt(encoded: string, key: string): string {
-  const text = atob(encoded);
-  let result = "";
-  for (let i = 0; i < text.length; i++) result += String.fromCharCode(text.charCodeAt(i) ^ key.charCodeAt(i % key.length));
-  return result;
-}
 
 async function getBotToken(supabase: any, guildId: string): Promise<string> {
   const { data } = await supabase.from("guild_bot_settings").select("bot_token_encrypted")
     .eq("guild_id", guildId).eq("is_custom_bot", true).eq("is_active", true).maybeSingle();
-  const k = Deno.env.get("BOT_SECRET_KEY") || "default-encryption-key";
+  const k = Deno.env.get("BOT_SECRET_KEY") || "";
   if (data?.bot_token_encrypted) {
     try { return simpleDecrypt(data.bot_token_encrypted, k); } catch (_) {}
   }

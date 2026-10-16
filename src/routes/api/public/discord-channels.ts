@@ -21,15 +21,6 @@ interface DiscordChannel {
   position: number;
 }
 
-// Simple decryption using XOR with a key
-function simpleDecrypt(encoded: string, key: string): string {
-  const text = atob(encoded);
-  let result = '';
-  for (let i = 0; i < text.length; i++) {
-    result += String.fromCharCode(text.charCodeAt(i) ^ key.charCodeAt(i % key.length));
-  }
-  return result;
-}
 
 __serve(async (req) => {
   if (req.method === "OPTIONS") {

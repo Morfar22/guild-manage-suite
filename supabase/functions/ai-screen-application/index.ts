@@ -2,6 +2,7 @@
 // Bruger OpenAI API til at score og opsummere ansøgninger.
 // Hvis form har auto-approve/deny tærskler, kører action automatisk.
 
+import { requireUser, requireGuildAdmin } from '../_shared/api-auth.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const corsHeaders = {
@@ -41,12 +42,12 @@ Deno.serve(async (req) => {
     const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
     const SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
-    if (!OPENAI_API_KEY) return json({ error: 'AI not configured' }, 500);
 
     const { submission_id } = (await req.json()) as ScreenRequest;
     if (!submission_id) return json({ error: 'submission_id required' }, 400);
 
     const supabase = createClient(SUPABASE_URL, SERVICE_KEY);
+    const user = await requireUser(req, supabase);
 
     // Hent submission + form
     const { data: sub, error: subErr } = await supabase
@@ -56,6 +57,8 @@ Deno.serve(async (req) => {
       .maybeSingle();
 
     if (subErr || !sub) return json({ error: 'Submission not found' }, 404);
+
+    await requireGuildAdmin(supabase, user.id, sub.guild_id);
 
     const form = sub.form as any;
     if (!form?.ai_screening_enabled) {
@@ -199,6 +202,7 @@ Du skal returnere en struktureret vurdering via tool call.
 
     return json({ success: true, result, auto_action: autoAction });
   } catch (err) {
+    if (err instanceof Response) return err;
     console.error('ai-screen-application error:', err);
     return json({ error: err instanceof Error ? err.message : 'Unknown error' }, 500);
   }

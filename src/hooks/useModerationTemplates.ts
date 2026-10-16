@@ -1,3 +1,4 @@
+import type { TablesUpdate } from '@/integrations/supabase/types';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useGuild } from '@/contexts/GuildContext';
@@ -75,9 +76,10 @@ export function useModerationTemplates() {
 
   const updateTemplate = useMutation({
     mutationFn: async ({ id, ...updates }: Partial<ModerationTemplate> & { id: string }) => {
-      const dbUpdates: Record<string, unknown> = { ...updates };
-      if (updates.steps) {
-        dbUpdates.steps = updates.steps as unknown as Json;
+      const { steps, ...fields } = updates;
+      const dbUpdates: TablesUpdate<'moderation_templates'> = { ...fields };
+      if (steps) {
+        dbUpdates.steps = steps as unknown as Json;
       }
 
       const { error } = await supabase

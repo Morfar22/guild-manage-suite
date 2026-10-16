@@ -29,4 +29,7 @@ dist-ssr
 !**/.env.example
 config.json
 token.txt
-EOF
+
+# TanStack/Nitro build output
+.output/
+.nitro/

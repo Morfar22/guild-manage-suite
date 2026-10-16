@@ -1,4 +1,5 @@
 // @ts-nocheck
+import { decryptBotToken as simpleDecrypt } from '@/lib/server/bot-token-crypto'
 // Migrated from Supabase Edge Function `bot-welcome` to a TanStack server route.
 import { createFileRoute } from '@tanstack/react-router'
 import { createClient } from '@supabase/supabase-js'
@@ -13,21 +14,6 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-bot-secret, cf-connecting-ip, x-forwarded-for, x-real-ip",
 };
 
-function simpleDecrypt(encoded: string, key: string): string {
-  try {
-    const text = atob(encoded);
-    let result = "";
-    for (let i = 0; i < text.length; i++) {
-      result += String.fromCharCode(
-        text.charCodeAt(i) ^ key.charCodeAt(i % key.length),
-      );
-    }
-    return result;
-  } catch (e) {
-    console.error("Failed to decrypt bot token:", e);
-    return "";
-  }
-}
 
 function getDefaultBotToken(): string {
   return (
@@ -39,7 +25,7 @@ function getDefaultBotToken(): string {
 }
 
 async function getBotToken(supabase: any, guildId: string): Promise<string> {
-  const encryptionKey = __env("BOT_SECRET_KEY") || "default-encryption-key";
+  const encryptionKey = __env("BOT_SECRET_KEY") || "";
 
   const { data: customBotSettings } = await supabase
     .from("guild_bot_settings")

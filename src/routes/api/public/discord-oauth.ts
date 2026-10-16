@@ -2,6 +2,7 @@
 // Migrated from Supabase Edge Function `discord-oauth` to a TanStack server route.
 import { createFileRoute } from '@tanstack/react-router'
 import { createClient } from '@supabase/supabase-js'
+import { DISCORD_REDIRECT_URI, createOAuthState, validOAuthState, clearOAuthStateCookie, findAuthUserByEmail } from '@/lib/server/discord-oauth-security'
 
 const __env = (k: string) => process.env[k] ?? (k === 'SUPABASE_ANON_KEY' ? process.env['SUPABASE_PUBLISHABLE_KEY'] : undefined)
 let __handler: (req: Request) => Response | Promise<Response>
@@ -26,6 +27,7 @@ interface DiscordUser {
   id: string;
   username: string;
   email: string;
+  verified: boolean;
   avatar: string | null;
 }
 
@@ -35,6 +37,10 @@ __serve(async (req) => {
     return new Response("ok", { headers: corsHeaders });
   }
 
+  if (req.method !== 'POST') return Response.json({ error: 'Method not allowed' }, { status: 405 });
+  if (req.headers.get('origin') !== new URL(DISCORD_REDIRECT_URI).origin) {
+    return Response.json({ error: 'Invalid login origin' }, { status: 403 });
+  }
   const url = new URL(req.url);
   const action = url.searchParams.get("action");
 
@@ -55,12 +61,15 @@ __serve(async (req) => {
     // Action: Get authorization URL
     if (action === "authorize") {
       const { redirectUri } = await req.json();
+      if (redirectUri !== DISCORD_REDIRECT_URI) return Response.json({ error: 'Invalid redirect URI' }, { status: 400 });
+      const oauth = createOAuthState();
       
       const params = new URLSearchParams({
         client_id: DISCORD_CLIENT_ID,
         redirect_uri: redirectUri,
         response_type: "code",
         scope: "identify email guilds",
+        state: oauth.state,
       });
 
       const authUrl = `https://discord.com/api/oauth2/authorize?${params}`;
@@ -68,13 +77,16 @@ __serve(async (req) => {
       console.log("Generated Discord auth URL");
       return new Response(
         JSON.stringify({ url: authUrl }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        { headers: { ...corsHeaders, "Content-Type": "application/json", "Set-Cookie": oauth.cookie, "Cache-Control": "no-store" } }
       );
     }
 
     // Action: Exchange code for tokens and fetch user data
     if (action === "callback") {
-      const { code, redirectUri } = await req.json();
+      const { code, redirectUri, state } = await req.json();
+      if (redirectUri !== DISCORD_REDIRECT_URI || !validOAuthState(req, state)) {
+        return Response.json({ error: 'Loginforsøget er udløbet eller ugyldigt. Start Discord-login igen.' }, { status: 403 });
+      }
 
       if (!code) {
         return new Response(
@@ -126,6 +138,9 @@ __serve(async (req) => {
       }
 
       const discordUser: DiscordUser = await userResponse.json();
+      if (discordUser.email && !discordUser.verified) {
+        return Response.json({ error: 'Bekræft din e-mail hos Discord før du logger ind.' }, { status: 403 });
+      }
       console.log("Discord user fetched:", discordUser.username);
 
       // Fetch user's guilds
@@ -164,8 +179,7 @@ __serve(async (req) => {
       // Try to sign in or create user
       let userId: string;
       
-      const { data: existingUsers } = await supabase.auth.admin.listUsers();
-      const existingUser = existingUsers?.users?.find(u => u.email === email);
+      const existingUser = await findAuthUserByEmail(supabase, email);
 
       if (existingUser) {
         userId = existingUser.id;
@@ -230,7 +244,7 @@ __serve(async (req) => {
       const adminGuildDiscordIds = adminGuilds.map((g) => g.id);
       const { data: currentGuildRows } = await supabase
         .from("guilds")
-        .select("id, guild_id")
+        .select("id, guild_id, owner_id")
         .in("guild_id", adminGuildDiscordIds.length > 0 ? adminGuildDiscordIds : ["__none__"]);
       const keepInternalIds = new Set((currentGuildRows || []).map((g) => g.id));
 
@@ -261,7 +275,8 @@ __serve(async (req) => {
               guild_id: guild.id,
               guild_name: guild.name,
               guild_icon: guild.icon,
-              owner_id: guild.owner ? discordUser.id : guild.id,
+              owner_id: guild.owner ? discordUser.id :
+                (currentGuildRows || []).find(row => row.guild_id === guild.id)?.owner_id || "unknown",
             })),
             { onConflict: "guild_id" }
           )
@@ -365,7 +380,14 @@ __serve(async (req) => {
 });
 
 
-const __call = ({ request }: { request: Request }) => __handler(request)
+const __call = async ({ request }: { request: Request }) => {
+  const response = await __handler(request);
+  response.headers.set('Cache-Control', 'no-store');
+  if (new URL(request.url).searchParams.get('action') === 'callback') {
+    response.headers.set('Set-Cookie', clearOAuthStateCookie());
+  }
+  return response;
+}
 
 export const Route = createFileRoute('/api/public/discord-oauth')({
   server: {

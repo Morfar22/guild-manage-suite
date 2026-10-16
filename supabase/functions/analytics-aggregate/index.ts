@@ -1,18 +1,25 @@
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { requireBotSecret } from '../_shared/api-auth.ts'
+
+const __env = (key: string) => Deno.env.get(key) ?? (key === 'SUPABASE_ANON_KEY' ? Deno.env.get('SUPABASE_PUBLISHABLE_KEY') : undefined)
+let __handler: (req: Request) => Response | Promise<Response>
+const __serve = (fn: any, _opts?: any) => { __handler = fn }
+
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-bot-secret',
 };
 
-Deno.serve(async (req) => {
+__serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    requireBotSecret(req);
+    const supabaseUrl = __env('SUPABASE_URL')!;
+    const supabaseKey = __env('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     // Get all guilds
@@ -96,7 +103,11 @@ Deno.serve(async (req) => {
       { headers: corsHeaders }
     );
   } catch (e) {
+    if (e instanceof Response) return e;
     console.error('Aggregation error:', e);
     return new Response(JSON.stringify({ error: e.message }), { status: 500, headers: corsHeaders });
   }
 });
+
+
+Deno.serve(__handler);

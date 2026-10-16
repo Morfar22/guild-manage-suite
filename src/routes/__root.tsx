@@ -135,7 +135,8 @@ function RootComponent() {
 
 
 
-function ErrorFallback({ error }: { error: Error }) {
+function ErrorFallback({ error }: { error: unknown }) {
+  const displayError = error instanceof Error ? error : new Error(String(error));
   reportLovableError(error, { route: "/" });
   return (
     <div className="flex min-h-screen flex-col items-center justify-center p-6 text-center">
@@ -157,9 +158,9 @@ function ErrorFallback({ error }: { error: Error }) {
       </div>
       {import.meta.env.DEV && (
         <pre className="mt-8 max-w-2xl overflow-auto rounded-md bg-muted p-4 text-left text-sm">
-          {error.message}
+          {displayError.message}
           {"\n"}
-          {error.stack}
+          {displayError.stack}
         </pre>
       )}
     </div>

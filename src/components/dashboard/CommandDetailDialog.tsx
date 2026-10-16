@@ -411,7 +411,7 @@ export function CommandDetailDialog({
                       </div>
                       <Badge variant="outline">{detailsSummary(event.details)}</Badge>
                     </div>
-                    {event.details && (
+                    {Boolean(event.details) && (
                       <pre className="mt-3 max-h-48 overflow-auto rounded-lg bg-muted p-3 text-xs">
                         {JSON.stringify(event.details, null, 2)}
                       </pre>

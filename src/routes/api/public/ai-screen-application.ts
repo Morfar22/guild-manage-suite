@@ -1,6 +1,7 @@
 // @ts-nocheck
 // Migrated from Supabase Edge Function `ai-screen-application` to a TanStack server route.
 import { createFileRoute } from '@tanstack/react-router'
+import { requireUser, requireGuildAdmin } from '@/lib/server/api-auth';
 import { createClient } from '@supabase/supabase-js'
 import { openAIChatCompletion, openAIErrorResponse } from '@/lib/server/openai'
 
@@ -50,6 +51,7 @@ __serve(async (req) => {
     if (!submission_id) return json({ error: 'submission_id required' }, 400);
 
     const supabase = createClient(SUPABASE_URL, SERVICE_KEY);
+    const user = await requireUser(req, supabase);
 
     // Hent submission + form
     const { data: sub, error: subErr } = await supabase
@@ -59,6 +61,8 @@ __serve(async (req) => {
       .maybeSingle();
 
     if (subErr || !sub) return json({ error: 'Submission not found' }, 404);
+
+    await requireGuildAdmin(supabase, user.id, sub.guild_id);
 
     const form = sub.form as any;
     if (!form?.ai_screening_enabled) {
@@ -189,6 +193,7 @@ Du skal returnere en struktureret vurdering via tool call.
 
     return json({ success: true, result, auto_action: autoAction });
   } catch (err) {
+    if (err instanceof Response) return err;
     console.error('ai-screen-application error:', err);
     const aiError = openAIErrorResponse(err, corsHeaders);
     if (aiError) return aiError;

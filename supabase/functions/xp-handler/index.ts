@@ -1,3 +1,4 @@
+import { decryptBotToken } from '../_shared/bot-token-crypto.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const corsHeaders = {
@@ -128,11 +129,7 @@ Deno.serve(async (req) => {
 
       if (customBotSettings?.bot_token_encrypted && encryptionKey) {
         try {
-          const text = atob(customBotSettings.bot_token_encrypted);
-          let decrypted = '';
-          for (let i = 0; i < text.length; i++) {
-            decrypted += String.fromCharCode(text.charCodeAt(i) ^ encryptionKey.charCodeAt(i % encryptionKey.length));
-          }
+          const decrypted = decryptBotToken(customBotSettings.bot_token_encrypted, encryptionKey);
           if (decrypted) {
             botToken = decrypted;
             console.log(`Using custom bot token for guild ${guild.id}`);

@@ -1,18 +1,17 @@
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { decryptBotToken as simpleDecrypt } from '../_shared/bot-token-crypto.ts'
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { requireBotSecret } from '../_shared/api-auth.ts'
+
+const __env = (key: string) => Deno.env.get(key) ?? (key === 'SUPABASE_ANON_KEY' ? Deno.env.get('SUPABASE_PUBLISHABLE_KEY') : undefined)
+let __handler: (req: Request) => Response | Promise<Response>
+const __serve = (fn: any, _opts?: any) => { __handler = fn }
+
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-bot-secret',
 };
 
-function simpleDecrypt(encoded: string, key: string): string {
-  const text = atob(encoded);
-  let result = '';
-  for (let i = 0; i < text.length; i++) {
-    result += String.fromCharCode(text.charCodeAt(i) ^ key.charCodeAt(i % key.length));
-  }
-  return result;
-}
 
 async function getBotTokenForGuild(supabase: any, guildId: string): Promise<string> {
   const { data: settings } = await supabase
@@ -23,7 +22,7 @@ async function getBotTokenForGuild(supabase: any, guildId: string): Promise<stri
     .eq('is_active', true)
     .maybeSingle();
 
-  const encryptionKey = Deno.env.get('BOT_SECRET_KEY') || 'default-encryption-key';
+  const encryptionKey = __env('BOT_SECRET_KEY') || '';
 
   if (settings?.bot_token_encrypted) {
     try {
@@ -31,19 +30,20 @@ async function getBotTokenForGuild(supabase: any, guildId: string): Promise<stri
     } catch (_) {}
   }
 
-  const globalToken = Deno.env.get('DISCORD_BOT_TOKEN');
+  const globalToken = __env('DISCORD_BOT_TOKEN');
   if (!globalToken) throw new Error('Bot token not configured');
   return globalToken;
 }
 
-Deno.serve(async (req) => {
+__serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    requireBotSecret(req);
+    const supabaseUrl = __env('SUPABASE_URL')!;
+    const supabaseKey = __env('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     // Get all guilds with auto-reports enabled
@@ -61,6 +61,8 @@ Deno.serve(async (req) => {
 
     for (const setting of reportSettings) {
       try {
+        const intervalMs = (setting.frequency === 'daily' ? 1 : setting.frequency === 'weekly' ? 7 : 30) * 86400000;
+        if (setting.last_sent_at && Date.now() - new Date(setting.last_sent_at).getTime() < intervalMs) continue;
         // Get stats for the period
         const days = setting.frequency === 'daily' ? 1 : setting.frequency === 'weekly' ? 7 : 30;
         const startDate = new Date();
@@ -120,12 +122,17 @@ Deno.serve(async (req) => {
             .eq('id', setting.id);
         }
       } catch (e) {
+    if (e instanceof Response) return e;
         console.error(`Error sending report for guild ${setting.guild_id}:`, e);
       }
     }
 
     return new Response(JSON.stringify({ success: true, sent }), { headers: corsHeaders });
   } catch (e) {
+    if (e instanceof Response) return e;
     return new Response(JSON.stringify({ error: e.message }), { status: 500, headers: corsHeaders });
   }
 });
+
+
+Deno.serve(__handler);

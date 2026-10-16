@@ -1,15 +1,14 @@
 /**
-const APP_API_BASE = process.env.APP_API_BASE || 'https://bot.nethost-solutions.dk';
  * Auto-Report Handler
  * 
  * Checks every 5 minutes whether any guild's auto-report is due,
  * then calls the auto-report edge function to send the report to Discord.
  */
 
+const APP_API_BASE = process.env.APP_API_BASE || 'https://bot.nethost-solutions.dk';
+
 function setupAutoReportHandler(client, supabase, options = {}) {
   const { shouldHandleGuild } = options;
-  const SUPABASE_URL = process.env.SUPABASE_URL || 'https://rkdqunnttcyuybbofkvz.supabase.co';
-  const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY;
 
   console.log('[AutoReport] Handler initialized');
 
@@ -71,7 +70,7 @@ function setupAutoReportHandler(client, supabase, options = {}) {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+          'x-bot-secret': process.env.BOT_SECRET_KEY || '',
         },
         body: JSON.stringify({}),
       });

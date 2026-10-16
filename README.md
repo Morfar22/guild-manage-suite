@@ -11,7 +11,7 @@ The web application is built with React, TanStack Router, TypeScript, Tailwind C
 ## Development
 
 ```bash
-npm install
+npm ci
 npm run dev
 ```
 
@@ -26,6 +26,22 @@ Validate the canonical Discord command catalog with:
 ```bash
 npm run check:commands
 ```
+
+## Validation
+
+Use Node.js 22.16 or later (Node.js 24 in CI). `package-lock.json` is the
+authoritative dependency lockfile; install with npm so CI and local builds use
+the same dependency versions.
+
+```bash
+npm test
+npm run typecheck
+npm run build
+```
+
+Security regression tests exercise the real dashboard and legacy Edge Function
+handlers with mocked database and network boundaries. They do not call production.
+See `DEPLOY_SELFHOST.md` for the coordinated rollout and token migration procedure.
 
 ## Bot runtime
 

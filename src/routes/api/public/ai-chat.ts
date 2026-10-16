@@ -2,6 +2,7 @@
 // Migrated from Supabase Edge Function `ai-chat` to a TanStack server route.
 import { createFileRoute } from '@tanstack/react-router'
 import { createClient } from '@supabase/supabase-js'
+import { requireUser, requireGuildAdmin } from '@/lib/server/api-auth'
 import { openAIChatCompletion, openAIErrorResponse } from '@/lib/server/openai'
 
 const __env = (k: string) => process.env[k] ?? (k === 'SUPABASE_ANON_KEY' ? process.env['SUPABASE_PUBLISHABLE_KEY'] : undefined)
@@ -320,7 +321,7 @@ __serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     const requestBotSecret = req.headers.get('x-bot-secret');
-    const isBotRequest = requestBotSecret === botSecretKey;
+    const isBotRequest = Boolean(botSecretKey && requestBotSecret && requestBotSecret === botSecretKey);
 
     if (isBotRequest) {
       const ipCheck = await checkIPWhitelist(req, supabase);
@@ -354,6 +355,11 @@ __serve(async (req) => {
       internalGuildId = guild.id;
     }
 
+    if (!isBotRequest) {
+      const user = await requireUser(req, supabase);
+      await requireGuildAdmin(supabase, user.id, internalGuildId);
+    }
+
     switch (action) {
       case 'get_settings': {
         const { data: settings } = await supabase
@@ -377,7 +383,7 @@ __serve(async (req) => {
         if (existing) {
           await supabase
             .from('ai_chat_settings')
-            .update(newSettings)
+            .update(Object.fromEntries(Object.entries(newSettings || {}).filter(([key]) => !['id', 'guild_id'].includes(key))))
             .eq('guild_id', internalGuildId);
         } else {
           await supabase
@@ -629,6 +635,7 @@ __serve(async (req) => {
         });
     }
   } catch (error) {
+    if (error instanceof Response) return error;
     console.error('AI Chat Handler error:', error);
     const aiError = openAIErrorResponse(error, corsHeaders);
     if (aiError) return aiError;

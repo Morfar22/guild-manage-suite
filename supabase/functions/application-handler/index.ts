@@ -1,3 +1,4 @@
+import { decryptBotToken as simpleDecrypt } from '../_shared/bot-token-crypto.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const corsHeaders = {
@@ -90,16 +91,6 @@ interface ApplicationSettings {
   denial_message: string | null;
 }
 
-function simpleDecrypt(encoded: string, key: string): string {
-  const text = atob(encoded);
-  let result = '';
-  for (let i = 0; i < text.length; i++) {
-    result += String.fromCharCode(
-      text.charCodeAt(i) ^ key.charCodeAt(i % key.length),
-    );
-  }
-  return result;
-}
 
 async function getBotTokenForGuild(
   supabase: any,

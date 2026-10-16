@@ -13,15 +13,6 @@ interface DiscordChannel {
   position: number;
 }
 
-// Simple decryption using XOR with a key
-function simpleDecrypt(encoded: string, key: string): string {
-  const text = atob(encoded);
-  let result = '';
-  for (let i = 0; i < text.length; i++) {
-    result += String.fromCharCode(text.charCodeAt(i) ^ key.charCodeAt(i % key.length));
-  }
-  return result;
-}
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -114,7 +105,7 @@ Deno.serve(async (req) => {
       .eq("is_custom_bot", true)
       .maybeSingle();
 
-    const encryptionKey = Deno.env.get("BOT_SECRET_KEY") || "default-encryption-key";
+    const encryptionKey = Deno.env.get("BOT_SECRET_KEY") || "";
     let botToken: string | null = null;
 
     // Use custom bot token if available and active, otherwise fall back to global bot

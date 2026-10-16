@@ -1,3 +1,4 @@
+import { decryptBotToken as simpleDecrypt } from '../_shared/bot-token-crypto.ts';
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
@@ -6,14 +7,6 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-function simpleDecrypt(encoded: string, key: string): string {
-  const text = atob(encoded);
-  let result = '';
-  for (let i = 0; i < text.length; i++) {
-    result += String.fromCharCode(text.charCodeAt(i) ^ key.charCodeAt(i % key.length));
-  }
-  return result;
-}
 
 async function getBotToken(supabaseAdmin: any, guildId: string): Promise<string> {
   const { data: customBotSettings } = await supabaseAdmin
@@ -23,7 +16,7 @@ async function getBotToken(supabaseAdmin: any, guildId: string): Promise<string>
     .eq("is_custom_bot", true)
     .maybeSingle();
 
-  const encryptionKey = Deno.env.get("BOT_SECRET_KEY") || "default-encryption-key";
+  const encryptionKey = Deno.env.get("BOT_SECRET_KEY") || "";
 
   if (customBotSettings?.bot_token_encrypted && customBotSettings.is_custom_bot) {
     return simpleDecrypt(customBotSettings.bot_token_encrypted, encryptionKey);

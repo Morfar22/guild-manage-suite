@@ -72,3 +72,28 @@ AI-screening, AI-chat, AI-automod, AI auto-responder, tekstforbedring og ticket 
 - [ ] IP-whitelist: tilføj dine IP'er i `admin_ip_whitelist`
 - [ ] Botten er online og svarer på kommandoer
 - [ ] Realtime virker (dashboard opdaterer live)
+
+## Sikkerhedsopdatering: API, login og bot-tokens
+
+- Brug Node.js 22.16+ (CI bruger Node.js 24) og `npm ci`. Kør `npm test`,
+  `npm run typecheck` og `npm run build` inden deploy.
+- Deploy dashboard/API og genstart botten fra samme revision. Auto-report bruger nu
+  `x-bot-secret` i stedet for den offentlige Supabase-nøgle; begge processer skal have
+  samme, ikke-tomme `BOT_SECRET_KEY`.
+- Hvis de gamle Supabase Edge Functions stadig er aktive, skal de ændrede functions
+  og `supabase/functions/_shared/` deployes sammen. De deler tokenformat og database
+  med de nye server-ruter. De gamle endpoints må ikke efterlades med usikret kode.
+- Discord-login starter og slutter på `https://bot.nethost-solutions.dk/auth`.
+  Callback kræver nu en kortlivet, sikker browsercookie og matchende OAuth `state`.
+  Loginforsøg startet før opdateringen skal startes igen. Discord-mailadresser skal
+  være bekræftet, før de bruges til at forbinde konti.
+- Nye bot-tokens gemmes med AES-256-GCM. Eksisterende XOR-tokens kan stadig læses
+  med den oprindelige `BOT_SECRET_KEY`, og kan gemmes igen i dashboardet for at
+  opgradere formatet. Rotér ikke nøglen uden først at håndtere eksisterende tokens.
+- Til samlet opgradering: angiv `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` og den
+  eksisterende `BOT_SECRET_KEY`, og kør `npm run migrate:bot-tokens` som dry-run.
+  Scriptet verificerer gamle tokens hos Discord og udskriver kun tællere. Kør derefter
+  `npm run migrate:bot-tokens -- --apply` for at gemme det nye format. Stop botten
+  under migreringen for at undgå samtidige indstillinger, og tag databasebackup først.
+- Backupoprettelse afviser nu fejl fra Discord. Gendannelse var ikke implementeret;
+  knappen er derfor deaktiveret, og API'et returnerer 501 i stedet for falsk succes.

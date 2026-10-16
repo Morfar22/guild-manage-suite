@@ -18,8 +18,8 @@
     "bridge:start": "node bridge-server.js"
   },
   "dependencies": {
-    "discord.js": "14.26.4",
     "@supabase/supabase-js": "2.107.0",
+    "discord.js": "14.27.0",
     "dotenv": "16.6.1"
   },
   "optionalDependencies": {

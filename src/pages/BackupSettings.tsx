@@ -10,20 +10,10 @@ import { Archive, Plus, RotateCcw, Trash2, Loader2, Clock, CalendarClock } from 
 import { useServerBackups } from '@/hooks/useServerBackups';
 import { useBackupSchedule } from '@/hooks/useBackupSchedule';
 import { format } from 'date-fns';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from '@/components/ui/alert-dialog';
+
 
 export default function BackupSettings() {
-  const { backups, isLoading, createBackup, restoreBackup, deleteBackup } = useServerBackups();
+  const { backups, isLoading, createBackup, deleteBackup } = useServerBackups();
   const { schedule, isLoading: scheduleLoading, upsertSchedule } = useBackupSchedule();
   const [description, setDescription] = useState('');
   
@@ -173,25 +163,9 @@ export default function BackupSettings() {
                   </p>
                 </div>
                 <div className="flex gap-1">
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <Button size="sm" variant="outline">
-                        <RotateCcw className="h-4 w-4 mr-1" /> Gendan
-                      </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>Gendan fra backup?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          Dette vil gendanne server-konfigurationen fra denne backup. Eksisterende konfiguration vil blive overskrevet.
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>Annuller</AlertDialogCancel>
-                        <AlertDialogAction onClick={() => restoreBackup.mutate(b.id)}>Gendan</AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
+                  <Button size="sm" variant="outline" disabled title="Gendannelse er endnu ikke tilgængelig">
+                    <RotateCcw className="h-4 w-4 mr-1" /> Gendan (kommer senere)
+                  </Button>
                   <Button size="icon" variant="ghost" onClick={() => deleteBackup.mutate(b.id)}>
                     <Trash2 className="h-4 w-4 text-destructive" />
                   </Button>

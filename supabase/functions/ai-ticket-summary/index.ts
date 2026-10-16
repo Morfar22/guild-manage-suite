@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { requireUser, requireGuildAdmin } from '../_shared/api-auth.ts';
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
@@ -15,6 +16,7 @@ serve(async (req) => {
 
     // Allow both bot secret and authenticated dashboard users
     let authenticated = false;
+    let dashboardUserId: string | null = null;
     if (botSecret && botSecret === expectedSecret) {
       authenticated = true;
     }
@@ -29,7 +31,7 @@ serve(async (req) => {
         );
         const token = authHeader.replace('Bearer ', '');
         const { data: { user } } = await supabase.auth.getUser(token);
-        if (user) authenticated = true;
+        if (user) { authenticated = true; dashboardUserId = user.id; }
       }
     }
 
@@ -61,6 +63,8 @@ serve(async (req) => {
       if (!ticket) {
         return new Response(JSON.stringify({ error: 'Ticket not found' }), { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
       }
+
+      if (dashboardUserId) await requireGuildAdmin(supabase, dashboardUserId, ticket.guild_id);
 
       const { data: messages } = await supabase
         .from('ticket_messages')
@@ -121,6 +125,7 @@ Keep it under 200 words. Be factual and clear. Respond in the same language as t
 
     return new Response(JSON.stringify({ error: 'Unknown action' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
   } catch (error) {
+    if (error instanceof Response) return error;
     console.error('AI Ticket Summary error:', error);
     return new Response(JSON.stringify({ error: error.message }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
   }

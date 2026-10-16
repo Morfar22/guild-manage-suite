@@ -258,7 +258,7 @@ export default function ServerStatusWidget() {
         </div>
 
         {/* Additional Info */}
-        {(serverStatus.fxserver_version || serverStatus.map_name || serverStatus.metadata?.framework || serverStatus.metadata?.bridgeVersion) && (
+        {Boolean(serverStatus.fxserver_version || serverStatus.map_name || serverStatus.metadata?.framework || serverStatus.metadata?.bridgeVersion) && (
           <div className="mt-4 pt-4 border-t border-border flex flex-wrap gap-4 text-sm text-muted-foreground">
             {serverStatus.fxserver_version && (
               <div className="flex items-center gap-1">

@@ -1,4 +1,5 @@
 // @ts-nocheck
+import { decryptBotToken as decryptToken } from '@/lib/server/bot-token-crypto'
 // Migrated from Supabase Edge Function `twitch-handler` to a TanStack server route.
 import { createFileRoute } from '@tanstack/react-router'
 import { createClient } from '@supabase/supabase-js'
@@ -364,15 +365,7 @@ async function sendDiscordNotification(
 }
 
 // Decrypt XOR-encrypted bot token
-function decryptToken(encrypted: string, key: string): string {
-  const bytes = Uint8Array.from(atob(encrypted), c => c.charCodeAt(0));
-  const keyBytes = new TextEncoder().encode(key);
-  const decrypted = new Uint8Array(bytes.length);
-  for (let i = 0; i < bytes.length; i++) {
-    decrypted[i] = bytes[i] ^ keyBytes[i % keyBytes.length];
-  }
-  return new TextDecoder().decode(decrypted);
-}
+
 
 // Resolve the correct bot token for a guild (custom bot or default)
 async function resolveGuildBotToken(supabase: any, guildId: string): Promise<string | null> {

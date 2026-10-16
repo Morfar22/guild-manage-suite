@@ -1,11 +1,17 @@
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { requireUser, requireGuildAdmin } from '../_shared/api-auth.ts'
+
+const __env = (key: string) => Deno.env.get(key) ?? (key === 'SUPABASE_ANON_KEY' ? Deno.env.get('SUPABASE_PUBLISHABLE_KEY') : undefined)
+let __handler: (req: Request) => Response | Promise<Response>
+const __serve = (fn: any, _opts?: any) => { __handler = fn }
+
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-Deno.serve(async (req) => {
+__serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -16,16 +22,13 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: 'Missing guildId or action' }), { status: 400, headers: corsHeaders });
     }
 
-    const discordBotToken = Deno.env.get('DISCORD_BOT_TOKEN');
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const discordBotToken = __env('DISCORD_BOT_TOKEN');
+    const supabaseUrl = __env('SUPABASE_URL')!;
+    const supabaseKey = __env('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
+    const user = await requireUser(req, supabase);
 
-    // Get guild's discord guild_id
-    const { data: guild } = await supabase.from('guilds').select('guild_id').eq('id', guildId).single();
-    if (!guild) {
-      return new Response(JSON.stringify({ error: 'Guild not found' }), { status: 404, headers: corsHeaders });
-    }
+    const guild = await requireGuildAdmin(supabase, user.id, guildId);
 
     if (action === 'create') {
       // Fetch server data from Discord
@@ -35,6 +38,10 @@ Deno.serve(async (req) => {
         fetch(`https://discord.com/api/v10/guilds/${guild.guild_id}/channels`, { headers }),
         fetch(`https://discord.com/api/v10/guilds/${guild.guild_id}/roles`, { headers }),
       ]);
+
+      if (![guildRes, channelsRes, rolesRes].every(response => response.ok)) {
+        return Response.json({ error: 'Discord backup failed; no backup was saved' }, { status: 502 });
+      }
 
       const backupData = {
         guild: await guildRes.json(),
@@ -46,6 +53,7 @@ Deno.serve(async (req) => {
       const { error } = await supabase.from('server_backups').insert({
         guild_id: guildId,
         backup_type: 'manual',
+        created_by: user.id,
         backup_data: backupData,
         description: description || null,
       });
@@ -58,14 +66,18 @@ Deno.serve(async (req) => {
       if (!backupId) {
         return new Response(JSON.stringify({ error: 'Missing backupId' }), { status: 400, headers: corsHeaders });
       }
-      // For now, return the backup data - actual restore would need careful Discord API calls
-      const { data: backup, error } = await supabase.from('server_backups').select('*').eq('id', backupId).single();
-      if (error) throw error;
-      return new Response(JSON.stringify({ success: true, message: 'Restore data retrieved', backup }), { headers: corsHeaders });
+      // Verify ownership, then fail explicitly until a safe restore implementation exists.
+      const { data: backup, error } = await supabase.from('server_backups').select('*').eq('id', backupId).eq('guild_id', guildId).single();
+      if (error || !backup) return Response.json({ error: 'Backup not found' }, { status: 404 });
+      return Response.json({ error: 'Gendannelse er endnu ikke understøttet. Ingen ændringer er foretaget.' }, { status: 501 });
     }
 
     return new Response(JSON.stringify({ error: 'Invalid action' }), { status: 400, headers: corsHeaders });
   } catch (e) {
+    if (e instanceof Response) return e;
     return new Response(JSON.stringify({ error: e.message }), { status: 500, headers: corsHeaders });
   }
 });
+
+
+Deno.serve(__handler);

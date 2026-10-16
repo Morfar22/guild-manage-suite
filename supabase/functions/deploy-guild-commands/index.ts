@@ -1,3 +1,4 @@
+import { decryptBotToken as simpleDecrypt } from '../_shared/bot-token-crypto.ts';
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
@@ -5,14 +6,6 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-function simpleDecrypt(encoded: string, key: string): string {
-  const text = atob(encoded);
-  let result = "";
-  for (let i = 0; i < text.length; i++) {
-    result += String.fromCharCode(text.charCodeAt(i) ^ key.charCodeAt(i % key.length));
-  }
-  return result;
-}
 
 async function getBotCredentialsForDiscordGuild(
   supabase: ReturnType<typeof createClient>,

@@ -1,7 +1,9 @@
 // @ts-nocheck
+import { decryptBotToken as simpleDecrypt } from '@/lib/server/bot-token-crypto'
 // Migrated from Supabase Edge Function `auto-report` to a TanStack server route.
 import { createFileRoute } from '@tanstack/react-router'
 import { createClient } from '@supabase/supabase-js'
+import { requireBotSecret } from '@/lib/server/api-auth'
 
 const __env = (k: string) => process.env[k] ?? (k === 'SUPABASE_ANON_KEY' ? process.env['SUPABASE_PUBLISHABLE_KEY'] : undefined)
 let __handler: (req: Request) => Response | Promise<Response>
@@ -10,17 +12,9 @@ const __serve = (fn: any, _opts?: any) => { __handler = fn }
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-bot-secret',
 };
 
-function simpleDecrypt(encoded: string, key: string): string {
-  const text = atob(encoded);
-  let result = '';
-  for (let i = 0; i < text.length; i++) {
-    result += String.fromCharCode(text.charCodeAt(i) ^ key.charCodeAt(i % key.length));
-  }
-  return result;
-}
 
 async function getBotTokenForGuild(supabase: any, guildId: string): Promise<string> {
   const { data: settings } = await supabase
@@ -31,7 +25,7 @@ async function getBotTokenForGuild(supabase: any, guildId: string): Promise<stri
     .eq('is_active', true)
     .maybeSingle();
 
-  const encryptionKey = __env('BOT_SECRET_KEY') || 'default-encryption-key';
+  const encryptionKey = __env('BOT_SECRET_KEY') || '';
 
   if (settings?.bot_token_encrypted) {
     try {
@@ -50,6 +44,7 @@ __serve(async (req) => {
   }
 
   try {
+    requireBotSecret(req);
     const supabaseUrl = __env('SUPABASE_URL')!;
     const supabaseKey = __env('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
@@ -69,6 +64,8 @@ __serve(async (req) => {
 
     for (const setting of reportSettings) {
       try {
+        const intervalMs = (setting.frequency === 'daily' ? 1 : setting.frequency === 'weekly' ? 7 : 30) * 86400000;
+        if (setting.last_sent_at && Date.now() - new Date(setting.last_sent_at).getTime() < intervalMs) continue;
         // Get stats for the period
         const days = setting.frequency === 'daily' ? 1 : setting.frequency === 'weekly' ? 7 : 30;
         const startDate = new Date();
@@ -128,12 +125,14 @@ __serve(async (req) => {
             .eq('id', setting.id);
         }
       } catch (e) {
+    if (e instanceof Response) return e;
         console.error(`Error sending report for guild ${setting.guild_id}:`, e);
       }
     }
 
     return new Response(JSON.stringify({ success: true, sent }), { headers: corsHeaders });
   } catch (e) {
+    if (e instanceof Response) return e;
     return new Response(JSON.stringify({ error: e.message }), { status: 500, headers: corsHeaders });
   }
 });

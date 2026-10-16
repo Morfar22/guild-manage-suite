@@ -2,6 +2,7 @@
 // Migrated from Supabase Edge Function `analytics-aggregate` to a TanStack server route.
 import { createFileRoute } from '@tanstack/react-router'
 import { createClient } from '@supabase/supabase-js'
+import { requireBotSecret } from '@/lib/server/api-auth'
 
 const __env = (k: string) => process.env[k] ?? (k === 'SUPABASE_ANON_KEY' ? process.env['SUPABASE_PUBLISHABLE_KEY'] : undefined)
 let __handler: (req: Request) => Response | Promise<Response>
@@ -10,7 +11,7 @@ const __serve = (fn: any, _opts?: any) => { __handler = fn }
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-bot-secret',
 };
 
 __serve(async (req) => {
@@ -19,6 +20,7 @@ __serve(async (req) => {
   }
 
   try {
+    requireBotSecret(req);
     const supabaseUrl = __env('SUPABASE_URL')!;
     const supabaseKey = __env('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
@@ -104,6 +106,7 @@ __serve(async (req) => {
       { headers: corsHeaders }
     );
   } catch (e) {
+    if (e instanceof Response) return e;
     console.error('Aggregation error:', e);
     return new Response(JSON.stringify({ error: e.message }), { status: 500, headers: corsHeaders });
   }

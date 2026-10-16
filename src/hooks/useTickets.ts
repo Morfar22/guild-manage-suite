@@ -1,3 +1,4 @@
+import type { TablesUpdate } from '@/integrations/supabase/types';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useGuild } from '@/contexts/GuildContext';
@@ -336,14 +337,14 @@ export function useUpdateCategory() {
   return useMutation({
     mutationFn: async ({ id, ...updates }: Partial<CategoryInput> & { id: string }) => {
       // Build update object manually to handle questions properly
-      const updateData: Record<string, unknown> = {};
+      const updateData: TablesUpdate<'ticket_categories'> = {};
       if (updates.name !== undefined) updateData.name = updates.name;
       if (updates.description !== undefined) updateData.description = updates.description;
       if (updates.ticket_type !== undefined) updateData.ticket_type = updates.ticket_type;
       if (updates.emoji !== undefined) updateData.emoji = updates.emoji;
       if (updates.welcome_message !== undefined) updateData.welcome_message = updates.welcome_message;
       if (updates.staff_role_id !== undefined) updateData.staff_role_id = updates.staff_role_id;
-      if (updates.questions !== undefined) updateData.questions = updates.questions;
+      if (updates.questions !== undefined) updateData.questions = updates.questions.map(question => ({ ...question }));
 
       const { data, error } = await supabase
         .from('ticket_categories')

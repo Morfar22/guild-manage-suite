@@ -29,36 +29,41 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
 
-      - name: Set up Bun
-        uses: oven-sh/setup-bun@v2
+      - name: Set up Node.js
+        uses: actions/setup-node@v5
         with:
-          bun-version: latest
+          node-version: 24
+          cache: npm
+          cache-dependency-path: package-lock.json
 
       - name: Install dashboard dependencies
-        run: bun install --frozen-lockfile
+        run: npm ci --ignore-scripts
+
+      - name: Typecheck
+        run: npm run typecheck
 
       - name: Verify command catalog
-        run: bun run check:commands
+        run: npm run check:commands
 
       - name: Verify Discovery safety
-        run: bun run check:discovery
+        run: npm run check:discovery
 
       - name: Verify shared web product imports
-        run: bun run check:web-product
+        run: npm run check:web-product
 
       - name: Verify web runtime symbols
-        run: bun run check:web-runtime
+        run: npm run check:web-runtime
 
       - name: Legacy lint audit
         if: github.event_name == 'workflow_dispatch'
         continue-on-error: true
-        run: bun run lint
+        run: npm run lint
 
       - name: Tests
-        run: bunx vitest run --config vitest.config.ts --passWithNoTests
+        run: npm test
 
       - name: Build
-        run: bun run build
+        run: npm run build
 
   bot:
     name: Bot checks

@@ -1,18 +1,17 @@
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { decryptBotToken as simpleDecrypt } from '../_shared/bot-token-crypto.ts'
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { requireUser, requireGuildAdmin, requireGuildChannel } from '../_shared/api-auth.ts'
+
+const __env = (key: string) => Deno.env.get(key) ?? (key === 'SUPABASE_ANON_KEY' ? Deno.env.get('SUPABASE_PUBLISHABLE_KEY') : undefined)
+let __handler: (req: Request) => Response | Promise<Response>
+const __serve = (fn: any, _opts?: any) => { __handler = fn }
+
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-function simpleDecrypt(encoded: string, key: string): string {
-  const text = atob(encoded);
-  let result = '';
-  for (let i = 0; i < text.length; i++) {
-    result += String.fromCharCode(text.charCodeAt(i) ^ key.charCodeAt(i % key.length));
-  }
-  return result;
-}
 
 async function getBotTokenForGuild(supabase: any, guildId: string): Promise<string> {
   const { data: settings } = await supabase
@@ -23,22 +22,23 @@ async function getBotTokenForGuild(supabase: any, guildId: string): Promise<stri
     .eq('is_active', true)
     .maybeSingle();
 
-  const encryptionKey = Deno.env.get('BOT_SECRET_KEY') || 'default-encryption-key';
+  const encryptionKey = __env('BOT_SECRET_KEY') || '';
 
   if (settings?.bot_token_encrypted) {
     try {
       return simpleDecrypt(settings.bot_token_encrypted, encryptionKey);
     } catch (e) {
+    if (e instanceof Response) return e;
       console.error('Failed to decrypt custom bot token, falling back to global:', e.message);
     }
   }
 
-  const globalToken = Deno.env.get('DISCORD_BOT_TOKEN');
+  const globalToken = __env('DISCORD_BOT_TOKEN');
   if (!globalToken) throw new Error('Bot token not configured');
   return globalToken;
 }
 
-Deno.serve(async (req) => {
+__serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -49,12 +49,16 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: 'Missing fields' }), { status: 400, headers: corsHeaders });
     }
 
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const supabaseUrl = __env('SUPABASE_URL')!;
+    const supabaseKey = __env('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
+    const user = await requireUser(req, supabase);
+
+    const guild = await requireGuildAdmin(supabase, user.id, guildId);
 
     // guild_bot_settings is keyed by the internal guild UUID from the app
     const botToken = await getBotTokenForGuild(supabase, guildId);
+    await requireGuildChannel(botToken, guild.guild_id, channelId);
 
     // Build Discord embed object
     const discordEmbed: any = {};
@@ -119,6 +123,10 @@ Deno.serve(async (req) => {
     const data = await response.json();
     return new Response(JSON.stringify({ success: true, messageId: data.id }), { headers: corsHeaders });
   } catch (e) {
+    if (e instanceof Response) return e;
     return new Response(JSON.stringify({ error: e.message }), { status: 500, headers: corsHeaders });
   }
 });
+
+
+Deno.serve(__handler);
