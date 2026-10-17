@@ -53,9 +53,10 @@ export function useBotStatus() {
     // Set up polling interval as backup
     const pollInterval = setInterval(fetchStatus, POLL_INTERVAL);
 
-    // Subscribe to realtime updates
+    // Supabase reuses channels with the same topic. Each effect needs its own
+    // channel so concurrent consumers and remounts cannot reuse a subscribed one.
     const channel = supabase
-      .channel(`bot_status_${selectedGuild.id}`)
+      .channel(`bot_status_${selectedGuild.id}_${crypto.randomUUID()}`)
       .on(
         'postgres_changes',
         {
