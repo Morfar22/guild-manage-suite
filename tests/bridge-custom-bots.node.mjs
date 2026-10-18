@@ -34,7 +34,7 @@ function bridge(configs, { configStatus = 200, discordStatus = 200 } = {}) {
       calls.push({ url: String(url), ...options });
       if (String(url).startsWith('https://app.example/')) return {
         ok: configStatus === 200, status: configStatus,
-        json: async () => ({ configs }),
+        json: async () => configs,
       };
       return {
         ok: discordStatus === 200, status: discordStatus,
@@ -55,7 +55,7 @@ function bridge(configs, { configStatus = 200, discordStatus = 200 } = {}) {
     return { status, body };
   } };
 }
-const configs = [{ guild_id: 'internal-uuid', discord_guild_id: guild, bot_token: 'custom-token' }];
+const configs = { discord_guild_id: guild, bot_token: 'custom-token' };
 
 test('channels use the selected guild custom token and never expose it', async () => {
   const app = bridge(configs);
@@ -63,12 +63,13 @@ test('channels use the selected guild custom token and never expose it', async (
   assert.equal(result.status, 200);
   assert.equal(app.calls[0].headers['x-bot-secret'], 'config-secret');
   assert.equal(app.calls[0].redirect, 'error');
+  assert.deepEqual(JSON.parse(app.calls[0].body), { action: 'resolve_bridge_bot', discord_guild_id: guild });
   assert.equal(app.calls[1].headers.Authorization, 'Bot custom-token');
   assert.deepEqual(result.body, { channels: [], categories: [] });
   assert.equal(app.removals.length, 1);
 });
 test('another guild uses the default bot, not another tenant token', async () => {
-  const app = bridge(configs);
+  const app = bridge({ discord_guild_id: otherGuild, use_default_bot: true });
   assert.equal((await app.request('channels', otherGuild)).status, 200);
   assert.equal(app.calls[1].headers.Authorization, 'Bot default-token');
 });
@@ -79,10 +80,11 @@ test('bot identity and subsequent member lookup use the same custom bot', async 
   for (const call of app.calls.slice(1)) assert.equal(call.headers.Authorization, 'Bot custom-token');
 });
 test('config failures and ambiguous or malformed configs fail closed', async () => {
-  for (const app of [bridge([], { configStatus: 401 }), bridge(null),
-    bridge([{ guild_id: 'uuid', bot_token: 'token' }]),
-    bridge([{ discord_guild_id: guild, bot_token: null }]),
-    bridge([...configs, ...configs])]) {
+  for (const app of [bridge({}, { configStatus: 401 }), bridge({}),
+    bridge({ guild_id: 'uuid', bot_token: 'token' }),
+    bridge({ discord_guild_id: guild, bot_token: null }),
+    bridge({ discord_guild_id: otherGuild, bot_token: 'wrong-tenant' }),
+    bridge({ ...configs, use_default_bot: true })]) {
     const result = await app.request();
     assert.equal(result.status, 502);
     assert.equal(app.calls.length, 1);

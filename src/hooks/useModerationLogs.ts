@@ -76,7 +76,7 @@ export function useModerationLogs(options: UseModerationLogsOptions = {}) {
 
     // Subscribe to realtime updates for new logs
     const channel = supabase
-      .channel(`moderation_logs_${selectedGuild.id}`)
+      .channel(`moderation_logs_${selectedGuild.id}_${crypto.randomUUID()}`)
       .on(
         'postgres_changes',
         {
@@ -86,7 +86,7 @@ export function useModerationLogs(options: UseModerationLogsOptions = {}) {
           filter: `guild_id=eq.${selectedGuild.id}`,
         },
         (payload) => {
-          console.log('New moderation log:', payload);
+          if (actionType && payload.new.action_type !== actionType) return;
           setLogs((prev) => [payload.new as ModerationLog, ...prev].slice(0, limit));
           setTotalCount((prev) => prev + 1);
         }

@@ -128,7 +128,7 @@ export function useTwitchStreamers() {
 
     // Subscribe to realtime changes
     const channel = supabase
-      .channel(`twitch-${selectedGuild.id}`)
+      .channel(`twitch-${selectedGuild.id}_${crypto.randomUUID()}`)
       .on('postgres_changes', {
         event: '*',
         schema: 'public',

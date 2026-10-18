@@ -46,7 +46,7 @@ export function useDashboardNotifications() {
   useEffect(() => {
     if (!selectedGuild?.id) return;
     const channel = supabase
-      .channel('dashboard-notifications')
+      .channel(`dashboard-notifications_${crypto.randomUUID()}`)
       .on('postgres_changes', {
         event: 'INSERT',
         schema: 'public',

@@ -11,7 +11,7 @@ if (!secret || Buffer.byteLength(secret) < 32 || !defaultToken) {
   console.error('[guildos-bridge] GUILDOS_BRIDGE_SECRET (>=32 bytes) and bot token required');
   process.exit(1);
 }
-// Use the same authenticated, decrypted configuration feed as CustomBotManager.
+// Resolve only this guild through the authenticated bot configuration API.
 // Never accept a bot token or an internal guild UUID from the caller.
 async function resolveGuildToken(guildId, signal) {
   const base = process.env.APP_API_BASE;
@@ -25,19 +25,18 @@ async function resolveGuildToken(guildId, signal) {
   const response = await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'x-bot-secret': botSecret },
-    body: JSON.stringify({ action: 'list_active' }),
+    body: JSON.stringify({ action: 'resolve_bridge_bot', discord_guild_id: guildId }),
     redirect: 'error',
     signal,
   });
   if (!response.ok) throw new Error('Bot configuration unavailable');
   const payload = await response.json();
-  if (!Array.isArray(payload.configs) || payload.configs.some(config =>
-    !config || !/^\d{16,22}$/.test(config.discord_guild_id || '') ||
-    typeof config.bot_token !== 'string' || !config.bot_token.trim()
-  )) throw new Error('Invalid bot configuration');
-  const matches = payload.configs.filter(config => config.discord_guild_id === guildId);
-  if (matches.length > 1) throw new Error('Ambiguous bot configuration');
-  return matches.length ? matches[0].bot_token : defaultToken;
+  if (payload.discord_guild_id !== guildId) throw new Error('Invalid bot configuration');
+  if (payload.use_default_bot === true && payload.bot_token === undefined) return defaultToken;
+  if (payload.use_default_bot !== undefined || typeof payload.bot_token !== 'string' || !payload.bot_token.trim()) {
+    throw new Error('Invalid bot configuration');
+  }
+  return payload.bot_token;
 }
 
 function authorized(header) {

@@ -68,7 +68,7 @@ export function useTwitchNotificationLogs() {
 
     // Subscribe to realtime
     const channel = supabase
-      .channel(`twitch-logs-${selectedGuild.id}`)
+      .channel(`twitch-logs-${selectedGuild.id}_${crypto.randomUUID()}`)
       .on('postgres_changes', {
         event: 'INSERT',
         schema: 'public',

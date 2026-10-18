@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { decryptBotToken as simpleDecrypt } from '@/lib/server/bot-token-crypto'
+import { resolveGuildBotToken } from '@/lib/server/guild-bot-token'
 // Migrated from Supabase Edge Function `discord-interactions` to a TanStack server route.
 import { createFileRoute } from '@tanstack/react-router'
 import { createClient } from '@supabase/supabase-js'
@@ -160,31 +160,11 @@ async function sendFollowupEphemeral(interaction: any, content: string) {
 }
 
 
-async function getBotTokenForGuild(innerSupabase: any, discordGuildId: string): Promise<string> {
-  let botToken = __env("DISCORD_BOT_TOKEN")!;
+const getBotTokenForGuild = resolveGuildBotToken;
 
-  const { data: guildRow } = await innerSupabase
-    .from("guilds")
-    .select("id")
-    .eq("guild_id", discordGuildId)
-    .maybeSingle();
-
-  if (!guildRow) return botToken;
-
-  const { data: customBot } = await innerSupabase
-    .from("guild_bot_settings")
-    .select("bot_token_encrypted, is_custom_bot, is_active")
-    .eq("guild_id", guildRow.id)
-    .eq("is_custom_bot", true)
-    .eq("is_active", true)
-    .maybeSingle();
-
-  if (customBot?.bot_token_encrypted) {
-    const encKey = __env("BOT_SECRET_KEY") || "";
-    botToken = simpleDecrypt(customBot.bot_token_encrypted, encKey);
-  }
-
-  return botToken;
+async function getInteractionBotToken(interaction: any): Promise<string> {
+  const db = createClient(__env("SUPABASE_URL")!, __env("SUPABASE_SERVICE_ROLE_KEY")!);
+  return resolveGuildBotToken(db, interaction.guild_id);
 }
 
 function getGiveawayEntries(entries: unknown): string[] {
@@ -312,7 +292,7 @@ async function createTicketThreadWork(
     __env("SUPABASE_SERVICE_ROLE_KEY")!
   );
 
-  const botToken = __env("DISCORD_BOT_TOKEN");
+  const botToken = await getInteractionBotToken(interaction);
   const guildId = interaction.guild_id;
   const userId = interaction.member?.user?.id || interaction.user?.id;
   const userName =
@@ -740,7 +720,7 @@ async function handleCloseTicket(
         __env("SUPABASE_URL")!,
         __env("SUPABASE_SERVICE_ROLE_KEY")!
       );
-      const botToken = __env("DISCORD_BOT_TOKEN");
+      const botToken = await getInteractionBotToken(interaction);
 
       // Get ticket data first (for transcript)
       const { data: ticket } = await supabase
@@ -890,7 +870,7 @@ async function handleApproveApplication(
     __env("SUPABASE_SERVICE_ROLE_KEY")!
   );
 
-  const botToken = __env("DISCORD_BOT_TOKEN");
+  const botToken = await getInteractionBotToken(interaction);
   const reviewerId = interaction.member?.user?.id || interaction.user?.id;
   const reviewerName = interaction.member?.user?.username || interaction.user?.username;
   const guildId = interaction.guild_id;
@@ -1024,7 +1004,7 @@ async function handleDenyApplication(
     __env("SUPABASE_SERVICE_ROLE_KEY")!
   );
 
-  const botToken = __env("DISCORD_BOT_TOKEN");
+  const botToken = await getInteractionBotToken(interaction);
   const reviewerId = interaction.member?.user?.id || interaction.user?.id;
   const reviewerName = interaction.member?.user?.username || interaction.user?.username;
 
@@ -1247,7 +1227,7 @@ async function handleModmailClose(interaction: any): Promise<Response> {
     __env("SUPABASE_SERVICE_ROLE_KEY")!
   );
 
-  const botToken = __env("DISCORD_BOT_TOKEN");
+  const botToken = await getInteractionBotToken(interaction);
   const channelId = interaction.channel_id;
 
   console.log(`[Modmail] Closing thread in channel ${channelId}`);
@@ -1412,9 +1392,8 @@ async function handleSubmissionApprove(
   // Do heavy work in background - MUST return response within 3 seconds
   waitUntil(
     (async () => {
-      const botToken = __env("DISCORD_BOT_TOKEN");
-      
       try {
+        const botToken = await getInteractionBotToken(interaction);
         // Update submission status
         await supabase
           .from("application_submissions")
@@ -1598,9 +1577,8 @@ async function handleSubmissionDeny(
   // Do heavy work in background - MUST return response within 3 seconds
   waitUntil(
     (async () => {
-      const botToken = __env("DISCORD_BOT_TOKEN");
-      
       try {
+        const botToken = await getInteractionBotToken(interaction);
         // Update submission status
         await supabase
           .from("application_submissions")
@@ -2257,7 +2235,7 @@ async function handleJTCControl(interaction: any, customId: string): Promise<Res
   const check = await verifyJTCOwner(supabase, voiceChannelId, userId);
   if (!check.ok) return jtcEphemeral(`❌ ${check.reason}`);
 
-  const botToken = __env("DISCORD_BOT_TOKEN")!;
+  const botToken = await getInteractionBotToken(interaction);
   const guildId = interaction.guild_id;
 
   switch (action) {
@@ -2452,7 +2430,7 @@ async function handleJTCRenameSubmit(interaction: any, customId: string): Promis
   const newName = interaction.data?.components?.[0]?.components?.[0]?.value;
   if (!newName) return jtcEphemeral('❌ Intet navn angivet.');
 
-  const botToken = __env("DISCORD_BOT_TOKEN")!;
+  const botToken = await getInteractionBotToken(interaction);
   const res = await fetch(`https://discord.com/api/v10/channels/${voiceChannelId}`, {
     method: 'PATCH',
     headers: { 'Authorization': `Bot ${botToken}`, 'Content-Type': 'application/json' },
@@ -2474,7 +2452,7 @@ async function handleJTCLimitSubmit(interaction: any, customId: string): Promise
   const limit = parseInt(limitStr, 10);
   if (isNaN(limit) || limit < 0 || limit > 99) return jtcEphemeral('❌ Ugyldig grænse. Brug et tal mellem 0-99.');
 
-  const botToken = __env("DISCORD_BOT_TOKEN")!;
+  const botToken = await getInteractionBotToken(interaction);
   const res = await fetch(`https://discord.com/api/v10/channels/${voiceChannelId}`, {
     method: 'PATCH',
     headers: { 'Authorization': `Bot ${botToken}`, 'Content-Type': 'application/json' },
@@ -2496,7 +2474,7 @@ async function handleJTCKickSubmit(interaction: any, customId: string): Promise<
   if (!targetId || !/^\d{17,20}$/.test(targetId)) return jtcEphemeral('❌ Ugyldigt bruger ID.');
   if (targetId === userId) return jtcEphemeral('❌ Du kan ikke kicke dig selv.');
 
-  const botToken = __env("DISCORD_BOT_TOKEN")!;
+  const botToken = await getInteractionBotToken(interaction);
   const guildId = interaction.guild_id;
 
   // Disconnect user from voice (set channel_id to null)
@@ -2521,7 +2499,7 @@ async function handleJTCBlockSubmit(interaction: any, customId: string): Promise
   if (!targetId || !/^\d{17,20}$/.test(targetId)) return jtcEphemeral('❌ Ugyldigt bruger ID.');
   if (targetId === userId) return jtcEphemeral('❌ Du kan ikke blokere dig selv.');
 
-  const botToken = __env("DISCORD_BOT_TOKEN")!;
+  const botToken = await getInteractionBotToken(interaction);
   const guildId = interaction.guild_id;
 
   // Deny CONNECT and VIEW for the user on the voice channel
@@ -2555,7 +2533,7 @@ async function handleJTCAllowSubmit(interaction: any, customId: string): Promise
   const targetId = interaction.data?.components?.[0]?.components?.[0]?.value?.trim();
   if (!targetId || !/^\d{17,20}$/.test(targetId)) return jtcEphemeral('❌ Ugyldigt bruger ID.');
 
-  const botToken = __env("DISCORD_BOT_TOKEN")!;
+  const botToken = await getInteractionBotToken(interaction);
 
   // Allow CONNECT and VIEW for the user on the voice channel
   await fetch(`https://discord.com/api/v10/channels/${voiceChannelId}/permissions/${targetId}`, {
@@ -2892,35 +2870,7 @@ __serve(async (req) => {
           (async () => {
             try {
               // Resolve the correct bot token (custom bot or global)
-              let botToken = __env("DISCORD_BOT_TOKEN")!;
-              try {
-                const innerSupabase = createClient(
-                  __env("SUPABASE_URL")!,
-                  __env("SUPABASE_SERVICE_ROLE_KEY")!
-                );
-                // Look up the internal guild UUID from the Discord guild ID
-                const { data: guildRow } = await innerSupabase
-                  .from("guilds")
-                  .select("id")
-                  .eq("guild_id", guildId)
-                  .maybeSingle();
-                if (guildRow) {
-                  const { data: customBot } = await innerSupabase
-                    .from("guild_bot_settings")
-                    .select("bot_token_encrypted, is_custom_bot, is_active")
-                    .eq("guild_id", guildRow.id)
-                    .eq("is_custom_bot", true)
-                    .eq("is_active", true)
-                    .maybeSingle();
-                  if (customBot?.bot_token_encrypted) {
-                    const encKey = __env("BOT_SECRET_KEY") || "";
-                    botToken = simpleDecrypt(customBot.bot_token_encrypted, encKey);
-                    console.log("Using custom bot token for reaction role toggle");
-                  }
-                }
-              } catch (tokenErr) {
-                console.error("Failed to resolve custom bot token, using global:", tokenErr);
-              }
+              const botToken = await getInteractionBotToken(interaction);
 
               const method = hasRole ? "DELETE" : "PUT";
               const url = `https://discord.com/api/v10/guilds/${guildId}/members/${memberId}/roles/${roleId}`;
@@ -3024,7 +2974,7 @@ __serve(async (req) => {
                 .eq("id", pollId);
 
               // Update the original message with vote counts
-              const botToken = __env("DISCORD_BOT_TOKEN");
+              const botToken = await getInteractionBotToken(interaction);
               if (poll.message_id && botToken) {
                 try {
                   const totalVotes = pollOptions.reduce((sum: number, o: any) => sum + o.votes, 0);

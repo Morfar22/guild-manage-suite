@@ -49,7 +49,7 @@ export function useFiveMServerStatus() {
     if (!selectedGuild?.id) return;
 
     const channel = supabase
-      .channel('fivem-server-status-realtime')
+      .channel(`fivem-server-status-realtime_${crypto.randomUUID()}`)
       .on(
         'postgres_changes',
         {
