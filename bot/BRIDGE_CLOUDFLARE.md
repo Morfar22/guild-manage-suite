@@ -21,6 +21,8 @@ Add to the VPS bot environment (`/bot/.env`):
 GUILDOS_BRIDGE_SECRET=<generated-random-value>
 GUILDOS_BRIDGE_HOST=127.0.0.1
 GUILDOS_BRIDGE_PORT=3187
+APP_API_BASE=https://your-dashboard.example.com
+BOT_SECRET_KEY=<same bot secret configured in the dashboard>
 # Existing DEFAULT_BOT_TOKEN, DISCORD_TOKEN or DISCORD_BOT_TOKEN remains VPS-only
 ```
 
@@ -67,4 +69,4 @@ Check the Cloudflare dashboard's channel select after deployment. The channel AP
 
 ## Scope
 
-This version routes **shared channel lookups, role lookups, bot hierarchy lookups, member listing, and member role add/remove** through the VPS. Other Discord operations (including moderation APIs and any other endpoint not named here) still use their existing implementation. Guilds with separately configured custom bots currently use the main bot for these bridge operations, and will need a per-custom-bot bridge integration. Do not remove old bot secrets from unrelated Cloudflare APIs until those endpoints are migrated.
+This version routes **shared channel lookups, role lookups, bot hierarchy lookups, member listing, and member role add/remove** through the VPS. Other Discord operations (including moderation APIs and any other endpoint not named here) still use their existing implementation. For every authenticated request, the bridge retrieves the active custom-bot configurations from the existing `guild-bot-config` API using `APP_API_BASE` and `BOT_SECRET_KEY`. It selects the token by `discord_guild_id`; guilds without an active custom configuration use the default bot. Configuration lookup failures, missing Discord IDs/tokens, and duplicate matches fail closed without falling back to the default bot. The web API must provide `discord_guild_id` in its `list_active` response. Custom bots must be saved and active in the dashboard. Tokens remain server-side and are never accepted from browser input. Do not remove old bot secrets from unrelated Cloudflare APIs until those endpoints are migrated.
