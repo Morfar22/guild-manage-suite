@@ -1,3 +1,5 @@
+import { verifyTebexSignature } from "../_shared/tebex-signature.ts";
+import type { Untyped } from "../_shared/untyped.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
@@ -41,8 +43,49 @@ serve(async (req) => {
       });
     }
 
-    const body = await req.json();
-    const eventType = body.type || "payment.completed";
+    // Authenticity: Tebex signs every webhook with the endpoint secret.
+    // Fail closed when no secret is configured — otherwise anyone could
+    // forge payment.completed and be granted paid roles.
+    const rawBody = await req.text();
+    if (!settings.webhook_secret) {
+      return new Response(
+        JSON.stringify({ error: "Webhook secret not configured" }),
+        {
+          status: 401,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
+    }
+    const validSignature = await verifyTebexSignature(
+      rawBody,
+      req.headers.get("x-signature"),
+      settings.webhook_secret,
+    );
+    if (!validSignature) {
+      return new Response(JSON.stringify({ error: "Invalid signature" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    let body: Untyped;
+    try {
+      body = JSON.parse(rawBody);
+    } catch {
+      return new Response(JSON.stringify({ error: "Invalid JSON" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Endpoint validation handshake.
+    if (body?.type === "validation.webhook") {
+      return new Response(JSON.stringify({ id: body.id }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const eventType = String(body.type || "");
     const subject = body.subject || {};
 
     // Extract payment info
@@ -80,12 +123,23 @@ serve(async (req) => {
 
     // If it's a completed payment, check for role mappings
     if (eventType === "payment.completed" && purchaseRecord.player_discord_id) {
-      await handleRoleGrant(supabase, guildId, products, purchaseRecord.player_discord_id);
+      await handleRoleGrant(
+        supabase,
+        guildId,
+        products,
+        purchaseRecord.player_discord_id,
+      );
     }
 
     // Notify Discord via bot if notification channel is set
     if (settings.notification_channel_id) {
-      await notifyDiscord(supabase, guildId, settings.notification_channel_id, eventType, purchaseRecord);
+      await notifyDiscord(
+        supabase,
+        guildId,
+        settings.notification_channel_id,
+        eventType,
+        purchaseRecord,
+      );
     }
 
     return new Response(JSON.stringify({ success: true }), {
@@ -102,20 +156,28 @@ serve(async (req) => {
 
 function mapEventToStatus(eventType: string): string {
   switch (eventType) {
-    case "payment.completed": return "complete";
-    case "payment.refunded": return "refunded";
-    case "payment.chargeback": return "chargeback";
-    case "payment.dispute": return "disputed";
-    default: return eventType;
+    case "payment.completed":
+      return "complete";
+    case "payment.refunded":
+      return "refunded";
+    case "payment.chargeback":
+      return "chargeback";
+    case "payment.dispute":
+      return "disputed";
+    default:
+      return eventType;
   }
 }
 
 function extractDiscordId(customer: Record<string, unknown>): string | null {
   // Tebex can include integrations or custom fields with Discord ID
   if (customer.discord_id) return String(customer.discord_id);
-  const integrations = customer.integrations as Record<string, unknown>[] | undefined;
+  const integrations = customer.integrations as
+    Record<string, unknown>[] | undefined;
   if (Array.isArray(integrations)) {
-    const discord = integrations.find((i) => i.integration === "discord" || i.type === "discord");
+    const discord = integrations.find(
+      (i) => i.integration === "discord" || i.type === "discord",
+    );
     if (discord) return String(discord.id || discord.identifier);
   }
   return null;
@@ -125,7 +187,7 @@ async function handleRoleGrant(
   supabase: ReturnType<typeof createClient>,
   guildId: string,
   products: Array<Record<string, unknown>>,
-  discordUserId: string
+  discordUserId: string,
 ) {
   const packageIds = products.map((p) => Number(p.id)).filter(Boolean);
   if (packageIds.length === 0) return;
@@ -159,17 +221,27 @@ async function notifyDiscord(
   guildId: string,
   channelId: string,
   eventType: string,
-  purchase: Record<string, unknown>
+  purchase: Record<string, unknown>,
 ) {
-  const emoji = eventType === "payment.completed" ? "🛒" :
-    eventType === "payment.refunded" ? "↩️" :
-    eventType === "payment.chargeback" ? "⚠️" : "📋";
+  const emoji =
+    eventType === "payment.completed"
+      ? "🛒"
+      : eventType === "payment.refunded"
+        ? "↩️"
+        : eventType === "payment.chargeback"
+          ? "⚠️"
+          : "📋";
 
-  const title = eventType === "payment.completed" ? "Nyt køb!" :
-    eventType === "payment.refunded" ? "Refusion" :
-    eventType === "payment.chargeback" ? "Chargeback" : eventType;
+  const title =
+    eventType === "payment.completed"
+      ? "Nyt køb!"
+      : eventType === "payment.refunded"
+        ? "Refusion"
+        : eventType === "payment.chargeback"
+          ? "Chargeback"
+          : eventType;
 
-  const pkgs = purchase.packages as Array<Record<string, unknown>> || [];
+  const pkgs = (purchase.packages as Array<Record<string, unknown>>) || [];
 
   // Store as a log event the bot can pick up
   await supabase.from("fivem_command_queue").insert({
@@ -181,10 +253,26 @@ async function notifyDiscord(
         title: `${emoji} ${title}`,
         color: eventType === "payment.completed" ? 0x2ecc71 : 0xe74c3c,
         fields: [
-          { name: "Transaktions-ID", value: String(purchase.txn_id), inline: true },
-          { name: "Beløb", value: `${purchase.amount} ${purchase.currency}`, inline: true },
-          { name: "Spiller", value: String(purchase.player_name || "Ukendt"), inline: true },
-          { name: "Pakker", value: pkgs.map((p) => p.name).join(", ") || "Ingen", inline: false },
+          {
+            name: "Transaktions-ID",
+            value: String(purchase.txn_id),
+            inline: true,
+          },
+          {
+            name: "Beløb",
+            value: `${purchase.amount} ${purchase.currency}`,
+            inline: true,
+          },
+          {
+            name: "Spiller",
+            value: String(purchase.player_name || "Ukendt"),
+            inline: true,
+          },
+          {
+            name: "Pakker",
+            value: pkgs.map((p) => p.name).join(", ") || "Ingen",
+            inline: false,
+          },
         ],
         timestamp: new Date().toISOString(),
       },

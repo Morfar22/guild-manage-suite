@@ -1,16 +1,16 @@
-import fs from 'node:fs';
-import ts from 'typescript';
+import fs from "node:fs";
+import ts from "typescript";
 
 const files = [
-  'src/pages/Index.tsx',
-  'src/pages/Auth.tsx',
-  'src/pages/GuildSelect.tsx',
-  'src/pages/Dashboard.tsx',
-  'src/pages/PublicFeatures.tsx',
-  'src/pages/Security.tsx',
-  'src/pages/BotSettings.tsx',
-  'src/components/dashboard/SetupProgress.tsx',
-  'src/components/dashboard/DashboardSidebarContent.tsx',
+  "src/pages/Index.tsx",
+  "src/pages/Auth.tsx",
+  "src/pages/GuildSelect.tsx",
+  "src/pages/Dashboard.tsx",
+  "src/pages/PublicFeatures.tsx",
+  "src/pages/Security.tsx",
+  "src/pages/BotSettings.tsx",
+  "src/components/dashboard/SetupProgress.tsx",
+  "src/components/dashboard/DashboardSidebarContent.tsx",
 ];
 
 function addBindingName(name, bindings) {
@@ -61,7 +61,7 @@ function collectJsxRoots(sourceFile) {
   function visit(node) {
     if (ts.isJsxOpeningElement(node) || ts.isJsxSelfClosingElement(node)) {
       const text = node.tagName.getText(sourceFile);
-      const root = text.split('.')[0];
+      const root = text.split(".")[0];
       if (/^[A-Z]/.test(root)) roots.add(root);
     }
     ts.forEachChild(node, visit);
@@ -74,13 +74,13 @@ function collectJsxRoots(sourceFile) {
 const failures = [];
 
 for (const file of files) {
-  const source = fs.readFileSync(file, 'utf8');
+  const source = fs.readFileSync(file, "utf8");
   const sourceFile = ts.createSourceFile(
     file,
     source,
     ts.ScriptTarget.Latest,
     true,
-    ts.ScriptKind.TSX
+    ts.ScriptKind.TSX,
   );
 
   const bindings = collectBindings(sourceFile);
@@ -89,16 +89,16 @@ for (const file of files) {
   for (const identifier of jsxRoots) {
     if (!bindings.has(identifier)) {
       failures.push(
-        `${file}: JSX component ${identifier} is used but no import/local declaration was found`
+        `${file}: JSX component ${identifier} is used but no import/local declaration was found`,
       );
     }
   }
 }
 
 if (failures.length) {
-  console.error('Web runtime symbol check failed:');
+  console.error("Web runtime symbol check failed:");
   for (const failure of failures) console.error(` - ${failure}`);
   process.exit(1);
 }
 
-console.log('Web runtime symbol check OK');
+console.log("Web runtime symbol check OK");

@@ -1,7 +1,8 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
-import { useGuild } from '@/contexts/GuildContext';
-import { toast } from 'sonner';
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { useGuild } from "@/contexts/GuildContext";
+import { toast } from "sonner";
+import type { Untyped } from "@/types/untyped";
 
 export interface VerificationSettings {
   id: string;
@@ -29,13 +30,13 @@ export function useVerificationSettings() {
   const queryClient = useQueryClient();
 
   const settingsQuery = useQuery({
-    queryKey: ['verification-settings', selectedGuild?.id],
+    queryKey: ["verification-settings", selectedGuild?.id],
     queryFn: async () => {
       if (!selectedGuild?.id) return null;
       const { data, error } = await supabase
-        .from('verification_settings')
-        .select('*')
-        .eq('guild_id', selectedGuild.id)
+        .from("verification_settings")
+        .select("*")
+        .eq("guild_id", selectedGuild.id)
         .maybeSingle();
       if (error) throw error;
       return data as unknown as VerificationSettings | null;
@@ -44,14 +45,14 @@ export function useVerificationSettings() {
   });
 
   const logsQuery = useQuery({
-    queryKey: ['verification-logs', selectedGuild?.id],
+    queryKey: ["verification-logs", selectedGuild?.id],
     queryFn: async () => {
       if (!selectedGuild?.id) return [];
       const { data, error } = await supabase
-        .from('verification_logs')
-        .select('*')
-        .eq('guild_id', selectedGuild.id)
-        .order('created_at', { ascending: false })
+        .from("verification_logs")
+        .select("*")
+        .eq("guild_id", selectedGuild.id)
+        .order("created_at", { ascending: false })
         .limit(50);
       if (error) throw error;
       return (data || []) as unknown as VerificationLog[];
@@ -61,29 +62,29 @@ export function useVerificationSettings() {
 
   const updateSettings = useMutation({
     mutationFn: async (settings: Partial<VerificationSettings>) => {
-      if (!selectedGuild?.id) throw new Error('No guild');
+      if (!selectedGuild?.id) throw new Error("No guild");
       const { data: existing } = await supabase
-        .from('verification_settings')
-        .select('id')
-        .eq('guild_id', selectedGuild.id)
+        .from("verification_settings")
+        .select("id")
+        .eq("guild_id", selectedGuild.id)
         .maybeSingle();
 
       if (existing) {
         const { error } = await supabase
-          .from('verification_settings')
-          .update(settings as any)
-          .eq('guild_id', selectedGuild.id);
+          .from("verification_settings")
+          .update(settings as Untyped)
+          .eq("guild_id", selectedGuild.id);
         if (error) throw error;
       } else {
         const { error } = await supabase
-          .from('verification_settings')
-          .insert({ guild_id: selectedGuild.id, ...settings } as any);
+          .from("verification_settings")
+          .insert({ guild_id: selectedGuild.id, ...settings } as Untyped);
         if (error) throw error;
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['verification-settings'] });
-      toast.success('Verification-indstillinger gemt!');
+      queryClient.invalidateQueries({ queryKey: ["verification-settings"] });
+      toast.success("Verification-indstillinger gemt!");
     },
     onError: (e: Error) => toast.error(e.message),
   });

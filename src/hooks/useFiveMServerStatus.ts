@@ -1,7 +1,7 @@
-import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useGuild } from '@/contexts/GuildContext';
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { useGuild } from "@/contexts/GuildContext";
 
 export interface FiveMServerStatus {
   id: string;
@@ -29,15 +29,15 @@ export function useFiveMServerStatus() {
   const queryClient = useQueryClient();
 
   const query = useQuery({
-    queryKey: ['fivem-server-status', selectedGuild?.id],
+    queryKey: ["fivem-server-status", selectedGuild?.id],
     enabled: !!selectedGuild?.id,
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('fivem_server_status')
-        .select('*')
-        .eq('guild_id', selectedGuild!.id)
+        .from("fivem_server_status")
+        .select("*")
+        .eq("guild_id", selectedGuild!.id)
         .maybeSingle();
-      
+
       if (error) throw error;
       return data as FiveMServerStatus | null;
     },
@@ -51,16 +51,18 @@ export function useFiveMServerStatus() {
     const channel = supabase
       .channel(`fivem-server-status-realtime_${crypto.randomUUID()}`)
       .on(
-        'postgres_changes',
+        "postgres_changes",
         {
-          event: '*',
-          schema: 'public',
-          table: 'fivem_server_status',
+          event: "*",
+          schema: "public",
+          table: "fivem_server_status",
           filter: `guild_id=eq.${selectedGuild.id}`,
         },
         () => {
-          queryClient.invalidateQueries({ queryKey: ['fivem-server-status', selectedGuild.id] });
-        }
+          queryClient.invalidateQueries({
+            queryKey: ["fivem-server-status", selectedGuild.id],
+          });
+        },
       )
       .subscribe();
 
@@ -70,9 +72,11 @@ export function useFiveMServerStatus() {
   }, [selectedGuild?.id, queryClient]);
 
   // Compute if server is actually online (heartbeat within last 2 minutes)
-  const isActuallyOnline = query.data?.is_online && 
-    query.data?.last_heartbeat && 
-    (new Date().getTime() - new Date(query.data.last_heartbeat).getTime()) < 120000;
+  const isActuallyOnline =
+    query.data?.is_online &&
+    query.data?.last_heartbeat &&
+    new Date().getTime() - new Date(query.data.last_heartbeat).getTime() <
+      120000;
 
   return {
     ...query,

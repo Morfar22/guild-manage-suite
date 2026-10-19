@@ -1,13 +1,13 @@
 /**
  * Prefix Command Handler
- * 
+ *
  * Parses prefix-based commands (e.g., !ban @user reason) and creates
  * a fake interaction object so existing slash command handlers can be reused.
- * 
+ *
  * Each guild can configure its own prefix (default: !)
  */
 
-const { createClient } = require('@supabase/supabase-js');
+const { createClient } = require("@supabase/supabase-js");
 
 let supabase;
 function getSupabase() {
@@ -15,7 +15,9 @@ function getSupabase() {
   const url = process.env.SUPABASE_URL;
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!url || !key) {
-    throw new Error('[PrefixHandler] SUPABASE_URL og SUPABASE_SERVICE_ROLE_KEY er påkrævet');
+    throw new Error(
+      "[PrefixHandler] SUPABASE_URL og SUPABASE_SERVICE_ROLE_KEY er påkrævet",
+    );
   }
   supabase = createClient(url, key);
   return supabase;
@@ -30,100 +32,86 @@ const CACHE_TTL = 60000;
 const COMMAND_ARGS = {
   // Moderation
   ban: [
-    { name: 'user', type: 'user', required: true },
-    { name: 'reason', type: 'string_rest', required: false },
+    { name: "user", type: "user", required: true },
+    { name: "reason", type: "string_rest", required: false },
   ],
   unban: [
-    { name: 'user_id', type: 'string', required: true },
-    { name: 'reason', type: 'string_rest', required: false },
+    { name: "user_id", type: "string", required: true },
+    { name: "reason", type: "string_rest", required: false },
   ],
   kick: [
-    { name: 'user', type: 'user', required: true },
-    { name: 'reason', type: 'string_rest', required: false },
+    { name: "user", type: "user", required: true },
+    { name: "reason", type: "string_rest", required: false },
   ],
   mute: [
-    { name: 'user', type: 'user', required: true },
-    { name: 'duration', type: 'integer', required: false },
-    { name: 'reason', type: 'string_rest', required: false },
+    { name: "user", type: "user", required: true },
+    { name: "duration", type: "integer", required: false },
+    { name: "reason", type: "string_rest", required: false },
   ],
-  unmute: [
-    { name: 'user', type: 'user', required: true },
-  ],
+  unmute: [{ name: "user", type: "user", required: true }],
   warn: [
-    { name: 'user', type: 'user', required: true },
-    { name: 'reason', type: 'string_rest', required: true },
+    { name: "user", type: "user", required: true },
+    { name: "reason", type: "string_rest", required: true },
   ],
-  warnings: [
-    { name: 'user', type: 'user', required: true },
-  ],
+  warnings: [{ name: "user", type: "user", required: true }],
   clear: [
-    { name: 'amount', type: 'integer', required: true },
-    { name: 'user', type: 'user', required: false },
+    { name: "amount", type: "integer", required: true },
+    { name: "user", type: "user", required: false },
   ],
-  slowmode: [
-    { name: 'seconds', type: 'integer', required: true },
-  ],
-  lock: [
-    { name: 'channel', type: 'channel', required: false },
-  ],
-  unlock: [
-    { name: 'channel', type: 'channel', required: false },
-  ],
+  slowmode: [{ name: "seconds", type: "integer", required: true }],
+  lock: [{ name: "channel", type: "channel", required: false }],
+  unlock: [{ name: "channel", type: "channel", required: false }],
   softban: [
-    { name: 'user', type: 'user', required: true },
-    { name: 'reason', type: 'string_rest', required: false },
+    { name: "user", type: "user", required: true },
+    { name: "reason", type: "string_rest", required: false },
   ],
-  clearwarns: [
-    { name: 'user', type: 'user', required: true },
-  ],
+  clearwarns: [{ name: "user", type: "user", required: true }],
   timeout: [
-    { name: 'user', type: 'user', required: true },
-    { name: 'duration', type: 'integer', required: false },
-    { name: 'reason', type: 'string_rest', required: false },
+    { name: "user", type: "user", required: true },
+    { name: "duration", type: "integer", required: false },
+    { name: "reason", type: "string_rest", required: false },
   ],
-  untimeout: [
-    { name: 'user', type: 'user', required: true },
-  ],
+  untimeout: [{ name: "user", type: "user", required: true }],
   nuke: [],
   purge: [
-    { name: 'amount', type: 'integer', required: true },
-    { name: 'filter', type: 'string', required: false },
-    { name: 'user', type: 'user', required: false },
+    { name: "amount", type: "integer", required: true },
+    { name: "filter", type: "string", required: false },
+    { name: "user", type: "user", required: false },
   ],
   massban: [
-    { name: 'users', type: 'string', required: true },
-    { name: 'reason', type: 'string_rest', required: false },
+    { name: "users", type: "string", required: true },
+    { name: "reason", type: "string_rest", required: false },
   ],
-  case: [{ name: 'case_id', type: 'string', required: true }],
-  history: [{ name: 'user', type: 'user', required: true }],
+  case: [{ name: "case_id", type: "string", required: true }],
+  history: [{ name: "user", type: "user", required: true }],
   reason: [
-    { name: 'case_id', type: 'string', required: true },
-    { name: 'reason', type: 'string_rest', required: true },
+    { name: "case_id", type: "string", required: true },
+    { name: "reason", type: "string_rest", required: true },
   ],
   note: [
-    { name: 'user', type: 'user', required: true },
-    { name: 'note', type: 'string_rest', required: true },
+    { name: "user", type: "user", required: true },
+    { name: "note", type: "string_rest", required: true },
   ],
   tempban: [
-    { name: 'user', type: 'user', required: true },
-    { name: 'duration', type: 'integer', required: true },
-    { name: 'reason', type: 'string_rest', required: false },
+    { name: "user", type: "user", required: true },
+    { name: "duration", type: "integer", required: true },
+    { name: "reason", type: "string_rest", required: false },
   ],
   role: [
-    { name: 'user', type: 'user', required: true },
-    { name: 'role', type: 'role', required: true },
-    { name: 'action', type: 'string', required: true },
-    { name: 'reason', type: 'string_rest', required: false },
+    { name: "user", type: "user", required: true },
+    { name: "role", type: "role", required: true },
+    { name: "action", type: "string", required: true },
+    { name: "reason", type: "string_rest", required: false },
   ],
   quarantine: [
-    { name: 'user', type: 'user', required: true },
-    { name: 'role', type: 'role', required: true },
-    { name: 'duration', type: 'integer', required: false },
-    { name: 'reason', type: 'string_rest', required: false },
+    { name: "user", type: "user", required: true },
+    { name: "role", type: "role", required: true },
+    { name: "duration", type: "integer", required: false },
+    { name: "reason", type: "string_rest", required: false },
   ],
 
   // Music
-  play: [{ name: 'query', type: 'string_rest', required: true }],
+  play: [{ name: "query", type: "string_rest", required: true }],
   skip: [],
   stop: [],
   pause: [],
@@ -131,260 +119,255 @@ const COMMAND_ARGS = {
   queue: [],
   nowplaying: [],
   shuffle: [],
-  volume: [{ name: 'level', type: 'integer', required: true }],
-  loop: [{ name: 'mode', type: 'string', required: true }],
-  remove: [{ name: 'position', type: 'integer', required: true }],
+  volume: [{ name: "level", type: "integer", required: true }],
+  loop: [{ name: "mode", type: "string", required: true }],
+  remove: [{ name: "position", type: "integer", required: true }],
   move: [
-    { name: 'from', type: 'integer', required: true },
-    { name: 'to', type: 'integer', required: true },
+    { name: "from", type: "integer", required: true },
+    { name: "to", type: "integer", required: true },
   ],
-  jump: [{ name: 'position', type: 'integer', required: true }],
+  jump: [{ name: "position", type: "integer", required: true }],
 
   // Leveling
-  rank: [{ name: 'user', type: 'user', required: false }],
+  rank: [{ name: "user", type: "user", required: false }],
   leaderboard: [],
 
   // Utility
-  help: [{ name: 'category', type: 'string', required: false }],
+  help: [{ name: "category", type: "string", required: false }],
   ping: [],
   serverinfo: [],
-  userinfo: [{ name: 'user', type: 'user', required: false }],
-  avatar: [{ name: 'user', type: 'user', required: false }],
+  userinfo: [{ name: "user", type: "user", required: false }],
+  avatar: [{ name: "user", type: "user", required: false }],
   poll: [
-    { name: 'question', type: 'string', required: true },
-    { name: 'options', type: 'string_rest', required: true },
+    { name: "question", type: "string", required: true },
+    { name: "options", type: "string_rest", required: true },
   ],
   remind: [
-    { name: 'time', type: 'string', required: true },
-    { name: 'message', type: 'string_rest', required: true },
+    { name: "time", type: "string", required: true },
+    { name: "message", type: "string_rest", required: true },
   ],
 
   // Fun
-  '8ball': [{ name: 'question', type: 'string_rest', required: true }],
+  "8ball": [{ name: "question", type: "string_rest", required: true }],
   coinflip: [],
-  dice: [{ name: 'sides', type: 'integer', required: false }],
-  rps: [{ name: 'choice', type: 'string', required: true }],
+  dice: [{ name: "sides", type: "integer", required: false }],
+  rps: [{ name: "choice", type: "string", required: true }],
   joke: [],
   meme: [],
   ship: [
-    { name: 'user1', type: 'user', required: true },
-    { name: 'user2', type: 'user', required: true },
+    { name: "user1", type: "user", required: true },
+    { name: "user2", type: "user", required: true },
   ],
-  rate: [{ name: 'thing', type: 'string_rest', required: true }],
+  rate: [{ name: "thing", type: "string_rest", required: true }],
 
   // Economy
   daily: [],
   work: [],
-  balance: [{ name: 'user', type: 'user', required: false }],
+  balance: [{ name: "user", type: "user", required: false }],
   pay: [
-    { name: 'user', type: 'user', required: true },
-    { name: 'amount', type: 'integer', required: true },
+    { name: "user", type: "user", required: true },
+    { name: "amount", type: "integer", required: true },
   ],
-  deposit: [{ name: 'amount', type: 'integer', required: true }],
-  withdraw: [{ name: 'amount', type: 'integer', required: true }],
-  rob: [{ name: 'user', type: 'user', required: true }],
+  deposit: [{ name: "amount", type: "integer", required: true }],
+  withdraw: [{ name: "amount", type: "integer", required: true }],
+  rob: [{ name: "user", type: "user", required: true }],
   richest: [],
 
   // AFK
-  afk: [{ name: 'message', type: 'string_rest', required: false }],
+  afk: [{ name: "message", type: "string_rest", required: false }],
 
   // Suggestion
-  suggest: [{ name: 'suggestion', type: 'string_rest', required: true }],
+  suggest: [{ name: "suggestion", type: "string_rest", required: true }],
 
   // Appeals
-  'appeal-submit': [
-    { name: 'message', type: 'string_rest', required: true },
-  ],
-  'appeal-status': [
-    { name: 'appeal_id', type: 'string', required: false },
-  ],
+  "appeal-submit": [{ name: "message", type: "string_rest", required: true }],
+  "appeal-status": [{ name: "appeal_id", type: "string", required: false }],
 
   // Tebex
-  'tebex-verify': [{ name: 'transaction_id', type: 'string', required: true }],
+  "tebex-verify": [{ name: "transaction_id", type: "string", required: true }],
 
   // Global Ban
-  'globalban-report': [
-    { name: 'user', type: 'user', required: true },
-    { name: 'reason', type: 'string_rest', required: true },
+  "globalban-report": [
+    { name: "user", type: "user", required: true },
+    { name: "reason", type: "string_rest", required: true },
   ],
 
   // Tickets
   ticket: [],
-  'ticket-close': [{ name: 'delete', type: 'boolean', required: false }],
-  'ticket-claim': [],
-  'ticket-add': [{ name: 'user', type: 'user', required: true }],
-  'ticket-remove': [{ name: 'user', type: 'user', required: true }],
-  'ticket-remind': [],
+  "ticket-close": [{ name: "delete", type: "boolean", required: false }],
+  "ticket-claim": [],
+  "ticket-add": [{ name: "user", type: "user", required: true }],
+  "ticket-remove": [{ name: "user", type: "user", required: true }],
+  "ticket-remind": [],
 
   // Utility (nye)
   uptime: [],
   stats: [],
   invite: [],
-  calculate: [{ name: 'expression', type: 'string_rest', required: true }],
-  channelinfo: [{ name: 'channel', type: 'channel', required: false }],
+  calculate: [{ name: "expression", type: "string_rest", required: true }],
+  channelinfo: [{ name: "channel", type: "channel", required: false }],
   roles: [],
   members: [],
   emojis: [],
-  banner: [{ name: 'user', type: 'user', required: false }],
+  banner: [{ name: "user", type: "user", required: false }],
   snipe: [],
   editsnipe: [],
-  quote: [{ name: 'message_id', type: 'string', required: true }],
-  vote: [{ name: 'question', type: 'string_rest', required: true }],
-  announce: [{ name: 'message', type: 'string_rest', required: true }],
+  quote: [{ name: "message_id", type: "string", required: true }],
+  vote: [{ name: "question", type: "string_rest", required: true }],
+  announce: [{ name: "message", type: "string_rest", required: true }],
 
   // Fun (nye)
-  ascii: [{ name: 'text', type: 'string_rest', required: true }],
-  mock: [{ name: 'text', type: 'string_rest', required: true }],
-  reverse: [{ name: 'text', type: 'string_rest', required: true }],
+  ascii: [{ name: "text", type: "string_rest", required: true }],
+  mock: [{ name: "text", type: "string_rest", required: true }],
+  reverse: [{ name: "text", type: "string_rest", required: true }],
   fact: [],
 
   // Economy (nye)
   shop: [],
-  buy: [{ name: 'item', type: 'string_rest', required: true }],
+  buy: [{ name: "item", type: "string_rest", required: true }],
   inventory: [],
   crime: [],
   weekly: [],
-  slots: [{ name: 'bet', type: 'integer', required: true }],
-  gamble: [{ name: 'bet', type: 'integer', required: true }],
+  slots: [{ name: "bet", type: "integer", required: true }],
+  gamble: [{ name: "bet", type: "integer", required: true }],
   roulette: [
-    { name: 'bet', type: 'integer', required: true },
-    { name: 'choice', type: 'string', required: true },
+    { name: "bet", type: "integer", required: true },
+    { name: "choice", type: "string", required: true },
   ],
 
   // Leveling admin (nye)
   addxp: [
-    { name: 'user', type: 'user', required: true },
-    { name: 'amount', type: 'integer', required: true },
+    { name: "user", type: "user", required: true },
+    { name: "amount", type: "integer", required: true },
   ],
   removexp: [
-    { name: 'user', type: 'user', required: true },
-    { name: 'amount', type: 'integer', required: true },
+    { name: "user", type: "user", required: true },
+    { name: "amount", type: "integer", required: true },
   ],
   setxp: [
-    { name: 'user', type: 'user', required: true },
-    { name: 'amount', type: 'integer', required: true },
+    { name: "user", type: "user", required: true },
+    { name: "amount", type: "integer", required: true },
   ],
   setlevel: [
-    { name: 'user', type: 'user', required: true },
-    { name: 'level', type: 'integer', required: true },
+    { name: "user", type: "user", required: true },
+    { name: "level", type: "integer", required: true },
   ],
-  resetxp: [{ name: 'user', type: 'user', required: true }],
+  resetxp: [{ name: "user", type: "user", required: true }],
   resetleaderboard: [],
 
   // Aliaser
-  close: [{ name: 'delete', type: 'boolean', required: false }],
+  close: [{ name: "delete", type: "boolean", required: false }],
   claim: [],
   unclaim: [],
-  add: [{ name: 'user', type: 'user', required: true }],
-  rename: [{ name: 'name', type: 'string_rest', required: true }],
+  add: [{ name: "user", type: "user", required: true }],
+  rename: [{ name: "name", type: "string_rest", required: true }],
   glist: [],
 
   // Admin / config
   setup: [],
   config: [
-    { name: 'setting', type: 'string', required: false },
-    { name: 'value', type: 'string_rest', required: false },
+    { name: "setting", type: "string", required: false },
+    { name: "value", type: "string_rest", required: false },
   ],
-  prefix: [{ name: 'prefix', type: 'string', required: false }],
-  setlog: [{ name: 'channel', type: 'channel', required: false }],
+  prefix: [{ name: "prefix", type: "string", required: false }],
+  setlog: [{ name: "channel", type: "channel", required: false }],
   autorole: [
-    { name: 'action', type: 'string', required: false },
-    { name: 'role', type: 'role', required: false },
+    { name: "action", type: "string", required: false },
+    { name: "role", type: "role", required: false },
   ],
   setwelcome: [
-    { name: 'channel', type: 'channel', required: false },
-    { name: 'message', type: 'string_rest', required: false },
+    { name: "channel", type: "channel", required: false },
+    { name: "message", type: "string_rest", required: false },
   ],
   setleave: [
-    { name: 'channel', type: 'channel', required: false },
-    { name: 'message', type: 'string_rest', required: false },
+    { name: "channel", type: "channel", required: false },
+    { name: "message", type: "string_rest", required: false },
   ],
   automod: [
-    { name: 'action', type: 'string', required: false },
-    { name: 'rule', type: 'string', required: false },
+    { name: "action", type: "string", required: false },
+    { name: "rule", type: "string", required: false },
   ],
   backup: [
-    { name: 'action', type: 'string', required: false },
-    { name: 'description', type: 'string_rest', required: false },
+    { name: "action", type: "string", required: false },
+    { name: "description", type: "string_rest", required: false },
   ],
   restore: [
-    { name: 'backup_id', type: 'string', required: false },
-    { name: 'mode', type: 'string', required: false },
+    { name: "backup_id", type: "string", required: false },
+    { name: "mode", type: "string", required: false },
   ],
 
   // Reaction roles
   reactionrole: [
-    { name: 'channel', type: 'channel', required: false },
-    { name: 'title', type: 'string', required: false },
-    { name: 'description', type: 'string_rest', required: false },
+    { name: "channel", type: "channel", required: false },
+    { name: "title", type: "string", required: false },
+    { name: "description", type: "string_rest", required: false },
   ],
-  'rr-add': [
-    { name: 'message_id', type: 'string', required: true },
-    { name: 'role', type: 'role', required: true },
-    { name: 'emoji', type: 'string', required: false },
-    { name: 'description', type: 'string_rest', required: false },
+  "rr-add": [
+    { name: "message_id", type: "string", required: true },
+    { name: "role", type: "role", required: true },
+    { name: "emoji", type: "string", required: false },
+    { name: "description", type: "string_rest", required: false },
   ],
-  'rr-remove': [
-    { name: 'message_id', type: 'string', required: true },
-    { name: 'role', type: 'role', required: true },
+  "rr-remove": [
+    { name: "message_id", type: "string", required: true },
+    { name: "role", type: "role", required: true },
   ],
-  'rr-list': [],
-  'rr-clear': [{ name: 'message_id', type: 'string', required: false }],
+  "rr-list": [],
+  "rr-clear": [{ name: "message_id", type: "string", required: false }],
 
   // Leveling admin
   levelroles: [],
   setlevelrole: [
-    { name: 'level', type: 'integer', required: true },
-    { name: 'role', type: 'role', required: false },
-    { name: 'remove', type: 'boolean', required: false },
+    { name: "level", type: "integer", required: true },
+    { name: "role", type: "role", required: false },
+    { name: "remove", type: "boolean", required: false },
   ],
   xpmultiplier: [
-    { name: 'action', type: 'string', required: false },
-    { name: 'role', type: 'role', required: false },
-    { name: 'channel', type: 'channel', required: false },
-    { name: 'multiplier', type: 'number', required: false },
+    { name: "action", type: "string", required: false },
+    { name: "role", type: "role", required: false },
+    { name: "channel", type: "channel", required: false },
+    { name: "multiplier", type: "number", required: false },
   ],
 
   // Music extras
-  seek: [{ name: 'position', type: 'string', required: true }],
-  lyrics: [{ name: 'song', type: 'string_rest', required: false }],
+  seek: [{ name: "position", type: "string", required: true }],
+  lyrics: [{ name: "song", type: "string_rest", required: false }],
   autoplay: [],
-  filter: [{ name: 'filter', type: 'string', required: true }],
+  filter: [{ name: "filter", type: "string", required: true }],
 
   // Utility
   support: [],
   translate: [
-    { name: 'to', type: 'string', required: false },
-    { name: 'text', type: 'string_rest', required: true },
+    { name: "to", type: "string", required: false },
+    { name: "text", type: "string_rest", required: true },
   ],
-  weather: [{ name: 'location', type: 'string_rest', required: true }],
+  weather: [{ name: "location", type: "string_rest", required: true }],
 
   // Tickets / giveaway
-  transcript: [{ name: 'ticket_id', type: 'string', required: false }],
-  gpause: [{ name: 'message_id', type: 'string', required: true }],
+  transcript: [{ name: "ticket_id", type: "string", required: false }],
+  gpause: [{ name: "message_id", type: "string", required: true }],
 
   // Economy / games
-  sell: [{ name: 'item', type: 'string_rest', required: true }],
-  blackjack: [{ name: 'bet', type: 'integer', required: false }],
+  sell: [{ name: "item", type: "string_rest", required: true }],
+  blackjack: [{ name: "bet", type: "integer", required: false }],
   trivia: [],
-  ttt: [{ name: 'opponent', type: 'user', required: true }],
-  connect4: [{ name: 'opponent', type: 'user', required: true }],
+  ttt: [{ name: "opponent", type: "user", required: true }],
+  connect4: [{ name: "opponent", type: "user", required: true }],
   hangman: [],
   wordle: [],
 };
-
 
 // Subcommand-based commands need special handling
 const SUBCOMMAND_ARGS = {
   giveaway: {
     start: [
-      { name: 'prize', type: 'string', required: true },
-      { name: 'duration', type: 'string', required: true },
-      { name: 'winners', type: 'integer', required: false },
-      { name: 'description', type: 'string_rest', required: false },
+      { name: "prize", type: "string", required: true },
+      { name: "duration", type: "string", required: true },
+      { name: "winners", type: "integer", required: false },
+      { name: "description", type: "string_rest", required: false },
     ],
-    end: [{ name: 'message_id', type: 'string', required: true }],
-    reroll: [{ name: 'message_id', type: 'string', required: true }],
+    end: [{ name: "message_id", type: "string", required: true }],
+    reroll: [{ name: "message_id", type: "string", required: true }],
   },
 };
 
@@ -410,7 +393,10 @@ function resolveRole(guild, arg) {
   const mentionMatch = arg.match(/^<@&(\d+)>$/);
   if (mentionMatch) return guild.roles.cache.get(mentionMatch[1]) || null;
   if (/^\d{17,20}$/.test(arg)) return guild.roles.cache.get(arg) || null;
-  return guild.roles.cache.find(r => r.name.toLowerCase() === arg.toLowerCase()) || null;
+  return (
+    guild.roles.cache.find((r) => r.name.toLowerCase() === arg.toLowerCase()) ||
+    null
+  );
 }
 
 function resolveChannel(guild, arg) {
@@ -440,13 +426,19 @@ function parseArgs(client, message, args, argDefs) {
     if (argIndex >= args.length) continue;
 
     switch (def.type) {
-      case 'user': {
+      case "user": {
         const user = resolveUser(client, message.guild, args[argIndex]);
         if (def.required && !user) {
           // Try fetching
-          const id = args[argIndex]?.replace(/[<@!>]/g, '');
+          const id = args[argIndex]?.replace(/[<@!>]/g, "");
           if (id && /^\d{17,20}$/.test(id)) {
-            parsed[def.name] = { id, tag: id, displayAvatarURL: () => null, username: id, send: async () => {} };
+            parsed[def.name] = {
+              id,
+              tag: id,
+              displayAvatarURL: () => null,
+              username: id,
+              send: async () => {},
+            };
           } else {
             return { error: `Kunne ikke finde bruger: \`${args[argIndex]}\`` };
           }
@@ -456,7 +448,7 @@ function parseArgs(client, message, args, argDefs) {
         argIndex++;
         break;
       }
-      case 'channel': {
+      case "channel": {
         const channel = resolveChannel(message.guild, args[argIndex]);
         if (channel) {
           parsed[def.name] = channel;
@@ -464,10 +456,11 @@ function parseArgs(client, message, args, argDefs) {
         }
         break;
       }
-      case 'integer': {
+      case "integer": {
         const num = parseInt(args[argIndex], 10);
         if (isNaN(num)) {
-          if (def.required) return { error: `\`${def.name}\` skal være et tal` };
+          if (def.required)
+            return { error: `\`${def.name}\` skal være et tal` };
           // Skip - might be part of next argument
         } else {
           parsed[def.name] = num;
@@ -475,18 +468,18 @@ function parseArgs(client, message, args, argDefs) {
         }
         break;
       }
-      case 'boolean': {
+      case "boolean": {
         const val = args[argIndex]?.toLowerCase();
-        if (['true', 'yes', 'ja', '1'].includes(val)) {
+        if (["true", "yes", "ja", "1"].includes(val)) {
           parsed[def.name] = true;
           argIndex++;
-        } else if (['false', 'no', 'nej', '0'].includes(val)) {
+        } else if (["false", "no", "nej", "0"].includes(val)) {
           parsed[def.name] = false;
           argIndex++;
         }
         break;
       }
-      case 'role': {
+      case "role": {
         const role = resolveRole(message.guild, args[argIndex]);
         if (role) {
           parsed[def.name] = role;
@@ -496,24 +489,25 @@ function parseArgs(client, message, args, argDefs) {
         }
         break;
       }
-      case 'number': {
-        const num = parseFloat(String(args[argIndex]).replace(',', '.'));
+      case "number": {
+        const num = parseFloat(String(args[argIndex]).replace(",", "."));
         if (isNaN(num)) {
-          if (def.required) return { error: `\`${def.name}\` skal være et tal` };
+          if (def.required)
+            return { error: `\`${def.name}\` skal være et tal` };
         } else {
           parsed[def.name] = num;
           argIndex++;
         }
         break;
       }
-      case 'string': {
+      case "string": {
         parsed[def.name] = args[argIndex];
         argIndex++;
         break;
       }
-      case 'string_rest': {
+      case "string_rest": {
         // Consume all remaining args as a single string
-        parsed[def.name] = args.slice(argIndex).join(' ');
+        parsed[def.name] = args.slice(argIndex).join(" ");
         argIndex = args.length;
         break;
       }
@@ -526,7 +520,13 @@ function parseArgs(client, message, args, argDefs) {
 /**
  * Create a fake interaction-like object from a message
  */
-function createFakeInteraction(client, message, commandName, parsedArgs, subcommand = null) {
+function createFakeInteraction(
+  client,
+  message,
+  commandName,
+  parsedArgs,
+  subcommand = null,
+) {
   let _deferred = false;
   let _replied = false;
 
@@ -539,18 +539,26 @@ function createFakeInteraction(client, message, commandName, parsedArgs, subcomm
     commandName,
     createdTimestamp: message.createdTimestamp,
 
-    get deferred() { return _deferred; },
-    get replied() { return _replied; },
+    get deferred() {
+      return _deferred;
+    },
+    get replied() {
+      return _replied;
+    },
 
     // Options mock
     options: {
       getUser: (name) => parsedArgs[name] || null,
-      getString: (name) => parsedArgs[name] != null ? String(parsedArgs[name]) : null,
-      getInteger: (name) => parsedArgs[name] != null ? parseInt(parsedArgs[name], 10) : null,
-      getBoolean: (name) => parsedArgs[name] != null ? Boolean(parsedArgs[name]) : null,
+      getString: (name) =>
+        parsedArgs[name] != null ? String(parsedArgs[name]) : null,
+      getInteger: (name) =>
+        parsedArgs[name] != null ? parseInt(parsedArgs[name], 10) : null,
+      getBoolean: (name) =>
+        parsedArgs[name] != null ? Boolean(parsedArgs[name]) : null,
       getChannel: (name) => parsedArgs[name] || null,
       getRole: (name) => parsedArgs[name] || null,
-      getNumber: (name) => parsedArgs[name] != null ? parseFloat(parsedArgs[name]) : null,
+      getNumber: (name) =>
+        parsedArgs[name] != null ? parseFloat(parsedArgs[name]) : null,
       getMentionable: (name) => parsedArgs[name] || null,
       getSubcommand: () => subcommand,
       getSubcommandGroup: () => null,
@@ -560,7 +568,7 @@ function createFakeInteraction(client, message, commandName, parsedArgs, subcomm
     // Reply methods
     reply: async (content) => {
       _replied = true;
-      if (typeof content === 'string') {
+      if (typeof content === "string") {
         return message.reply(content);
       }
       // Handle flags: 64 (ephemeral) — in prefix mode just reply normally
@@ -571,7 +579,9 @@ function createFakeInteraction(client, message, commandName, parsedArgs, subcomm
     deferReply: async (opts) => {
       _deferred = true;
       // Send typing indicator as a "defer"
-      try { await message.channel.sendTyping(); } catch {}
+      try {
+        await message.channel.sendTyping();
+      } catch {}
       // Store a reference so editReply works
       interaction._deferMessage = null;
       return {};
@@ -579,15 +589,19 @@ function createFakeInteraction(client, message, commandName, parsedArgs, subcomm
 
     editReply: async (content) => {
       _replied = true;
-      if (typeof content === 'string') {
+      if (typeof content === "string") {
         if (interaction._lastReply) {
-          try { return await interaction._lastReply.edit(content); } catch {}
+          try {
+            return await interaction._lastReply.edit(content);
+          } catch {}
         }
         return message.reply(content);
       }
       const { flags, ...rest } = content || {};
       if (interaction._lastReply) {
-        try { return await interaction._lastReply.edit(rest); } catch {}
+        try {
+          return await interaction._lastReply.edit(rest);
+        } catch {}
       }
       const sent = await message.reply(rest);
       interaction._lastReply = sent;
@@ -595,7 +609,7 @@ function createFakeInteraction(client, message, commandName, parsedArgs, subcomm
     },
 
     followUp: async (content) => {
-      if (typeof content === 'string') return message.channel.send(content);
+      if (typeof content === "string") return message.channel.send(content);
       const { flags, ...rest } = content;
       return message.channel.send(rest);
     },
@@ -616,10 +630,12 @@ function createFakeInteraction(client, message, commandName, parsedArgs, subcomm
   interaction.deferReply = async (opts) => {
     _deferred = true;
     try {
-      const placeholder = await message.reply('⏳ Behandler...');
+      const placeholder = await message.reply("⏳ Behandler...");
       interaction._lastReply = placeholder;
     } catch {
-      try { await message.channel.sendTyping(); } catch {}
+      try {
+        await message.channel.sendTyping();
+      } catch {}
     }
     return {};
   };
@@ -636,27 +652,27 @@ async function getGuildPrefix(guildDiscordId) {
 
   try {
     const { data: guild } = await getSupabase()
-      .from('guilds')
-      .select('id')
-      .eq('guild_id', guildDiscordId)
+      .from("guilds")
+      .select("id")
+      .eq("guild_id", guildDiscordId)
       .single();
 
     if (!guild) {
-      prefixCache.set(guildDiscordId, { prefix: '!', time: Date.now() });
-      return '!';
+      prefixCache.set(guildDiscordId, { prefix: "!", time: Date.now() });
+      return "!";
     }
 
     const { data: settings } = await getSupabase()
-      .from('guild_bot_settings')
-      .select('command_prefix')
-      .eq('guild_id', guild.id)
+      .from("guild_bot_settings")
+      .select("command_prefix")
+      .eq("guild_id", guild.id)
       .maybeSingle();
 
-    const prefix = settings?.command_prefix || '!';
+    const prefix = settings?.command_prefix || "!";
     prefixCache.set(guildDiscordId, { prefix, time: Date.now() });
     return prefix;
   } catch {
-    return '!';
+    return "!";
   }
 }
 
@@ -667,8 +683,17 @@ async function getGuildPrefix(guildDiscordId) {
  * @param {Function} checkCommandAccess - Full command access/cooldown check
  * @param {Function} shouldHandleGuild - Guild filter function
  */
-function setupPrefixHandler(client, slashHandlers, { shouldHandleGuild, isCommandEnabled, checkCommandAccess, queueCommandExecution }) {
-  client.on('messageCreate', async (message) => {
+function setupPrefixHandler(
+  client,
+  slashHandlers,
+  {
+    shouldHandleGuild,
+    isCommandEnabled,
+    checkCommandAccess,
+    queueCommandExecution,
+  },
+) {
+  client.on("messageCreate", async (message) => {
     // Ignore bots and DMs
     if (message.author.bot || !message.guild) return;
     if (shouldHandleGuild && !shouldHandleGuild(message.guild.id)) return;
@@ -692,7 +717,7 @@ function setupPrefixHandler(client, slashHandlers, { shouldHandleGuild, isComman
     if (SUBCOMMAND_ARGS[commandName]) {
       subcommand = args[0]?.toLowerCase();
       if (!subcommand || !SUBCOMMAND_ARGS[commandName][subcommand]) {
-        const subs = Object.keys(SUBCOMMAND_ARGS[commandName]).join(', ');
+        const subs = Object.keys(SUBCOMMAND_ARGS[commandName]).join(", ");
         await message.reply(`❌ Brug: \`${prefix}${commandName} <${subs}>\``);
         return;
       }
@@ -710,9 +735,11 @@ function setupPrefixHandler(client, slashHandlers, { shouldHandleGuild, isComman
         guildId: message.guild.id,
         commandName: accessCommandName,
         userId: message.author.id,
-        roleIds: message.member?.roles?.cache ? [...message.member.roles.cache.keys()] : [],
+        roleIds: message.member?.roles?.cache
+          ? [...message.member.roles.cache.keys()]
+          : [],
         channelId: message.channel.id,
-        isAdmin: Boolean(message.member?.permissions?.has?.('Administrator')),
+        isAdmin: Boolean(message.member?.permissions?.has?.("Administrator")),
       });
 
       if (!access.allowed) {
@@ -722,19 +749,24 @@ function setupPrefixHandler(client, slashHandlers, { shouldHandleGuild, isComman
             commandName,
             userId: message.author.id,
             channelId: message.channel.id,
-            source: 'prefix',
-            status: 'blocked',
+            source: "prefix",
+            status: "blocked",
             latencyMs: Date.now() - commandStartedAt,
-            blockedReason: access.reason || 'access',
+            blockedReason: access.reason || "access",
           });
         }
-        await message.reply(access.message || '🚫 Du har ikke adgang til denne command.');
+        await message.reply(
+          access.message || "🚫 Du har ikke adgang til denne command.",
+        );
         return;
       }
     } else if (isCommandEnabled) {
-      const enabled = await isCommandEnabled(message.guild.id, accessCommandName);
+      const enabled = await isCommandEnabled(
+        message.guild.id,
+        accessCommandName,
+      );
       if (!enabled) {
-        await message.reply('❌ Denne kommando er deaktiveret.');
+        await message.reply("❌ Denne kommando er deaktiveret.");
         return;
       }
     }
@@ -758,7 +790,11 @@ function setupPrefixHandler(client, slashHandlers, { shouldHandleGuild, isComman
 
     // For user args, try to fetch if not in cache
     for (const def of argDefs) {
-      if (def.type === 'user' && parsed[def.name]?.id && !parsed[def.name]?.tag) {
+      if (
+        def.type === "user" &&
+        parsed[def.name]?.id &&
+        !parsed[def.name]?.tag
+      ) {
         try {
           const fetchedUser = await client.users.fetch(parsed[def.name].id);
           if (fetchedUser) parsed[def.name] = fetchedUser;
@@ -767,7 +803,13 @@ function setupPrefixHandler(client, slashHandlers, { shouldHandleGuild, isComman
     }
 
     // Create fake interaction
-    const interaction = createFakeInteraction(client, message, commandName, parsed, subcommand);
+    const interaction = createFakeInteraction(
+      client,
+      message,
+      commandName,
+      parsed,
+      subcommand,
+    );
 
     // Execute handler
     try {
@@ -778,8 +820,8 @@ function setupPrefixHandler(client, slashHandlers, { shouldHandleGuild, isComman
           commandName: accessCommandName,
           userId: message.author.id,
           channelId: message.channel.id,
-          source: 'prefix',
-          status: 'success',
+          source: "prefix",
+          status: "success",
           latencyMs: Date.now() - commandStartedAt,
         });
       }
@@ -790,8 +832,8 @@ function setupPrefixHandler(client, slashHandlers, { shouldHandleGuild, isComman
           commandName: accessCommandName,
           userId: message.author.id,
           channelId: message.channel.id,
-          source: 'prefix',
-          status: 'error',
+          source: "prefix",
+          status: "error",
           latencyMs: Date.now() - commandStartedAt,
           error,
         });
@@ -799,12 +841,16 @@ function setupPrefixHandler(client, slashHandlers, { shouldHandleGuild, isComman
 
       console.error(`[Prefix] Fejl i command ${commandName}:`, error);
       try {
-        await message.reply('❌ Der skete en fejl under udførelse af kommandoen.');
+        await message.reply(
+          "❌ Der skete en fejl under udførelse af kommandoen.",
+        );
       } catch {}
     }
   });
 
-  console.log(`[Prefix] Handler initialized — ${Object.keys(COMMAND_ARGS).length} commands available as prefix`);
+  console.log(
+    `[Prefix] Handler initialized — ${Object.keys(COMMAND_ARGS).length} commands available as prefix`,
+  );
 }
 
 module.exports = { setupPrefixHandler, getGuildPrefix };

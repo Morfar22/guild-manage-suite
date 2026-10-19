@@ -1,7 +1,8 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
-import { useGuild } from '@/contexts/GuildContext';
-import { useToast } from '@/hooks/use-toast';
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { useGuild } from "@/contexts/GuildContext";
+import { useToast } from "@/hooks/use-toast";
+import type { Untyped } from "@/types/untyped";
 
 export interface StarboardSettings {
   id: string;
@@ -24,7 +25,7 @@ export interface StarboardEntry {
   author_id: string;
   author_name: string | null;
   content: string | null;
-  attachments: any[];
+  attachments: Untyped[];
   starboard_message_id: string | null;
   star_count: number;
   created_at: string;
@@ -36,14 +37,14 @@ export function useStarboardSettings() {
   const queryClient = useQueryClient();
 
   const settingsQuery = useQuery({
-    queryKey: ['starboard-settings', selectedGuild?.id],
+    queryKey: ["starboard-settings", selectedGuild?.id],
     queryFn: async () => {
       if (!selectedGuild?.id) return null;
 
       const { data, error } = await supabase
-        .from('starboard_settings')
-        .select('*')
-        .eq('guild_id', selectedGuild.id)
+        .from("starboard_settings")
+        .select("*")
+        .eq("guild_id", selectedGuild.id)
         .maybeSingle();
 
       if (error) throw error;
@@ -53,15 +54,15 @@ export function useStarboardSettings() {
   });
 
   const entriesQuery = useQuery({
-    queryKey: ['starboard-entries', selectedGuild?.id],
+    queryKey: ["starboard-entries", selectedGuild?.id],
     queryFn: async () => {
       if (!selectedGuild?.id) return [];
 
       const { data, error } = await supabase
-        .from('starboard_entries')
-        .select('*')
-        .eq('guild_id', selectedGuild.id)
-        .order('star_count', { ascending: false })
+        .from("starboard_entries")
+        .select("*")
+        .eq("guild_id", selectedGuild.id)
+        .order("star_count", { ascending: false })
         .limit(50);
 
       if (error) throw error;
@@ -72,33 +73,39 @@ export function useStarboardSettings() {
 
   const updateSettings = useMutation({
     mutationFn: async (settings: Partial<StarboardSettings>) => {
-      if (!selectedGuild?.id) throw new Error('No guild selected');
+      if (!selectedGuild?.id) throw new Error("No guild selected");
 
       const { data: existing } = await supabase
-        .from('starboard_settings')
-        .select('id')
-        .eq('guild_id', selectedGuild.id)
+        .from("starboard_settings")
+        .select("id")
+        .eq("guild_id", selectedGuild.id)
         .maybeSingle();
 
       if (existing) {
         const { error } = await supabase
-          .from('starboard_settings')
+          .from("starboard_settings")
           .update(settings)
-          .eq('guild_id', selectedGuild.id);
+          .eq("guild_id", selectedGuild.id);
         if (error) throw error;
       } else {
         const { error } = await supabase
-          .from('starboard_settings')
+          .from("starboard_settings")
           .insert({ guild_id: selectedGuild.id, ...settings });
         if (error) throw error;
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['starboard-settings', selectedGuild?.id] });
-      toast({ title: 'Starboard-indstillinger gemt' });
+      queryClient.invalidateQueries({
+        queryKey: ["starboard-settings", selectedGuild?.id],
+      });
+      toast({ title: "Starboard-indstillinger gemt" });
     },
     onError: (error) => {
-      toast({ title: 'Fejl', description: error.message, variant: 'destructive' });
+      toast({
+        title: "Fejl",
+        description: error.message,
+        variant: "destructive",
+      });
     },
   });
 

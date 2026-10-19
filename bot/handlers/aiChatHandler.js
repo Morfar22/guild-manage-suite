@@ -7,7 +7,8 @@ const BOT_SECRET_KEY = process.env.BOT_SECRET_KEY;
 // Deduplication: prevent double replies if multiple bot instances receive same message event
 const recentEvents = new Map();
 const DEDUP_WINDOW_MS = 5000; // 5 second window
-const APP_API_BASE = process.env.APP_API_BASE || 'https://bot.nethost-solutions.dk';
+const APP_API_BASE =
+  process.env.APP_API_BASE || "https://bot.nethost-solutions.dk";
 
 function isDuplicateEvent(key) {
   const now = Date.now();
@@ -35,20 +36,20 @@ function isDuplicateEvent(key) {
 async function callAIChatHandler(action, data) {
   try {
     const response = await fetch(`${APP_API_BASE}/api/public/ai-chat`, {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
-        'x-bot-secret': BOT_SECRET_KEY
+        "Content-Type": "application/json",
+        "x-bot-secret": BOT_SECRET_KEY,
       },
-      body: JSON.stringify({ action, ...data })
+      body: JSON.stringify({ action, ...data }),
     });
-    
+
     if (!response.ok) {
       const error = await response.json().catch(() => ({}));
       console.error(`AI Chat API error (${action}):`, error);
       return null;
     }
-    
+
     return await response.json();
   } catch (error) {
     console.error(`AI Chat handler error (${action}):`, error);
@@ -57,20 +58,26 @@ async function callAIChatHandler(action, data) {
 }
 
 async function checkAIChatEnabled(discordGuildId, channelId) {
-  const result = await callAIChatHandler('check_enabled', {
+  const result = await callAIChatHandler("check_enabled", {
     discordGuildId,
-    channelId
+    channelId,
   });
   return result?.enabled || false;
 }
 
-async function getAIResponse(discordGuildId, channelId, userId, userName, message) {
-  const result = await callAIChatHandler('chat', {
+async function getAIResponse(
+  discordGuildId,
+  channelId,
+  userId,
+  userName,
+  message,
+) {
+  const result = await callAIChatHandler("chat", {
     discordGuildId,
     channelId,
     userId,
     userName,
-    message
+    message,
   });
   return result?.response || null;
 }
@@ -83,13 +90,13 @@ async function getAIResponse(discordGuildId, channelId, userId, userName, messag
 function setupAIChatHandler(client, config = {}) {
   const shouldHandleGuild = config.shouldHandleGuild || (() => true);
 
-  client.on('messageCreate', async (message) => {
+  client.on("messageCreate", async (message) => {
     // Ignore bot messages
     if (message.author.bot) return;
 
     // Check if this bot instance should handle this guild
     if (!message.guild || !shouldHandleGuild(message.guild.id)) return;
-    
+
     // Check if the bot was mentioned
     if (!message.mentions.has(client.user)) return;
 
@@ -97,38 +104,41 @@ function setupAIChatHandler(client, config = {}) {
     // message.id is unique per Discord message.
     const dedupKey = `ai:${message.guild.id}:${message.channel.id}:${message.id}`;
     if (isDuplicateEvent(dedupKey)) return;
-    
+
     // Remove the mention from the message
     const cleanMessage = message.content
-      .replace(new RegExp(`<@!?${client.user.id}>`, 'g'), '')
+      .replace(new RegExp(`<@!?${client.user.id}>`, "g"), "")
       .trim();
-    
+
     // Ignore if only a mention with no content
     if (!cleanMessage) {
-      return message.reply('Hej! Hvad kan jeg hjælpe dig med?');
+      return message.reply("Hej! Hvad kan jeg hjælpe dig med?");
     }
-    
+
     try {
       // Check if AI chat is enabled for this guild/channel
-      const isEnabled = await checkAIChatEnabled(message.guild.id, message.channel.id);
-      
+      const isEnabled = await checkAIChatEnabled(
+        message.guild.id,
+        message.channel.id,
+      );
+
       if (!isEnabled) {
         // AI chat not enabled, ignore silently
         return;
       }
-      
+
       // Show typing indicator
       await message.channel.sendTyping();
-      
+
       // Get AI response
       const response = await getAIResponse(
         message.guild.id,
         message.channel.id,
         message.author.id,
         message.author.username,
-        cleanMessage
+        cleanMessage,
       );
-      
+
       if (response) {
         // Split response if too long (Discord has 2000 char limit)
         if (response.length > 2000) {
@@ -140,15 +150,19 @@ function setupAIChatHandler(client, config = {}) {
           await message.reply(response);
         }
       } else {
-        await message.reply('Beklager, jeg kunne ikke generere et svar lige nu. Prøv igen senere.');
+        await message.reply(
+          "Beklager, jeg kunne ikke generere et svar lige nu. Prøv igen senere.",
+        );
       }
     } catch (error) {
-      console.error('AI chat error:', error);
-      await message.reply('Der opstod en fejl. Prøv igen senere.').catch(() => {});
+      console.error("AI chat error:", error);
+      await message
+        .reply("Der opstod en fejl. Prøv igen senere.")
+        .catch(() => {});
     }
   });
-  
-  console.log('AI Chat handler initialized');
+
+  console.log("AI Chat handler initialized");
 }
 
 module.exports = { setupAIChatHandler };

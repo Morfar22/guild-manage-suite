@@ -1,7 +1,7 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
-import { useGuild } from '@/contexts/GuildContext';
-import { toast } from 'sonner';
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { useGuild } from "@/contexts/GuildContext";
+import { toast } from "sonner";
 
 export interface BackupSchedule {
   id: string;
@@ -20,13 +20,13 @@ export function useBackupSchedule() {
   const queryClient = useQueryClient();
 
   const query = useQuery({
-    queryKey: ['backup-schedule', selectedGuild?.id],
+    queryKey: ["backup-schedule", selectedGuild?.id],
     queryFn: async () => {
       if (!selectedGuild?.id) return null;
       const { data, error } = await supabase
-        .from('backup_schedules')
-        .select('*')
-        .eq('guild_id', selectedGuild.id)
+        .from("backup_schedules")
+        .select("*")
+        .eq("guild_id", selectedGuild.id)
         .maybeSingle();
       if (error) throw error;
       return data as unknown as BackupSchedule | null;
@@ -35,20 +35,27 @@ export function useBackupSchedule() {
   });
 
   const upsertSchedule = useMutation({
-    mutationFn: async (data: { enabled: boolean; frequency: string; max_backups: number }) => {
-      if (!selectedGuild?.id) throw new Error('No guild');
-      const { error } = await supabase
-        .from('backup_schedules')
-        .upsert({
+    mutationFn: async (data: {
+      enabled: boolean;
+      frequency: string;
+      max_backups: number;
+    }) => {
+      if (!selectedGuild?.id) throw new Error("No guild");
+      const { error } = await supabase.from("backup_schedules").upsert(
+        {
           guild_id: selectedGuild.id,
           ...data,
-          next_backup_at: data.enabled ? calculateNextBackup(data.frequency) : null,
-        }, { onConflict: 'guild_id' });
+          next_backup_at: data.enabled
+            ? calculateNextBackup(data.frequency)
+            : null,
+        },
+        { onConflict: "guild_id" },
+      );
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['backup-schedule'] });
-      toast.success('Backup-plan opdateret!');
+      queryClient.invalidateQueries({ queryKey: ["backup-schedule"] });
+      toast.success("Backup-plan opdateret!");
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -63,13 +70,13 @@ export function useBackupSchedule() {
 function calculateNextBackup(frequency: string): string {
   const now = new Date();
   switch (frequency) {
-    case 'daily':
+    case "daily":
       now.setDate(now.getDate() + 1);
       break;
-    case 'weekly':
+    case "weekly":
       now.setDate(now.getDate() + 7);
       break;
-    case 'monthly':
+    case "monthly":
       now.setMonth(now.getMonth() + 1);
       break;
   }

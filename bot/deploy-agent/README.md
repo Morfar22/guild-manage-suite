@@ -12,7 +12,7 @@ scp -r bot/deploy-agent user@vps:/home/deploy-agent
 # 2. Konfigurer
 cd /home/deploy-agent
 cp .env.example .env
-nano .env   # udfyld DEPLOY_AGENT_TOKEN (samme som i Lovable!) + REPO_DIR
+nano .env   # udfyld DEPLOY_AGENT_TOKEN (min. 32 tegn, fx `openssl rand -hex 32`; samme som i Lovable!) + REPO_DIR
 
 # 3. Install + start
 npm install

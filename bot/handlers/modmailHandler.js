@@ -1,13 +1,21 @@
 // Modmail Handler - DM-based staff communication
 // Now uses Edge Function for database operations (no service role key needed on bot)
-const { EmbedBuilder, ChannelType, PermissionFlagsBits, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
+const {
+  EmbedBuilder,
+  ChannelType,
+  PermissionFlagsBits,
+  ActionRowBuilder,
+  ButtonBuilder,
+  ButtonStyle,
+} = require("discord.js");
 
 // Global set to track DMs being processed (prevents duplicate processing across bot instances)
 const processingDMs = new Set();
 // Global set to track recently processed DMs with content hash
 const recentlyProcessedDMs = new Map();
 const DM_DEDUP_WINDOW_MS = 5000; // 5 second window for deduplication
-const APP_API_BASE = process.env.APP_API_BASE || 'https://bot.nethost-solutions.dk';
+const APP_API_BASE =
+  process.env.APP_API_BASE || "https://bot.nethost-solutions.dk";
 
 class ModmailHandler {
   constructor(client, supabaseUrl, botSecretKey, config = {}) {
@@ -15,53 +23,70 @@ class ModmailHandler {
     this.supabaseUrl = supabaseUrl;
     this.botSecretKey = botSecretKey;
     this.shouldHandleGuild = config.shouldHandleGuild || (() => true);
-    
+
     // Validate required dependencies
     if (!this.supabaseUrl) {
-      console.error('[Modmail] WARNING: Supabase URL is not provided! Modmail will not function correctly.');
+      console.error(
+        "[Modmail] WARNING: Supabase URL is not provided! Modmail will not function correctly.",
+      );
     }
     if (!this.botSecretKey) {
-      console.error('[Modmail] WARNING: Bot secret key is not provided! Modmail will not function correctly.');
+      console.error(
+        "[Modmail] WARNING: Bot secret key is not provided! Modmail will not function correctly.",
+      );
     }
     if (!this.client) {
-      console.error('[Modmail] WARNING: Discord client is not provided! Modmail will not function correctly.');
+      console.error(
+        "[Modmail] WARNING: Discord client is not provided! Modmail will not function correctly.",
+      );
     }
   }
 
   // Helper method to call the edge function
   async callEdgeFunction(action, params = {}) {
     try {
-      const response = await fetch(`${APP_API_BASE}/api/public/modmail-handler`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-bot-secret': this.botSecretKey,
+      const response = await fetch(
+        `${APP_API_BASE}/api/public/modmail-handler`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-bot-secret": this.botSecretKey,
+          },
+          body: JSON.stringify({ action, ...params }),
         },
-        body: JSON.stringify({ action, ...params }),
-      });
+      );
 
       const data = await response.json();
-      
+
       if (!response.ok) {
-        console.error(`[Modmail] Edge function error for ${action}:`, data.error);
+        console.error(
+          `[Modmail] Edge function error for ${action}:`,
+          data.error,
+        );
         return { error: data.error, status: response.status };
       }
 
       return data;
     } catch (error) {
-      console.error(`[Modmail] Failed to call edge function for ${action}:`, error);
+      console.error(
+        `[Modmail] Failed to call edge function for ${action}:`,
+        error,
+      );
       return { error: error.message };
     }
   }
 
   async init() {
-    this.client.on('messageCreate', (message) => this.handleMessage(message));
-    this.client.on('interactionCreate', (interaction) => {
+    this.client.on("messageCreate", (message) => this.handleMessage(message));
+    this.client.on("interactionCreate", (interaction) => {
       if (!interaction.guild || this.shouldHandleGuild(interaction.guild.id)) {
         this.handleInteraction(interaction);
       }
     });
-    console.log('[Modmail] Handler initialized (using edge function for DB operations)');
+    console.log(
+      "[Modmail] Handler initialized (using edge function for DB operations)",
+    );
   }
 
   // Create a unique hash for a DM message to detect duplicates
@@ -72,20 +97,22 @@ class ModmailHandler {
   // Check if a DM is already being processed or was recently processed
   isDuplicateDM(message) {
     const hash = this.createDMHash(message);
-    
+
     // Check if currently being processed
     if (processingDMs.has(hash)) {
       console.log(`[Modmail] Skipping duplicate DM (in progress): ${hash}`);
       return true;
     }
-    
+
     // Check if recently processed
     const processedTime = recentlyProcessedDMs.get(hash);
-    if (processedTime && (Date.now() - processedTime) < DM_DEDUP_WINDOW_MS) {
-      console.log(`[Modmail] Skipping duplicate DM (recently processed): ${hash}`);
+    if (processedTime && Date.now() - processedTime < DM_DEDUP_WINDOW_MS) {
+      console.log(
+        `[Modmail] Skipping duplicate DM (recently processed): ${hash}`,
+      );
       return true;
     }
-    
+
     return false;
   }
 
@@ -100,7 +127,7 @@ class ModmailHandler {
     const hash = this.createDMHash(message);
     processingDMs.delete(hash);
     recentlyProcessedDMs.set(hash, Date.now());
-    
+
     // Cleanup old entries
     const now = Date.now();
     for (const [key, time] of recentlyProcessedDMs) {
@@ -123,21 +150,26 @@ class ModmailHandler {
     if (!message.guild) {
       // Skip DM if user has an active application session — applicationHandler owns it
       try {
-        const { hasActiveApplicationSession } = require('./applicationHandler');
-        if (typeof hasActiveApplicationSession === 'function' && hasActiveApplicationSession(message.author.id)) {
+        const { hasActiveApplicationSession } = require("./applicationHandler");
+        if (
+          typeof hasActiveApplicationSession === "function" &&
+          hasActiveApplicationSession(message.author.id)
+        ) {
           return;
         }
-      } catch (_) { /* applicationHandler not loaded */ }
+      } catch (_) {
+        /* applicationHandler not loaded */
+      }
 
       // This is a DM
       await this.handleDM(message);
     } else {
       // IMPORTANT: Prevent duplicate handling across multi-bot instances
       if (!this.shouldHandleGuild(message.guild.id)) return;
-      
+
       // Check for duplicate staff reply processing
       if (this.isDuplicateStaffReply(message)) return;
-      
+
       // Check if this is a modmail channel
       await this.handleStaffReply(message);
     }
@@ -146,18 +178,22 @@ class ModmailHandler {
   // Check if staff reply is already being processed
   isDuplicateStaffReply(message) {
     const hash = `staff:${message.id}`;
-    
+
     if (processingDMs.has(hash)) {
-      console.log(`[Modmail] Skipping duplicate staff reply (in progress): ${hash}`);
+      console.log(
+        `[Modmail] Skipping duplicate staff reply (in progress): ${hash}`,
+      );
       return true;
     }
-    
+
     const processedTime = recentlyProcessedDMs.get(hash);
-    if (processedTime && (Date.now() - processedTime) < DM_DEDUP_WINDOW_MS) {
-      console.log(`[Modmail] Skipping duplicate staff reply (recently processed): ${hash}`);
+    if (processedTime && Date.now() - processedTime < DM_DEDUP_WINDOW_MS) {
+      console.log(
+        `[Modmail] Skipping duplicate staff reply (recently processed): ${hash}`,
+      );
       return true;
     }
-    
+
     // Mark as processing
     processingDMs.add(hash);
     return false;
@@ -181,15 +217,19 @@ class ModmailHandler {
     if (this.isDuplicateDM(message)) {
       return;
     }
-    
+
     // Mark as being processed
     this.markDMProcessing(message);
-    
+
     try {
       // Validate edge function is available
       if (!this.supabaseUrl || !this.botSecretKey) {
-        console.error('[Modmail] Edge function not configured - cannot process modmail');
-        await message.reply('Modmail er ikke korrekt konfigureret. Kontakt en administrator.');
+        console.error(
+          "[Modmail] Edge function not configured - cannot process modmail",
+        );
+        await message.reply(
+          "Modmail er ikke korrekt konfigureret. Kontakt en administrator.",
+        );
         this.markDMFailed(message);
         return;
       }
@@ -202,7 +242,9 @@ class ModmailHandler {
       for (const [, guild] of this.client.guilds.cache) {
         // Check if this guild should be handled by this bot instance
         if (!this.shouldHandleGuild(guild.id)) {
-          console.log(`[Modmail] Skipping guild ${guild.name} - not handled by this bot instance`);
+          console.log(
+            `[Modmail] Skipping guild ${guild.name} - not handled by this bot instance`,
+          );
           continue;
         }
 
@@ -211,50 +253,71 @@ class ModmailHandler {
         try {
           const member = await guild.members.fetch(message.author.id);
           isMember = !!member;
-          console.log(`[Modmail] User ${message.author.username} is member of ${guild.name}: ${isMember}`);
+          console.log(
+            `[Modmail] User ${message.author.username} is member of ${guild.name}: ${isMember}`,
+          );
         } catch (e) {
           // User is not in this guild
-          console.log(`[Modmail] User ${message.author.username} is NOT member of ${guild.name}`);
+          console.log(
+            `[Modmail] User ${message.author.username} is NOT member of ${guild.name}`,
+          );
           isMember = false;
         }
 
         if (!isMember) continue;
 
         // Use edge function to get guild from DB
-        const guildResult = await this.callEdgeFunction('getGuildByDiscordId', {
-          discordGuildId: guild.id
+        const guildResult = await this.callEdgeFunction("getGuildByDiscordId", {
+          discordGuildId: guild.id,
         });
 
         if (guildResult.error) {
-          console.log(`[Modmail] Error fetching guild from DB for ${guild.name}:`, guildResult.error);
+          console.log(
+            `[Modmail] Error fetching guild from DB for ${guild.name}:`,
+            guildResult.error,
+          );
           continue;
         }
 
         if (!guildResult.data) {
-          console.log(`[Modmail] Guild ${guild.name} (${guild.id}) not found in database`);
+          console.log(
+            `[Modmail] Guild ${guild.name} (${guild.id}) not found in database`,
+          );
           continue;
         }
 
         const dbGuild = guildResult.data;
-        console.log(`[Modmail] Found guild in DB: ${guild.name}, DB ID: ${dbGuild.id}`);
+        console.log(
+          `[Modmail] Found guild in DB: ${guild.name}, DB ID: ${dbGuild.id}`,
+        );
 
         // Use edge function to get modmail settings
-        const settingsResult = await this.callEdgeFunction('getModmailSettings', {
-          guildDbId: dbGuild.id
-        });
+        const settingsResult = await this.callEdgeFunction(
+          "getModmailSettings",
+          {
+            guildDbId: dbGuild.id,
+          },
+        );
 
         if (settingsResult.error) {
-          console.log(`[Modmail] Error fetching modmail settings for ${guild.name}:`, settingsResult.error);
+          console.log(
+            `[Modmail] Error fetching modmail settings for ${guild.name}:`,
+            settingsResult.error,
+          );
           continue;
         }
 
         if (settingsResult.data) {
           targetGuild = { discord: guild, db: dbGuild };
           settings = settingsResult.data;
-          console.log(`[Modmail] Found enabled modmail for guild ${guild.name} (${guild.id})`);
+          console.log(
+            `[Modmail] Found enabled modmail for guild ${guild.name} (${guild.id})`,
+          );
           break;
         } else {
-          console.log(`[Modmail] No enabled modmail settings found for ${guild.name}`);
+          console.log(
+            `[Modmail] No enabled modmail settings found for ${guild.name}`,
+          );
         }
       }
 
@@ -266,9 +329,9 @@ class ModmailHandler {
       }
 
       // Check for existing open thread
-      const threadResult = await this.callEdgeFunction('getOpenThread', {
+      const threadResult = await this.callEdgeFunction("getOpenThread", {
         guildDbId: targetGuild.db.id,
-        userId: message.author.id
+        userId: message.author.id,
       });
 
       let thread = threadResult.data;
@@ -276,9 +339,11 @@ class ModmailHandler {
       if (!thread) {
         // Create new thread
         thread = await this.createThread(message.author, targetGuild, settings);
-        
+
         if (!thread) {
-          await message.reply('Kunne ikke oprette modmail-tråd. Prøv igen senere.');
+          await message.reply(
+            "Kunne ikke oprette modmail-tråd. Prøv igen senere.",
+          );
           this.markDMFailed(message);
           return;
         }
@@ -290,33 +355,47 @@ class ModmailHandler {
       }
 
       // Forward message to staff channel
-      console.log(`[Modmail] Forwarding message to staff channel. Thread ID: ${thread.id}, Channel ID: ${thread.channel_id}`);
+      console.log(
+        `[Modmail] Forwarding message to staff channel. Thread ID: ${thread.id}, Channel ID: ${thread.channel_id}`,
+      );
       await this.forwardToStaff(message, thread, targetGuild.discord);
 
       // Save message to database
-      console.log(`[Modmail] Saving message to database for thread ${thread.id}`);
-      await this.saveMessage(thread.id, 'user', message.author.id, message.author.username, message.content, message.attachments);
+      console.log(
+        `[Modmail] Saving message to database for thread ${thread.id}`,
+      );
+      await this.saveMessage(
+        thread.id,
+        "user",
+        message.author.id,
+        message.author.username,
+        message.content,
+        message.attachments,
+      );
 
       // React to confirm receipt
-      await message.react('✅');
-      console.log(`[Modmail] Successfully processed DM from ${message.author.username}`);
-      
+      await message.react("✅");
+      console.log(
+        `[Modmail] Successfully processed DM from ${message.author.username}`,
+      );
+
       // Mark as successfully processed
       this.markDMProcessed(message);
-
     } catch (error) {
-      console.error('[Modmail] Error handling DM:', error);
-      console.error('[Modmail] Error stack:', error.stack);
+      console.error("[Modmail] Error handling DM:", error);
+      console.error("[Modmail] Error stack:", error.stack);
       this.markDMFailed(message);
-      await message.reply('Der opstod en fejl. Prøv igen senere.').catch(() => {});
+      await message
+        .reply("Der opstod en fejl. Prøv igen senere.")
+        .catch(() => {});
     }
   }
 
   async handleStaffReply(message) {
     try {
       // Check if this channel is a modmail thread
-      const threadResult = await this.callEdgeFunction('getThreadByChannelId', {
-        channelId: message.channel.id
+      const threadResult = await this.callEdgeFunction("getThreadByChannelId", {
+        channelId: message.channel.id,
       });
 
       if (threadResult.error || !threadResult.data) {
@@ -327,9 +406,12 @@ class ModmailHandler {
       const thread = threadResult.data;
 
       // Get settings
-      const settingsResult = await this.callEdgeFunction('getSettingsByGuildId', {
-        guildDbId: thread.guild_id
-      });
+      const settingsResult = await this.callEdgeFunction(
+        "getSettingsByGuildId",
+        {
+          guildDbId: thread.guild_id,
+        },
+      );
 
       if (settingsResult.error || !settingsResult.data) {
         this.markStaffReplyFailed(message.id);
@@ -341,20 +423,28 @@ class ModmailHandler {
 
       if (success) {
         // Save message to database
-        await this.saveMessage(thread.id, 'staff', message.author.id, message.author.username, message.content, message.attachments);
-        
+        await this.saveMessage(
+          thread.id,
+          "staff",
+          message.author.id,
+          message.author.username,
+          message.content,
+          message.attachments,
+        );
+
         // React to confirm
-        await message.react('📨');
-        
+        await message.react("📨");
+
         // Mark as successfully processed
         this.markStaffReplyProcessed(message.id);
       } else {
         this.markStaffReplyFailed(message.id);
-        await message.reply('❌ Kunne ikke sende besked til brugeren. De har muligvis lukket deres DMs.');
+        await message.reply(
+          "❌ Kunne ikke sende besked til brugeren. De har muligvis lukket deres DMs.",
+        );
       }
-
     } catch (error) {
-      console.error('[Modmail] Error handling staff reply:', error);
+      console.error("[Modmail] Error handling staff reply:", error);
       this.markStaffReplyFailed(message.id);
     }
   }
@@ -366,17 +456,22 @@ class ModmailHandler {
       // Get or create category
       let category = null;
       if (settings.category_id) {
-        category = await guild.channels.fetch(settings.category_id).catch(() => null);
+        category = await guild.channels
+          .fetch(settings.category_id)
+          .catch(() => null);
       }
 
       // Create channel for this thread
-      const channelName = `modmail-${user.username}`.toLowerCase().replace(/[^a-z0-9-]/g, '-').substring(0, 100);
-      
+      const channelName = `modmail-${user.username}`
+        .toLowerCase()
+        .replace(/[^a-z0-9-]/g, "-")
+        .substring(0, 100);
+
       const channelOptions = {
         name: channelName,
         type: ChannelType.GuildText,
         topic: `Modmail fra ${user.username} (${user.id})`,
-        reason: 'Modmail thread'
+        reason: "Modmail thread",
       };
 
       if (category) {
@@ -387,14 +482,17 @@ class ModmailHandler {
       const permissionOverwrites = [
         {
           id: guild.id, // @everyone
-          deny: [PermissionFlagsBits.ViewChannel]
-        }
+          deny: [PermissionFlagsBits.ViewChannel],
+        },
       ];
 
       if (settings.staff_role_id) {
         permissionOverwrites.push({
           id: settings.staff_role_id,
-          allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages]
+          allow: [
+            PermissionFlagsBits.ViewChannel,
+            PermissionFlagsBits.SendMessages,
+          ],
         });
       }
 
@@ -404,50 +502,59 @@ class ModmailHandler {
 
       // Create initial embed
       const embed = new EmbedBuilder()
-        .setColor(0x5865F2)
-        .setTitle('📬 Ny Modmail')
+        .setColor(0x5865f2)
+        .setTitle("📬 Ny Modmail")
         .setThumbnail(user.displayAvatarURL({ dynamic: true }))
         .addFields(
-          { name: 'Bruger', value: `${user.username} (${user.id})`, inline: true },
-          { name: 'Oprettet', value: `<t:${Math.floor(Date.now() / 1000)}:R>`, inline: true }
+          {
+            name: "Bruger",
+            value: `${user.username} (${user.id})`,
+            inline: true,
+          },
+          {
+            name: "Oprettet",
+            value: `<t:${Math.floor(Date.now() / 1000)}:R>`,
+            inline: true,
+          },
         )
-        .setFooter({ text: 'Skriv i denne kanal for at svare brugeren' });
+        .setFooter({ text: "Skriv i denne kanal for at svare brugeren" });
 
-      const row = new ActionRowBuilder()
-        .addComponents(
-          new ButtonBuilder()
-            .setCustomId('modmail_close')
-            .setLabel('Luk Modmail')
-            .setStyle(ButtonStyle.Danger)
-            .setEmoji('🔒'),
-          new ButtonBuilder()
-            .setCustomId('modmail_claim')
-            .setLabel('Claim')
-            .setStyle(ButtonStyle.Primary)
-            .setEmoji('✋')
-        );
+      const row = new ActionRowBuilder().addComponents(
+        new ButtonBuilder()
+          .setCustomId("modmail_close")
+          .setLabel("Luk Modmail")
+          .setStyle(ButtonStyle.Danger)
+          .setEmoji("🔒"),
+        new ButtonBuilder()
+          .setCustomId("modmail_claim")
+          .setLabel("Claim")
+          .setStyle(ButtonStyle.Primary)
+          .setEmoji("✋"),
+      );
 
       await channel.send({ embeds: [embed], components: [row] });
 
       // Save thread to database via edge function
-      const createResult = await this.callEdgeFunction('createThread', {
+      const createResult = await this.callEdgeFunction("createThread", {
         guildDbId: targetGuild.db.id,
         userId: user.id,
         userName: user.username,
         userAvatar: user.displayAvatarURL({ dynamic: true }),
-        channelId: channel.id
+        channelId: channel.id,
       });
 
       if (createResult.error) {
-        console.error('[Modmail] Error creating thread in DB:', createResult.error);
+        console.error(
+          "[Modmail] Error creating thread in DB:",
+          createResult.error,
+        );
         await channel.delete();
         return null;
       }
 
       return createResult.data;
-
     } catch (error) {
-      console.error('[Modmail] Error creating thread:', error);
+      console.error("[Modmail] Error creating thread:", error);
       return null;
     }
   }
@@ -458,22 +565,21 @@ class ModmailHandler {
       if (!channel) return;
 
       const embed = new EmbedBuilder()
-        .setColor(0x57F287)
+        .setColor(0x57f287)
         .setAuthor({
           name: message.author.username,
-          iconURL: message.author.displayAvatarURL({ dynamic: true })
+          iconURL: message.author.displayAvatarURL({ dynamic: true }),
         })
-        .setDescription(message.content || '*Ingen tekst*')
+        .setDescription(message.content || "*Ingen tekst*")
         .setTimestamp()
-        .setFooter({ text: 'Fra bruger' });
+        .setFooter({ text: "Fra bruger" });
 
       // Handle attachments
-      const files = message.attachments.map(a => a.url);
+      const files = message.attachments.map((a) => a.url);
 
       await channel.send({ embeds: [embed], files });
-
     } catch (error) {
-      console.error('[Modmail] Error forwarding to staff:', error);
+      console.error("[Modmail] Error forwarding to staff:", error);
     }
   }
 
@@ -483,68 +589,82 @@ class ModmailHandler {
       if (!user) return false;
 
       const embed = new EmbedBuilder()
-        .setColor(0x5865F2)
+        .setColor(0x5865f2)
         .setAuthor({
           name: `${message.author.username} (Staff)`,
-          iconURL: message.author.displayAvatarURL({ dynamic: true })
+          iconURL: message.author.displayAvatarURL({ dynamic: true }),
         })
-        .setDescription(message.content || '*Ingen tekst*')
+        .setDescription(message.content || "*Ingen tekst*")
         .setTimestamp()
-        .setFooter({ text: message.guild.name, iconURL: message.guild.iconURL({ dynamic: true }) });
+        .setFooter({
+          text: message.guild.name,
+          iconURL: message.guild.iconURL({ dynamic: true }),
+        });
 
       // Handle attachments
-      const files = message.attachments.map(a => a.url);
+      const files = message.attachments.map((a) => a.url);
 
       await user.send({ embeds: [embed], files });
       return true;
-
     } catch (error) {
-      console.error('[Modmail] Error forwarding to user:', error);
+      console.error("[Modmail] Error forwarding to user:", error);
       return false;
     }
   }
 
-  async saveMessage(threadId, authorType, authorId, authorName, content, attachments) {
-    const attachmentData = attachments 
-      ? Array.from(attachments.values()).map(a => ({
+  async saveMessage(
+    threadId,
+    authorType,
+    authorId,
+    authorName,
+    content,
+    attachments,
+  ) {
+    const attachmentData = attachments
+      ? Array.from(attachments.values()).map((a) => ({
           url: a.url,
           name: a.name,
-          contentType: a.contentType
+          contentType: a.contentType,
         }))
       : [];
 
-    await this.callEdgeFunction('saveMessage', {
+    await this.callEdgeFunction("saveMessage", {
       threadId,
       authorType,
       authorId,
       authorName,
-      content: content || '',
-      attachments: attachmentData
+      content: content || "",
+      attachments: attachmentData,
     });
   }
 
   async handleInteraction(interaction) {
     if (!interaction.isButton()) return;
-    
+
     // Only handle modmail buttons
-    if (!['modmail_close', 'modmail_claim'].includes(interaction.customId)) return;
-    
-    console.log(`[Modmail] Button interaction received: ${interaction.customId} from ${interaction.user.username} in channel ${interaction.channel?.id}`);
+    if (!["modmail_close", "modmail_claim"].includes(interaction.customId))
+      return;
+
+    console.log(
+      `[Modmail] Button interaction received: ${interaction.customId} from ${interaction.user.username} in channel ${interaction.channel?.id}`,
+    );
 
     // Dedup check for button interactions
     const interactionHash = `btn:${interaction.id}`;
     if (processingDMs.has(interactionHash)) {
-      console.log(`[Modmail] Skipping duplicate button interaction: ${interactionHash}`);
+      console.log(
+        `[Modmail] Skipping duplicate button interaction: ${interactionHash}`,
+      );
       return;
     }
     processingDMs.add(interactionHash);
-    
+
     // Clean up after 10 seconds
     setTimeout(() => processingDMs.delete(interactionHash), 10000);
 
-    if (interaction.customId === 'modmail_close') {
+    if (interaction.customId === "modmail_close") {
       await this.closeThread(interaction);
-    } else if (interaction.customId === 'modmail_claim') {
+    } else if (interaction.customId === "modmail_claim") {
       await this.claimThread(interaction);
     }
   }
@@ -553,17 +673,21 @@ class ModmailHandler {
     try {
       await interaction.deferReply({ ephemeral: true });
 
-      console.log(`[Modmail] Closing thread for channel ${interaction.channel.id}`);
-      
-      const result = await this.callEdgeFunction('closeThread', {
-        channelId: interaction.channel.id
+      console.log(
+        `[Modmail] Closing thread for channel ${interaction.channel.id}`,
+      );
+
+      const result = await this.callEdgeFunction("closeThread", {
+        channelId: interaction.channel.id,
       });
 
       console.log(`[Modmail] closeThread result:`, JSON.stringify(result));
 
       if (result.error || !result.thread) {
-        console.log(`[Modmail] Close failed: ${result.error || 'no thread'}`);
-        await interaction.editReply({ content: 'Denne modmail er allerede lukket eller kunne ikke findes.' });
+        console.log(`[Modmail] Close failed: ${result.error || "no thread"}`);
+        await interaction.editReply({
+          content: "Denne modmail er allerede lukket eller kunne ikke findes.",
+        });
         return;
       }
 
@@ -575,24 +699,29 @@ class ModmailHandler {
             await user.send(result.closeMessage);
           }
         } catch (e) {
-          console.log(`[Modmail] Could not send close message to user: ${e.message}`);
+          console.log(
+            `[Modmail] Could not send close message to user: ${e.message}`,
+          );
         }
       }
 
       // Delete channel after a short delay
-      await interaction.editReply({ content: '✅ Modmail lukket. Kanalen slettes om 5 sekunder...' });
-      
+      await interaction.editReply({
+        content: "✅ Modmail lukket. Kanalen slettes om 5 sekunder...",
+      });
+
       setTimeout(async () => {
         try {
-          await interaction.channel.delete('Modmail lukket');
+          await interaction.channel.delete("Modmail lukket");
         } catch (e) {
-          console.error('[Modmail] Error deleting channel:', e);
+          console.error("[Modmail] Error deleting channel:", e);
         }
       }, 5000);
-
     } catch (error) {
-      console.error('[Modmail] Error closing thread:', error);
-      await interaction.editReply({ content: '❌ Kunne ikke lukke modmail.' }).catch(() => {});
+      console.error("[Modmail] Error closing thread:", error);
+      await interaction
+        .editReply({ content: "❌ Kunne ikke lukke modmail." })
+        .catch(() => {});
     }
   }
 
@@ -600,33 +729,44 @@ class ModmailHandler {
     try {
       await interaction.deferReply({ ephemeral: true });
 
-      console.log(`[Modmail] Claiming thread for channel ${interaction.channel.id} by ${interaction.user.username}`);
+      console.log(
+        `[Modmail] Claiming thread for channel ${interaction.channel.id} by ${interaction.user.username}`,
+      );
 
-      const result = await this.callEdgeFunction('claimThread', {
+      const result = await this.callEdgeFunction("claimThread", {
         channelId: interaction.channel.id,
         claimedById: interaction.user.id,
-        claimedByName: interaction.user.username
+        claimedByName: interaction.user.username,
       });
 
       console.log(`[Modmail] claimThread result:`, JSON.stringify(result));
 
-      if (result.error === 'already_claimed') {
-        await interaction.editReply({ content: `Denne modmail er allerede claimed af ${result.claimedByName}.` });
+      if (result.error === "already_claimed") {
+        await interaction.editReply({
+          content: `Denne modmail er allerede claimed af ${result.claimedByName}.`,
+        });
         return;
       }
 
       if (result.error) {
         console.log(`[Modmail] Claim failed: ${result.error}`);
-        await interaction.editReply({ content: `Kunne ikke finde modmail-tråden: ${result.error}` });
+        await interaction.editReply({
+          content: `Kunne ikke finde modmail-tråden: ${result.error}`,
+        });
         return;
       }
 
-      await interaction.editReply({ content: `✅ Du har claimed denne modmail.` });
-      await interaction.channel.send(`📌 **${interaction.user.username}** har claimed denne modmail.`);
-
+      await interaction.editReply({
+        content: `✅ Du har claimed denne modmail.`,
+      });
+      await interaction.channel.send(
+        `📌 **${interaction.user.username}** har claimed denne modmail.`,
+      );
     } catch (error) {
-      console.error('[Modmail] Error claiming thread:', error);
-      await interaction.editReply({ content: '❌ Kunne ikke claime modmail.' }).catch(() => {});
+      console.error("[Modmail] Error claiming thread:", error);
+      await interaction
+        .editReply({ content: "❌ Kunne ikke claime modmail." })
+        .catch(() => {});
     }
   }
 }

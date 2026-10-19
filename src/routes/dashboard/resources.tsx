@@ -11,7 +11,10 @@ export const Route = createFileRoute("/dashboard/resources")({
         content:
           "Se diskplads, CPU- og RAM-forbrug samt botstatus for hver Discord-server i realtid.",
       },
-      { property: "og:title", content: "Ressourceoversigt | NetHost Bot Dashboard" },
+      {
+        property: "og:title",
+        content: "Ressourceoversigt | NetHost Bot Dashboard",
+      },
       {
         property: "og:description",
         content:

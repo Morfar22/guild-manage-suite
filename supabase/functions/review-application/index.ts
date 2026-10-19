@@ -51,7 +51,8 @@ Deno.serve(async (req) => {
       { global: { headers: { Authorization: authHeader } } },
     );
 
-    const { data: claimsData, error: claimsError } = await supabaseAuthed.auth.getClaims(token);
+    const { data: claimsData, error: claimsError } =
+      await supabaseAuthed.auth.getClaims(token);
     if (claimsError || !claimsData?.claims?.sub) {
       console.error("getClaims failed", claimsError);
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
@@ -102,12 +103,13 @@ Deno.serve(async (req) => {
     if (!application) throw new Error("Application not found");
 
     // Verify reviewer can manage this guild
-    const { data: reviewerGuild, error: reviewerGuildError } = await supabaseAdmin
-      .from("user_guilds")
-      .select("discord_user_id, has_admin_permission")
-      .eq("guild_id", application.guild_id)
-      .eq("user_id", reviewerUserId)
-      .maybeSingle();
+    const { data: reviewerGuild, error: reviewerGuildError } =
+      await supabaseAdmin
+        .from("user_guilds")
+        .select("discord_user_id, has_admin_permission")
+        .eq("guild_id", application.guild_id)
+        .eq("user_id", reviewerUserId)
+        .maybeSingle();
 
     if (reviewerGuildError) throw reviewerGuildError;
     if (!reviewerGuild?.has_admin_permission) {
@@ -235,10 +237,11 @@ Deno.serve(async (req) => {
       try {
         const statusEmoji = status === "approved" ? "✅" : "❌";
         const statusText = status === "approved" ? "APPROVED" : "DENIED";
-        const roleInfo = status === "approved" && effects.roleGranted && effects.roleId 
-          ? `\n🎭 Role assigned: <@&${effects.roleId}>` 
-          : "";
-        
+        const roleInfo =
+          status === "approved" && effects.roleGranted && effects.roleId
+            ? `\n🎭 Role assigned: <@&${effects.roleId}>`
+            : "";
+
         const embed = {
           title: `${statusEmoji} Application ${statusText}`,
           description: `<@${application.discord_user_id}>'s application has been reviewed.`,
@@ -251,19 +254,29 @@ Deno.serve(async (req) => {
             },
             {
               name: "Reviewed by",
-              value: reviewerDiscordId ? `<@${reviewerDiscordId}>` : reviewerDisplay,
+              value: reviewerDiscordId
+                ? `<@${reviewerDiscordId}>`
+                : reviewerDisplay,
               inline: true,
             },
-            ...(notes ? [{
-              name: "Note",
-              value: notes,
-              inline: false,
-            }] : []),
-            ...(roleInfo ? [{
-              name: "Role",
-              value: effects.roleId ? `<@&${effects.roleId}>` : "None",
-              inline: true,
-            }] : []),
+            ...(notes
+              ? [
+                  {
+                    name: "Note",
+                    value: notes,
+                    inline: false,
+                  },
+                ]
+              : []),
+            ...(roleInfo
+              ? [
+                  {
+                    name: "Role",
+                    value: effects.roleId ? `<@&${effects.roleId}>` : "None",
+                    inline: true,
+                  },
+                ]
+              : []),
           ],
           timestamp: reviewedAt,
         };
@@ -278,7 +291,8 @@ Deno.serve(async (req) => {
       } catch (e) {
         console.error("Failed to send ticket status message", e);
         effects.ticketMessageSent = false;
-        effects.ticketMessageError = e instanceof Error ? e.message : "Unknown error";
+        effects.ticketMessageError =
+          e instanceof Error ? e.message : "Unknown error";
       }
     }
 

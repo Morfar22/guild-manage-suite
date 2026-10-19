@@ -1,9 +1,9 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
-import { useGuild } from '@/contexts/GuildContext';
-import { useToast } from '@/hooks/use-toast';
-import type { Json } from '@/integrations/supabase/types';
-import { invokeFunction } from '@/lib/functions-client';
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { useGuild } from "@/contexts/GuildContext";
+import { useToast } from "@/hooks/use-toast";
+import type { Json } from "@/integrations/supabase/types";
+import { invokeFunction } from "@/lib/functions-client";
 
 export interface PollOption {
   label: string;
@@ -46,15 +46,15 @@ export function usePolls() {
   const queryClient = useQueryClient();
 
   const pollsQuery = useQuery({
-    queryKey: ['polls', selectedGuild?.id],
+    queryKey: ["polls", selectedGuild?.id],
     queryFn: async () => {
       if (!selectedGuild?.id) return [];
 
       const { data, error } = await supabase
-        .from('polls')
-        .select('*')
-        .eq('guild_id', selectedGuild.id)
-        .order('created_at', { ascending: false });
+        .from("polls")
+        .select("*")
+        .eq("guild_id", selectedGuild.id)
+        .order("created_at", { ascending: false });
 
       if (error) throw error;
       return data.map((p) => ({
@@ -71,17 +71,20 @@ export function usePolls() {
 
   const createPoll = useMutation({
     mutationFn: async (poll: CreatePoll) => {
-      if (!selectedGuild?.id) throw new Error('No guild selected');
+      if (!selectedGuild?.id) throw new Error("No guild selected");
 
       const { data, error } = await supabase
-        .from('polls')
+        .from("polls")
         .insert({
           guild_id: selectedGuild.id,
           channel_id: poll.channel_id,
           question: poll.question,
           options: poll.options as unknown as Json,
           created_by: poll.created_by,
-          votes: { allow_multiple: poll.allow_multiple ?? false, created_by_name: poll.created_by_name } as unknown as Json,
+          votes: {
+            allow_multiple: poll.allow_multiple ?? false,
+            created_by_name: poll.created_by_name,
+          } as unknown as Json,
           ends_at: poll.ends_at,
         })
         .select()
@@ -90,50 +93,51 @@ export function usePolls() {
       if (error) throw error;
 
       // Send the poll to Discord via edge function
-      const { error: sendError } = await invokeFunction('send-poll', {
+      const { error: sendError } = await invokeFunction("send-poll", {
         body: { pollId: data.id },
       });
 
       if (sendError) {
-        console.error('Failed to send poll to Discord:', sendError);
+        console.error("Failed to send poll to Discord:", sendError);
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['polls', selectedGuild?.id] });
-      toast({ title: 'Afstemning oprettet' });
+      queryClient.invalidateQueries({ queryKey: ["polls", selectedGuild?.id] });
+      toast({ title: "Afstemning oprettet" });
     },
     onError: (error) => {
-      toast({ title: 'Fejl', description: error.message, variant: 'destructive' });
+      toast({
+        title: "Fejl",
+        description: error.message,
+        variant: "destructive",
+      });
     },
   });
 
   const endPoll = useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase
-        .from('polls')
+        .from("polls")
         .update({ ended: true })
-        .eq('id', id);
+        .eq("id", id);
 
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['polls', selectedGuild?.id] });
-      toast({ title: 'Afstemning afsluttet' });
+      queryClient.invalidateQueries({ queryKey: ["polls", selectedGuild?.id] });
+      toast({ title: "Afstemning afsluttet" });
     },
   });
 
   const deletePoll = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase
-        .from('polls')
-        .delete()
-        .eq('id', id);
+      const { error } = await supabase.from("polls").delete().eq("id", id);
 
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['polls', selectedGuild?.id] });
-      toast({ title: 'Afstemning slettet' });
+      queryClient.invalidateQueries({ queryKey: ["polls", selectedGuild?.id] });
+      toast({ title: "Afstemning slettet" });
     },
   });
 

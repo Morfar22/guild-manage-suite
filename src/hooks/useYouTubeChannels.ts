@@ -1,7 +1,8 @@
-import { useState, useEffect, useCallback } from 'react';
-import { useGuild } from '@/contexts/GuildContext';
-import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
+import { useState, useEffect, useCallback } from "react";
+import { useGuild } from "@/contexts/GuildContext";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
+import type { Untyped } from "@/types/untyped";
 
 export interface YouTubeChannel {
   id: string;
@@ -63,14 +64,14 @@ export function useYouTubeChannels() {
     if (!selectedGuild?.id) return;
     try {
       const { data, error } = await supabase
-        .from('youtube_channels')
-        .select('*')
-        .eq('guild_id', selectedGuild.id)
-        .order('created_at', { ascending: false });
+        .from("youtube_channels")
+        .select("*")
+        .eq("guild_id", selectedGuild.id)
+        .order("created_at", { ascending: false });
       if (error) throw error;
       setChannels((data as unknown as YouTubeChannel[]) || []);
     } catch (error) {
-      console.error('Error fetching YouTube channels:', error);
+      console.error("Error fetching YouTube channels:", error);
     }
   }, [selectedGuild?.id]);
 
@@ -78,14 +79,14 @@ export function useYouTubeChannels() {
     if (!selectedGuild?.id) return;
     try {
       const { data, error } = await supabase
-        .from('youtube_settings')
-        .select('*')
-        .eq('guild_id', selectedGuild.id)
+        .from("youtube_settings")
+        .select("*")
+        .eq("guild_id", selectedGuild.id)
         .maybeSingle();
       if (error) throw error;
       setSettings(data as unknown as YouTubeSettings | null);
     } catch (error) {
-      console.error('Error fetching YouTube settings:', error);
+      console.error("Error fetching YouTube settings:", error);
     }
   }, [selectedGuild?.id]);
 
@@ -93,15 +94,15 @@ export function useYouTubeChannels() {
     if (!selectedGuild?.id) return;
     try {
       const { data, error } = await supabase
-        .from('youtube_notification_logs')
-        .select('*')
-        .eq('guild_id', selectedGuild.id)
-        .order('created_at', { ascending: false })
+        .from("youtube_notification_logs")
+        .select("*")
+        .eq("guild_id", selectedGuild.id)
+        .order("created_at", { ascending: false })
         .limit(50);
       if (error) throw error;
       setLogs((data as unknown as YouTubeNotificationLog[]) || []);
     } catch (error) {
-      console.error('Error fetching YouTube logs:', error);
+      console.error("Error fetching YouTube logs:", error);
     }
   }, [selectedGuild?.id]);
 
@@ -111,34 +112,46 @@ export function useYouTubeChannels() {
       return;
     }
     setLoading(true);
-    Promise.all([fetchChannels(), fetchSettings(), fetchLogs()]).finally(() => setLoading(false));
+    Promise.all([fetchChannels(), fetchSettings(), fetchLogs()]).finally(() =>
+      setLoading(false),
+    );
   }, [selectedGuild?.id, fetchChannels, fetchSettings, fetchLogs]);
 
-  const addChannel = async (youtubeChannelId: string, channelName: string, notificationChannelId: string, mentionRoleId?: string, liveChannelId?: string): Promise<boolean> => {
+  const addChannel = async (
+    youtubeChannelId: string,
+    channelName: string,
+    notificationChannelId: string,
+    mentionRoleId?: string,
+    liveChannelId?: string,
+  ): Promise<boolean> => {
     if (!selectedGuild?.id) return false;
     setSaving(true);
     try {
-      const { error } = await supabase
-        .from('youtube_channels')
-        .insert({
-          guild_id: selectedGuild.id,
-          youtube_channel_id: youtubeChannelId,
-          channel_name: channelName || null,
-          channel_url: `https://www.youtube.com/channel/${youtubeChannelId}`,
-          notification_channel_id: notificationChannelId,
-          live_channel_id: liveChannelId || null,
-          mention_role_id: mentionRoleId || null,
-        } as any);
+      const { error } = await supabase.from("youtube_channels").insert({
+        guild_id: selectedGuild.id,
+        youtube_channel_id: youtubeChannelId,
+        channel_name: channelName || null,
+        channel_url: `https://www.youtube.com/channel/${youtubeChannelId}`,
+        notification_channel_id: notificationChannelId,
+        live_channel_id: liveChannelId || null,
+        mention_role_id: mentionRoleId || null,
+      } as Untyped);
       if (error) throw error;
-      toast({ title: 'YouTube kanal tilføjet', description: `${channelName || youtubeChannelId} vil nu blive tracket.` });
+      toast({
+        title: "YouTube kanal tilføjet",
+        description: `${channelName || youtubeChannelId} vil nu blive tracket.`,
+      });
       await fetchChannels();
       return true;
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'Kunne ikke tilføje kanal';
+      const message =
+        error instanceof Error ? error.message : "Kunne ikke tilføje kanal";
       toast({
-        title: 'Fejl',
-        description: message.includes('duplicate') ? 'Denne YouTube kanal er allerede tilføjet.' : message,
-        variant: 'destructive',
+        title: "Fejl",
+        description: message.includes("duplicate")
+          ? "Denne YouTube kanal er allerede tilføjet."
+          : message,
+        variant: "destructive",
       });
       return false;
     } finally {
@@ -149,51 +162,85 @@ export function useYouTubeChannels() {
   const removeChannel = async (id: string): Promise<boolean> => {
     setSaving(true);
     try {
-      const { error } = await supabase.from('youtube_channels').delete().eq('id', id);
+      const { error } = await supabase
+        .from("youtube_channels")
+        .delete()
+        .eq("id", id);
       if (error) throw error;
-      toast({ title: 'YouTube kanal fjernet', description: 'Kanalen vil ikke længere blive tracket.' });
+      toast({
+        title: "YouTube kanal fjernet",
+        description: "Kanalen vil ikke længere blive tracket.",
+      });
       await fetchChannels();
       return true;
     } catch {
-      toast({ title: 'Fejl', description: 'Kunne ikke fjerne kanal.', variant: 'destructive' });
+      toast({
+        title: "Fejl",
+        description: "Kunne ikke fjerne kanal.",
+        variant: "destructive",
+      });
       return false;
     } finally {
       setSaving(false);
     }
   };
 
-  const updateChannel = async (id: string, updates: Partial<YouTubeChannel>): Promise<boolean> => {
+  const updateChannel = async (
+    id: string,
+    updates: Partial<YouTubeChannel>,
+  ): Promise<boolean> => {
     setSaving(true);
     try {
-      const { error } = await supabase.from('youtube_channels').update(updates as any).eq('id', id);
+      const { error } = await supabase
+        .from("youtube_channels")
+        .update(updates as Untyped)
+        .eq("id", id);
       if (error) throw error;
-      toast({ title: 'Opdateret', description: 'YouTube kanal indstillinger blev gemt.' });
+      toast({
+        title: "Opdateret",
+        description: "YouTube kanal indstillinger blev gemt.",
+      });
       await fetchChannels();
       return true;
     } catch {
-      toast({ title: 'Fejl', description: 'Kunne ikke opdatere kanal.', variant: 'destructive' });
+      toast({
+        title: "Fejl",
+        description: "Kunne ikke opdatere kanal.",
+        variant: "destructive",
+      });
       return false;
     } finally {
       setSaving(false);
     }
   };
 
-  const saveSettings = async (newSettings: Partial<YouTubeSettings>): Promise<boolean> => {
+  const saveSettings = async (
+    newSettings: Partial<YouTubeSettings>,
+  ): Promise<boolean> => {
     if (!selectedGuild?.id) return false;
     setSaving(true);
     try {
       if (settings?.id) {
-        const { error } = await supabase.from('youtube_settings').update(newSettings as any).eq('id', settings.id);
+        const { error } = await supabase
+          .from("youtube_settings")
+          .update(newSettings as Untyped)
+          .eq("id", settings.id);
         if (error) throw error;
       } else {
-        const { error } = await supabase.from('youtube_settings').insert({ guild_id: selectedGuild.id, ...newSettings } as any);
+        const { error } = await supabase
+          .from("youtube_settings")
+          .insert({ guild_id: selectedGuild.id, ...newSettings } as Untyped);
         if (error) throw error;
       }
-      toast({ title: 'Gemt', description: 'YouTube indstillinger blev gemt.' });
+      toast({ title: "Gemt", description: "YouTube indstillinger blev gemt." });
       await fetchSettings();
       return true;
     } catch {
-      toast({ title: 'Fejl', description: 'Kunne ikke gemme indstillinger.', variant: 'destructive' });
+      toast({
+        title: "Fejl",
+        description: "Kunne ikke gemme indstillinger.",
+        variant: "destructive",
+      });
       return false;
     } finally {
       setSaving(false);

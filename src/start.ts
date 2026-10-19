@@ -1,7 +1,10 @@
-import { createStart, createCsrfMiddleware, createMiddleware } from "@tanstack/react-start";
+import {
+  createStart,
+  createCsrfMiddleware,
+  createMiddleware,
+} from "@tanstack/react-start";
 
 import { renderErrorPage } from "./lib/error-page";
-
 
 // Local replacement for the generated `attachSupabaseAuth`: the generated one
 // imports the browser Supabase client at module scope, which touches

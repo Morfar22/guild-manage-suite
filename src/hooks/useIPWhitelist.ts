@@ -1,8 +1,8 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/contexts/AuthContext';
-import { toast } from 'sonner';
-import { invokeFunction } from '@/lib/functions-client';
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+import { toast } from "sonner";
+import { invokeFunction } from "@/lib/functions-client";
 
 interface IPWhitelistEntry {
   id: string;
@@ -17,7 +17,7 @@ interface IPCheckResult {
   allowed: boolean;
   ip: string;
   whitelistEmpty: boolean;
-  bypassedBy?: 'admin_role';
+  bypassedBy?: "admin_role";
   message: string;
 }
 
@@ -25,12 +25,12 @@ export function useIPWhitelist() {
   const { user } = useAuth();
 
   return useQuery({
-    queryKey: ['ip-whitelist'],
+    queryKey: ["ip-whitelist"],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('admin_ip_whitelist')
-        .select('*')
-        .order('created_at', { ascending: false });
+        .from("admin_ip_whitelist")
+        .select("*")
+        .order("created_at", { ascending: false });
 
       if (error) throw error;
       return data as IPWhitelistEntry[];
@@ -43,26 +43,26 @@ export function useCheckIPAccess() {
   const { session } = useAuth();
 
   return useQuery({
-    queryKey: ['ip-access-check'],
+    queryKey: ["ip-access-check"],
     queryFn: async () => {
       // IMPORTANT:
       // If the user is not authenticated, supabase-js will send the anon key as
       // the Authorization header, which will be rejected by admin-check-ip.
       if (!session?.access_token) {
-        throw new Error('Not authenticated');
+        throw new Error("Not authenticated");
       }
 
-      const { data, error } = await invokeFunction('admin-check-ip', {
+      const { data, error } = await invokeFunction("admin-check-ip", {
         headers: {
           Authorization: `Bearer ${session.access_token}`,
         },
       });
-      
+
       if (error) {
-        console.error('IP check error:', error);
+        console.error("IP check error:", error);
         throw error;
       }
-      
+
       return data as IPCheckResult;
     },
     enabled: !!session?.access_token,
@@ -75,9 +75,15 @@ export function useAddIPToWhitelist() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ ip_address, description }: { ip_address: string; description?: string }) => {
+    mutationFn: async ({
+      ip_address,
+      description,
+    }: {
+      ip_address: string;
+      description?: string;
+    }) => {
       const { data, error } = await supabase
-        .from('admin_ip_whitelist')
+        .from("admin_ip_whitelist")
         .insert({
           ip_address,
           description: description || null,
@@ -89,15 +95,15 @@ export function useAddIPToWhitelist() {
       return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['ip-whitelist'] });
-      queryClient.invalidateQueries({ queryKey: ['ip-access-check'] });
-      toast.success('IP adresse tilføjet til whitelist');
+      queryClient.invalidateQueries({ queryKey: ["ip-whitelist"] });
+      queryClient.invalidateQueries({ queryKey: ["ip-access-check"] });
+      toast.success("IP adresse tilføjet til whitelist");
     },
     onError: (error: Error) => {
-      if (error.message.includes('duplicate')) {
-        toast.error('Denne IP adresse er allerede på whitelist');
+      if (error.message.includes("duplicate")) {
+        toast.error("Denne IP adresse er allerede på whitelist");
       } else {
-        toast.error('Kunne ikke tilføje IP adresse');
+        toast.error("Kunne ikke tilføje IP adresse");
       }
     },
   });
@@ -109,19 +115,19 @@ export function useRemoveIPFromWhitelist() {
   return useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase
-        .from('admin_ip_whitelist')
+        .from("admin_ip_whitelist")
         .delete()
-        .eq('id', id);
+        .eq("id", id);
 
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['ip-whitelist'] });
-      queryClient.invalidateQueries({ queryKey: ['ip-access-check'] });
-      toast.success('IP adresse fjernet fra whitelist');
+      queryClient.invalidateQueries({ queryKey: ["ip-whitelist"] });
+      queryClient.invalidateQueries({ queryKey: ["ip-access-check"] });
+      toast.success("IP adresse fjernet fra whitelist");
     },
     onError: () => {
-      toast.error('Kunne ikke fjerne IP adresse');
+      toast.error("Kunne ikke fjerne IP adresse");
     },
   });
 }

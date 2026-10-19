@@ -1,12 +1,12 @@
 /**
  * Alt Account Detection Handler
- * 
+ *
  * When a new member joins, checks if their username/discriminator pattern
  * matches any recently banned users. Flags suspicious matches.
  */
 
-const { Events, EmbedBuilder } = require('discord.js');
-const { isAutomodBypassed } = require('./automodBypass');
+const { Events, EmbedBuilder } = require("discord.js");
+const { isAutomodBypassed } = require("./automodBypass");
 
 const banCache = new Map(); // guildId -> { bans: [...], ts }
 const CACHE_TTL = 600_000;
@@ -20,7 +20,7 @@ function setupAltDetectionHandler(client, supabase, options = {}) {
 
     try {
       const bans = await guild.bans.fetch({ limit: 100 });
-      const banList = bans.map(b => ({
+      const banList = bans.map((b) => ({
         id: b.user.id,
         username: b.user.username.toLowerCase(),
         createdAt: b.user.createdTimestamp,
@@ -39,18 +39,21 @@ function setupAltDetectionHandler(client, supabase, options = {}) {
 
     for (const banned of bannedUsers) {
       // Same base name with numbers appended
-      const baseNew = newName.replace(/[0-9_.-]+$/g, '');
-      const baseBanned = banned.username.replace(/[0-9_.-]+$/g, '');
+      const baseNew = newName.replace(/[0-9_.-]+$/g, "");
+      const baseBanned = banned.username.replace(/[0-9_.-]+$/g, "");
 
       if (baseNew.length >= 3 && baseBanned.length >= 3) {
         // Similar names
         if (baseNew === baseBanned && newName !== banned.username) {
-          return { match: banned, reason: 'Lignende brugernavn' };
+          return { match: banned, reason: "Lignende brugernavn" };
         }
         // Name contains banned name
         if (baseNew.includes(baseBanned) || baseBanned.includes(baseNew)) {
           if (newAge < ONE_WEEK) {
-            return { match: banned, reason: 'Nyt navn matcher banliste + ny konto' };
+            return {
+              match: banned,
+              reason: "Nyt navn matcher banliste + ny konto",
+            };
           }
         }
       }
@@ -72,53 +75,70 @@ function setupAltDetectionHandler(client, supabase, options = {}) {
 
       // Get guild UUID for DB operations
       const { data: guild } = await supabase
-        .from('guilds').select('id').eq('guild_id', member.guild.id).single();
+        .from("guilds")
+        .select("id")
+        .eq("guild_id", member.guild.id)
+        .single();
       if (!guild) return;
 
       // Send dashboard notification
-      await supabase.from('dashboard_notifications').insert({
-        guild_id: guild.id,
-        type: 'warning',
-        title: '⚠️ Mulig alt-konto detekteret',
-        message: `${member.user.username} ligner banned bruger ${result.match.username}: ${result.reason}`,
-        source: 'alt-detection',
-        metadata: {
-          user_id: member.user.id,
-          banned_user_id: result.match.id,
-          reason: result.reason,
-        },
-      }).catch(() => {});
+      await supabase
+        .from("dashboard_notifications")
+        .insert({
+          guild_id: guild.id,
+          type: "warning",
+          title: "⚠️ Mulig alt-konto detekteret",
+          message: `${member.user.username} ligner banned bruger ${result.match.username}: ${result.reason}`,
+          source: "alt-detection",
+          metadata: {
+            user_id: member.user.id,
+            banned_user_id: result.match.id,
+            reason: result.reason,
+          },
+        })
+        .catch(() => {});
 
       // Find log channel from raid or quarantine settings
       const { data: raidSettings } = await supabase
-        .from('raid_protection_settings').select('log_channel_id').eq('guild_id', guild.id).maybeSingle();
+        .from("raid_protection_settings")
+        .select("log_channel_id")
+        .eq("guild_id", guild.id)
+        .maybeSingle();
 
       const logChannelId = raidSettings?.log_channel_id;
       if (logChannelId) {
         const logChannel = member.guild.channels.cache.get(logChannelId);
         if (logChannel) {
-          const accountAge = Math.floor((Date.now() - member.user.createdTimestamp) / (1000 * 60 * 60 * 24));
+          const accountAge = Math.floor(
+            (Date.now() - member.user.createdTimestamp) / (1000 * 60 * 60 * 24),
+          );
           const embed = new EmbedBuilder()
-            .setTitle('⚠️ Mulig Alt-Konto')
-            .setColor(0xFFA500)
+            .setTitle("⚠️ Mulig Alt-Konto")
+            .setColor(0xffa500)
             .addFields(
-              { name: 'Ny bruger', value: `<@${member.user.id}> (${member.user.username})`, inline: true },
-              { name: 'Matcher', value: result.match.username, inline: true },
-              { name: 'Årsag', value: result.reason },
-              { name: 'Kontoalder', value: `${accountAge} dage`, inline: true },
+              {
+                name: "Ny bruger",
+                value: `<@${member.user.id}> (${member.user.username})`,
+                inline: true,
+              },
+              { name: "Matcher", value: result.match.username, inline: true },
+              { name: "Årsag", value: result.reason },
+              { name: "Kontoalder", value: `${accountAge} dage`, inline: true },
             )
             .setTimestamp();
           await logChannel.send({ embeds: [embed] }).catch(() => {});
         }
       }
 
-      console.log(`[AltDetection] Suspicious join: ${member.user.username} matches ${result.match.username}`);
+      console.log(
+        `[AltDetection] Suspicious join: ${member.user.username} matches ${result.match.username}`,
+      );
     } catch (err) {
-      console.error('[AltDetection] Error:', err.message);
+      console.error("[AltDetection] Error:", err.message);
     }
   });
 
-  console.log('[AltDetection] Handler initialized');
+  console.log("[AltDetection] Handler initialized");
 }
 
 module.exports = { setupAltDetectionHandler };

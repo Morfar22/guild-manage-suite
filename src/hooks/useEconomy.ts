@@ -1,7 +1,7 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
-import { useGuild } from '@/contexts/GuildContext';
-import { useToast } from '@/hooks/use-toast';
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { useGuild } from "@/contexts/GuildContext";
+import { useToast } from "@/hooks/use-toast";
 
 export interface EconomyAccount {
   id: string;
@@ -31,15 +31,15 @@ export function useEconomyLeaderboard() {
   const { selectedGuild } = useGuild();
 
   return useQuery({
-    queryKey: ['economy-leaderboard', selectedGuild?.id],
+    queryKey: ["economy-leaderboard", selectedGuild?.id],
     queryFn: async () => {
       if (!selectedGuild?.id) return [];
 
       const { data, error } = await supabase
-        .from('economy_accounts')
-        .select('*')
-        .eq('guild_id', selectedGuild.id)
-        .order('total_earned', { ascending: false })
+        .from("economy_accounts")
+        .select("*")
+        .eq("guild_id", selectedGuild.id)
+        .order("total_earned", { ascending: false })
         .limit(100);
 
       if (error) throw error;
@@ -55,14 +55,14 @@ export function useEconomySettings() {
   const { toast } = useToast();
 
   const query = useQuery({
-    queryKey: ['economy-settings', selectedGuild?.id],
+    queryKey: ["economy-settings", selectedGuild?.id],
     queryFn: async () => {
       if (!selectedGuild?.id) return null;
 
       const { data, error } = await supabase
-        .from('economy_settings')
-        .select('*')
-        .eq('guild_id', selectedGuild.id)
+        .from("economy_settings")
+        .select("*")
+        .eq("guild_id", selectedGuild.id)
         .maybeSingle();
 
       if (error) throw error;
@@ -73,19 +73,19 @@ export function useEconomySettings() {
 
   const updateSettings = useMutation({
     mutationFn: async (settings: Partial<EconomySettings>) => {
-      if (!selectedGuild?.id) throw new Error('No guild selected');
+      if (!selectedGuild?.id) throw new Error("No guild selected");
 
       const { data: existing } = await supabase
-        .from('economy_settings')
-        .select('id')
-        .eq('guild_id', selectedGuild.id)
+        .from("economy_settings")
+        .select("id")
+        .eq("guild_id", selectedGuild.id)
         .maybeSingle();
 
       if (existing) {
         const { data, error } = await supabase
-          .from('economy_settings')
+          .from("economy_settings")
           .update(settings)
-          .eq('guild_id', selectedGuild.id)
+          .eq("guild_id", selectedGuild.id)
           .select()
           .single();
 
@@ -93,7 +93,7 @@ export function useEconomySettings() {
         return data;
       } else {
         const { data, error } = await supabase
-          .from('economy_settings')
+          .from("economy_settings")
           .insert({ guild_id: selectedGuild.id, ...settings })
           .select()
           .single();
@@ -103,11 +103,17 @@ export function useEconomySettings() {
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['economy-settings', selectedGuild?.id] });
-      toast({ title: 'Indstillinger gemt' });
+      queryClient.invalidateQueries({
+        queryKey: ["economy-settings", selectedGuild?.id],
+      });
+      toast({ title: "Indstillinger gemt" });
     },
     onError: (error: Error) => {
-      toast({ title: 'Fejl', description: error.message, variant: 'destructive' });
+      toast({
+        title: "Fejl",
+        description: error.message,
+        variant: "destructive",
+      });
     },
   });
 

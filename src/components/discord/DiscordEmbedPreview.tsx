@@ -1,5 +1,6 @@
-import { cn } from '@/lib/utils';
-import { ExternalLink } from 'lucide-react';
+import { cn } from "@/lib/utils";
+import { ExternalLink } from "lucide-react";
+import { safeHref } from "@/lib/safeHref";
 
 interface EmbedField {
   name: string;
@@ -33,7 +34,7 @@ export function DiscordEmbedPreview({
   author,
   title,
   description,
-  color = '#5865F2',
+  color = "#5865F2",
   thumbnail,
   fields = [],
   footer,
@@ -63,16 +64,20 @@ export function DiscordEmbedPreview({
               BOT
             </span>
             <span className="text-xs text-muted-foreground">
-              I dag kl. {new Date().toLocaleTimeString('da-DK', { hour: '2-digit', minute: '2-digit' })}
+              I dag kl.{" "}
+              {new Date().toLocaleTimeString("da-DK", {
+                hour: "2-digit",
+                minute: "2-digit",
+              })}
             </span>
           </div>
 
           {/* Embed */}
-          <div 
+          <div
             className="mt-1 max-w-[520px] rounded overflow-hidden border-l-4"
-            style={{ 
+            style={{
               borderLeftColor: color,
-              backgroundColor: 'hsl(var(--card) / 0.8)'
+              backgroundColor: "hsl(var(--card) / 0.8)",
             }}
           >
             <div className="p-3 space-y-2">
@@ -80,9 +85,9 @@ export function DiscordEmbedPreview({
               {author && (
                 <div className="flex items-center gap-2">
                   {author.icon_url && (
-                    <img 
-                      src={author.icon_url} 
-                      alt="" 
+                    <img
+                      src={author.icon_url}
+                      alt=""
                       className="w-6 h-6 rounded-full"
                     />
                   )}
@@ -94,9 +99,7 @@ export function DiscordEmbedPreview({
 
               {/* Title */}
               {title && (
-                <h4 className="font-semibold text-foreground">
-                  {title}
-                </h4>
+                <h4 className="font-semibold text-foreground">{title}</h4>
               )}
 
               {/* Description */}
@@ -106,16 +109,16 @@ export function DiscordEmbedPreview({
 
               {/* Fields */}
               {fields.length > 0 && (
-                <div className="grid gap-2 mt-2" style={{ 
-                  gridTemplateColumns: 'repeat(3, 1fr)' 
-                }}>
+                <div
+                  className="grid gap-2 mt-2"
+                  style={{
+                    gridTemplateColumns: "repeat(3, 1fr)",
+                  }}
+                >
                   {fields.map((field, i) => (
-                    <div 
-                      key={i} 
-                      className={cn(
-                        "min-w-0",
-                        !field.inline && "col-span-3"
-                      )}
+                    <div
+                      key={i}
+                      className={cn("min-w-0", !field.inline && "col-span-3")}
                     >
                       <p className="text-xs font-semibold text-foreground mb-0.5">
                         {field.name}
@@ -131,9 +134,9 @@ export function DiscordEmbedPreview({
               {/* Thumbnail */}
               {thumbnail && (
                 <div className="absolute top-3 right-3">
-                  <img 
-                    src={thumbnail} 
-                    alt="" 
+                  <img
+                    src={thumbnail}
+                    alt=""
                     className="w-20 h-20 rounded object-cover"
                   />
                 </div>
@@ -146,12 +149,12 @@ export function DiscordEmbedPreview({
                   {footer && timestamp && <span>•</span>}
                   {timestamp && (
                     <span>
-                      {new Date().toLocaleDateString('da-DK', {
-                        day: 'numeric',
-                        month: 'short',
-                        year: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit',
+                      {new Date().toLocaleDateString("da-DK", {
+                        day: "numeric",
+                        month: "short",
+                        year: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit",
                       })}
                     </span>
                   )}
@@ -166,7 +169,7 @@ export function DiscordEmbedPreview({
               {buttons.map((btn, i) => (
                 <a
                   key={i}
-                  href={btn.url}
+                  href={safeHref(btn.url)}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded text-sm font-medium bg-[#4e5058] hover:bg-[#6d6f78] text-white transition-colors"
@@ -213,7 +216,11 @@ export function DiscordMessagePreview({
               BOT
             </span>
             <span className="text-xs text-muted-foreground">
-              I dag kl. {new Date().toLocaleTimeString('da-DK', { hour: '2-digit', minute: '2-digit' })}
+              I dag kl.{" "}
+              {new Date().toLocaleTimeString("da-DK", {
+                hour: "2-digit",
+                minute: "2-digit",
+              })}
             </span>
           </div>
 

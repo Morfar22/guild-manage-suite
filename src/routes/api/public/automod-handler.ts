@@ -1,22 +1,33 @@
-// @ts-nocheck
 // Migrated from Supabase Edge Function `automod-handler` to a TanStack server route.
-import { createFileRoute } from '@tanstack/react-router'
-import { createClient } from '@supabase/supabase-js'
-import { openAIChatCompletion, openAIErrorResponse } from '@/lib/server/openai'
+// @ts-nocheck
+import { safeEqual } from "@/lib/server/api-auth";
+import { createFileRoute } from "@tanstack/react-router";
+import { createClient } from "@supabase/supabase-js";
+import { openAIChatCompletion, openAIErrorResponse } from "@/lib/server/openai";
+import type { Untyped } from "@/types/untyped";
 
-const __env = (k: string) => process.env[k] ?? (k === 'SUPABASE_ANON_KEY' ? process.env['SUPABASE_PUBLISHABLE_KEY'] : undefined)
-let __handler: (req: Request) => Response | Promise<Response>
-const __serve = (fn: any, _opts?: any) => { __handler = fn }
-
+const __env = (k: string) =>
+  process.env[k] ??
+  (k === "SUPABASE_ANON_KEY"
+    ? process.env["SUPABASE_PUBLISHABLE_KEY"]
+    : undefined);
+let __handler: (req: Request) => Response | Promise<Response>;
+const __serve = (fn: Untyped, _opts?: Untyped) => {
+  __handler = fn;
+};
 
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-bot-secret, cf-connecting-ip, x-forwarded-for, x-real-ip',
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type, x-bot-secret, cf-connecting-ip, x-forwarded-for, x-real-ip",
 };
 
 // Helper function to check if IP is whitelisted
-async function checkIPWhitelist(req: Request, supabase: any): Promise<{ allowed: boolean; ip: string }> {
-  const clientIp = 
+async function checkIPWhitelist(
+  req: Request,
+  supabase: Untyped,
+): Promise<{ allowed: boolean; ip: string }> {
+  const clientIp =
     req.headers.get("cf-connecting-ip") ||
     req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
     req.headers.get("x-real-ip") ||
@@ -56,81 +67,90 @@ interface AutomodResponse {
 }
 
 __serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders });
+  if (req.method === "OPTIONS") {
+    return new Response("ok", { headers: corsHeaders });
   }
 
   try {
     // Verify bot secret
-    const botSecret = req.headers.get('x-bot-secret');
-    const expectedSecret = __env('BOT_SECRET_KEY');
-    
-    if (!botSecret || botSecret !== expectedSecret) {
-      console.error('Unauthorized: Invalid bot secret');
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+    const botSecret = req.headers.get("x-bot-secret");
+    const expectedSecret = __env("BOT_SECRET_KEY");
+
+    if (!safeEqual(botSecret, expectedSecret)) {
+      console.error("Unauthorized: Invalid bot secret");
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
     const supabase = createClient(
-      __env('SUPABASE_URL')!,
-      __env('SUPABASE_SERVICE_ROLE_KEY')!
+      __env("SUPABASE_URL")!,
+      __env("SUPABASE_SERVICE_ROLE_KEY")!,
     );
 
     // Check IP whitelist
     const ipCheck = await checkIPWhitelist(req, supabase);
     if (!ipCheck.allowed) {
       console.error(`IP not whitelisted: ${ipCheck.ip}`);
-      return new Response(JSON.stringify({ error: 'Forbidden - IP not whitelisted', ip: ipCheck.ip }), {
-        status: 403,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      return new Response(
+        JSON.stringify({
+          error: "Forbidden - IP not whitelisted",
+          ip: ipCheck.ip,
+        }),
+        {
+          status: 403,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
     }
 
-    const { 
-      guild_id, 
-      user_id, 
+    const {
+      guild_id,
+      user_id,
       username,
-      channel_id, 
+      channel_id,
       message_content,
       mentions_count = 0,
       role_mentions_count = 0,
-    } = await req.json() as AutomodRequest;
+    } = (await req.json()) as AutomodRequest;
 
     if (!guild_id || !user_id || !channel_id) {
-      return new Response(JSON.stringify({ error: 'Missing required fields' }), {
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      return new Response(
+        JSON.stringify({ error: "Missing required fields" }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
     }
 
     // Get guild UUID
     const { data: guild, error: guildError } = await supabase
-      .from('guilds')
-      .select('id')
-      .eq('guild_id', guild_id)
+      .from("guilds")
+      .select("id")
+      .eq("guild_id", guild_id)
       .maybeSingle();
 
     if (guildError || !guild) {
-      return new Response(JSON.stringify({ error: 'Guild not found' }), {
+      return new Response(JSON.stringify({ error: "Guild not found" }), {
         status: 404,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
     // Get all enabled automod rules for this guild
     const { data: rules, error: rulesError } = await supabase
-      .from('automod_rules')
-      .select('*')
-      .eq('guild_id', guild.id)
-      .eq('enabled', true);
+      .from("automod_rules")
+      .select("*")
+      .eq("guild_id", guild.id)
+      .eq("enabled", true);
 
     if (rulesError) throw rulesError;
 
     if (!rules || rules.length === 0) {
       return new Response(JSON.stringify({ should_act: false }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
@@ -140,16 +160,16 @@ __serve(async (req) => {
       if (rule.exempt_channels?.includes(channel_id)) continue;
 
       let violated = false;
-      let reason = '';
+      let reason = "";
 
       const config = rule.config || {};
 
       switch (rule.rule_type) {
-        case 'words': {
+        case "words": {
           const words = (config.words as string[]) || [];
-          const matchExact = config.match_exact as boolean || false;
+          const matchExact = (config.match_exact as boolean) || false;
           const lowerContent = message_content.toLowerCase();
-          
+
           for (const word of words) {
             if (matchExact) {
               if (lowerContent.split(/\s+/).includes(word.toLowerCase())) {
@@ -168,22 +188,25 @@ __serve(async (req) => {
           break;
         }
 
-        case 'links': {
-          const blockAll = config.block_all as boolean || false;
+        case "links": {
+          const blockAll = (config.block_all as boolean) || false;
           const blockedDomains = (config.blocked_domains as string[]) || [];
           const allowedDomains = (config.allowed_domains as string[]) || [];
-          
+
           const urlRegex = /https?:\/\/([^\s/]+)/gi;
           const matches = message_content.matchAll(urlRegex);
-          
+
           for (const match of matches) {
             const domain = match[1].toLowerCase();
-            
-            if (allowedDomains.some(d => domain.includes(d.toLowerCase()))) {
+
+            if (allowedDomains.some((d) => domain.includes(d.toLowerCase()))) {
               continue;
             }
-            
-            if (blockAll || blockedDomains.some(d => domain.includes(d.toLowerCase()))) {
+
+            if (
+              blockAll ||
+              blockedDomains.some((d) => domain.includes(d.toLowerCase()))
+            ) {
               violated = true;
               reason = `Blocked link: ${domain}`;
               break;
@@ -192,24 +215,25 @@ __serve(async (req) => {
           break;
         }
 
-        case 'invites': {
-          const blockAllInvites = config.block_all as boolean ?? true;
+        case "invites": {
+          const blockAllInvites = (config.block_all as boolean) ?? true;
           const allowedServers = (config.allowed_servers as string[]) || [];
-          
-          const inviteRegex = /discord(?:\.gg|app\.com\/invite|\.com\/invite)\/([a-zA-Z0-9-]+)/gi;
+
+          const inviteRegex =
+            /discord(?:\.gg|app\.com\/invite|\.com\/invite)\/([a-zA-Z0-9-]+)/gi;
           const hasInvite = inviteRegex.test(message_content);
-          
+
           if (hasInvite && blockAllInvites) {
             violated = true;
-            reason = 'Discord invites not allowed';
+            reason = "Discord invites not allowed";
           }
           break;
         }
 
-        case 'mentions': {
+        case "mentions": {
           const maxMentions = (config.max_mentions as number) || 5;
           const maxRoleMentions = (config.max_role_mentions as number) || 3;
-          
+
           if (mentions_count > maxMentions) {
             violated = true;
             reason = `Too many mentions: ${mentions_count}/${maxMentions}`;
@@ -220,14 +244,15 @@ __serve(async (req) => {
           break;
         }
 
-        case 'caps': {
+        case "caps": {
           const maxCapsPercent = (config.max_caps_percent as number) || 70;
           const minLength = (config.min_length as number) || 10;
-          
+
           if (message_content.length >= minLength) {
             const capsCount = (message_content.match(/[A-Z]/g) || []).length;
-            const letterCount = (message_content.match(/[a-zA-Z]/g) || []).length;
-            
+            const letterCount = (message_content.match(/[a-zA-Z]/g) || [])
+              .length;
+
             if (letterCount > 0) {
               const capsPercent = (capsCount / letterCount) * 100;
               if (capsPercent > maxCapsPercent) {
@@ -239,42 +264,42 @@ __serve(async (req) => {
           break;
         }
 
-        case 'ai_toxicity': {
+        case "ai_toxicity": {
           const sensitivity = (config.sensitivity as number) || 70;
 
           if (message_content.length > 3) {
             const aiData = await openAIChatCompletion({
               messages: [
                 {
-                  role: 'system',
-                  content: `You are a content moderation AI. Analyze the following message for toxicity, hate speech, harassment, NSFW content, or spam. Threshold is ${sensitivity}/100.`
+                  role: "system",
+                  content: `You are a content moderation AI. Analyze the following message for toxicity, hate speech, harassment, NSFW content, or spam. Threshold is ${sensitivity}/100.`,
                 },
-                { role: 'user', content: message_content }
+                { role: "user", content: message_content },
               ],
               response_format: {
-                type: 'json_schema',
+                type: "json_schema",
                 json_schema: {
-                  name: 'toxicity_result',
+                  name: "toxicity_result",
                   strict: true,
                   schema: {
-                    type: 'object',
+                    type: "object",
                     additionalProperties: false,
                     properties: {
-                      toxic: { type: 'boolean' },
-                      score: { type: 'integer', minimum: 0, maximum: 100 },
-                      reason: { type: 'string' },
+                      toxic: { type: "boolean" },
+                      score: { type: "integer", minimum: 0, maximum: 100 },
+                      reason: { type: "string" },
                     },
-                    required: ['toxic', 'score', 'reason'],
+                    required: ["toxic", "score", "reason"],
                   },
                 },
               },
             });
 
-            const content = aiData.choices?.[0]?.message?.content || '{}';
+            const content = aiData.choices?.[0]?.message?.content || "{}";
             const result = JSON.parse(content);
             if (result.toxic && result.score >= sensitivity) {
               violated = true;
-              reason = `AI Toxicity (${result.score}%): ${result.reason || 'Toxic content detected'}`;
+              reason = `AI Toxicity (${result.score}%): ${result.reason || "Toxic content detected"}`;
             }
           }
           break;
@@ -283,7 +308,7 @@ __serve(async (req) => {
 
       if (violated) {
         // Log the violation
-        await supabase.from('automod_logs').insert({
+        await supabase.from("automod_logs").insert({
           guild_id: guild.id,
           rule_type: rule.rule_type,
           user_id,
@@ -304,29 +329,27 @@ __serve(async (req) => {
         };
 
         return new Response(JSON.stringify(response), {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
     }
 
     return new Response(JSON.stringify({ should_act: false }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
-
   } catch (error) {
-    console.error('Automod handler error:', error);
-    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error("Automod handler error:", error);
+    const message = error instanceof Error ? error.message : "Unknown error";
     return new Response(JSON.stringify({ error: message }), {
       status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
 });
 
+const __call = ({ request }: { request: Request }) => __handler(request);
 
-const __call = ({ request }: { request: Request }) => __handler(request)
-
-export const Route = createFileRoute('/api/public/automod-handler')({
+export const Route = createFileRoute("/api/public/automod-handler")({
   server: {
     handlers: {
       GET: __call,
@@ -337,4 +360,4 @@ export const Route = createFileRoute('/api/public/automod-handler')({
       OPTIONS: __call,
     },
   },
-})
+});

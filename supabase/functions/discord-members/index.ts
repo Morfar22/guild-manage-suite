@@ -1,5 +1,6 @@
-import { decryptBotToken as simpleDecrypt } from '../_shared/bot-token-crypto.ts';
+import { decryptBotToken as simpleDecrypt } from "../_shared/bot-token-crypto.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import type { Untyped } from "../_shared/untyped.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -7,8 +8,10 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-
-async function getBotToken(supabaseAdmin: any, guildId: string): Promise<string> {
+async function getBotToken(
+  supabaseAdmin: Untyped,
+  guildId: string,
+): Promise<string> {
   const { data: customBotSettings } = await supabaseAdmin
     .from("guild_bot_settings")
     .select("bot_token_encrypted, is_custom_bot, is_active")
@@ -18,7 +21,10 @@ async function getBotToken(supabaseAdmin: any, guildId: string): Promise<string>
 
   const encryptionKey = Deno.env.get("BOT_SECRET_KEY") || "";
 
-  if (customBotSettings?.bot_token_encrypted && customBotSettings.is_custom_bot) {
+  if (
+    customBotSettings?.bot_token_encrypted &&
+    customBotSettings.is_custom_bot
+  ) {
     return simpleDecrypt(customBotSettings.bot_token_encrypted, encryptionKey);
   }
   const token = Deno.env.get("DISCORD_BOT_TOKEN");
@@ -37,7 +43,8 @@ async function verifyAccess(req: Request) {
     { global: { headers: { Authorization: authHeader } } },
   );
 
-  const { data: claimsData, error } = await supabaseAuthed.auth.getClaims(token);
+  const { data: claimsData, error } =
+    await supabaseAuthed.auth.getClaims(token);
   if (error || !claimsData?.claims?.sub) throw new Error("Unauthorized");
 
   const userId = claimsData.claims.sub;
@@ -49,9 +56,16 @@ async function verifyAccess(req: Request) {
   return { userId, supabaseAdmin };
 }
 
-async function verifyGuildAccess(supabaseAdmin: any, guildId: string, userId: string) {
+async function verifyGuildAccess(
+  supabaseAdmin: Untyped,
+  guildId: string,
+  userId: string,
+) {
   // Check if user is a global admin/staff (bypass guild access check)
-  const { data: isGlobalAdmin } = await supabaseAdmin.rpc("has_admin_or_staff_role", { _user_id: userId });
+  const { data: isGlobalAdmin } = await supabaseAdmin.rpc(
+    "has_admin_or_staff_role",
+    { _user_id: userId },
+  );
 
   if (!isGlobalAdmin) {
     const { data: userGuild, error } = await supabaseAdmin
@@ -86,7 +100,11 @@ Deno.serve(async (req) => {
     const guildId = url.searchParams.get("guildId");
     if (!guildId) throw new Error("Missing guildId");
 
-    const discordGuildId = await verifyGuildAccess(supabaseAdmin, guildId, userId);
+    const discordGuildId = await verifyGuildAccess(
+      supabaseAdmin,
+      guildId,
+      userId,
+    );
     const botToken = await getBotToken(supabaseAdmin, guildId);
 
     const discordHeaders = {
@@ -145,7 +163,9 @@ Deno.serve(async (req) => {
       for (let attempt = 0; attempt < 3 && res.status === 429; attempt++) {
         const retryData = await res.json().catch(() => ({}));
         const retryAfter = (retryData.retry_after || 2) * 1000;
-        console.log(`Rate limited, waiting ${retryAfter}ms before retry ${attempt + 1}`);
+        console.log(
+          `Rate limited, waiting ${retryAfter}ms before retry ${attempt + 1}`,
+        );
         await new Promise((r) => setTimeout(r, retryAfter));
         res = await fetch(url, { method, headers: discordHeaders });
       }
@@ -153,17 +173,23 @@ Deno.serve(async (req) => {
       if (!res.ok) {
         const errText = await res.text();
         console.error(`Role ${action} failed:`, res.status, errText);
-        return new Response(JSON.stringify({ error: `Failed to ${action} role (${res.status})` }), {
-          status: res.status,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+        return new Response(
+          JSON.stringify({ error: `Failed to ${action} role (${res.status})` }),
+          {
+            status: res.status,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          },
+        );
       }
 
       await res.text().catch(() => "");
 
-      return new Response(JSON.stringify({ success: true, action, memberId, roleId }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return new Response(
+        JSON.stringify({ success: true, action, memberId, roleId }),
+        {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
     }
 
     return new Response(JSON.stringify({ error: "Method not allowed" }), {
@@ -172,7 +198,8 @@ Deno.serve(async (req) => {
     });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : "Unknown error";
-    const status = message === "Unauthorized" ? 401 : message === "Forbidden" ? 403 : 500;
+    const status =
+      message === "Unauthorized" ? 401 : message === "Forbidden" ? 403 : 500;
     console.error("discord-members error:", message);
     return new Response(JSON.stringify({ error: message }), {
       status,

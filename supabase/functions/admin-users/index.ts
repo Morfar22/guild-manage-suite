@@ -2,7 +2,8 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type",
 };
 
 Deno.serve(async (req) => {
@@ -30,7 +31,8 @@ Deno.serve(async (req) => {
     });
 
     const token = authHeader.replace("Bearer ", "");
-    const { data: claimsData, error: claimsError } = await userClient.auth.getClaims(token);
+    const { data: claimsData, error: claimsError } =
+      await userClient.auth.getClaims(token);
 
     if (claimsError || !claimsData?.claims) {
       console.error("Auth error:", claimsError);
@@ -55,17 +57,23 @@ Deno.serve(async (req) => {
 
     if (roleError || !roleData) {
       console.log("User is not admin:", userId);
-      return new Response(JSON.stringify({ error: "Forbidden - Admin access required" }), {
-        status: 403,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return new Response(
+        JSON.stringify({ error: "Forbidden - Admin access required" }),
+        {
+          status: 403,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
     }
 
     const { action } = await req.json();
 
     if (action === "list") {
       // Get all users using admin API
-      const { data: { users }, error: usersError } = await adminClient.auth.admin.listUsers();
+      const {
+        data: { users },
+        error: usersError,
+      } = await adminClient.auth.admin.listUsers();
 
       if (usersError) {
         console.error("Error listing users:", usersError);
@@ -75,7 +83,7 @@ Deno.serve(async (req) => {
         });
       }
 
-      const simplifiedUsers = users.map(u => ({
+      const simplifiedUsers = users.map((u) => ({
         id: u.id,
         email: u.email || "No email",
         created_at: u.created_at,

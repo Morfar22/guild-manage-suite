@@ -1,5 +1,5 @@
-import React, { forwardRef } from 'react';
-import { TwitchNotificationLog } from '@/hooks/useTwitchNotificationLogs';
+import React, { forwardRef } from "react";
+import { TwitchNotificationLog } from "@/hooks/useTwitchNotificationLogs";
 import {
   Table,
   TableBody,
@@ -7,20 +7,22 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table';
-import { Badge } from '@/components/ui/badge';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Twitch, Radio, BellOff, Eye, Gamepad2 } from 'lucide-react';
-import { formatDistanceToNow, format } from 'date-fns';
-import { da } from 'date-fns/locale';
+} from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Twitch, Radio, BellOff, Eye, Gamepad2 } from "lucide-react";
+import { formatDistanceToNow, format } from "date-fns";
+import { da } from "date-fns/locale";
 
 interface NotificationLogTableProps {
   logs: TwitchNotificationLog[];
   loading: boolean;
 }
 
-export const NotificationLogTable = forwardRef<HTMLDivElement, NotificationLogTableProps>(
-  function NotificationLogTable({ logs, loading }, ref) {
+export const NotificationLogTable = forwardRef<
+  HTMLDivElement,
+  NotificationLogTableProps
+>(function NotificationLogTable({ logs, loading }, ref) {
   if (loading) {
     return (
       <div ref={ref} className="flex items-center justify-center py-12">
@@ -34,7 +36,9 @@ export const NotificationLogTable = forwardRef<HTMLDivElement, NotificationLogTa
       <div ref={ref} className="text-center py-12 text-muted-foreground">
         <Twitch className="h-12 w-12 mx-auto mb-3 opacity-50" />
         <p>Ingen notifikationer sendt endnu</p>
-        <p className="text-sm">Når en streamer går live, vil notifikationen blive logget her</p>
+        <p className="text-sm">
+          Når en streamer går live, vil notifikationen blive logget her
+        </p>
       </div>
     );
   }
@@ -63,12 +67,12 @@ export const NotificationLogTable = forwardRef<HTMLDivElement, NotificationLogTa
                     </AvatarFallback>
                   </Avatar>
                   <span className="font-medium truncate max-w-[100px]">
-                    {log.streamer_name || 'Ukendt'}
+                    {log.streamer_name || "Ukendt"}
                   </span>
                 </div>
               </TableCell>
               <TableCell>
-                {log.event_type === 'live' ? (
+                {log.event_type === "live" ? (
                   <Badge variant="destructive" className="gap-1">
                     <Radio className="h-3 w-3" />
                     Live
@@ -103,13 +107,13 @@ export const NotificationLogTable = forwardRef<HTMLDivElement, NotificationLogTa
               </TableCell>
               <TableCell className="text-right">
                 <div className="text-sm">
-                  {formatDistanceToNow(new Date(log.sent_at), { 
-                    addSuffix: true, 
-                    locale: da 
+                  {formatDistanceToNow(new Date(log.sent_at), {
+                    addSuffix: true,
+                    locale: da,
                   })}
                 </div>
                 <div className="text-xs text-muted-foreground">
-                  {format(new Date(log.sent_at), 'HH:mm', { locale: da })}
+                  {format(new Date(log.sent_at), "HH:mm", { locale: da })}
                 </div>
               </TableCell>
             </TableRow>

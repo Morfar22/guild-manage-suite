@@ -1,3 +1,4 @@
+import { safeEqual } from "../_shared/api-auth.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
@@ -22,8 +23,11 @@ serve(async (req) => {
       return json({ error: "Server misconfigured" }, 500);
     }
 
-    if (!apiKey || apiKey !== expectedKey) {
-      return json({ error: "Unauthorized – invalid or missing x-api-key" }, 401);
+    if (!safeEqual(apiKey, expectedKey)) {
+      return json(
+        { error: "Unauthorized – invalid or missing x-api-key" },
+        401,
+      );
     }
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
@@ -109,35 +113,57 @@ async function handleGet(supabase: ReturnType<typeof createClient>, url: URL) {
   // GET ?action=available_features  → list of all feature keys
   if (action === "available_features") {
     const features = [
-      "ai_chat", "fivem", "custom_bot", "server_clone",
-      "twitch", "global_ban", "jtc", "starboard", "applications", "tiktok",
+      "ai_chat",
+      "fivem",
+      "custom_bot",
+      "server_clone",
+      "twitch",
+      "global_ban",
+      "jtc",
+      "starboard",
+      "applications",
+      "tiktok",
     ];
     return json({ features });
   }
 
-  return json({ error: "Unknown action. Use: guild_features, all_guilds, user_features, available_features" }, 400);
+  return json(
+    {
+      error:
+        "Unknown action. Use: guild_features, all_guilds, user_features, available_features",
+    },
+    400,
+  );
 }
 
 // ─── POST handlers ──────────────────────────────────────────
 
-async function handlePost(supabase: ReturnType<typeof createClient>, body: Record<string, unknown>) {
+async function handlePost(
+  supabase: ReturnType<typeof createClient>,
+  body: Record<string, unknown>,
+) {
   const action = body.action as string;
 
   // Toggle a single guild feature
   if (action === "toggle_guild_feature") {
     const { guild_id, feature, enabled, expires_at, notes } = body as {
-      guild_id: string; feature: string; enabled: boolean;
-      expires_at?: string | null; notes?: string | null;
+      guild_id: string;
+      feature: string;
+      enabled: boolean;
+      expires_at?: string | null;
+      notes?: string | null;
     };
 
     if (!guild_id || !feature || typeof enabled !== "boolean") {
-      return json({ error: "guild_id, feature, and enabled (bool) are required" }, 400);
+      return json(
+        { error: "guild_id, feature, and enabled (bool) are required" },
+        400,
+      );
     }
 
     if (enabled) {
-      const { error } = await supabase
-        .from("guild_premium_features")
-        .upsert({
+      const { error } = await supabase.from("guild_premium_features").upsert(
+        {
           guild_id,
           feature,
           enabled: true,
@@ -145,7 +171,9 @@ async function handlePost(supabase: ReturnType<typeof createClient>, body: Recor
           enabled_at: new Date().toISOString(),
           expires_at: expires_at || null,
           notes: notes || null,
-        }, { onConflict: "guild_id,feature" });
+        },
+        { onConflict: "guild_id,feature" },
+      );
       if (error) throw error;
     } else {
       const { error } = await supabase
@@ -163,29 +191,42 @@ async function handlePost(supabase: ReturnType<typeof createClient>, body: Recor
   if (action === "bulk_toggle_guild_features") {
     const { guild_id, features } = body as {
       guild_id: string;
-      features: Array<{ feature: string; enabled: boolean; expires_at?: string | null; notes?: string | null }>;
+      features: Array<{
+        feature: string;
+        enabled: boolean;
+        expires_at?: string | null;
+        notes?: string | null;
+      }>;
     };
 
     if (!guild_id || !Array.isArray(features)) {
       return json({ error: "guild_id and features[] are required" }, 400);
     }
 
-    const results: Array<{ feature: string; enabled: boolean; success: boolean; error?: string }> = [];
+    const results: Array<{
+      feature: string;
+      enabled: boolean;
+      success: boolean;
+      error?: string;
+    }> = [];
 
     for (const f of features) {
       try {
         if (f.enabled) {
           const { error } = await supabase
             .from("guild_premium_features")
-            .upsert({
-              guild_id,
-              feature: f.feature,
-              enabled: true,
-              enabled_by: null,
-              enabled_at: new Date().toISOString(),
-              expires_at: f.expires_at || null,
-              notes: f.notes || null,
-            }, { onConflict: "guild_id,feature" });
+            .upsert(
+              {
+                guild_id,
+                feature: f.feature,
+                enabled: true,
+                enabled_by: null,
+                enabled_at: new Date().toISOString(),
+                expires_at: f.expires_at || null,
+                notes: f.notes || null,
+              },
+              { onConflict: "guild_id,feature" },
+            );
           if (error) throw error;
         } else {
           const { error } = await supabase
@@ -197,7 +238,12 @@ async function handlePost(supabase: ReturnType<typeof createClient>, body: Recor
         }
         results.push({ feature: f.feature, enabled: f.enabled, success: true });
       } catch (err) {
-        results.push({ feature: f.feature, enabled: f.enabled, success: false, error: err.message });
+        results.push({
+          feature: f.feature,
+          enabled: f.enabled,
+          success: false,
+          error: err.message,
+        });
       }
     }
 
@@ -207,18 +253,23 @@ async function handlePost(supabase: ReturnType<typeof createClient>, body: Recor
   // Toggle a user premium feature
   if (action === "toggle_user_feature") {
     const { user_id, feature, enabled, expires_at, notes } = body as {
-      user_id: string; feature: string; enabled: boolean;
-      expires_at?: string | null; notes?: string | null;
+      user_id: string;
+      feature: string;
+      enabled: boolean;
+      expires_at?: string | null;
+      notes?: string | null;
     };
 
     if (!user_id || !feature || typeof enabled !== "boolean") {
-      return json({ error: "user_id, feature, and enabled (bool) are required" }, 400);
+      return json(
+        { error: "user_id, feature, and enabled (bool) are required" },
+        400,
+      );
     }
 
     if (enabled) {
-      const { error } = await supabase
-        .from("user_premium_features")
-        .upsert({
+      const { error } = await supabase.from("user_premium_features").upsert(
+        {
           user_id,
           feature,
           enabled: true,
@@ -226,7 +277,9 @@ async function handlePost(supabase: ReturnType<typeof createClient>, body: Recor
           enabled_at: new Date().toISOString(),
           expires_at: expires_at || null,
           notes: notes || null,
-        }, { onConflict: "user_id,feature" });
+        },
+        { onConflict: "user_id,feature" },
+      );
       if (error) throw error;
     } else {
       const { error } = await supabase
@@ -243,7 +296,8 @@ async function handlePost(supabase: ReturnType<typeof createClient>, body: Recor
   // Lookup guild by Discord guild ID
   if (action === "lookup_guild") {
     const { discord_guild_id } = body as { discord_guild_id: string };
-    if (!discord_guild_id) return json({ error: "discord_guild_id required" }, 400);
+    if (!discord_guild_id)
+      return json({ error: "discord_guild_id required" }, 400);
 
     const { data, error } = await supabase
       .from("guilds")
@@ -256,5 +310,11 @@ async function handlePost(supabase: ReturnType<typeof createClient>, body: Recor
     return json({ guild: data });
   }
 
-  return json({ error: "Unknown action. Use: toggle_guild_feature, bulk_toggle_guild_features, toggle_user_feature, lookup_guild" }, 400);
+  return json(
+    {
+      error:
+        "Unknown action. Use: toggle_guild_feature, bulk_toggle_guild_features, toggle_user_feature, lookup_guild",
+    },
+    400,
+  );
 }

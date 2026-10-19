@@ -1,14 +1,24 @@
 // @ts-nocheck
-import { decryptBotToken as simpleDecrypt } from '@/lib/server/bot-token-crypto'
+import { decryptBotToken as simpleDecrypt } from "@/lib/server/bot-token-crypto";
 // Migrated from Supabase Edge Function `jtc-handler` to a TanStack server route.
-import { createFileRoute } from '@tanstack/react-router'
-import { createClient } from '@supabase/supabase-js'
-import { requireUser, requireGuildAdmin } from '@/lib/server/api-auth'
+import { createFileRoute } from "@tanstack/react-router";
+import { createClient } from "@supabase/supabase-js";
+import {
+  requireUser,
+  requireGuildAdmin,
+  safeEqual,
+} from "@/lib/server/api-auth";
+import type { Untyped } from "@/types/untyped";
 
-const __env = (k: string) => process.env[k] ?? (k === 'SUPABASE_ANON_KEY' ? process.env['SUPABASE_PUBLISHABLE_KEY'] : undefined)
-let __handler: (req: Request) => Response | Promise<Response>
-const __serve = (fn: any, _opts?: any) => { __handler = fn }
-
+const __env = (k: string) =>
+  process.env[k] ??
+  (k === "SUPABASE_ANON_KEY"
+    ? process.env["SUPABASE_PUBLISHABLE_KEY"]
+    : undefined);
+let __handler: (req: Request) => Response | Promise<Response>;
+const __serve = (fn: Untyped, _opts?: Untyped) => {
+  __handler = fn;
+};
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -16,8 +26,10 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-bot-secret, cf-connecting-ip, x-forwarded-for, x-real-ip",
 };
 
-
-async function getBotTokenForGuild(supabase: any, guildId: string): Promise<string> {
+async function getBotTokenForGuild(
+  supabase: Untyped,
+  guildId: string,
+): Promise<string> {
   const { data: settings } = await supabase
     .from("guild_bot_settings")
     .select("is_custom_bot, is_active, bot_token_encrypted")
@@ -36,8 +48,11 @@ async function getBotTokenForGuild(supabase: any, guildId: string): Promise<stri
         return token;
       }
     } catch (e) {
-    if (e instanceof Response) return e;
-      console.error("JTC failed to decrypt custom bot token, falling back to default:", e instanceof Error ? e.message : String(e));
+      if (e instanceof Response) return e;
+      console.error(
+        "JTC failed to decrypt custom bot token, falling back to default:",
+        e instanceof Error ? e.message : String(e),
+      );
     }
   }
 
@@ -47,14 +62,19 @@ async function getBotTokenForGuild(supabase: any, guildId: string): Promise<stri
 }
 
 // Helper function to check if IP is whitelisted
-async function checkIPWhitelist(req: Request, supabase: any): Promise<{ allowed: boolean; ip: string }> {
+async function checkIPWhitelist(
+  req: Request,
+  supabase: Untyped,
+): Promise<{ allowed: boolean; ip: string }> {
   const clientIp =
     req.headers.get("cf-connecting-ip") ||
     req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
     req.headers.get("x-real-ip") ||
     "unknown";
 
-  const { count } = await supabase.from("admin_ip_whitelist").select("*", { count: "exact", head: true });
+  const { count } = await supabase
+    .from("admin_ip_whitelist")
+    .select("*", { count: "exact", head: true });
 
   if ((count ?? 0) === 0) return { allowed: true, ip: clientIp };
 
@@ -81,23 +101,40 @@ __serve(async (req) => {
 
     // Verify bot secret for bot-initiated requests
     const requestBotSecret = req.headers.get("x-bot-secret");
-    const isBotRequest = Boolean(botSecretKey && requestBotSecret && requestBotSecret === botSecretKey);
+    const isBotRequest = Boolean(safeEqual(requestBotSecret, botSecretKey));
 
     // Check IP whitelist for bot requests
     if (isBotRequest) {
       const ipCheck = await checkIPWhitelist(req, supabase);
       if (!ipCheck.allowed) {
         console.error(`IP not whitelisted: ${ipCheck.ip}`);
-        return new Response(JSON.stringify({ error: "Forbidden - IP not whitelisted", ip: ipCheck.ip }), {
-          status: 403,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+        return new Response(
+          JSON.stringify({
+            error: "Forbidden - IP not whitelisted",
+            ip: ipCheck.ip,
+          }),
+          {
+            status: 403,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          },
+        );
       }
     }
 
-    const { action, guildId, discordGuildId, channelId, userId, userName, userRoles, triggerId } = await req.json();
+    const {
+      action,
+      guildId,
+      discordGuildId,
+      channelId,
+      userId,
+      userName,
+      userRoles,
+      triggerId,
+    } = await req.json();
 
-    console.log(`JTC Handler - Action: ${action}, Guild: ${guildId || discordGuildId}`);
+    console.log(
+      `JTC Handler - Action: ${action}, Guild: ${guildId || discordGuildId}`,
+    );
 
     // Get internal guild ID from discord guild ID if needed
     let internalGuildId = guildId;
@@ -169,9 +206,15 @@ __serve(async (req) => {
           .maybeSingle();
 
         if (settings && !settings.enabled) {
-          return new Response(JSON.stringify({ shouldCreate: false, reason: "JTC disabled globally" }), {
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          });
+          return new Response(
+            JSON.stringify({
+              shouldCreate: false,
+              reason: "JTC disabled globally",
+            }),
+            {
+              headers: { ...corsHeaders, "Content-Type": "application/json" },
+            },
+          );
         }
 
         // Check if this channel is a trigger in jtc_triggers
@@ -191,7 +234,11 @@ __serve(async (req) => {
             .eq("guild_id", internalGuildId)
             .single();
 
-          if (!legacySettings || !legacySettings.enabled || legacySettings.trigger_channel_id !== channelId) {
+          if (
+            !legacySettings ||
+            !legacySettings.enabled ||
+            legacySettings.trigger_channel_id !== channelId
+          ) {
             return new Response(JSON.stringify({ shouldCreate: false }), {
               headers: { ...corsHeaders, "Content-Type": "application/json" },
             });
@@ -226,7 +273,9 @@ __serve(async (req) => {
 
           // Ensure we're comparing strings to strings
           const requiredRoleStr = String(trigger.required_role_id);
-          const hasRole = userRolesList.some((role: string | number) => String(role) === requiredRoleStr);
+          const hasRole = userRolesList.some(
+            (role: string | number) => String(role) === requiredRoleStr,
+          );
 
           if (!hasRole) {
             console.log(
@@ -267,7 +316,11 @@ __serve(async (req) => {
         let triggerConfig = null;
 
         if (triggerId && triggerId !== "legacy") {
-          const { data: trigger } = await supabase.from("jtc_triggers").select("*").eq("id", triggerId).single();
+          const { data: trigger } = await supabase
+            .from("jtc_triggers")
+            .select("*")
+            .eq("id", triggerId)
+            .single();
 
           triggerConfig = trigger;
         } else {
@@ -300,19 +353,28 @@ __serve(async (req) => {
         }
 
         if (!triggerConfig) {
-          return new Response(JSON.stringify({ error: "JTC trigger not found" }), {
-            status: 400,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          });
+          return new Response(
+            JSON.stringify({ error: "JTC trigger not found" }),
+            {
+              status: 400,
+              headers: { ...corsHeaders, "Content-Type": "application/json" },
+            },
+          );
         }
 
-        const channelName = (triggerConfig.channel_name_template || "{username}s kanal").replace(
-          "{username}",
-          userName || "Bruger",
-        );
+        const channelName = (
+          triggerConfig.channel_name_template || "{username}s kanal"
+        ).replace("{username}", userName || "Bruger");
 
-        const { data: guildData } = await supabase.from("guilds").select("guild_id").eq("id", internalGuildId).single();
-        const discordBotToken = await getBotTokenForGuild(supabase, internalGuildId);
+        const { data: guildData } = await supabase
+          .from("guilds")
+          .select("guild_id")
+          .eq("id", internalGuildId)
+          .single();
+        const discordBotToken = await getBotTokenForGuild(
+          supabase,
+          internalGuildId,
+        );
 
         // Owner: manage channel + voice control
         // Owner perms incl. STREAM (0x200) so ejeren kan skærmdele
@@ -345,7 +407,9 @@ __serve(async (req) => {
             allow: "3146752", // VIEW_CHANNEL + CONNECT + SPEAK only
           });
 
-          console.log(`Role-locked channel for role ${triggerConfig.required_role_id}`);
+          console.log(
+            `Role-locked channel for role ${triggerConfig.required_role_id}`,
+          );
         } else {
           // Open channel: alle må joine, men ingen management perms
           permissionOverwrites.push({
@@ -368,14 +432,17 @@ __serve(async (req) => {
 
         console.log("Creating channel payload:", JSON.stringify(createPayload));
 
-        const discordResponse = await fetch(`https://discord.com/api/v10/guilds/${guildData!.guild_id}/channels`, {
-          method: "POST",
-          headers: {
-            Authorization: `Bot ${discordBotToken}`,
-            "Content-Type": "application/json",
+        const discordResponse = await fetch(
+          `https://discord.com/api/v10/guilds/${guildData!.guild_id}/channels`,
+          {
+            method: "POST",
+            headers: {
+              Authorization: `Bot ${discordBotToken}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(createPayload),
           },
-          body: JSON.stringify(createPayload),
-        });
+        );
 
         const discordBody = await discordResponse.text();
 
@@ -410,7 +477,9 @@ __serve(async (req) => {
           channel_id: newChannel.id,
           owner_id: userId,
           owner_name: userName,
-          ...(triggerConfig.id !== "legacy" ? { trigger_id: triggerConfig.id } : {}),
+          ...(triggerConfig.id !== "legacy"
+            ? { trigger_id: triggerConfig.id }
+            : {}),
         });
 
         const moveResponse = await fetch(
@@ -444,7 +513,11 @@ __serve(async (req) => {
                   { name: "🔒 Lås", value: "Bloker nye brugere", inline: true },
                   { name: "👁️ Skjul", value: "Skjul kanalen", inline: true },
                   { name: "✏️ Omdøb", value: "Skift navn", inline: true },
-                  { name: "👥 Limit", value: "Sæt bruger-grænse", inline: true },
+                  {
+                    name: "👥 Limit",
+                    value: "Sæt bruger-grænse",
+                    inline: true,
+                  },
                   { name: "👢 Kick", value: "Smid bruger ud", inline: true },
                   { name: "⛔ Block", value: "Bloker bruger", inline: true },
                 ],
@@ -454,40 +527,98 @@ __serve(async (req) => {
               {
                 type: 1,
                 components: [
-                  { type: 2, style: 2, label: "Lås", emoji: { name: "🔒" }, custom_id: `jtc_lock_${cid}` },
-                  { type: 2, style: 2, label: "Skjul", emoji: { name: "👁️" }, custom_id: `jtc_hide_${cid}` },
-                  { type: 2, style: 1, label: "Omdøb", emoji: { name: "✏️" }, custom_id: `jtc_rename_${cid}` },
-                  { type: 2, style: 1, label: "Limit", emoji: { name: "👥" }, custom_id: `jtc_limit_${cid}` },
+                  {
+                    type: 2,
+                    style: 2,
+                    label: "Lås",
+                    emoji: { name: "🔒" },
+                    custom_id: `jtc_lock_${cid}`,
+                  },
+                  {
+                    type: 2,
+                    style: 2,
+                    label: "Skjul",
+                    emoji: { name: "👁️" },
+                    custom_id: `jtc_hide_${cid}`,
+                  },
+                  {
+                    type: 2,
+                    style: 1,
+                    label: "Omdøb",
+                    emoji: { name: "✏️" },
+                    custom_id: `jtc_rename_${cid}`,
+                  },
+                  {
+                    type: 2,
+                    style: 1,
+                    label: "Limit",
+                    emoji: { name: "👥" },
+                    custom_id: `jtc_limit_${cid}`,
+                  },
                 ],
               },
               {
                 type: 1,
                 components: [
-                  { type: 2, style: 4, label: "Kick", emoji: { name: "👢" }, custom_id: `jtc_kick_${cid}` },
-                  { type: 2, style: 4, label: "Block", emoji: { name: "⛔" }, custom_id: `jtc_block_${cid}` },
-                  { type: 2, style: 3, label: "Allow", emoji: { name: "✅" }, custom_id: `jtc_allow_${cid}` },
-                  { type: 2, style: 2, label: "Stream", emoji: { name: "📺" }, custom_id: `jtc_stream_${cid}` },
+                  {
+                    type: 2,
+                    style: 4,
+                    label: "Kick",
+                    emoji: { name: "👢" },
+                    custom_id: `jtc_kick_${cid}`,
+                  },
+                  {
+                    type: 2,
+                    style: 4,
+                    label: "Block",
+                    emoji: { name: "⛔" },
+                    custom_id: `jtc_block_${cid}`,
+                  },
+                  {
+                    type: 2,
+                    style: 3,
+                    label: "Allow",
+                    emoji: { name: "✅" },
+                    custom_id: `jtc_allow_${cid}`,
+                  },
+                  {
+                    type: 2,
+                    style: 2,
+                    label: "Stream",
+                    emoji: { name: "📺" },
+                    custom_id: `jtc_stream_${cid}`,
+                  },
                 ],
               },
             ],
           };
 
-          const panelRes = await fetch(`https://discord.com/api/v10/channels/${cid}/messages`, {
-            method: "POST",
-            headers: {
-              Authorization: `Bot ${discordBotToken}`,
-              "Content-Type": "application/json",
+          const panelRes = await fetch(
+            `https://discord.com/api/v10/channels/${cid}/messages`,
+            {
+              method: "POST",
+              headers: {
+                Authorization: `Bot ${discordBotToken}`,
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify(panelPayload),
             },
-            body: JSON.stringify(panelPayload),
-          });
+          );
 
           if (!panelRes.ok) {
-            console.error("Failed to send JTC control panel:", panelRes.status, await panelRes.text());
+            console.error(
+              "Failed to send JTC control panel:",
+              panelRes.status,
+              await panelRes.text(),
+            );
           } else {
             console.log(`Sent JTC control panel in channel ${cid}`);
           }
         } catch (panelErr) {
-          console.error("JTC control panel error:", panelErr instanceof Error ? panelErr.message : String(panelErr));
+          console.error(
+            "JTC control panel error:",
+            panelErr instanceof Error ? panelErr.message : String(panelErr),
+          );
         }
 
         return new Response(
@@ -549,7 +680,10 @@ __serve(async (req) => {
           .select("guild_id")
           .eq("channel_id", channelId)
           .maybeSingle();
-        const discordBotToken = await getBotTokenForGuild(supabase, jtcChannel?.guild_id || internalGuildId);
+        const discordBotToken = await getBotTokenForGuild(
+          supabase,
+          jtcChannel?.guild_id || internalGuildId,
+        );
 
         // Delete voice channel from Discord
         await fetch(`https://discord.com/api/v10/channels/${channelId}`, {
@@ -560,7 +694,10 @@ __serve(async (req) => {
         });
 
         // Remove from database
-        await supabase.from("jtc_channels").delete().eq("channel_id", channelId);
+        await supabase
+          .from("jtc_channels")
+          .delete()
+          .eq("channel_id", channelId);
 
         console.log(`Deleted JTC channel: ${channelId}`);
 
@@ -583,19 +720,29 @@ __serve(async (req) => {
         }
 
         // Get guild discord ID for API calls
-        const { data: guildData } = await supabase.from("guilds").select("guild_id").eq("id", internalGuildId).single();
+        const { data: guildData } = await supabase
+          .from("guilds")
+          .select("guild_id")
+          .eq("id", internalGuildId)
+          .single();
 
-        const discordBotToken = await getBotTokenForGuild(supabase, internalGuildId);
+        const discordBotToken = await getBotTokenForGuild(
+          supabase,
+          internalGuildId,
+        );
 
         // Fetch channel info from Discord for each active channel
         const enrichedChannels = await Promise.all(
           channels.map(async (channel) => {
             try {
-              const channelResponse = await fetch(`https://discord.com/api/v10/channels/${channel.channel_id}`, {
-                headers: {
-                  Authorization: `Bot ${discordBotToken}`,
+              const channelResponse = await fetch(
+                `https://discord.com/api/v10/channels/${channel.channel_id}`,
+                {
+                  headers: {
+                    Authorization: `Bot ${discordBotToken}`,
+                  },
                 },
-              });
+              );
 
               if (channelResponse.ok) {
                 const discordChannel = await channelResponse.json();
@@ -607,7 +754,10 @@ __serve(async (req) => {
                 };
               }
             } catch (err) {
-              console.error(`Failed to fetch channel info for ${channel.channel_id}:`, err);
+              console.error(
+                `Failed to fetch channel info for ${channel.channel_id}:`,
+                err,
+              );
             }
             return {
               ...channel,
@@ -625,22 +775,34 @@ __serve(async (req) => {
 
       case "force_delete_channel": {
         // Dashboard user wants to force delete a channel
-        const discordBotToken = await getBotTokenForGuild(supabase, internalGuildId);
+        const discordBotToken = await getBotTokenForGuild(
+          supabase,
+          internalGuildId,
+        );
 
-        const deleteResponse = await fetch(`https://discord.com/api/v10/channels/${channelId}`, {
-          method: "DELETE",
-          headers: {
-            Authorization: `Bot ${discordBotToken}`,
+        const deleteResponse = await fetch(
+          `https://discord.com/api/v10/channels/${channelId}`,
+          {
+            method: "DELETE",
+            headers: {
+              Authorization: `Bot ${discordBotToken}`,
+            },
           },
-        });
+        );
 
         // Even if Discord delete fails (channel might already be gone), remove from DB
         if (!deleteResponse.ok && deleteResponse.status !== 404) {
-          console.error("Failed to delete channel from Discord:", await deleteResponse.text());
+          console.error(
+            "Failed to delete channel from Discord:",
+            await deleteResponse.text(),
+          );
         }
 
         // Remove from database
-        await supabase.from("jtc_channels").delete().eq("channel_id", channelId);
+        await supabase
+          .from("jtc_channels")
+          .delete()
+          .eq("channel_id", channelId);
 
         console.log(`Force deleted JTC channel: ${channelId}`);
 
@@ -658,7 +820,8 @@ __serve(async (req) => {
   } catch (error) {
     if (error instanceof Response) return error;
     console.error("JTC Handler error:", error);
-    const errorMessage = error instanceof Error ? error.message : "Unknown error";
+    const errorMessage =
+      error instanceof Error ? error.message : "Unknown error";
     return new Response(JSON.stringify({ error: errorMessage }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -666,10 +829,9 @@ __serve(async (req) => {
   }
 });
 
+const __call = ({ request }: { request: Request }) => __handler(request);
 
-const __call = ({ request }: { request: Request }) => __handler(request)
-
-export const Route = createFileRoute('/api/public/jtc-handler')({
+export const Route = createFileRoute("/api/public/jtc-handler")({
   server: {
     handlers: {
       GET: __call,
@@ -680,4 +842,4 @@ export const Route = createFileRoute('/api/public/jtc-handler')({
       OPTIONS: __call,
     },
   },
-})
+});

@@ -1,7 +1,7 @@
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
-import { useGuild } from '@/contexts/GuildContext';
-import { invokeFunction } from '@/lib/functions-client';
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { useGuild } from "@/contexts/GuildContext";
+import { invokeFunction } from "@/lib/functions-client";
 
 export interface InviteLeaderboardEntry {
   id: string;
@@ -29,11 +29,14 @@ export interface InviteUseRow {
 export function useInviteLeaderboard() {
   const { selectedGuild } = useGuild();
   return useQuery({
-    queryKey: ['invite-leaderboard', selectedGuild?.guild_id],
+    queryKey: ["invite-leaderboard", selectedGuild?.guild_id],
     queryFn: async (): Promise<InviteLeaderboardEntry[]> => {
       if (!selectedGuild?.guild_id) return [];
-      const { data, error } = await invokeFunction('invite-tracker', {
-        body: { action: 'getLeaderboard', data: { guildId: selectedGuild.guild_id } },
+      const { data, error } = await invokeFunction("invite-tracker", {
+        body: {
+          action: "getLeaderboard",
+          data: { guildId: selectedGuild.guild_id },
+        },
       });
       if (error) throw error;
       return data?.leaderboard ?? [];
@@ -46,11 +49,14 @@ export function useInviteLeaderboard() {
 export function useRecentInvites(limit = 50) {
   const { selectedGuild } = useGuild();
   return useQuery({
-    queryKey: ['invite-recent', selectedGuild?.guild_id, limit],
+    queryKey: ["invite-recent", selectedGuild?.guild_id, limit],
     queryFn: async (): Promise<InviteUseRow[]> => {
       if (!selectedGuild?.guild_id) return [];
-      const { data, error } = await invokeFunction('invite-tracker', {
-        body: { action: 'getRecent', data: { guildId: selectedGuild.guild_id, limit } },
+      const { data, error } = await invokeFunction("invite-tracker", {
+        body: {
+          action: "getRecent",
+          data: { guildId: selectedGuild.guild_id, limit },
+        },
       });
       if (error) throw error;
       return data?.recent ?? [];

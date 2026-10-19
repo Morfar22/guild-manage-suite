@@ -1,6 +1,7 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+import type { Untyped } from "@/types/untyped";
 
 export interface ProtectedDiscordId {
   id: string;
@@ -14,33 +15,39 @@ export function useProtectedIds() {
   const queryClient = useQueryClient();
 
   const { data: protectedIds = [], isLoading } = useQuery({
-    queryKey: ['protected-discord-ids'],
+    queryKey: ["protected-discord-ids"],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('protected_discord_ids')
-        .select('*')
-        .order('created_at', { ascending: false });
+        .from("protected_discord_ids")
+        .select("*")
+        .order("created_at", { ascending: false });
       if (error) throw error;
       return data as ProtectedDiscordId[];
     },
   });
 
   const addProtectedId = useMutation({
-    mutationFn: async ({ discord_id, label }: { discord_id: string; label?: string }) => {
+    mutationFn: async ({
+      discord_id,
+      label,
+    }: {
+      discord_id: string;
+      label?: string;
+    }) => {
       const { error } = await supabase
-        .from('protected_discord_ids')
-        .insert({ discord_id, label: label || null, added_by: 'admin' });
+        .from("protected_discord_ids")
+        .insert({ discord_id, label: label || null, added_by: "admin" });
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['protected-discord-ids'] });
-      toast.success('Discord ID tilføjet til beskyttede IDs');
+      queryClient.invalidateQueries({ queryKey: ["protected-discord-ids"] });
+      toast.success("Discord ID tilføjet til beskyttede IDs");
     },
-    onError: (e: any) => {
-      if (e.message?.includes('duplicate')) {
-        toast.error('Dette Discord ID er allerede beskyttet');
+    onError: (e: Untyped) => {
+      if (e.message?.includes("duplicate")) {
+        toast.error("Dette Discord ID er allerede beskyttet");
       } else {
-        toast.error('Kunne ikke tilføje ID');
+        toast.error("Kunne ikke tilføje ID");
       }
     },
   });
@@ -48,16 +55,16 @@ export function useProtectedIds() {
   const removeProtectedId = useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase
-        .from('protected_discord_ids')
+        .from("protected_discord_ids")
         .delete()
-        .eq('id', id);
+        .eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['protected-discord-ids'] });
-      toast.success('Discord ID fjernet fra beskyttede IDs');
+      queryClient.invalidateQueries({ queryKey: ["protected-discord-ids"] });
+      toast.success("Discord ID fjernet fra beskyttede IDs");
     },
-    onError: () => toast.error('Kunne ikke fjerne ID'),
+    onError: () => toast.error("Kunne ikke fjerne ID"),
   });
 
   return { protectedIds, isLoading, addProtectedId, removeProtectedId };

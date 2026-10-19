@@ -25,11 +25,12 @@ Deno.serve(async (req) => {
     const supabaseAuthed = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_ANON_KEY")!,
-      { global: { headers: { Authorization: authHeader } } }
+      { global: { headers: { Authorization: authHeader } } },
     );
 
     // Get user from token
-    const { data: userData, error: userError } = await supabaseAuthed.auth.getUser(token);
+    const { data: userData, error: userError } =
+      await supabaseAuthed.auth.getUser(token);
     if (userError || !userData.user) {
       console.error("Auth error:", userError);
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
@@ -43,12 +44,14 @@ Deno.serve(async (req) => {
     // Create admin client for checking roles
     const supabaseAdmin = createClient(
       Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
 
     // Check if user is admin or staff using the database function (handles enum properly)
-    const { data: hasRole, error: roleError } = await supabaseAdmin
-      .rpc('has_admin_or_staff_role', { _user_id: userId });
+    const { data: hasRole, error: roleError } = await supabaseAdmin.rpc(
+      "has_admin_or_staff_role",
+      { _user_id: userId },
+    );
 
     if (roleError) {
       console.error("Role check error:", roleError);
@@ -59,15 +62,18 @@ Deno.serve(async (req) => {
     }
 
     if (!hasRole) {
-      return new Response(JSON.stringify({ error: "Forbidden - Not an admin" }), {
-        status: 403,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return new Response(
+        JSON.stringify({ error: "Forbidden - Not an admin" }),
+        {
+          status: 403,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
     }
 
     // Get the client's IP address from headers
     // Try multiple headers as different proxies use different headers
-    const clientIp = 
+    const clientIp =
       req.headers.get("cf-connecting-ip") || // Cloudflare
       req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || // Standard proxy
       req.headers.get("x-real-ip") || // Nginx
@@ -84,10 +90,13 @@ Deno.serve(async (req) => {
 
     if (whitelistError) {
       console.error("Whitelist check error:", whitelistError);
-      return new Response(JSON.stringify({ error: "Failed to check whitelist" }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return new Response(
+        JSON.stringify({ error: "Failed to check whitelist" }),
+        {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
     }
 
     // Also check if whitelist is empty (allow all if no IPs configured)
@@ -107,13 +116,13 @@ Deno.serve(async (req) => {
         allowed: isWhitelisted,
         ip: clientIp,
         whitelistEmpty,
-        message: isWhitelisted 
-          ? "Access granted" 
+        message: isWhitelisted
+          ? "Access granted"
           : "Your IP is not whitelisted for admin access",
       }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
-      }
+      },
     );
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : "Unknown error";

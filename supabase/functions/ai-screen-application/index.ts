@@ -2,21 +2,23 @@
 // Bruger OpenAI API til at score og opsummere ansøgninger.
 // Hvis form har auto-approve/deny tærskler, kører action automatisk.
 
-import { requireUser, requireGuildAdmin } from '../_shared/api-auth.ts';
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { requireUser, requireGuildAdmin } from "../_shared/api-auth.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import type { Untyped } from "../_shared/untyped.ts";
 
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type",
 };
 
-const OPENAI_URL = 'https://api.openai.com/v1/chat/completions';
-const DEFAULT_MODEL = 'gpt-4.1-mini';
+const OPENAI_URL = "https://api.openai.com/v1/chat/completions";
+const DEFAULT_MODEL = Deno.env.get("OPENAI_MODEL")?.trim() || "gpt-6-luna";
 
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
-    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
 }
 
@@ -29,57 +31,64 @@ interface AiResult {
   summary: string;
   flags: string[];
   reasoning: string;
-  recommendation: 'approve' | 'deny' | 'review';
+  recommendation: "approve" | "deny" | "review";
   ai_generated_likelihood: number;
   ai_generated_reasoning: string;
 }
 
 Deno.serve(async (req) => {
-  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
+  if (req.method === "OPTIONS")
+    return new Response("ok", { headers: corsHeaders });
 
   try {
-    const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
-    const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
-    const SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-
+    const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
+    const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
+    const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
     const { submission_id } = (await req.json()) as ScreenRequest;
-    if (!submission_id) return json({ error: 'submission_id required' }, 400);
+    if (!submission_id) return json({ error: "submission_id required" }, 400);
 
     const supabase = createClient(SUPABASE_URL, SERVICE_KEY);
     const user = await requireUser(req, supabase);
 
     // Hent submission + form
     const { data: sub, error: subErr } = await supabase
-      .from('application_submissions')
-      .select('*, form:application_forms(*)')
-      .eq('id', submission_id)
+      .from("application_submissions")
+      .select("*, form:application_forms(*)")
+      .eq("id", submission_id)
       .maybeSingle();
 
-    if (subErr || !sub) return json({ error: 'Submission not found' }, 404);
+    if (subErr || !sub) return json({ error: "Submission not found" }, 404);
 
     await requireGuildAdmin(supabase, user.id, sub.guild_id);
 
-    const form = sub.form as any;
+    const form = sub.form as Untyped;
     if (!form?.ai_screening_enabled) {
-      return json({ skipped: true, reason: 'AI screening disabled on form' });
+      return json({ skipped: true, reason: "AI screening disabled on form" });
     }
 
     // Tjek premium
-    const { data: hasPro } = await supabase.rpc('guild_has_applications_pro', {
+    const { data: hasPro } = await supabase.rpc("guild_has_applications_pro", {
       _guild_id: sub.guild_id,
     });
     if (!hasPro) {
-      return json({ skipped: true, reason: 'Premium required for AI screening' });
+      return json({
+        skipped: true,
+        reason: "Premium required for AI screening",
+      });
     }
 
     // Byg prompt
-    const customPrompt = form.ai_screening_prompt?.trim() ||
-      'Du er en streng men retfærdig moderator der vurderer ansøgninger. Vær kritisk overfor svar der virker copy/pastede, korte eller mangelfulde.';
+    const customPrompt =
+      form.ai_screening_prompt?.trim() ||
+      "Du er en streng men retfærdig moderator der vurderer ansøgninger. Vær kritisk overfor svar der virker copy/pastede, korte eller mangelfulde.";
 
-    const answersText = (sub.answers as any[])
-      .map((a: any) => `Q: ${a.question || a.label}\nA: ${a.answer || a.value || '(tomt)'}`)
-      .join('\n\n');
+    const answersText = (sub.answers as Untyped[])
+      .map(
+        (a: Untyped) =>
+          `Q: ${a.question || a.label}\nA: ${a.answer || a.value || "(tomt)"}`,
+      )
+      .join("\n\n");
 
     const systemPrompt = `${customPrompt}
 
@@ -92,63 +101,82 @@ Du skal returnere en struktureret vurdering via tool call.
 - ai_generated_likelihood: 0-100 sandsynlighed for at svarene er skrevet af AI (ChatGPT, Gemini osv). Kig efter: generisk/poleret sprog, manglende personlige detaljer, perfekt grammatik uden naturlige fejl, lister/struktur der ligner LLM output, klichéfyldte vendinger, mangel på autentisk stemme.
 - ai_generated_reasoning: 1-2 sætninger på dansk der forklarer hvorfor du tror/ikke tror det er AI-genereret`;
 
-    const userPrompt = `Form: ${form.name}\nBeskrivelse: ${form.description || '(ingen)'}\n\nAnsøgers svar:\n${answersText}`;
+    const userPrompt = `Form: ${form.name}\nBeskrivelse: ${form.description || "(ingen)"}\n\nAnsøgers svar:\n${answersText}`;
 
     const aiResp = await fetch(OPENAI_URL, {
-      method: 'POST',
+      method: "POST",
       headers: {
         Authorization: `Bearer ${OPENAI_API_KEY}`,
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
       body: JSON.stringify({
         model: DEFAULT_MODEL,
-        reasoning_effort: 'none',
+        reasoning_effort: "none",
         messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: userPrompt },
+          { role: "system", content: systemPrompt },
+          { role: "user", content: userPrompt },
         ],
         tools: [
           {
-            type: 'function',
+            type: "function",
             function: {
-              name: 'submit_evaluation',
-              description: 'Returnér din vurdering af ansøgningen',
+              name: "submit_evaluation",
+              description: "Returnér din vurdering af ansøgningen",
               parameters: {
-                type: 'object',
+                type: "object",
                 properties: {
-                  score: { type: 'integer', minimum: 0, maximum: 100 },
-                  summary: { type: 'string' },
-                  flags: { type: 'array', items: { type: 'string' } },
-                  reasoning: { type: 'string' },
-                  recommendation: { type: 'string', enum: ['approve', 'deny', 'review'] },
-                  ai_generated_likelihood: { type: 'integer', minimum: 0, maximum: 100 },
-                  ai_generated_reasoning: { type: 'string' },
+                  score: { type: "integer", minimum: 0, maximum: 100 },
+                  summary: { type: "string" },
+                  flags: { type: "array", items: { type: "string" } },
+                  reasoning: { type: "string" },
+                  recommendation: {
+                    type: "string",
+                    enum: ["approve", "deny", "review"],
+                  },
+                  ai_generated_likelihood: {
+                    type: "integer",
+                    minimum: 0,
+                    maximum: 100,
+                  },
+                  ai_generated_reasoning: { type: "string" },
                 },
-                required: ['score', 'summary', 'flags', 'reasoning', 'recommendation', 'ai_generated_likelihood', 'ai_generated_reasoning'],
+                required: [
+                  "score",
+                  "summary",
+                  "flags",
+                  "reasoning",
+                  "recommendation",
+                  "ai_generated_likelihood",
+                  "ai_generated_reasoning",
+                ],
               },
             },
           },
         ],
-        tool_choice: { type: 'function', function: { name: 'submit_evaluation' } },
+        tool_choice: {
+          type: "function",
+          function: { name: "submit_evaluation" },
+        },
       }),
     });
 
     if (!aiResp.ok) {
       const errText = await aiResp.text();
-      if (aiResp.status === 429) return json({ error: 'AI rate limit, prøv igen senere' }, 429);
-      console.error('AI error:', aiResp.status, errText);
-      return json({ error: 'OpenAI API error' }, 500);
+      if (aiResp.status === 429)
+        return json({ error: "AI rate limit, prøv igen senere" }, 429);
+      console.error("AI error:", aiResp.status, errText);
+      return json({ error: "OpenAI API error" }, 500);
     }
 
     const aiJson = await aiResp.json();
     const toolCall = aiJson.choices?.[0]?.message?.tool_calls?.[0];
-    if (!toolCall) return json({ error: 'No tool call in AI response' }, 500);
+    if (!toolCall) return json({ error: "No tool call in AI response" }, 500);
 
     const result: AiResult = JSON.parse(toolCall.function.arguments);
 
     // Gem AI-felter
     await supabase
-      .from('application_submissions')
+      .from("application_submissions")
       .update({
         ai_score: result.score,
         ai_summary: result.summary,
@@ -157,53 +185,68 @@ Du skal returnere en struktureret vurdering via tool call.
         ai_generated_likelihood: result.ai_generated_likelihood,
         ai_generated_reasoning: result.ai_generated_reasoning,
       })
-      .eq('id', submission_id);
+      .eq("id", submission_id);
 
     // Audit log
-    await supabase.from('application_audit_log').insert({
+    await supabase.from("application_audit_log").insert({
       guild_id: sub.guild_id,
       submission_id,
       form_id: sub.form_id,
-      actor_type: 'ai',
-      actor_name: 'AI Screening',
-      action: 'ai_screened',
+      actor_type: "ai",
+      actor_name: "AI Screening",
+      action: "ai_screened",
       payload: result,
     });
 
     // Auto-action
     let autoAction: string | null = null;
-    if (form.ai_auto_approve_threshold != null && result.score >= form.ai_auto_approve_threshold) {
-      autoAction = 'approved';
-    } else if (form.ai_auto_deny_threshold != null && result.score <= form.ai_auto_deny_threshold) {
-      autoAction = 'denied';
+    if (
+      form.ai_auto_approve_threshold != null &&
+      result.score >= form.ai_auto_approve_threshold
+    ) {
+      autoAction = "approved";
+    } else if (
+      form.ai_auto_deny_threshold != null &&
+      result.score <= form.ai_auto_deny_threshold
+    ) {
+      autoAction = "denied";
     }
 
     if (autoAction) {
       await supabase
-        .from('application_submissions')
+        .from("application_submissions")
         .update({
-          status: autoAction === 'approved' ? 'approved' : 'denied',
-          reviewer_name: 'AI Auto-Review',
+          status: autoAction === "approved" ? "approved" : "denied",
+          reviewer_name: "AI Auto-Review",
           reviewer_notes: `Auto-${autoAction} based on AI score ${result.score}: ${result.summary}`,
           reviewed_at: new Date().toISOString(),
         })
-        .eq('id', submission_id);
+        .eq("id", submission_id);
 
-      await supabase.from('application_audit_log').insert({
+      await supabase.from("application_audit_log").insert({
         guild_id: sub.guild_id,
         submission_id,
         form_id: sub.form_id,
-        actor_type: 'ai',
-        actor_name: 'AI Auto-Review',
+        actor_type: "ai",
+        actor_name: "AI Auto-Review",
         action: `auto_${autoAction}`,
-        payload: { score: result.score, threshold_used: autoAction === 'approved' ? form.ai_auto_approve_threshold : form.ai_auto_deny_threshold },
+        payload: {
+          score: result.score,
+          threshold_used:
+            autoAction === "approved"
+              ? form.ai_auto_approve_threshold
+              : form.ai_auto_deny_threshold,
+        },
       });
     }
 
     return json({ success: true, result, auto_action: autoAction });
   } catch (err) {
     if (err instanceof Response) return err;
-    console.error('ai-screen-application error:', err);
-    return json({ error: err instanceof Error ? err.message : 'Unknown error' }, 500);
+    console.error("ai-screen-application error:", err);
+    return json(
+      { error: err instanceof Error ? err.message : "Unknown error" },
+      500,
+    );
   }
 });

@@ -1,14 +1,20 @@
-import { decryptBotToken as simpleDecrypt } from '../_shared/bot-token-crypto.ts';
+import { requireGuildAdmin, safeEqual } from "../_shared/api-auth.ts";
+import { decryptBotToken as simpleDecrypt } from "../_shared/bot-token-crypto.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import type { Untyped } from "../_shared/untyped.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version, x-bot-secret, cf-connecting-ip, x-forwarded-for, x-real-ip",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version, x-bot-secret, cf-connecting-ip, x-forwarded-for, x-real-ip",
 };
 
 // Helper function to check if IP is whitelisted
-async function checkIPWhitelist(req: Request, supabase: any): Promise<{ allowed: boolean; ip: string }> {
-  const clientIp = 
+async function checkIPWhitelist(
+  req: Request,
+  supabase: Untyped,
+): Promise<{ allowed: boolean; ip: string }> {
+  const clientIp =
     req.headers.get("cf-connecting-ip") ||
     req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
     req.headers.get("x-real-ip") ||
@@ -29,8 +35,11 @@ async function checkIPWhitelist(req: Request, supabase: any): Promise<{ allowed:
   return { allowed: !!whitelistData, ip: clientIp };
 }
 
-
-async function getBotTokenForGuild(supabase: any, guildId: string, fallbackToken?: string | null): Promise<string> {
+async function getBotTokenForGuild(
+  supabase: Untyped,
+  guildId: string,
+  fallbackToken?: string | null,
+): Promise<string> {
   const { data: settings } = await supabase
     .from("guild_bot_settings")
     .select("is_custom_bot, is_active, bot_token_encrypted")
@@ -45,7 +54,10 @@ async function getBotTokenForGuild(supabase: any, guildId: string, fallbackToken
     try {
       return simpleDecrypt(settings.bot_token_encrypted, encryptionKey);
     } catch (e) {
-      console.error("Failed to decrypt custom bot token, falling back to global:", e instanceof Error ? e.message : String(e));
+      console.error(
+        "Failed to decrypt custom bot token, falling back to global:",
+        e instanceof Error ? e.message : String(e),
+      );
     }
   }
 
@@ -69,9 +81,19 @@ Deno.serve(async (req) => {
 
     const supabase = createClient(supabaseUrl, supabaseKey);
     const body = await req.json();
-    const { action, guildId, giveawayId, userId, username, messageId, giveawayData } = body;
+    const {
+      action,
+      guildId,
+      giveawayId,
+      userId,
+      username,
+      messageId,
+      giveawayData,
+    } = body;
 
-    console.log(`Giveaway handler: action=${action}, guildId=${guildId}, giveawayId=${giveawayId}`);
+    console.log(
+      `Giveaway handler: action=${action}, guildId=${guildId}, giveawayId=${giveawayId}`,
+    );
 
     // Helper to get guild by ID (internal UUID) or Discord guild ID
     async function getGuildInternal(guildIdParam: string) {
@@ -95,10 +117,16 @@ Deno.serve(async (req) => {
     }
 
     // Dashboard actions support either user JWT or trusted bot secret
-    const dashboardActions = new Set(["sendEmbed", "create", "end", "delete", "reroll"]);
+    const dashboardActions = new Set([
+      "sendEmbed",
+      "create",
+      "end",
+      "delete",
+      "reroll",
+    ]);
     const authHeader = req.headers.get("Authorization");
     const botAuthHeader = req.headers.get("x-bot-secret");
-    const isBotRequest = !!botAuthHeader && botAuthHeader === botSecretKey;
+    const isBotRequest = safeEqual(botAuthHeader, botSecretKey);
 
     if (dashboardActions.has(action) && !isBotRequest) {
       if (!authHeader) {
@@ -109,13 +137,33 @@ Deno.serve(async (req) => {
       }
 
       const token = authHeader.replace("Bearer ", "");
-      const { data: claims, error: authError } = await supabase.auth.getUser(token);
+      const { data: claims, error: authError } =
+        await supabase.auth.getUser(token);
 
       if (authError || !claims?.user) {
         return new Response(JSON.stringify({ error: "Unauthorized" }), {
           status: 401,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
+      }
+
+      // Authz: dashboard callers must be admins of the target guild.
+      const targetGuildParam =
+        action === "create" ? giveawayData?.guild_id : guildId;
+      const { guild: targetGuild } = targetGuildParam
+        ? await getGuildInternal(targetGuildParam)
+        : { guild: null };
+      if (!targetGuild) {
+        return new Response(JSON.stringify({ error: "Guild not found" }), {
+          status: 404,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      try {
+        await requireGuildAdmin(supabase, claims.user.id, targetGuild.id);
+      } catch (res) {
+        if (res instanceof Response) return res;
+        throw res;
       }
     } else {
       if (!isBotRequest) {
@@ -128,10 +176,16 @@ Deno.serve(async (req) => {
       const ipCheck = await checkIPWhitelist(req, supabase);
       if (!ipCheck.allowed) {
         console.error(`IP not whitelisted: ${ipCheck.ip}`);
-        return new Response(JSON.stringify({ error: "Forbidden - IP not whitelisted", ip: ipCheck.ip }), {
-          status: 403,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+        return new Response(
+          JSON.stringify({
+            error: "Forbidden - IP not whitelisted",
+            ip: ipCheck.ip,
+          }),
+          {
+            status: 403,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          },
+        );
       }
     }
 
@@ -139,7 +193,11 @@ Deno.serve(async (req) => {
     if (requestedGuildId) {
       const { guild } = await getGuildInternal(requestedGuildId);
       if (guild) {
-        discordBotToken = await getBotTokenForGuild(supabase, guild.id, discordBotToken);
+        discordBotToken = await getBotTokenForGuild(
+          supabase,
+          guild.id,
+          discordBotToken,
+        );
       }
     }
 
@@ -173,29 +231,38 @@ Deno.serve(async (req) => {
       const end = new Date(endsAt);
       const now = new Date();
       const diffMs = end.getTime() - now.getTime();
-      
+
       const hours = Math.floor(diffMs / (1000 * 60 * 60));
       const days = Math.floor(hours / 24);
-      
+
       if (days > 0) {
-        return `${days} day${days > 1 ? 's' : ''}`;
+        return `${days} day${days > 1 ? "s" : ""}`;
       }
-      return `${hours} hour${hours > 1 ? 's' : ''}`;
+      return `${hours} hour${hours > 1 ? "s" : ""}`;
     }
 
     function getEntries(entries: unknown): string[] {
-      return Array.isArray(entries) ? entries.filter((entry): entry is string => typeof entry === "string") : [];
+      return Array.isArray(entries)
+        ? entries.filter((entry): entry is string => typeof entry === "string")
+        : [];
     }
 
     function getWinners(winners: unknown): string[] {
-      return Array.isArray(winners) ? winners.filter((winner): winner is string => typeof winner === "string") : [];
+      return Array.isArray(winners)
+        ? winners.filter(
+            (winner): winner is string => typeof winner === "string",
+          )
+        : [];
     }
 
-    function buildGiveawayEmbed(giveaway: any) {
+    function buildGiveawayEmbed(giveaway: Untyped) {
       const entries = getEntries(giveaway.entries);
       const winners = getWinners(giveaway.winners);
-      const hasEnded = giveaway.ended || new Date(giveaway.ends_at) <= new Date();
-      const endsAtUnix = Math.floor(new Date(giveaway.ends_at).getTime() / 1000);
+      const hasEnded =
+        giveaway.ended || new Date(giveaway.ends_at) <= new Date();
+      const endsAtUnix = Math.floor(
+        new Date(giveaway.ends_at).getTime() / 1000,
+      );
 
       const fields: Array<{ name: string; value: string; inline?: boolean }> = [
         {
@@ -226,9 +293,10 @@ Deno.serve(async (req) => {
       if (hasEnded) {
         fields.push({
           name: "🎊 Resultat",
-          value: winners.length > 0
-            ? winners.map((winnerId) => `<@${winnerId}>`).join(", ")
-            : "Ingen gyldige deltagere.",
+          value:
+            winners.length > 0
+              ? winners.map((winnerId) => `<@${winnerId}>`).join(", ")
+              : "Ingen gyldige deltagere.",
           inline: false,
         });
       }
@@ -236,7 +304,7 @@ Deno.serve(async (req) => {
       return {
         title: hasEnded ? "🎉 Giveaway afsluttet" : "🎉 Giveaway!",
         description: `**${giveaway.prize}**${giveaway.description ? `\n\n${giveaway.description}` : ""}`,
-        color: hasEnded ? 0x57F287 : 0x5865F2,
+        color: hasEnded ? 0x57f287 : 0x5865f2,
         fields,
         footer: {
           text: `Giveaway ID: ${giveaway.id}`,
@@ -245,9 +313,10 @@ Deno.serve(async (req) => {
       };
     }
 
-    function buildGiveawayComponents(giveaway: any) {
+    function buildGiveawayComponents(giveaway: Untyped) {
       const entries = getEntries(giveaway.entries);
-      const hasEnded = giveaway.ended || new Date(giveaway.ends_at) <= new Date();
+      const hasEnded =
+        giveaway.ended || new Date(giveaway.ends_at) <= new Date();
 
       return [
         {
@@ -257,7 +326,9 @@ Deno.serve(async (req) => {
               type: 2,
               style: hasEnded ? 2 : 3,
               custom_id: `giveaway_enter_${giveaway.id}`,
-              label: hasEnded ? "Giveaway afsluttet" : `Deltag (${entries.length})`,
+              label: hasEnded
+                ? "Giveaway afsluttet"
+                : `Deltag (${entries.length})`,
               emoji: { name: "🎉" },
               disabled: hasEnded,
             },
@@ -266,8 +337,9 @@ Deno.serve(async (req) => {
       ];
     }
 
-    function buildGiveawayMessagePayload(giveaway: any) {
-      const hasEnded = giveaway.ended || new Date(giveaway.ends_at) <= new Date();
+    function buildGiveawayMessagePayload(giveaway: Untyped) {
+      const hasEnded =
+        giveaway.ended || new Date(giveaway.ends_at) <= new Date();
 
       return {
         content: hasEnded
@@ -278,14 +350,17 @@ Deno.serve(async (req) => {
       };
     }
 
-    async function syncGiveawayMessage(giveaway: any) {
+    async function syncGiveawayMessage(giveaway: Untyped) {
       if (!giveaway?.channel_id || !giveaway?.message_id) return;
 
       try {
-        await discordApi(`/channels/${giveaway.channel_id}/messages/${giveaway.message_id}`, {
-          method: "PATCH",
-          body: JSON.stringify(buildGiveawayMessagePayload(giveaway)),
-        });
+        await discordApi(
+          `/channels/${giveaway.channel_id}/messages/${giveaway.message_id}`,
+          {
+            method: "PATCH",
+            body: JSON.stringify(buildGiveawayMessagePayload(giveaway)),
+          },
+        );
       } catch (error) {
         console.error("Failed to sync giveaway message:", error);
       }
@@ -295,13 +370,18 @@ Deno.serve(async (req) => {
       case "create": {
         // Create giveaway from dashboard and send embed to Discord
         if (!giveawayData) {
-          return new Response(JSON.stringify({ error: "Missing giveaway data" }), {
-            status: 400,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          });
+          return new Response(
+            JSON.stringify({ error: "Missing giveaway data" }),
+            {
+              status: 400,
+              headers: { ...corsHeaders, "Content-Type": "application/json" },
+            },
+          );
         }
 
-        const { guild, error: guildError } = await getGuildInternal(giveawayData.guild_id);
+        const { guild, error: guildError } = await getGuildInternal(
+          giveawayData.guild_id,
+        );
         if (guildError || !guild) {
           return new Response(JSON.stringify({ error: "Guild not found" }), {
             status: 404,
@@ -338,10 +418,13 @@ Deno.serve(async (req) => {
 
         try {
           const payload = buildGiveawayMessagePayload(newGiveaway);
-          const message = await discordApi(`/channels/${newGiveaway.channel_id}/messages`, {
-            method: "POST",
-            body: JSON.stringify(payload),
-          });
+          const message = await discordApi(
+            `/channels/${newGiveaway.channel_id}/messages`,
+            {
+              method: "POST",
+              body: JSON.stringify(payload),
+            },
+          );
 
           // Update the giveaway with the message ID
           await supabase
@@ -349,24 +432,33 @@ Deno.serve(async (req) => {
             .update({ message_id: message.id })
             .eq("id", newGiveaway.id);
 
-          console.log(`Giveaway created and embed sent: ${newGiveaway.id}, message: ${message.id}`);
+          console.log(
+            `Giveaway created and embed sent: ${newGiveaway.id}, message: ${message.id}`,
+          );
 
-          return new Response(JSON.stringify({ 
-            success: true, 
-            giveaway: { ...newGiveaway, message_id: message.id }
-          }), {
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          });
+          return new Response(
+            JSON.stringify({
+              success: true,
+              giveaway: { ...newGiveaway, message_id: message.id },
+            }),
+            {
+              headers: { ...corsHeaders, "Content-Type": "application/json" },
+            },
+          );
         } catch (discordError) {
           console.error("Failed to send Discord embed:", discordError);
           // Giveaway was created but embed failed - return partial success
-          return new Response(JSON.stringify({ 
-            success: true, 
-            giveaway: newGiveaway,
-            warning: "Giveaway created, but could not send to Discord. Check bot permissions."
-          }), {
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          });
+          return new Response(
+            JSON.stringify({
+              success: true,
+              giveaway: newGiveaway,
+              warning:
+                "Giveaway created, but could not send to Discord. Check bot permissions.",
+            }),
+            {
+              headers: { ...corsHeaders, "Content-Type": "application/json" },
+            },
+          );
         }
       }
 
@@ -394,10 +486,13 @@ Deno.serve(async (req) => {
           });
         }
 
-        const message = await discordApi(`/channels/${giveaway.channel_id}/messages`, {
-          method: "POST",
-          body: JSON.stringify(buildGiveawayMessagePayload(giveaway)),
-        });
+        const message = await discordApi(
+          `/channels/${giveaway.channel_id}/messages`,
+          {
+            method: "POST",
+            body: JSON.stringify(buildGiveawayMessagePayload(giveaway)),
+          },
+        );
 
         // Update message_id
         await supabase
@@ -405,9 +500,12 @@ Deno.serve(async (req) => {
           .update({ message_id: message.id })
           .eq("id", giveawayId);
 
-        return new Response(JSON.stringify({ success: true, messageId: message.id }), {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+        return new Response(
+          JSON.stringify({ success: true, messageId: message.id }),
+          {
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          },
+        );
       }
 
       case "enter": {
@@ -443,22 +541,28 @@ Deno.serve(async (req) => {
         }
 
         if (new Date(giveaway.ends_at) < new Date()) {
-          return new Response(JSON.stringify({ error: "Giveaway has expired" }), {
-            status: 400,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          });
+          return new Response(
+            JSON.stringify({ error: "Giveaway has expired" }),
+            {
+              status: 400,
+              headers: { ...corsHeaders, "Content-Type": "application/json" },
+            },
+          );
         }
 
         // Check if user already entered
         const entries = getEntries(giveaway.entries);
         if (entries.includes(userId)) {
-          return new Response(JSON.stringify({ 
-            success: true, 
-            message: "Already entered",
-            requiresRole: giveaway.required_role_id 
-          }), {
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          });
+          return new Response(
+            JSON.stringify({
+              success: true,
+              message: "Already entered",
+              requiresRole: giveaway.required_role_id,
+            }),
+            {
+              headers: { ...corsHeaders, "Content-Type": "application/json" },
+            },
+          );
         }
 
         // Add user to entries
@@ -470,14 +574,17 @@ Deno.serve(async (req) => {
 
         await syncGiveawayMessage({ ...giveaway, entries: updatedEntries });
 
-        return new Response(JSON.stringify({ 
-          success: true, 
-          message: "Entry added",
-          entriesCount: updatedEntries.length,
-          requiresRole: giveaway.required_role_id
-        }), {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+        return new Response(
+          JSON.stringify({
+            success: true,
+            message: "Entry added",
+            entriesCount: updatedEntries.length,
+            requiresRole: giveaway.required_role_id,
+          }),
+          {
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          },
+        );
       }
 
       case "leave": {
@@ -505,7 +612,7 @@ Deno.serve(async (req) => {
         }
 
         const entries = getEntries(giveaway.entries);
-        const updatedEntries = entries.filter(id => id !== userId);
+        const updatedEntries = entries.filter((id) => id !== userId);
 
         await supabase
           .from("giveaways")
@@ -514,12 +621,15 @@ Deno.serve(async (req) => {
 
         await syncGiveawayMessage({ ...giveaway, entries: updatedEntries });
 
-        return new Response(JSON.stringify({ 
-          success: true, 
-          entriesCount: updatedEntries.length 
-        }), {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+        return new Response(
+          JSON.stringify({
+            success: true,
+            entriesCount: updatedEntries.length,
+          }),
+          {
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          },
+        );
       }
 
       case "end": {
@@ -547,15 +657,18 @@ Deno.serve(async (req) => {
         }
 
         if (giveaway.ended) {
-          return new Response(JSON.stringify({ error: "Giveaway already ended" }), {
-            status: 400,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          });
+          return new Response(
+            JSON.stringify({ error: "Giveaway already ended" }),
+            {
+              status: 400,
+              headers: { ...corsHeaders, "Content-Type": "application/json" },
+            },
+          );
         }
 
         const entries = getEntries(giveaway.entries);
         const winnersCount = Math.min(giveaway.winners_count, entries.length);
-        
+
         // Pick random winners
         const shuffled = [...entries].sort(() => Math.random() - 0.5);
         const winners = shuffled.slice(0, winnersCount);
@@ -563,9 +676,9 @@ Deno.serve(async (req) => {
         // Update giveaway
         await supabase
           .from("giveaways")
-          .update({ 
-            ended: true, 
-            winners: winners 
+          .update({
+            ended: true,
+            winners: winners,
           })
           .eq("id", giveawayId);
 
@@ -573,24 +686,24 @@ Deno.serve(async (req) => {
 
         // Send winner announcement to Discord
         if (giveaway.channel_id && winners.length > 0) {
-          const winnerMentions = winners.map(id => `<@${id}>`).join(", ");
+          const winnerMentions = winners.map((id) => `<@${id}>`).join(", ");
           const embed = {
             title: "🎉 Giveaway Ended!",
             description: `**Prize:** ${giveaway.prize}`,
-            color: 0x57F287,
+            color: 0x57f287,
             fields: [
               {
                 name: "🏆 Winners",
                 value: winnerMentions,
-                inline: false
+                inline: false,
               },
               {
                 name: "📊 Entries",
                 value: String(entries.length),
-                inline: true
-              }
+                inline: true,
+              },
             ],
-            timestamp: new Date().toISOString()
+            timestamp: new Date().toISOString(),
           };
 
           try {
@@ -598,21 +711,24 @@ Deno.serve(async (req) => {
               method: "POST",
               body: JSON.stringify({
                 content: `🎊 Congratulations ${winnerMentions}! You won **${giveaway.prize}**!`,
-                embeds: [embed]
-              })
+                embeds: [embed],
+              }),
             });
           } catch (e) {
             console.error("Failed to send winner announcement:", e);
           }
         }
 
-        return new Response(JSON.stringify({ 
-          success: true, 
-          winners,
-          entriesCount: entries.length 
-        }), {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+        return new Response(
+          JSON.stringify({
+            success: true,
+            winners,
+            entriesCount: entries.length,
+          }),
+          {
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          },
+        );
       }
 
       case "reroll": {
@@ -641,18 +757,24 @@ Deno.serve(async (req) => {
         // Auto-end if expired but not formally ended
         const isExpired = new Date(giveaway.ends_at) <= new Date();
         if (!giveaway.ended && !isExpired) {
-          return new Response(JSON.stringify({ error: "Giveaway is still active" }), {
-            status: 400,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          });
+          return new Response(
+            JSON.stringify({ error: "Giveaway is still active" }),
+            {
+              status: 400,
+              headers: { ...corsHeaders, "Content-Type": "application/json" },
+            },
+          );
         }
 
         const entries = getEntries(giveaway.entries);
         if (entries.length === 0) {
-          return new Response(JSON.stringify({ error: "No entries to reroll from" }), {
-            status: 400,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          });
+          return new Response(
+            JSON.stringify({ error: "No entries to reroll from" }),
+            {
+              status: 400,
+              headers: { ...corsHeaders, "Content-Type": "application/json" },
+            },
+          );
         }
 
         // Pick fresh random winners (replacing old ones)
@@ -665,29 +787,36 @@ Deno.serve(async (req) => {
           .update({ winners: newWinners, ended: true })
           .eq("id", giveawayId);
 
-        await syncGiveawayMessage({ ...giveaway, ended: true, winners: newWinners });
+        await syncGiveawayMessage({
+          ...giveaway,
+          ended: true,
+          winners: newWinners,
+        });
 
         // Announce reroll
         if (giveaway.channel_id) {
-          const winnerMentions = newWinners.map(id => `<@${id}>`).join(", ");
+          const winnerMentions = newWinners.map((id) => `<@${id}>`).join(", ");
           try {
             await discordApi(`/channels/${giveaway.channel_id}/messages`, {
               method: "POST",
               body: JSON.stringify({
-                content: `🎲 Reroll! Nye vindere af **${giveaway.prize}**: ${winnerMentions}!`
-              })
+                content: `🎲 Reroll! Nye vindere af **${giveaway.prize}**: ${winnerMentions}!`,
+              }),
             });
           } catch (e) {
             console.error("Failed to send reroll announcement:", e);
           }
         }
 
-        return new Response(JSON.stringify({ 
-          success: true, 
-          winners: newWinners
-        }), {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+        return new Response(
+          JSON.stringify({
+            success: true,
+            winners: newWinners,
+          }),
+          {
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          },
+        );
       }
 
       case "delete": {
@@ -710,12 +839,15 @@ Deno.serve(async (req) => {
         // Try to delete the Discord message if it exists
         if (giveaway?.message_id && giveaway?.channel_id) {
           try {
-            await fetch(`https://discord.com/api/v10/channels/${giveaway.channel_id}/messages/${giveaway.message_id}`, {
-              method: "DELETE",
-              headers: {
-                Authorization: `Bot ${discordBotToken}`,
+            await fetch(
+              `https://discord.com/api/v10/channels/${giveaway.channel_id}/messages/${giveaway.message_id}`,
+              {
+                method: "DELETE",
+                headers: {
+                  Authorization: `Bot ${discordBotToken}`,
+                },
               },
-            });
+            );
           } catch (e) {
             console.error("Failed to delete giveaway message from Discord:", e);
           }
@@ -789,7 +921,8 @@ Deno.serve(async (req) => {
     }
   } catch (error) {
     console.error("Giveaway handler error:", error);
-    const errorMessage = error instanceof Error ? error.message : "Unknown error";
+    const errorMessage =
+      error instanceof Error ? error.message : "Unknown error";
     return new Response(JSON.stringify({ error: errorMessage }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },

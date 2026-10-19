@@ -1,26 +1,52 @@
-import { useState, useEffect } from 'react';
-import { Navigate, useNavigate, Link } from '@tanstack/react-router';
-import { useSearchParams } from '@/hooks/useSearchParams';
-import { useAuth } from '@/contexts/AuthContext';
-import { useGuild } from '@/contexts/GuildContext';
-import { useLanguage } from '@/contexts/LanguageContext';
-import { supabase } from '@/integrations/supabase/client';
-import { Guild } from '@/types/discord';
-import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Bot, Loader2, Plus, LogOut, Users, Crown, ExternalLink, RefreshCw, Shield, Trash2, Eye, EyeOff, Sparkles, ArrowRight, CheckCircle2 } from 'lucide-react';
-import { toast } from 'sonner';
-import { useIsAdmin } from '@/hooks/useAdmin';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { invokeFunction } from '@/lib/functions-client';
-import { PUBLIC_BOT_INVITE_URL } from '@/lib/product';
+import { useCallback, useState, useEffect } from "react";
+import { Navigate, useNavigate, Link } from "@tanstack/react-router";
+import { useSearchParams } from "@/hooks/useSearchParams";
+import { useAuth } from "@/contexts/AuthContext";
+import { useGuild } from "@/contexts/GuildContext";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { supabase } from "@/integrations/supabase/client";
+import { Guild } from "@/types/discord";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import {
+  Bot,
+  Loader2,
+  Plus,
+  LogOut,
+  Users,
+  Crown,
+  ExternalLink,
+  RefreshCw,
+  Shield,
+  Trash2,
+  Eye,
+  EyeOff,
+  Sparkles,
+  ArrowRight,
+  CheckCircle2,
+} from "lucide-react";
+import { toast } from "sonner";
+import { useIsAdmin } from "@/hooks/useAdmin";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { invokeFunction } from "@/lib/functions-client";
+import { PUBLIC_BOT_INVITE_URL } from "@/lib/product";
 
 export default function GuildSelect() {
   const { user, loading: authLoading, signOut } = useAuth();
   const { setSelectedGuild } = useGuild();
   const { language } = useLanguage();
-  const en = language === 'en';
+  const en = language === "en";
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [guilds, setGuilds] = useState<Guild[]>([]);
@@ -31,85 +57,158 @@ export default function GuildSelect() {
   const [deletingGuildId, setDeletingGuildId] = useState<string | null>(null);
   const { data: isAdmin } = useIsAdmin();
 
-  useEffect(() => { if (user && isAdmin !== undefined) { fetchGuilds(); if (isAdmin) setShowInactive(true); } }, [user, isAdmin]);
-
-  useEffect(() => {
-    const guildParam = searchParams.get('guild');
-    if (guildParam && guilds.length > 0 && !loading) {
-      const target = guilds.find(g => g.id === guildParam);
-      if (target) {
-        setSelectedGuild(target);
-        navigate({ to: '/dashboard',  replace: true  });
-      }
-    }
-  }, [guilds, loading, searchParams]);
-
-  const fetchGuilds = async () => {
+  const fetchGuilds = useCallback(async () => {
     try {
       const fiveMinAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
-      const { data: statusData } = await supabase.from('bot_status').select('guild_id, is_online, last_heartbeat');
+      const { data: statusData } = await supabase
+        .from("bot_status")
+        .select("guild_id, is_online, last_heartbeat");
       const statusMap: Record<string, boolean> = {};
-      (statusData || []).forEach(s => {
-        statusMap[s.guild_id] = s.is_online && !!s.last_heartbeat && s.last_heartbeat > fiveMinAgo;
+      (statusData || []).forEach((s) => {
+        statusMap[s.guild_id] =
+          s.is_online && !!s.last_heartbeat && s.last_heartbeat > fiveMinAgo;
       });
       setBotStatusMap(statusMap);
 
       if (isAdmin) {
-        const { data, error } = await supabase.from('guilds').select('*').order('guild_name');
+        const { data, error } = await supabase
+          .from("guilds")
+          .select("*")
+          .order("guild_name");
         if (error) throw error;
         setGuilds(data || []);
       } else {
-        const { data, error } = await supabase.from('user_guilds').select(`guild_id, has_admin_permission, guilds:guild_id (*)`).eq('user_id', user?.id ?? '');
+        const { data, error } = await supabase
+          .from("user_guilds")
+          .select(`guild_id, has_admin_permission, guilds:guild_id (*)`)
+          .eq("user_id", user?.id ?? "");
         if (error) throw error;
-        setGuilds(data?.filter(ug => ug.guilds && ug.has_admin_permission).map(ug => ug.guilds as Guild).sort((a, b) => a.guild_name.localeCompare(b.guild_name)) || []);
+        setGuilds(
+          data
+            ?.filter((ug) => ug.guilds && ug.has_admin_permission)
+            .map((ug) => ug.guilds as Guild)
+            .sort((a, b) => a.guild_name.localeCompare(b.guild_name)) || [],
+        );
       }
-    } catch (err) { console.error('Error fetching guilds:', err); } finally { setLoading(false); }
-  };
+    } catch (err) {
+      console.error("Error fetching guilds:", err);
+    } finally {
+      setLoading(false);
+    }
+  }, [isAdmin, user?.id]);
+
+  useEffect(() => {
+    if (user && isAdmin !== undefined) {
+      void fetchGuilds();
+      if (isAdmin) setShowInactive(true);
+    }
+  }, [user, isAdmin, fetchGuilds]);
+
+  useEffect(() => {
+    const guildParam = searchParams.get("guild");
+    if (guildParam && guilds.length > 0 && !loading) {
+      const target = guilds.find((g) => g.id === guildParam);
+      if (target) {
+        setSelectedGuild(target);
+        navigate({ to: "/dashboard", replace: true });
+      }
+    }
+  }, [guilds, loading, searchParams, navigate, setSelectedGuild]);
 
   const isBotActive = (guildId: string) => !!botStatusMap[guildId];
-  const filteredGuilds = showInactive ? guilds : guilds.filter(g => isBotActive(g.id));
-  const inactiveCount = guilds.filter(g => !isBotActive(g.id)).length;
-  const activeCount = guilds.filter(g => isBotActive(g.id)).length;
+  const filteredGuilds = showInactive
+    ? guilds
+    : guilds.filter((g) => isBotActive(g.id));
+  const inactiveCount = guilds.filter((g) => !isBotActive(g.id)).length;
+  const activeCount = guilds.filter((g) => isBotActive(g.id)).length;
 
   const handleDeleteGuild = async (guild: Guild) => {
     setDeletingGuildId(guild.id);
     try {
-      const { error } = await supabase.from('guilds').delete().eq('id', guild.id);
+      const { error } = await supabase
+        .from("guilds")
+        .delete()
+        .eq("id", guild.id);
       if (error) throw error;
-      toast.success(en ? `Removed ${guild.guild_name}` : `${guild.guild_name} fjernet`);
-      setGuilds(prev => prev.filter(g => g.id !== guild.id));
+      toast.success(
+        en ? `Removed ${guild.guild_name}` : `${guild.guild_name} fjernet`,
+      );
+      setGuilds((prev) => prev.filter((g) => g.id !== guild.id));
     } catch (err) {
-      console.error('Error deleting guild:', err);
-      toast.error(en ? 'Could not remove server' : 'Kunne ikke fjerne server');
-    } finally { setDeletingGuildId(null); }
+      console.error("Error deleting guild:", err);
+      toast.error(en ? "Could not remove server" : "Kunne ikke fjerne server");
+    } finally {
+      setDeletingGuildId(null);
+    }
   };
 
-  const handleSelectGuild = (guild: Guild) => { setSelectedGuild(guild); navigate({ to: '/dashboard' }); };
+  const handleSelectGuild = (guild: Guild) => {
+    setSelectedGuild(guild);
+    navigate({ to: "/dashboard" });
+  };
 
   const handleSyncDiscord = async () => {
     setSyncing(true);
     try {
-      const response = await invokeFunction('discord-oauth?action=authorize', { body: { redirectUri: `${window.location.origin}/auth` }, headers: { 'Content-Type': 'application/json' } });
+      const response = await invokeFunction("discord-oauth?action=authorize", {
+        body: { redirectUri: `${window.location.origin}/auth` },
+        headers: { "Content-Type": "application/json" },
+      });
       if (response.error) throw response.error;
       if (response.data?.url) {
-        const opened = window.open(response.data.url, '_blank', 'noopener,noreferrer');
+        const opened = window.open(
+          response.data.url,
+          "_blank",
+          "noopener,noreferrer",
+        );
         if (!opened) window.location.href = response.data.url;
-        toast.info(en ? 'Complete Discord login in the new window to sync your servers' : 'Gennemfør Discord login i det nye vindue for at synkronisere dine servere');
+        toast.info(
+          en
+            ? "Complete Discord login in the new window to sync your servers"
+            : "Gennemfør Discord login i det nye vindue for at synkronisere dine servere",
+        );
       }
-    } catch (err) { console.error('Error syncing Discord:', err); toast.error(en ? 'Could not start Discord sync' : 'Kunne ikke starte Discord sync'); } finally { setSyncing(false); }
+    } catch (err) {
+      console.error("Error syncing Discord:", err);
+      toast.error(
+        en ? "Could not start Discord sync" : "Kunne ikke starte Discord sync",
+      );
+    } finally {
+      setSyncing(false);
+    }
   };
 
   const handleAddDemoGuild = async () => {
     if (!user) return;
     try {
-      const { error } = await invokeFunction('create-demo-guild', { body: { guild_id: `demo_${Date.now()}`, guild_name: 'Demo Server', guild_icon: null, owner_id: user.id, command_prefix: '!', log_channel_id: null, auto_moderation_enabled: false } });
+      const { error } = await invokeFunction("create-demo-guild", {
+        body: {
+          guild_id: `demo_${Date.now()}`,
+          guild_name: "Demo Server",
+          guild_icon: null,
+          owner_id: user.id,
+          command_prefix: "!",
+          log_channel_id: null,
+          auto_moderation_enabled: false,
+        },
+      });
       if (error) throw error;
-      toast.success(en ? 'Demo server created!' : 'Demo server oprettet!');
+      toast.success(en ? "Demo server created!" : "Demo server oprettet!");
       fetchGuilds();
-    } catch (err) { console.error('Error creating demo guild:', err); toast.error(en ? 'Failed to create demo server' : 'Kunne ikke oprette demo server'); }
+    } catch (err) {
+      console.error("Error creating demo guild:", err);
+      toast.error(
+        en ? "Failed to create demo server" : "Kunne ikke oprette demo server",
+      );
+    }
   };
 
-  if (authLoading) return <main className="flex min-h-screen items-center justify-center bg-background"><Loader2 className="h-8 w-8 animate-spin text-primary" /></main>;
+  if (authLoading)
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-background">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </main>
+    );
   if (!user) return <Navigate to="/auth" replace />;
 
   return (
@@ -121,19 +220,33 @@ export default function GuildSelect() {
             <div className="flex h-9 w-9 items-center justify-center rounded-lg gradient-blurple shadow-glow">
               <Bot className="h-5 w-5 text-primary-foreground" />
             </div>
-            <span className="text-lg font-bold tracking-tight">GuildOS Bot</span>
+            <span className="text-lg font-bold tracking-tight">
+              GuildOS Bot
+            </span>
           </Link>
           <div className="flex items-center gap-2 sm:gap-3">
             {isAdmin && (
               <Link to="/admin" className="hidden sm:inline-flex">
-                <Button variant="ghost" size="sm" className="text-primary hover:bg-primary/10">
-                  <Shield className="mr-1.5 h-4 w-4" />Admin
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-primary hover:bg-primary/10"
+                >
+                  <Shield className="mr-1.5 h-4 w-4" />
+                  Admin
                 </Button>
               </Link>
             )}
-            <Button variant="ghost" size="sm" onClick={signOut} className="text-muted-foreground hover:text-foreground">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={signOut}
+              className="text-muted-foreground hover:text-foreground"
+            >
               <LogOut className="mr-1.5 h-4 w-4" />
-              <span className="hidden sm:inline">{en ? 'Sign out' : 'Log ud'}</span>
+              <span className="hidden sm:inline">
+                {en ? "Sign out" : "Log ud"}
+              </span>
             </Button>
           </div>
         </nav>
@@ -150,34 +263,59 @@ export default function GuildSelect() {
           <div className="text-center">
             <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-4 py-1.5 text-xs font-medium text-primary">
               <Sparkles className="h-3.5 w-3.5" />
-              <span>{en ? 'Welcome back' : 'Velkommen tilbage'}</span>
+              <span>{en ? "Welcome back" : "Velkommen tilbage"}</span>
             </div>
             <h1 className="text-3xl font-bold leading-tight tracking-tight sm:text-4xl lg:text-5xl">
-              {en ? 'Choose your ' : 'Vælg din '}
-              <span className="text-gradient">{en ? 'server' : 'server'}</span>
+              {en ? "Choose your " : "Vælg din "}
+              <span className="text-gradient">{en ? "server" : "server"}</span>
             </h1>
             <p className="mx-auto mt-4 max-w-xl text-sm text-muted-foreground sm:text-base">
-              {en ? 'Pick a Discord server to manage with GuildOS Bot.' : 'Vælg en Discord-server du vil administrere med GuildOS Bot.'}
+              {en
+                ? "Pick a Discord server to manage with GuildOS Bot."
+                : "Vælg en Discord-server du vil administrere med GuildOS Bot."}
             </p>
 
             <div className="mt-7 flex flex-col items-center justify-center gap-3 sm:flex-row">
-              <Button onClick={handleSyncDiscord} disabled={syncing} size="lg" className="w-full gradient-blurple text-primary-foreground shadow-glow hover:opacity-90 sm:w-auto">
-                {syncing ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <RefreshCw className="mr-2 h-5 w-5" />}
-                {en ? 'Sync Discord' : 'Synkroniser Discord'}
+              <Button
+                onClick={handleSyncDiscord}
+                disabled={syncing}
+                size="lg"
+                className="w-full gradient-blurple text-primary-foreground shadow-glow hover:opacity-90 sm:w-auto"
+              >
+                {syncing ? (
+                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                ) : (
+                  <RefreshCw className="mr-2 h-5 w-5" />
+                )}
+                {en ? "Sync Discord" : "Synkroniser Discord"}
               </Button>
               {PUBLIC_BOT_INVITE_URL && (
-                <a href={PUBLIC_BOT_INVITE_URL} target="_blank" rel="noopener noreferrer" className="w-full sm:w-auto">
-                  <Button size="lg" variant="outline" className="w-full sm:w-auto">
+                <a
+                  href={PUBLIC_BOT_INVITE_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full sm:w-auto"
+                >
+                  <Button
+                    size="lg"
+                    variant="outline"
+                    className="w-full sm:w-auto"
+                  >
                     <Bot className="mr-2 h-5 w-5" />
-                    {en ? 'Invite GuildOS Bot' : 'Inviter GuildOS Bot'}
+                    {en ? "Invite GuildOS Bot" : "Inviter GuildOS Bot"}
                     <ExternalLink className="ml-2 h-3.5 w-3.5" />
                   </Button>
                 </a>
               )}
               {guilds.length === 0 && (
-                <Button onClick={handleAddDemoGuild} size="lg" variant="ghost" className="w-full sm:w-auto">
+                <Button
+                  onClick={handleAddDemoGuild}
+                  size="lg"
+                  variant="ghost"
+                  className="w-full sm:w-auto"
+                >
                   <Sparkles className="mr-2 h-5 w-5" />
-                  {en ? 'Try a demo server' : 'Prøv en demoserver'}
+                  {en ? "Try a demo server" : "Prøv en demoserver"}
                 </Button>
               )}
             </div>
@@ -186,16 +324,28 @@ export default function GuildSelect() {
             {guilds.length > 0 && (
               <dl className="mx-auto mt-12 grid max-w-2xl grid-cols-3 gap-4 border-t border-border/40 pt-8">
                 <div className="text-center">
-                  <dd className="text-2xl font-bold text-gradient sm:text-3xl">{guilds.length}</dd>
-                  <p className="mt-1 text-xs text-muted-foreground">{en ? 'Total servers' : 'Servere i alt'}</p>
+                  <dd className="text-2xl font-bold text-gradient sm:text-3xl">
+                    {guilds.length}
+                  </dd>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    {en ? "Total servers" : "Servere i alt"}
+                  </p>
                 </div>
                 <div className="text-center">
-                  <dd className="text-2xl font-bold text-success sm:text-3xl">{activeCount}</dd>
-                  <p className="mt-1 text-xs text-muted-foreground">{en ? 'Bot online' : 'Bot online'}</p>
+                  <dd className="text-2xl font-bold text-success sm:text-3xl">
+                    {activeCount}
+                  </dd>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    {en ? "Bot online" : "Bot online"}
+                  </p>
                 </div>
                 <div className="text-center">
-                  <dd className="text-2xl font-bold text-muted-foreground sm:text-3xl">{inactiveCount}</dd>
-                  <p className="mt-1 text-xs text-muted-foreground">{en ? 'Inactive' : 'Inaktive'}</p>
+                  <dd className="text-2xl font-bold text-muted-foreground sm:text-3xl">
+                    {inactiveCount}
+                  </dd>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    {en ? "Inactive" : "Inaktive"}
+                  </p>
                 </div>
               </dl>
             )}
@@ -206,23 +356,38 @@ export default function GuildSelect() {
       {/* ======================= GUILDS ======================= */}
       <section className="mx-auto max-w-7xl px-4 pb-20 sm:px-6 lg:px-8">
         {loading ? (
-          <div className="flex items-center justify-center py-20"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>
+          <div className="flex items-center justify-center py-20">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          </div>
         ) : guilds.length === 0 ? (
           <Card className="mx-auto max-w-2xl border-border/50 bg-card/60 p-10 text-center backdrop-blur sm:p-14">
             <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl gradient-blurple shadow-glow">
               <Users className="h-8 w-8 text-primary-foreground" />
             </div>
-            <h2 className="text-xl font-semibold sm:text-2xl">{en ? 'No servers yet' : 'Ingen servere endnu'}</h2>
+            <h2 className="text-xl font-semibold sm:text-2xl">
+              {en ? "No servers yet" : "Ingen servere endnu"}
+            </h2>
             <p className="mx-auto mt-3 max-w-md text-sm text-muted-foreground sm:text-base">
-              {en ? 'Sync your Discord account to see servers, or create a demo server to get started.' : 'Synkroniser din Discord-konto for at se servere, eller opret en demo server.'}
+              {en
+                ? "Sync your Discord account to see servers, or create a demo server to get started."
+                : "Synkroniser din Discord-konto for at se servere, eller opret en demo server."}
             </p>
             <div className="mt-7 flex flex-col items-center justify-center gap-3 sm:flex-row">
-              <Button onClick={handleSyncDiscord} disabled={syncing} className="gradient-blurple text-primary-foreground hover:opacity-90">
-                {syncing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
-                {en ? 'Sync Discord' : 'Synkroniser Discord'}
+              <Button
+                onClick={handleSyncDiscord}
+                disabled={syncing}
+                className="gradient-blurple text-primary-foreground hover:opacity-90"
+              >
+                {syncing ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <RefreshCw className="mr-2 h-4 w-4" />
+                )}
+                {en ? "Sync Discord" : "Synkroniser Discord"}
               </Button>
               <Button onClick={handleAddDemoGuild} variant="outline">
-                <Plus className="mr-2 h-4 w-4" />{en ? 'Create Demo Server' : 'Opret Demo Server'}
+                <Plus className="mr-2 h-4 w-4" />
+                {en ? "Create Demo Server" : "Opret Demo Server"}
               </Button>
             </div>
           </Card>
@@ -232,11 +397,28 @@ export default function GuildSelect() {
               <div className="mb-6 flex flex-col items-start justify-between gap-3 rounded-xl border border-border/50 bg-card/60 px-5 py-3 backdrop-blur sm:flex-row sm:items-center">
                 <span className="inline-flex items-center gap-2 text-sm text-muted-foreground">
                   <span className="inline-block h-2 w-2 rounded-full bg-destructive" />
-                  {inactiveCount} {en ? 'server(s) hidden — bot not active' : 'server(e) skjult — bot ikke aktiv'}
+                  {inactiveCount}{" "}
+                  {en
+                    ? "server(s) hidden — bot not active"
+                    : "server(e) skjult — bot ikke aktiv"}
                 </span>
-                <Button variant="ghost" size="sm" onClick={() => setShowInactive(!showInactive)}>
-                  {showInactive ? <EyeOff className="mr-2 h-4 w-4" /> : <Eye className="mr-2 h-4 w-4" />}
-                  {showInactive ? (en ? 'Hide inactive' : 'Skjul inaktive') : (en ? 'Show inactive' : 'Vis inaktive')}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowInactive(!showInactive)}
+                >
+                  {showInactive ? (
+                    <EyeOff className="mr-2 h-4 w-4" />
+                  ) : (
+                    <Eye className="mr-2 h-4 w-4" />
+                  )}
+                  {showInactive
+                    ? en
+                      ? "Hide inactive"
+                      : "Skjul inaktive"
+                    : en
+                      ? "Show inactive"
+                      : "Vis inaktive"}
                 </Button>
               </div>
             )}
@@ -250,8 +432,8 @@ export default function GuildSelect() {
                     <Card
                       className={`group relative h-full overflow-hidden border-border/50 bg-card p-5 transition-all ${
                         clickable
-                          ? 'cursor-pointer hover:-translate-y-1 hover:border-primary/40 hover:shadow-glow'
-                          : 'opacity-60'
+                          ? "cursor-pointer hover:-translate-y-1 hover:border-primary/40 hover:shadow-glow"
+                          : "opacity-60"
                       }`}
                       onClick={() => clickable && handleSelectGuild(guild)}
                     >
@@ -267,12 +449,20 @@ export default function GuildSelect() {
                                 disabled={deletingGuildId === guild.id}
                                 onClick={(e) => e.stopPropagation()}
                               >
-                                {deletingGuildId === guild.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
+                                {deletingGuildId === guild.id ? (
+                                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                ) : (
+                                  <Trash2 className="h-3.5 w-3.5" />
+                                )}
                               </Button>
                             </AlertDialogTrigger>
-                            <AlertDialogContent onClick={(e) => e.stopPropagation()}>
+                            <AlertDialogContent
+                              onClick={(e) => e.stopPropagation()}
+                            >
                               <AlertDialogHeader>
-                                <AlertDialogTitle>{en ? 'Remove server?' : 'Fjern server?'}</AlertDialogTitle>
+                                <AlertDialogTitle>
+                                  {en ? "Remove server?" : "Fjern server?"}
+                                </AlertDialogTitle>
                                 <AlertDialogDescription>
                                   {en
                                     ? `Are you sure you want to remove "${guild.guild_name}" from the list? This will delete all associated data.`
@@ -280,9 +470,14 @@ export default function GuildSelect() {
                                 </AlertDialogDescription>
                               </AlertDialogHeader>
                               <AlertDialogFooter>
-                                <AlertDialogCancel>{en ? 'Cancel' : 'Annuller'}</AlertDialogCancel>
-                                <AlertDialogAction onClick={() => handleDeleteGuild(guild)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                                  {en ? 'Remove' : 'Fjern'}
+                                <AlertDialogCancel>
+                                  {en ? "Cancel" : "Annuller"}
+                                </AlertDialogCancel>
+                                <AlertDialogAction
+                                  onClick={() => handleDeleteGuild(guild)}
+                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                >
+                                  {en ? "Remove" : "Fjern"}
                                 </AlertDialogAction>
                               </AlertDialogFooter>
                             </AlertDialogContent>
@@ -305,19 +500,31 @@ export default function GuildSelect() {
                           </Avatar>
                           <span
                             className={`absolute -bottom-0.5 -right-0.5 inline-block h-3.5 w-3.5 rounded-full ring-2 ring-card ${
-                              active ? 'bg-success' : 'bg-destructive'
+                              active ? "bg-success" : "bg-destructive"
                             }`}
-                            aria-label={active ? 'Online' : 'Offline'}
+                            aria-label={active ? "Online" : "Offline"}
                           />
                         </div>
 
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-1.5">
-                            <p className="truncate font-semibold">{guild.guild_name}</p>
-                            {guild.owner_id === user?.id && <Crown className="h-3.5 w-3.5 shrink-0 text-warning" />}
+                            <p className="truncate font-semibold">
+                              {guild.guild_name}
+                            </p>
+                            {guild.owner_id === user?.id && (
+                              <Crown className="h-3.5 w-3.5 shrink-0 text-warning" />
+                            )}
                           </div>
-                          <p className={`mt-0.5 text-xs ${active ? 'text-success' : 'text-muted-foreground'}`}>
-                            {active ? (en ? 'Bot online' : 'Bot online') : (en ? 'Bot offline' : 'Bot offline')}
+                          <p
+                            className={`mt-0.5 text-xs ${active ? "text-success" : "text-muted-foreground"}`}
+                          >
+                            {active
+                              ? en
+                                ? "Bot online"
+                                : "Bot online"
+                              : en
+                                ? "Bot offline"
+                                : "Bot offline"}
                           </p>
                         </div>
 
@@ -342,8 +549,16 @@ export default function GuildSelect() {
                     <Bot className="h-4 w-4" />
                   </span>
                   <span className="text-left">
-                    <span className="block font-medium">{en ? 'Add GuildOS to Discord' : 'Tilføj GuildOS til Discord'}</span>
-                    <span className="mt-0.5 block text-xs text-muted-foreground">{en ? 'Choose a server in Discord' : 'Vælg serveren direkte i Discord'}</span>
+                    <span className="block font-medium">
+                      {en
+                        ? "Add GuildOS to Discord"
+                        : "Tilføj GuildOS til Discord"}
+                    </span>
+                    <span className="mt-0.5 block text-xs text-muted-foreground">
+                      {en
+                        ? "Choose a server in Discord"
+                        : "Vælg serveren direkte i Discord"}
+                    </span>
                   </span>
                   <ExternalLink className="h-4 w-4" />
                 </a>

@@ -1,29 +1,45 @@
 // @ts-nocheck
-import { decryptBotToken as simpleDecrypt } from '@/lib/server/bot-token-crypto'
+import { decryptBotToken as simpleDecrypt } from "@/lib/server/bot-token-crypto";
 // Migrated from Supabase Edge Function `generate-ticket-transcript` to a TanStack server route.
-import { createFileRoute } from '@tanstack/react-router'
-import { createClient } from '@supabase/supabase-js'
+import { createFileRoute } from "@tanstack/react-router";
+import { createClient } from "@supabase/supabase-js";
+import type { Untyped } from "@/types/untyped";
 
-const __env = (k: string) => process.env[k] ?? (k === 'SUPABASE_ANON_KEY' ? process.env['SUPABASE_PUBLISHABLE_KEY'] : undefined)
-let __handler: (req: Request) => Response | Promise<Response>
-const __serve = (fn: any, _opts?: any) => { __handler = fn }
-
+const __env = (k: string) =>
+  process.env[k] ??
+  (k === "SUPABASE_ANON_KEY"
+    ? process.env["SUPABASE_PUBLISHABLE_KEY"]
+    : undefined);
+let __handler: (req: Request) => Response | Promise<Response>;
+const __serve = (fn: Untyped, _opts?: Untyped) => {
+  __handler = fn;
+};
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-bot-secret",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type, x-bot-secret",
 };
 
 function esc(s: string) {
-  return s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]!));
+  return s.replace(
+    /[&<>"']/g,
+    (c) =>
+      ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[
+        c
+      ]!,
+  );
 }
 
-function buildHtml(ticket: any, messages: any[], guildName: string) {
-  const rows = messages.map((m) => {
-    const time = new Date(m.created_at).toLocaleString();
-    const att = Array.isArray(m.attachments) && m.attachments.length
-      ? `<div class="atts">${m.attachments.map((a: any) => `<a href="${esc(a.url)}" target="_blank">${esc(a.name || "attachment")}</a>`).join(" ")}</div>` : "";
-    return `<div class="msg">
+function buildHtml(ticket: Untyped, messages: Untyped[], guildName: string) {
+  const rows = messages
+    .map((m) => {
+      const time = new Date(m.created_at).toLocaleString();
+      const att =
+        Array.isArray(m.attachments) && m.attachments.length
+          ? `<div class="atts">${m.attachments.map((a: Untyped) => `<a href="${esc(a.url)}" target="_blank">${esc(a.name || "attachment")}</a>`).join(" ")}</div>`
+          : "";
+      return `<div class="msg">
       <img class="avatar" src="${esc(m.author_avatar || "https://cdn.discordapp.com/embed/avatars/0.png")}" alt="">
       <div class="body">
         <div class="head"><span class="name">${esc(m.author_name || "Unknown")}</span><span class="time">${esc(time)}</span></div>
@@ -31,7 +47,8 @@ function buildHtml(ticket: any, messages: any[], guildName: string) {
         ${att}
       </div>
     </div>`;
-  }).join("");
+    })
+    .join("");
 
   return `<!doctype html><html><head><meta charset="utf-8"><title>Ticket transcript · ${esc(ticket.id)}</title>
   <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -65,82 +82,141 @@ function buildHtml(ticket: any, messages: any[], guildName: string) {
 async function fetchDMChannel(botToken: string, userId: string) {
   const r = await fetch("https://discord.com/api/v10/users/@me/channels", {
     method: "POST",
-    headers: { Authorization: `Bot ${botToken}`, "Content-Type": "application/json" },
+    headers: {
+      Authorization: `Bot ${botToken}`,
+      "Content-Type": "application/json",
+    },
     body: JSON.stringify({ recipient_id: userId }),
   });
   if (!r.ok) return null;
   return r.json();
 }
 
-
-async function getBotToken(supabase: any, guildId: string): Promise<string> {
-  const { data } = await supabase.from("guild_bot_settings").select("bot_token_encrypted")
-    .eq("guild_id", guildId).eq("is_custom_bot", true).eq("is_active", true).maybeSingle();
+async function getBotToken(
+  supabase: Untyped,
+  guildId: string,
+): Promise<string> {
+  const { data } = await supabase
+    .from("guild_bot_settings")
+    .select("bot_token_encrypted")
+    .eq("guild_id", guildId)
+    .eq("is_custom_bot", true)
+    .eq("is_active", true)
+    .maybeSingle();
   const k = __env("BOT_SECRET_KEY") || "";
   if (data?.bot_token_encrypted) {
-    try { return simpleDecrypt(data.bot_token_encrypted, k); } catch (_) {}
+    try {
+      return simpleDecrypt(data.bot_token_encrypted, k);
+    } catch (_) {
+      /* ignore */
+    }
   }
   return __env("DISCORD_BOT_TOKEN")!;
 }
 
 __serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+  if (req.method === "OPTIONS")
+    return new Response(null, { headers: corsHeaders });
   try {
     const botSecret = req.headers.get("x-bot-secret");
-    if (!botSecret || botSecret !== __env("BOT_SECRET_KEY")) return json({ error: "unauthorized" }, 401);
+    if (!botSecret || botSecret !== __env("BOT_SECRET_KEY"))
+      return json({ error: "unauthorized" }, 401);
 
     const { ticket_id } = await req.json();
     if (!ticket_id) return json({ error: "ticket_id required" }, 400);
 
-    const supabase = createClient(__env("SUPABASE_URL")!, __env("SUPABASE_SERVICE_ROLE_KEY")!);
+    const supabase = createClient(
+      __env("SUPABASE_URL")!,
+      __env("SUPABASE_SERVICE_ROLE_KEY")!,
+    );
 
-    const { data: ticket } = await supabase.from("tickets").select("*").eq("id", ticket_id).maybeSingle();
+    const { data: ticket } = await supabase
+      .from("tickets")
+      .select("*")
+      .eq("id", ticket_id)
+      .maybeSingle();
     if (!ticket) return json({ error: "ticket not found" }, 404);
 
-    const { data: settings } = await supabase.from("ticket_settings").select("*").eq("guild_id", ticket.guild_id).maybeSingle();
-    if (settings && settings.enable_transcripts === false) return json({ success: true, skipped: true });
+    const { data: settings } = await supabase
+      .from("ticket_settings")
+      .select("*")
+      .eq("guild_id", ticket.guild_id)
+      .maybeSingle();
+    if (settings && settings.enable_transcripts === false)
+      return json({ success: true, skipped: true });
 
-    const { data: messages } = await supabase.from("ticket_messages").select("*").eq("ticket_id", ticket_id).order("created_at", { ascending: true });
-    const { data: guild } = await supabase.from("guilds").select("guild_name").eq("id", ticket.guild_id).maybeSingle();
+    const { data: messages } = await supabase
+      .from("ticket_messages")
+      .select("*")
+      .eq("ticket_id", ticket_id)
+      .order("created_at", { ascending: true });
+    const { data: guild } = await supabase
+      .from("guilds")
+      .select("guild_name")
+      .eq("id", ticket.guild_id)
+      .maybeSingle();
 
-    const html = buildHtml(ticket, messages || [], guild?.guild_name || "Server");
+    const html = buildHtml(
+      ticket,
+      messages || [],
+      guild?.guild_name || "Server",
+    );
     const path = `${ticket.guild_id}/${ticket_id}.html`;
 
-    const { error: upErr } = await supabase.storage.from("ticket-transcripts").upload(path, new Blob([html], { type: "text/html" }), { upsert: true, contentType: "text/html" });
+    const { error: upErr } = await supabase.storage
+      .from("ticket-transcripts")
+      .upload(path, new Blob([html], { type: "text/html" }), {
+        upsert: true,
+        contentType: "text/html",
+      });
     if (upErr) return json({ error: upErr.message }, 500);
 
-    const { data: signed } = await supabase.storage.from("ticket-transcripts").createSignedUrl(path, 60 * 60 * 24 * 365);
+    const { data: signed } = await supabase.storage
+      .from("ticket-transcripts")
+      .createSignedUrl(path, 60 * 60 * 24 * 365);
     const url = signed?.signedUrl || null;
 
-    await supabase.from("ticket_transcripts").upsert({
-      ticket_id, guild_id: ticket.guild_id, html_url: url, storage_path: path, message_count: messages?.length || 0,
-    }, { onConflict: "ticket_id" });
+    await supabase.from("ticket_transcripts").upsert(
+      {
+        ticket_id,
+        guild_id: ticket.guild_id,
+        html_url: url,
+        storage_path: path,
+        message_count: messages?.length || 0,
+      },
+      { onConflict: "ticket_id" },
+    );
 
     // DM the creator with transcript + optional rating buttons
     if (url && settings?.dm_transcript_to_user !== false) {
       const botToken = await getBotToken(supabase, ticket.guild_id);
       const dm = await fetchDMChannel(botToken, ticket.creator_id);
       if (dm?.id) {
-        const components: any[] = [];
+        const components: Untyped[] = [];
         if (settings?.enable_ratings) {
           components.push({
             type: 1,
             components: [1, 2, 3, 4, 5].map((n) => ({
-              type: 2, style: n <= 2 ? 4 : n === 3 ? 2 : 3,
-              label: `${n} ★`, custom_id: `ticket_rate_${ticket_id}_${n}`,
+              type: 2,
+              style: n <= 2 ? 4 : n === 3 ? 2 : 3,
+              label: `${n} ★`,
+              custom_id: `ticket_rate_${ticket_id}_${n}`,
             })),
           });
         }
         const embed = {
           title: "🎫 Ticket closed",
           description: `${settings?.enable_ratings ? (settings.ratings_dm_prompt || "How would you rate the support you received?") + "\n\n" : ""}[View transcript](${url})`,
-          color: 0x5865F2,
+          color: 0x5865f2,
           footer: { text: guild?.guild_name || "" },
           timestamp: new Date().toISOString(),
         };
         await fetch(`https://discord.com/api/v10/channels/${dm.id}/messages`, {
           method: "POST",
-          headers: { Authorization: `Bot ${botToken}`, "Content-Type": "application/json" },
+          headers: {
+            Authorization: `Bot ${botToken}`,
+            "Content-Type": "application/json",
+          },
           body: JSON.stringify({ embeds: [embed], components }),
         }).catch(() => {});
       }
@@ -149,18 +225,26 @@ __serve(async (req) => {
     // Post to transcript log channel
     if (url && settings?.transcript_channel_id) {
       const botToken = await getBotToken(supabase, ticket.guild_id);
-      await fetch(`https://discord.com/api/v10/channels/${settings.transcript_channel_id}/messages`, {
-        method: "POST",
-        headers: { Authorization: `Bot ${botToken}`, "Content-Type": "application/json" },
-        body: JSON.stringify({
-          embeds: [{
-            title: "📜 Ticket transcript",
-            description: `**${ticket.subject || "Ticket"}**\nCreated by <@${ticket.creator_id}>\n[Open transcript](${url})`,
-            color: 0x5865F2,
-            timestamp: new Date().toISOString(),
-          }],
-        }),
-      }).catch(() => {});
+      await fetch(
+        `https://discord.com/api/v10/channels/${settings.transcript_channel_id}/messages`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bot ${botToken}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            embeds: [
+              {
+                title: "📜 Ticket transcript",
+                description: `**${ticket.subject || "Ticket"}**\nCreated by <@${ticket.creator_id}>\n[Open transcript](${url})`,
+                color: 0x5865f2,
+                timestamp: new Date().toISOString(),
+              },
+            ],
+          }),
+        },
+      ).catch(() => {});
     }
 
     return json({ success: true, url });
@@ -170,13 +254,15 @@ __serve(async (req) => {
 });
 
 function json(b: unknown, s = 200) {
-  return new Response(JSON.stringify(b), { status: s, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+  return new Response(JSON.stringify(b), {
+    status: s,
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
 }
 
+const __call = ({ request }: { request: Request }) => __handler(request);
 
-const __call = ({ request }: { request: Request }) => __handler(request)
-
-export const Route = createFileRoute('/api/public/generate-ticket-transcript')({
+export const Route = createFileRoute("/api/public/generate-ticket-transcript")({
   server: {
     handlers: {
       GET: __call,
@@ -187,4 +273,4 @@ export const Route = createFileRoute('/api/public/generate-ticket-transcript')({
       OPTIONS: __call,
     },
   },
-})
+});

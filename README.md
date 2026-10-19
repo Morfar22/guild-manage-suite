@@ -67,7 +67,6 @@ Runtime secrets and infrastructure identifiers intentionally keep their existing
 **Default Discord bot:** GuildOS Bot  
 **Operations workspace:** GuildOS Bot Operations Center
 
-
 ## Security
 
 Never commit runtime `.env` files, Discord bot tokens, Supabase service-role keys or

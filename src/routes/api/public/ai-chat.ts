@@ -1,51 +1,99 @@
-// @ts-nocheck
 // Migrated from Supabase Edge Function `ai-chat` to a TanStack server route.
-import { createFileRoute } from '@tanstack/react-router'
-import { createClient } from '@supabase/supabase-js'
-import { requireUser, requireGuildAdmin } from '@/lib/server/api-auth'
-import { openAIChatCompletion, openAIErrorResponse } from '@/lib/server/openai'
+// @ts-nocheck
+import { createFileRoute } from "@tanstack/react-router";
+import { createClient } from "@supabase/supabase-js";
+import {
+  requireUser,
+  requireGuildAdmin,
+  safeEqual,
+} from "@/lib/server/api-auth";
+import { openAIChatCompletion, openAIErrorResponse } from "@/lib/server/openai";
+import type { Untyped } from "@/types/untyped";
 
-const __env = (k: string) => process.env[k] ?? (k === 'SUPABASE_ANON_KEY' ? process.env['SUPABASE_PUBLISHABLE_KEY'] : undefined)
-let __handler: (req: Request) => Response | Promise<Response>
-const __serve = (fn: any, _opts?: any) => { __handler = fn }
-
+const __env = (k: string) =>
+  process.env[k] ??
+  (k === "SUPABASE_ANON_KEY"
+    ? process.env["SUPABASE_PUBLISHABLE_KEY"]
+    : undefined);
+let __handler: (req: Request) => Response | Promise<Response>;
+const __serve = (fn: Untyped, _opts?: Untyped) => {
+  __handler = fn;
+};
 
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-bot-secret, cf-connecting-ip, x-forwarded-for, x-real-ip',
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type, x-bot-secret, cf-connecting-ip, x-forwarded-for, x-real-ip",
 };
 
 // Fetch protected IDs from DB (cached per request)
-async function getProtectedIds(supabase: any): Promise<Set<string>> {
+async function getProtectedIds(supabase: Untyped): Promise<Set<string>> {
   const { data } = await supabase
-    .from('protected_discord_ids')
-    .select('discord_id');
+    .from("protected_discord_ids")
+    .select("discord_id");
   return new Set((data || []).map((r: { discord_id: string }) => r.discord_id));
 }
 
 // Check if a user's message tries to roast/insult a protected owner
-function isRoastingProtectedOwner(messageText: string, requestingUserId: string, protectedIds: Set<string>): boolean {
+function isRoastingProtectedOwner(
+  messageText: string,
+  requestingUserId: string,
+  protectedIds: Set<string>,
+): boolean {
   if (protectedIds.has(String(requestingUserId))) return false;
 
   const lowerText = messageText.toLowerCase();
-  const mentionsProtected = Array.from(protectedIds).some(id => lowerText.includes(id));
+  const mentionsProtected = Array.from(protectedIds).some((id) =>
+    lowerText.includes(id),
+  );
   if (!mentionsProtected) return false;
 
   const roastTerms = [
-    'roast', 'insult', 'diss', 'flame', 'burn', 'trash talk',
-    'roast ham', 'roast him', 'roast her', 'roast dem', 'roast den',
-    'gør nar', 'mobning', 'hån', 'ydmyg',
+    "roast",
+    "insult",
+    "diss",
+    "flame",
+    "burn",
+    "trash talk",
+    "roast ham",
+    "roast him",
+    "roast her",
+    "roast dem",
+    "roast den",
+    "gør nar",
+    "mobning",
+    "hån",
+    "ydmyg",
   ];
-  return roastTerms.some(term => lowerText.includes(term));
+  return roastTerms.some((term) => lowerText.includes(term));
 }
 
 // Scan AI output for abuse toward protected owners
-function containsProtectedAbuse(text: string, protectedUserId: string): boolean {
+function containsProtectedAbuse(
+  text: string,
+  protectedUserId: string,
+): boolean {
   const lowerText = text.toLowerCase();
   const abusiveTerms = [
-    'idiot', 'klovn', 'taber', 'ynkelig', 'patetisk', 'spasser', 'klaphat',
-    'narrøv', 'moron', 'loser', 'stupid', 'dumb', 'retard', 'omvandrende', 'fejl-40',
-    'fuck dig', 'hold kæft', 'pinlig', 'embarrassing'
+    "idiot",
+    "klovn",
+    "taber",
+    "ynkelig",
+    "patetisk",
+    "spasser",
+    "klaphat",
+    "narrøv",
+    "moron",
+    "loser",
+    "stupid",
+    "dumb",
+    "retard",
+    "omvandrende",
+    "fejl-40",
+    "fuck dig",
+    "hold kæft",
+    "pinlig",
+    "embarrassing",
   ];
 
   if (!lowerText.includes(protectedUserId.toLowerCase())) return false;
@@ -63,107 +111,208 @@ interface BlockCategory {
 
 const ILLEGAL_CONTENT_CATEGORIES: BlockCategory[] = [
   {
-    category: 'child_sexual_abuse',
-    severity: 'critical',
+    category: "child_sexual_abuse",
+    severity: "critical",
     keywords: [
-      'børneporno', 'childporn', 'child porn', 'cp', 'pædofil', 'pedophil',
-      'børnemisbrug', 'child abuse', 'child sex', 'børnesex', 'mindreårig sex',
-      'underage', 'minor sex', 'lolicon', 'shotacon',
+      "børneporno",
+      "childporn",
+      "child porn",
+      "cp",
+      "pædofil",
+      "pedophil",
+      "børnemisbrug",
+      "child abuse",
+      "child sex",
+      "børnesex",
+      "mindreårig sex",
+      "underage",
+      "minor sex",
+      "lolicon",
+      "shotacon",
     ],
   },
   {
-    category: 'animal_sexual_abuse',
-    severity: 'critical',
+    category: "animal_sexual_abuse",
+    severity: "critical",
     keywords: [
-      'dyreporno', 'dyresex', 'zoofili', 'zoophil', 'bestiality', 'animal porn',
-      'animal sex', 'sex med dyr', 'kneppe dyr', 'fuck animal',
+      "dyreporno",
+      "dyresex",
+      "zoofili",
+      "zoophil",
+      "bestiality",
+      "animal porn",
+      "animal sex",
+      "sex med dyr",
+      "kneppe dyr",
+      "fuck animal",
     ],
   },
   {
-    category: 'sexual_violence',
-    severity: 'critical',
+    category: "sexual_violence",
+    severity: "critical",
     keywords: [
-      'voldtægt', 'voldtag', 'rape', 'sexual assault', 'molest', 'gang rape',
-      'gruppevoldtægt', 'tvunget sex', 'forced sex',
+      "voldtægt",
+      "voldtag",
+      "rape",
+      "sexual assault",
+      "molest",
+      "gang rape",
+      "gruppevoldtægt",
+      "tvunget sex",
+      "forced sex",
     ],
   },
   {
-    category: 'terrorism',
-    severity: 'critical',
+    category: "terrorism",
+    severity: "critical",
     keywords: [
-      'bombe', 'terrorangreb', 'terror handling', 'terrorhandling', 'terror handlinger',
-      'terrorhandlinger', 'terroraktion', 'terroraktioner', 'terroristisk angreb',
-      'terroristiske angreb', 'massakre', 'masseskyderi', 'jihad',
-      'bomb', 'terror attack', 'terror action', 'terrorist attack', 'massacre',
-      'mass shooting', 'lav en bombe', 'make a bomb', 'build a bomb', 'byg en bombe',
+      "bombe",
+      "terrorangreb",
+      "terror handling",
+      "terrorhandling",
+      "terror handlinger",
+      "terrorhandlinger",
+      "terroraktion",
+      "terroraktioner",
+      "terroristisk angreb",
+      "terroristiske angreb",
+      "massakre",
+      "masseskyderi",
+      "jihad",
+      "bomb",
+      "terror attack",
+      "terror action",
+      "terrorist attack",
+      "massacre",
+      "mass shooting",
+      "lav en bombe",
+      "make a bomb",
+      "build a bomb",
+      "byg en bombe",
     ],
   },
   {
-    category: 'murder_violence',
-    severity: 'high',
+    category: "murder_violence",
+    severity: "high",
     keywords: [
-      'dræb', 'mord', 'slå ihjel', 'skyd', 'stik ned', 'tortur', 'mishandl',
-      'kill', 'murder', 'shoot', 'stab', 'torture', 'beat up', 'assault',
-      'lav gift', 'make poison', 'forgift',
+      "dræb",
+      "mord",
+      "slå ihjel",
+      "skyd",
+      "stik ned",
+      "tortur",
+      "mishandl",
+      "kill",
+      "murder",
+      "shoot",
+      "stab",
+      "torture",
+      "beat up",
+      "assault",
+      "lav gift",
+      "make poison",
+      "forgift",
     ],
   },
   {
-    category: 'self_harm',
-    severity: 'high',
+    category: "self_harm",
+    severity: "high",
     keywords: [
-      'selvmord', 'selvskade', 'skær mig', 'tage mit liv', 'hænge mig', 'slå mig selv ihjel',
-      'suicide', 'self-harm', 'cut myself', 'kill myself', 'end my life', 'hang myself',
+      "selvmord",
+      "selvskade",
+      "skær mig",
+      "tage mit liv",
+      "hænge mig",
+      "slå mig selv ihjel",
+      "suicide",
+      "self-harm",
+      "cut myself",
+      "kill myself",
+      "end my life",
+      "hang myself",
     ],
   },
   {
-    category: 'drugs_manufacturing',
-    severity: 'high',
+    category: "drugs_manufacturing",
+    severity: "high",
     keywords: [
-      'lav meth', 'make meth', 'cook meth', 'fremstil stoffer', 'lav heroin',
-      'make heroin', 'lav kokain', 'make cocaine', 'drug recipe', 'opskrift på stoffer',
-      'lav lsd', 'make lsd', 'syntese', 'synthesis drug',
-      'fremstil amfetamin', 'make amphetamine',
+      "lav meth",
+      "make meth",
+      "cook meth",
+      "fremstil stoffer",
+      "lav heroin",
+      "make heroin",
+      "lav kokain",
+      "make cocaine",
+      "drug recipe",
+      "opskrift på stoffer",
+      "lav lsd",
+      "make lsd",
+      "syntese",
+      "synthesis drug",
+      "fremstil amfetamin",
+      "make amphetamine",
     ],
   },
   {
-    category: 'weapons_manufacturing',
-    severity: 'high',
+    category: "weapons_manufacturing",
+    severity: "high",
     keywords: [
-      'lav et våben', 'make a weapon', 'make a gun', 'lav en pistol', 'byg et gevær',
-      'build a gun', '3d print gun', '3d print våben', 'ghost gun',
+      "lav et våben",
+      "make a weapon",
+      "make a gun",
+      "lav en pistol",
+      "byg et gevær",
+      "build a gun",
+      "3d print gun",
+      "3d print våben",
+      "ghost gun",
     ],
   },
   {
-    category: 'human_trafficking',
-    severity: 'critical',
+    category: "human_trafficking",
+    severity: "critical",
     keywords: [
-      'menneskehandel', 'human trafficking', 'sex trafficking', 'sælg mennesker',
-      'sell people', 'slave trade', 'slavehandel',
+      "menneskehandel",
+      "human trafficking",
+      "sex trafficking",
+      "sælg mennesker",
+      "sell people",
+      "slave trade",
+      "slavehandel",
     ],
   },
 ];
 
 // All blocked keywords combined (for the basic block check)
-const BLOCKED_TOPICS_INPUT = ILLEGAL_CONTENT_CATEGORIES.flatMap(c => c.keywords);
+const BLOCKED_TOPICS_INPUT = ILLEGAL_CONTENT_CATEGORIES.flatMap(
+  (c) => c.keywords,
+);
 
 const BLOCKED_TOPICS_OUTPUT = [
   ...BLOCKED_TOPICS_INPUT,
-  'jeg vil hjælpe dig med at dræbe', 'here is how to kill', 'sådan laver du en bombe',
-  'her er en plan for', 'step-by-step guide to harm',
+  "jeg vil hjælpe dig med at dræbe",
+  "here is how to kill",
+  "sådan laver du en bombe",
+  "her er en plan for",
+  "step-by-step guide to harm",
 ];
 
 function containsBlockedContent(text: string, blocklist: string[]): boolean {
   const lower = text.toLowerCase();
-  return blocklist.some(term => lower.includes(term));
+  return blocklist.some((term) => lower.includes(term));
 }
 
 /** Detect which categories matched and return them */
-function detectIllegalCategories(text: string): { category: string; severity: string; matched: string[] }[] {
+function detectIllegalCategories(
+  text: string,
+): { category: string; severity: string; matched: string[] }[] {
   const lower = text.toLowerCase();
-  const results: { category: string; severity: string; matched: string[] }[] = [];
-  
+  const results: { category: string; severity: string; matched: string[] }[] =
+    [];
+
   for (const cat of ILLEGAL_CONTENT_CATEGORIES) {
-    const matched = cat.keywords.filter(kw => lower.includes(kw));
+    const matched = cat.keywords.filter((kw) => lower.includes(kw));
     if (matched.length > 0) {
       results.push({ category: cat.category, severity: cat.severity, matched });
     }
@@ -172,10 +321,10 @@ function detectIllegalCategories(text: string): { category: string; severity: st
 }
 
 const MODEL_SAFETY_REFUSAL_MARKERS = [
-  'jeg kan ikke hjælpe med at planlægge',
-  'jeg kan ikke hjælpe med at udføre',
-  'jeg kan ikke hjælpe med det',
-  'jeg kan ikke hjælpe med den slags',
+  "jeg kan ikke hjælpe med at planlægge",
+  "jeg kan ikke hjælpe med at udføre",
+  "jeg kan ikke hjælpe med det",
+  "jeg kan ikke hjælpe med den slags",
   "i can't help with planning",
   "i can't help with carrying out",
   "i can't assist with",
@@ -186,37 +335,53 @@ function detectModelRefusalCategories(
   input: string,
   output: string,
 ): { category: string; severity: string; matched: string[] }[] {
-  const response = String(output || '').toLowerCase();
-  if (!MODEL_SAFETY_REFUSAL_MARKERS.some(marker => response.includes(marker))) return [];
+  const response = String(output || "").toLowerCase();
+  if (!MODEL_SAFETY_REFUSAL_MARKERS.some((marker) => response.includes(marker)))
+    return [];
 
-  const lower = String(input || '').toLowerCase();
-  const results: { category: string; severity: string; matched: string[] }[] = [];
+  const lower = String(input || "").toLowerCase();
+  const results: { category: string; severity: string; matched: string[] }[] =
+    [];
   const add = (category: string, severity: string, marker: string) => {
-    if (!results.some(item => item.category === category)) {
-      results.push({ category, severity, matched: [`model-refusal:${marker}`] });
+    if (!results.some((item) => item.category === category)) {
+      results.push({
+        category,
+        severity,
+        matched: [`model-refusal:${marker}`],
+      });
     }
   };
 
   if (/\bterror/.test(lower) || /\bjihad/.test(lower)) {
-    add('terrorism', 'critical', 'terror');
+    add("terrorism", "critical", "terror");
   }
-  if (/dræb|mord|slå ihjel|\bkill\b|\bmurder\b|\bshoot\b|\bstab\b|tortur/.test(lower)) {
-    add('murder_violence', 'high', 'violence');
+  if (
+    /dræb|mord|slå ihjel|\bkill\b|\bmurder\b|\bshoot\b|\bstab\b|tortur/.test(
+      lower,
+    )
+  ) {
+    add("murder_violence", "high", "violence");
   }
-  if (/selvmord|selvskad|suicid|self[- ]?harm|kill myself|end my life/.test(lower)) {
-    add('self_harm', 'high', 'self-harm');
+  if (
+    /selvmord|selvskad|suicid|self[- ]?harm|kill myself|end my life/.test(lower)
+  ) {
+    add("self_harm", "high", "self-harm");
   }
   if (/meth|heroin|kokain|cocaine|amfetamin|amphetamine|\blsd\b/.test(lower)) {
-    add('drugs_manufacturing', 'high', 'drugs');
+    add("drugs_manufacturing", "high", "drugs");
   }
   if (/våben|pistol|gevær|\bgun\b|weapon|ghost gun/.test(lower)) {
-    add('weapons_manufacturing', 'high', 'weapons');
+    add("weapons_manufacturing", "high", "weapons");
   }
-  if (/menneskehandel|human trafficking|sex trafficking|slavehandel|slave trade/.test(lower)) {
-    add('human_trafficking', 'critical', 'trafficking');
+  if (
+    /menneskehandel|human trafficking|sex trafficking|slavehandel|slave trade/.test(
+      lower,
+    )
+  ) {
+    add("human_trafficking", "critical", "trafficking");
   }
   if (/voldtægt|voldtag|\brape\b|sexual assault|forced sex/.test(lower)) {
-    add('sexual_violence', 'critical', 'sexual-violence');
+    add("sexual_violence", "critical", "sexual-violence");
   }
 
   return results;
@@ -224,39 +389,43 @@ function detectModelRefusalCategories(
 
 /** Log illegal content attempt to database */
 async function logIllegalContent(
-  supabase: any,
+  supabase: Untyped,
   guildId: string,
   userId: string,
   userName: string | null,
   channelId: string | null,
   messageContent: string,
-  categories: { category: string; severity: string; matched: string[] }[]
+  categories: { category: string; severity: string; matched: string[] }[],
 ) {
   // Pick highest severity
-  const severityOrder = ['critical', 'high', 'medium', 'low'];
+  const severityOrder = ["critical", "high", "medium", "low"];
   const highestSeverity = categories.reduce((acc, c) => {
-    return severityOrder.indexOf(c.severity) < severityOrder.indexOf(acc) ? c.severity : acc;
-  }, 'low');
+    return severityOrder.indexOf(c.severity) < severityOrder.indexOf(acc)
+      ? c.severity
+      : acc;
+  }, "low");
 
-  const allCategories = categories.map(c => c.category).join(', ');
-  const allMatched = categories.flatMap(c => c.matched);
+  const allCategories = categories.map((c) => c.category).join(", ");
+  const allMatched = categories.flatMap((c) => c.matched);
 
   // Get guild info for the log
   let guildName = null;
   let discordGuildId = null;
   try {
     const { data: guild } = await supabase
-      .from('guilds')
-      .select('guild_name, guild_id')
-      .eq('id', guildId)
+      .from("guilds")
+      .select("guild_name, guild_id")
+      .eq("id", guildId)
       .single();
     if (guild) {
       guildName = guild.guild_name;
       discordGuildId = guild.guild_id;
     }
-  } catch (_) { /* ignore */ }
+  } catch (_) {
+    /* ignore */
+  }
 
-  const { error: insertError } = await supabase.from('ai_safety_logs').insert({
+  const { error: insertError } = await supabase.from("ai_safety_logs").insert({
     guild_id: guildId,
     discord_user_id: userId,
     discord_username: userName,
@@ -270,7 +439,7 @@ async function logIllegalContent(
   });
 
   if (insertError) {
-    console.error('🚨 AI SAFETY LOG INSERT FAILED', {
+    console.error("🚨 AI SAFETY LOG INSERT FAILED", {
       userId,
       guildId,
       categories: allCategories,
@@ -279,15 +448,22 @@ async function logIllegalContent(
     return false;
   }
 
-  console.warn(`🚨 ILLEGAL CONTENT LOGGED | User: ${userName} (${userId}) | Categories: ${allCategories} | Severity: ${highestSeverity} | Guild: ${guildName}`);
+  console.warn(
+    `🚨 ILLEGAL CONTENT LOGGED | User: ${userName} (${userId}) | Categories: ${allCategories} | Severity: ${highestSeverity} | Guild: ${guildName}`,
+  );
   return true;
 }
 
-const SAFETY_RESPONSE_DA = "⚠️ Jeg kan ikke hjælpe med det emne. Hvis du har det svært, så kontakt en voksen du stoler på eller ring til Børnetelefonen (116 111) eller Livslinien (70 201 201).";
-const SAFETY_RESPONSE_EN = "⚠️ I can't help with that topic. If you're struggling, please reach out to a trusted adult or contact a crisis helpline.";
+const SAFETY_RESPONSE_DA =
+  "⚠️ Jeg kan ikke hjælpe med det emne. Hvis du har det svært, så kontakt en voksen du stoler på eller ring til Børnetelefonen (116 111) eller Livslinien (70 201 201).";
+const SAFETY_RESPONSE_EN =
+  "⚠️ I can't help with that topic. If you're struggling, please reach out to a trusted adult or contact a crisis helpline.";
 
-async function checkIPWhitelist(req: Request, supabase: any): Promise<{ allowed: boolean; ip: string }> {
-  const clientIp = 
+async function checkIPWhitelist(
+  req: Request,
+  supabase: Untyped,
+): Promise<{ allowed: boolean; ip: string }> {
+  const clientIp =
     req.headers.get("cf-connecting-ip") ||
     req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
     req.headers.get("x-real-ip") ||
@@ -309,47 +485,64 @@ async function checkIPWhitelist(req: Request, supabase: any): Promise<{ allowed:
 }
 
 __serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders });
+  if (req.method === "OPTIONS") {
+    return new Response("ok", { headers: corsHeaders });
   }
 
   try {
-    const supabaseUrl = __env('SUPABASE_URL')!;
-    const supabaseServiceKey = __env('SUPABASE_SERVICE_ROLE_KEY')!;
-    const botSecretKey = __env('BOT_SECRET_KEY');
-    
+    const supabaseUrl = __env("SUPABASE_URL")!;
+    const supabaseServiceKey = __env("SUPABASE_SERVICE_ROLE_KEY")!;
+    const botSecretKey = __env("BOT_SECRET_KEY");
+
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    const requestBotSecret = req.headers.get('x-bot-secret');
-    const isBotRequest = Boolean(botSecretKey && requestBotSecret && requestBotSecret === botSecretKey);
+    const requestBotSecret = req.headers.get("x-bot-secret");
+    const isBotRequest = Boolean(safeEqual(requestBotSecret, botSecretKey));
 
     if (isBotRequest) {
       const ipCheck = await checkIPWhitelist(req, supabase);
       if (!ipCheck.allowed) {
         console.error(`IP not whitelisted: ${ipCheck.ip}`);
-        return new Response(JSON.stringify({ error: 'Forbidden - IP not whitelisted', ip: ipCheck.ip }), {
-          status: 403,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        });
+        return new Response(
+          JSON.stringify({
+            error: "Forbidden - IP not whitelisted",
+            ip: ipCheck.ip,
+          }),
+          {
+            status: 403,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          },
+        );
       }
     }
 
-    const { action, guildId, discordGuildId, channelId, userId, userName, message, newSettings } = await req.json();
-    
-    console.log(`AI Chat Handler - Action: ${action}, Guild: ${guildId || discordGuildId}`);
+    const {
+      action,
+      guildId,
+      discordGuildId,
+      channelId,
+      userId,
+      userName,
+      message,
+      newSettings,
+    } = await req.json();
+
+    console.log(
+      `AI Chat Handler - Action: ${action}, Guild: ${guildId || discordGuildId}`,
+    );
 
     let internalGuildId = guildId;
     if (discordGuildId && !guildId) {
       const { data: guild } = await supabase
-        .from('guilds')
-        .select('id')
-        .eq('guild_id', discordGuildId)
+        .from("guilds")
+        .select("id")
+        .eq("guild_id", discordGuildId)
         .single();
-      
+
       if (!guild) {
-        return new Response(JSON.stringify({ error: 'Guild not found' }), {
+        return new Response(JSON.stringify({ error: "Guild not found" }), {
           status: 404,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
       internalGuildId = guild.id;
@@ -361,102 +554,114 @@ __serve(async (req) => {
     }
 
     switch (action) {
-      case 'get_settings': {
+      case "get_settings": {
         const { data: settings } = await supabase
-          .from('ai_chat_settings')
-          .select('*')
-          .eq('guild_id', internalGuildId)
+          .from("ai_chat_settings")
+          .select("*")
+          .eq("guild_id", internalGuildId)
           .single();
-        
+
         return new Response(JSON.stringify({ settings }), {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
 
-      case 'update_settings': {
+      case "update_settings": {
         const { data: existing } = await supabase
-          .from('ai_chat_settings')
-          .select('id')
-          .eq('guild_id', internalGuildId)
+          .from("ai_chat_settings")
+          .select("id")
+          .eq("guild_id", internalGuildId)
           .single();
 
         if (existing) {
           await supabase
-            .from('ai_chat_settings')
-            .update(Object.fromEntries(Object.entries(newSettings || {}).filter(([key]) => !['id', 'guild_id'].includes(key))))
-            .eq('guild_id', internalGuildId);
+            .from("ai_chat_settings")
+            .update(
+              Object.fromEntries(
+                Object.entries(newSettings || {}).filter(
+                  ([key]) => !["id", "guild_id"].includes(key),
+                ),
+              ),
+            )
+            .eq("guild_id", internalGuildId);
         } else {
           await supabase
-            .from('ai_chat_settings')
+            .from("ai_chat_settings")
             .insert({ ...newSettings, guild_id: internalGuildId });
         }
 
         return new Response(JSON.stringify({ success: true }), {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
 
-      case 'check_enabled': {
+      case "check_enabled": {
         if (!isBotRequest) {
-          return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+          return new Response(JSON.stringify({ error: "Unauthorized" }), {
             status: 401,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
           });
         }
 
         const { data: settings } = await supabase
-          .from('ai_chat_settings')
-          .select('*')
-          .eq('guild_id', internalGuildId)
+          .from("ai_chat_settings")
+          .select("*")
+          .eq("guild_id", internalGuildId)
           .single();
 
         if (!settings || !settings.enabled) {
           return new Response(JSON.stringify({ enabled: false }), {
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
           });
         }
 
         if (settings.channel_id && settings.channel_id !== channelId) {
-          return new Response(JSON.stringify({ enabled: false, reason: 'wrong_channel' }), {
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-          });
+          return new Response(
+            JSON.stringify({ enabled: false, reason: "wrong_channel" }),
+            {
+              headers: { ...corsHeaders, "Content-Type": "application/json" },
+            },
+          );
         }
 
         return new Response(JSON.stringify({ enabled: true, settings }), {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
 
-      case 'chat': {
+      case "chat": {
         if (!isBotRequest) {
-          return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+          return new Response(JSON.stringify({ error: "Unauthorized" }), {
             status: 401,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
           });
         }
 
         const { data: settings } = await supabase
-          .from('ai_chat_settings')
-          .select('*')
-          .eq('guild_id', internalGuildId)
+          .from("ai_chat_settings")
+          .select("*")
+          .eq("guild_id", internalGuildId)
           .single();
 
         if (!settings || !settings.enabled) {
-          return new Response(JSON.stringify({ error: 'AI chat not enabled' }), {
-            status: 400,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-          });
+          return new Response(
+            JSON.stringify({ error: "AI chat not enabled" }),
+            {
+              status: 400,
+              headers: { ...corsHeaders, "Content-Type": "application/json" },
+            },
+          );
         }
 
         // Fetch protected IDs from database
         const protectedIds = await getProtectedIds(supabase);
 
         const { data: history } = await supabase
-          .from('ai_chat_history')
-          .select('role, content')
-          .eq('guild_id', internalGuildId)
-          .eq('channel_id', channelId)
-          .order('created_at', { ascending: false })
+          .from("ai_chat_history")
+          .select("role, content")
+          .eq("guild_id", internalGuildId)
+          .eq("channel_id", channelId)
+          .order("created_at", { ascending: false })
           .limit(settings.max_history_messages || 10);
 
         const conversationHistory = (history || []).reverse();
@@ -473,66 +678,95 @@ __serve(async (req) => {
             userName || null,
             channelId || null,
             message,
-            illegalCategories
+            illegalCategories,
           );
 
-          console.warn(`🚨 Blocked & logged illegal content from user ${normalizedUserId}: ${message.substring(0, 80)}`);
-          return new Response(JSON.stringify({ 
-            response: SAFETY_RESPONSE_DA
-          }), {
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-          });
+          console.warn(
+            `🚨 Blocked & logged illegal content from user ${normalizedUserId}: ${message.substring(0, 80)}`,
+          );
+          return new Response(
+            JSON.stringify({
+              response: SAFETY_RESPONSE_DA,
+            }),
+            {
+              headers: { ...corsHeaders, "Content-Type": "application/json" },
+            },
+          );
         }
 
         // Additional basic blocked content check (non-illegal but harmful)
         if (containsBlockedContent(message, BLOCKED_TOPICS_INPUT)) {
-          console.warn(`Blocked harmful input from user ${normalizedUserId}: ${message.substring(0, 80)}`);
-          return new Response(JSON.stringify({ 
-            response: SAFETY_RESPONSE_DA
-          }), {
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-          });
+          console.warn(
+            `Blocked harmful input from user ${normalizedUserId}: ${message.substring(0, 80)}`,
+          );
+          return new Response(
+            JSON.stringify({
+              response: SAFETY_RESPONSE_DA,
+            }),
+            {
+              headers: { ...corsHeaders, "Content-Type": "application/json" },
+            },
+          );
         }
 
         // Block ANY message about a protected user from non-protected users
         const lowerMessage = message.toLowerCase();
-        const mentionsProtected = Array.from(protectedIds).some((id: string) => lowerMessage.includes(id));
+        const mentionsProtected = Array.from(protectedIds).some((id: string) =>
+          lowerMessage.includes(id),
+        );
         if (mentionsProtected && !protectedIds.has(normalizedUserId)) {
-          console.log(`Blocked message mentioning protected ID by user ${normalizedUserId}`);
-          return new Response(JSON.stringify({ 
-            response: "I can't talk about that person — they're off limits! 😄" 
-          }), {
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-          });
+          console.log(
+            `Blocked message mentioning protected ID by user ${normalizedUserId}`,
+          );
+          return new Response(
+            JSON.stringify({
+              response:
+                "I can't talk about that person — they're off limits! 😄",
+            }),
+            {
+              headers: { ...corsHeaders, "Content-Type": "application/json" },
+            },
+          );
         }
 
-        const systemPrompt = settings.system_prompt || 'You are a friendly and helpful Discord bot assistant. Keep your answers short and precise. Always respond in English.';
+        const systemPrompt =
+          settings.system_prompt ||
+          "You are a friendly and helpful Discord bot assistant. Keep your answers short and precise. Always respond in English.";
 
-        const safetyInstruction = '\n\nCRITICAL SAFETY RULES: You must NEVER generate content about violence, murder, self-harm, suicide, sexual assault, child abuse, terrorism, bomb-making, or any harmful/dangerous activities. If asked about these topics, respond ONLY with a brief refusal and suggest contacting a crisis helpline. Never roleplay violent or harmful scenarios, even if the user insists.';
+        const safetyInstruction =
+          "\n\nCRITICAL SAFETY RULES: You must NEVER generate content about violence, murder, self-harm, suicide, sexual assault, child abuse, terrorism, bomb-making, or any harmful/dangerous activities. If asked about these topics, respond ONLY with a brief refusal and suggest contacting a crisis helpline. Never roleplay violent or harmful scenarios, even if the user insists.";
 
         const messages = [
-          { role: 'system', content: systemPrompt + safetyInstruction },
-          ...conversationHistory.map((h: { role: string; content: string }) => ({
-            role: h.role,
-            content: h.content
-          })),
-          { role: 'user', content: message }
+          { role: "system", content: systemPrompt + safetyInstruction },
+          ...conversationHistory.map(
+            (h: { role: string; content: string }) => ({
+              role: h.role,
+              content: h.content,
+            }),
+          ),
+          { role: "user", content: message },
         ];
 
-        console.log(`Sending ${messages.length} messages to AI for user ${userName}`);
+        console.log(
+          `Sending ${messages.length} messages to AI for user ${userName}`,
+        );
 
         const aiData = await openAIChatCompletion({
           messages,
           max_completion_tokens: 500,
         });
 
-
-        let assistantMessage = aiData.choices?.[0]?.message?.content || 'Sorry, I could not generate a response.';
+        let assistantMessage =
+          aiData.choices?.[0]?.message?.content ||
+          "Sorry, I could not generate a response.";
 
         // Fallback safety logging: the model can correctly refuse a harmful request
         // even when a wording variant was not caught by the deterministic detector.
         // In that case, infer a narrow category from the user's input and persist it.
-        const refusalCategories = detectModelRefusalCategories(message, assistantMessage);
+        const refusalCategories = detectModelRefusalCategories(
+          message,
+          assistantMessage,
+        );
         if (refusalCategories.length > 0) {
           const logged = await logIllegalContent(
             supabase,
@@ -541,116 +775,125 @@ __serve(async (req) => {
             userName || null,
             channelId || null,
             message,
-            refusalCategories
+            refusalCategories,
           );
           console.warn(
             logged
               ? `🚨 Model safety refusal logged for user ${normalizedUserId}`
-              : `🚨 Model safety refusal detected but DB logging failed for user ${normalizedUserId}`
+              : `🚨 Model safety refusal detected but DB logging failed for user ${normalizedUserId}`,
           );
         }
 
         // Content safety: scan AI output for harmful content
         if (containsBlockedContent(assistantMessage, BLOCKED_TOPICS_OUTPUT)) {
-          console.warn(`Blocked harmful AI output for user ${normalizedUserId}`);
+          console.warn(
+            `Blocked harmful AI output for user ${normalizedUserId}`,
+          );
           assistantMessage = SAFETY_RESPONSE_DA;
         }
 
         // Scan AI output: block abuse toward any protected owner
         for (const protectedId of protectedIds) {
           if (containsProtectedAbuse(assistantMessage, protectedId)) {
-            console.warn(`Blocked AI output containing abuse toward protected owner ${protectedId}`);
-            assistantMessage = "I can't say anything negative about that person. How else can I help?";
+            console.warn(
+              `Blocked AI output containing abuse toward protected owner ${protectedId}`,
+            );
+            assistantMessage =
+              "I can't say anything negative about that person. How else can I help?";
             break;
           }
         }
 
-        await supabase.from('ai_chat_history').insert({
+        await supabase.from("ai_chat_history").insert({
           guild_id: internalGuildId,
           channel_id: channelId,
           user_id: normalizedUserId,
           user_name: userName,
-          role: 'user',
-          content: message
+          role: "user",
+          content: message,
         });
 
-        await supabase.from('ai_chat_history').insert({
+        await supabase.from("ai_chat_history").insert({
           guild_id: internalGuildId,
           channel_id: channelId,
-          user_id: 'bot',
-          user_name: 'Bot',
-          role: 'assistant',
-          content: assistantMessage
+          user_id: "bot",
+          user_name: "Bot",
+          role: "assistant",
+          content: assistantMessage,
         });
 
         const maxToKeep = (settings.max_history_messages || 10) * 2;
         const { data: allHistory } = await supabase
-          .from('ai_chat_history')
-          .select('id, created_at')
-          .eq('guild_id', internalGuildId)
-          .eq('channel_id', channelId)
-          .order('created_at', { ascending: false });
+          .from("ai_chat_history")
+          .select("id, created_at")
+          .eq("guild_id", internalGuildId)
+          .eq("channel_id", channelId)
+          .order("created_at", { ascending: false });
 
         if (allHistory && allHistory.length > maxToKeep) {
-          const idsToDelete = allHistory.slice(maxToKeep).map((h: { id: string }) => h.id);
-          await supabase.from('ai_chat_history').delete().in('id', idsToDelete);
+          const idsToDelete = allHistory
+            .slice(maxToKeep)
+            .map((h: { id: string }) => h.id);
+          await supabase.from("ai_chat_history").delete().in("id", idsToDelete);
         }
 
-        console.log(`AI response generated for ${userName}: ${assistantMessage.substring(0, 100)}...`);
+        console.log(
+          `AI response generated for ${userName}: ${assistantMessage.substring(0, 100)}...`,
+        );
 
         return new Response(JSON.stringify({ response: assistantMessage }), {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
 
-      case 'clear_history': {
+      case "clear_history": {
         await supabase
-          .from('ai_chat_history')
+          .from("ai_chat_history")
           .delete()
-          .eq('guild_id', internalGuildId)
-          .eq('channel_id', channelId);
+          .eq("guild_id", internalGuildId)
+          .eq("channel_id", channelId);
 
         return new Response(JSON.stringify({ success: true }), {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
 
-      case 'get_history': {
+      case "get_history": {
         const { data: history } = await supabase
-          .from('ai_chat_history')
-          .select('*')
-          .eq('guild_id', internalGuildId)
-          .order('created_at', { ascending: false })
+          .from("ai_chat_history")
+          .select("*")
+          .eq("guild_id", internalGuildId)
+          .order("created_at", { ascending: false })
           .limit(50);
 
         return new Response(JSON.stringify({ history: history || [] }), {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
 
       default:
-        return new Response(JSON.stringify({ error: 'Unknown action' }), {
+        return new Response(JSON.stringify({ error: "Unknown action" }), {
           status: 400,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
     }
   } catch (error) {
     if (error instanceof Response) return error;
-    console.error('AI Chat Handler error:', error);
+    console.error("AI Chat Handler error:", error);
     const aiError = openAIErrorResponse(error, corsHeaders);
     if (aiError) return aiError;
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    const errorMessage =
+      error instanceof Error ? error.message : "Unknown error";
     return new Response(JSON.stringify({ error: errorMessage }), {
       status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
 });
 
+const __call = ({ request }: { request: Request }) => __handler(request);
 
-const __call = ({ request }: { request: Request }) => __handler(request)
-
-export const Route = createFileRoute('/api/public/ai-chat')({
+export const Route = createFileRoute("/api/public/ai-chat")({
   server: {
     handlers: {
       GET: __call,
@@ -661,4 +904,4 @@ export const Route = createFileRoute('/api/public/ai-chat')({
       OPTIONS: __call,
     },
   },
-})
+});

@@ -1,7 +1,7 @@
-import { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Dialog,
   DialogContent,
@@ -10,16 +10,16 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '@/components/ui/dialog';
+} from "@/components/ui/dialog";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import { Plus, Loader2, Shield } from 'lucide-react';
-import { CreateJTCTriggerInput } from '@/hooks/useJTCTriggers';
+} from "@/components/ui/select";
+import { Plus, Loader2, Shield } from "lucide-react";
+import { CreateJTCTriggerInput } from "@/hooks/useJTCTriggers";
 
 interface CreateJTCTriggerDialogProps {
   voiceChannels: { id: string; name: string }[];
@@ -36,29 +36,29 @@ export function CreateJTCTriggerDialog({
   roles,
   onCreate,
   isCreating,
-  existingTriggerChannels
+  existingTriggerChannels,
 }: CreateJTCTriggerDialogProps) {
   const [open, setOpen] = useState(false);
   const [formData, setFormData] = useState({
-    name: '',
-    trigger_channel_id: '',
-    category_id: '',
-    channel_name_template: '{username}s kanal',
+    name: "",
+    trigger_channel_id: "",
+    category_id: "",
+    channel_name_template: "{username}s kanal",
     default_user_limit: 0,
-    required_role_id: '',
-    required_role_name: ''
+    required_role_id: "",
+    required_role_name: "",
   });
 
   const availableChannels = voiceChannels.filter(
-    c => !existingTriggerChannels.includes(c.id)
+    (c) => !existingTriggerChannels.includes(c.id),
   );
 
   const handleRoleChange = (roleId: string) => {
-    const role = roles.find(r => r.id === roleId);
-    setFormData(prev => ({
+    const role = roles.find((r) => r.id === roleId);
+    setFormData((prev) => ({
       ...prev,
-      required_role_id: roleId === 'none' ? '' : roleId,
-      required_role_name: roleId === 'none' ? '' : (role?.name || '')
+      required_role_id: roleId === "none" ? "" : roleId,
+      required_role_name: roleId === "none" ? "" : role?.name || "",
     }));
   };
 
@@ -69,21 +69,22 @@ export function CreateJTCTriggerDialog({
       name: formData.name,
       trigger_channel_id: formData.trigger_channel_id,
       category_id: formData.category_id || null,
-      channel_name_template: formData.channel_name_template || '{username}s kanal',
+      channel_name_template:
+        formData.channel_name_template || "{username}s kanal",
       default_user_limit: formData.default_user_limit,
       required_role_id: formData.required_role_id || null,
-      required_role_name: formData.required_role_name || null
+      required_role_name: formData.required_role_name || null,
     });
 
     // Reset form
     setFormData({
-      name: '',
-      trigger_channel_id: '',
-      category_id: '',
-      channel_name_template: '{username}s kanal',
+      name: "",
+      trigger_channel_id: "",
+      category_id: "",
+      channel_name_template: "{username}s kanal",
       default_user_limit: 0,
-      required_role_id: '',
-      required_role_name: ''
+      required_role_id: "",
+      required_role_name: "",
     });
     setOpen(false);
   };
@@ -110,7 +111,9 @@ export function CreateJTCTriggerDialog({
             <Label>Navn *</Label>
             <Input
               value={formData.name}
-              onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+              onChange={(e) =>
+                setFormData((prev) => ({ ...prev, name: e.target.value }))
+              }
               placeholder="F.eks. Gaming, Staff, VIP..."
             />
           </div>
@@ -120,7 +123,9 @@ export function CreateJTCTriggerDialog({
             <Label>Trigger Kanal *</Label>
             <Select
               value={formData.trigger_channel_id}
-              onValueChange={(value) => setFormData(prev => ({ ...prev, trigger_channel_id: value }))}
+              onValueChange={(value) =>
+                setFormData((prev) => ({ ...prev, trigger_channel_id: value }))
+              }
             >
               <SelectTrigger>
                 <SelectValue placeholder="Vælg voice kanal..." />
@@ -150,8 +155,13 @@ export function CreateJTCTriggerDialog({
           <div className="space-y-2">
             <Label>Kategori for nye kanaler</Label>
             <Select
-              value={formData.category_id || 'none'}
-              onValueChange={(value) => setFormData(prev => ({ ...prev, category_id: value === 'none' ? '' : value }))}
+              value={formData.category_id || "none"}
+              onValueChange={(value) =>
+                setFormData((prev) => ({
+                  ...prev,
+                  category_id: value === "none" ? "" : value,
+                }))
+              }
             >
               <SelectTrigger>
                 <SelectValue placeholder="Vælg kategori..." />
@@ -177,7 +187,7 @@ export function CreateJTCTriggerDialog({
               Kun brugere med denne rolle kan bruge denne trigger
             </p>
             <Select
-              value={formData.required_role_id || 'none'}
+              value={formData.required_role_id || "none"}
               onValueChange={handleRoleChange}
             >
               <SelectTrigger>
@@ -199,11 +209,17 @@ export function CreateJTCTriggerDialog({
             <Label>Kanal Navn Skabelon</Label>
             <Input
               value={formData.channel_name_template}
-              onChange={(e) => setFormData(prev => ({ ...prev, channel_name_template: e.target.value }))}
+              onChange={(e) =>
+                setFormData((prev) => ({
+                  ...prev,
+                  channel_name_template: e.target.value,
+                }))
+              }
               placeholder="{username}s kanal"
             />
             <p className="text-xs text-muted-foreground">
-              Brug {'{username}'} for brugernavnet. Preview: {formData.channel_name_template.replace('{username}', 'Bruger')}
+              Brug {"{username}"} for brugernavnet. Preview:{" "}
+              {formData.channel_name_template.replace("{username}", "Bruger")}
             </p>
           </div>
 
@@ -215,7 +231,12 @@ export function CreateJTCTriggerDialog({
               min={0}
               max={99}
               value={formData.default_user_limit}
-              onChange={(e) => setFormData(prev => ({ ...prev, default_user_limit: parseInt(e.target.value) || 0 }))}
+              onChange={(e) =>
+                setFormData((prev) => ({
+                  ...prev,
+                  default_user_limit: parseInt(e.target.value) || 0,
+                }))
+              }
             />
             <p className="text-xs text-muted-foreground">0 = ingen grænse</p>
           </div>
@@ -227,12 +248,14 @@ export function CreateJTCTriggerDialog({
           </Button>
           <Button
             onClick={handleCreate}
-            disabled={!formData.name || !formData.trigger_channel_id || isCreating}
+            disabled={
+              !formData.name || !formData.trigger_channel_id || isCreating
+            }
           >
             {isCreating ? (
               <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
-              'Opret Trigger'
+              "Opret Trigger"
             )}
           </Button>
         </DialogFooter>

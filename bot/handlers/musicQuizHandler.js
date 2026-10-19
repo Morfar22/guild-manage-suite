@@ -8,9 +8,9 @@
  * - Controlled via /musicquiz start | stop | leaderboard | skip
  */
 
-const { EmbedBuilder } = require('discord.js');
-const { createRealtimeSubscription } = require('../realtimeRetry');
-const { resolveInteractionCommand } = require('../commandRouting');
+const { EmbedBuilder } = require("discord.js");
+const { createRealtimeSubscription } = require("../realtimeRetry");
+const { resolveInteractionCommand } = require("../commandRouting");
 
 const settingsCache = new Map();
 const CACHE_TTL = 300_000;
@@ -22,12 +22,16 @@ const activeGames = new Map();
 let settingsRealtimeSub = null;
 
 function setupMusicQuizHandler(client, supabase, options = {}) {
-  const { shouldHandleGuild, checkCommandAccess, queueCommandExecution } = options;
+  const { shouldHandleGuild, checkCommandAccess, queueCommandExecution } =
+    options;
 
   // ---------- helpers ----------
   async function getGuildRow(guildDiscordId) {
     const { data } = await supabase
-      .from('guilds').select('id').eq('guild_id', guildDiscordId).single();
+      .from("guilds")
+      .select("id")
+      .eq("guild_id", guildDiscordId)
+      .single();
     return data || null;
   }
 
@@ -39,9 +43,13 @@ function setupMusicQuizHandler(client, supabase, options = {}) {
     if (!guild) return null;
 
     const { data } = await supabase
-      .from('music_quiz_settings').select('*').eq('guild_id', guild.id).maybeSingle();
+      .from("music_quiz_settings")
+      .select("*")
+      .eq("guild_id", guild.id)
+      .maybeSingle();
 
-    const result = data && data.enabled ? { ...data, _guildUuid: guild.id } : null;
+    const result =
+      data && data.enabled ? { ...data, _guildUuid: guild.id } : null;
     // Only cache positive results — never cache "not enabled" so users see changes immediately
     if (result) {
       settingsCache.set(guildDiscordId, { data: result, _ts: Date.now() });
@@ -56,35 +64,37 @@ function setupMusicQuizHandler(client, supabase, options = {}) {
   }
 
   function normalize(s) {
-    return String(s || '')
+    return String(s || "")
       .toLowerCase()
-      .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-      .replace(/[^a-z0-9æøå ]/gi, '')
-      .replace(/\s+/g, ' ')
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^a-z0-9æøå ]/gi, "")
+      .replace(/\s+/g, " ")
       .trim();
   }
 
   function similarity(a, b) {
-    a = normalize(a); b = normalize(b);
+    a = normalize(a);
+    b = normalize(b);
     if (!a || !b) return 0;
     if (a === b) return 1;
     if (a.includes(b) || b.includes(a)) return 0.85;
     // simple Jaccard on words
-    const wa = new Set(a.split(' '));
-    const wb = new Set(b.split(' '));
-    const inter = [...wa].filter(w => wb.has(w)).length;
+    const wa = new Set(a.split(" "));
+    const wb = new Set(b.split(" "));
+    const inter = [...wa].filter((w) => wb.has(w)).length;
     const union = new Set([...wa, ...wb]).size;
     return union ? inter / union : 0;
   }
 
   function scrambleTitle(title) {
-    return title.replace(/[a-zæøåA-ZÆØÅ0-9]/g, (c) => /\s/.test(c) ? c : '▮');
+    return title.replace(/[a-zæøåA-ZÆØÅ0-9]/g, (c) => (/\s/.test(c) ? c : "▮"));
   }
 
   async function pickSong(guildUuid) {
     const { data } = await supabase
-      .from('music_quiz_songs')
-      .select('*')
+      .from("music_quiz_songs")
+      .select("*")
       .or(`guild_id.eq.${guildUuid},guild_id.is.null`)
       .limit(500);
     if (!data || data.length === 0) return null;
@@ -94,22 +104,31 @@ function setupMusicQuizHandler(client, supabase, options = {}) {
   async function awardPoints(guildUuid, userId, username, points, won) {
     // Try update first
     const { data: existing } = await supabase
-      .from('music_quiz_scores')
-      .select('id, points, rounds_won, rounds_played')
-      .eq('guild_id', guildUuid).eq('user_id', userId).maybeSingle();
+      .from("music_quiz_scores")
+      .select("id, points, rounds_won, rounds_played")
+      .eq("guild_id", guildUuid)
+      .eq("user_id", userId)
+      .maybeSingle();
 
     if (existing) {
-      await supabase.from('music_quiz_scores').update({
-        username,
-        points: existing.points + points,
-        rounds_won: existing.rounds_won + (won ? 1 : 0),
-        rounds_played: existing.rounds_played + 1,
-        last_played_at: new Date().toISOString(),
-      }).eq('id', existing.id);
+      await supabase
+        .from("music_quiz_scores")
+        .update({
+          username,
+          points: existing.points + points,
+          rounds_won: existing.rounds_won + (won ? 1 : 0),
+          rounds_played: existing.rounds_played + 1,
+          last_played_at: new Date().toISOString(),
+        })
+        .eq("id", existing.id);
     } else {
-      await supabase.from('music_quiz_scores').insert({
-        guild_id: guildUuid, user_id: userId, username,
-        points, rounds_won: won ? 1 : 0, rounds_played: 1,
+      await supabase.from("music_quiz_scores").insert({
+        guild_id: guildUuid,
+        user_id: userId,
+        username,
+        points,
+        rounds_won: won ? 1 : 0,
+        rounds_played: 1,
         last_played_at: new Date().toISOString(),
       });
     }
@@ -121,8 +140,10 @@ function setupMusicQuizHandler(client, supabase, options = {}) {
     const channel = game.channel;
     const song = await pickSong(game.guildUuid);
     if (!song) {
-      await channel.send('❌ Ingen sange i pulje. Tilføj sange først.').catch(() => {});
-      return endGame(game.guildDiscordId, 'no_songs');
+      await channel
+        .send("❌ Ingen sange i pulje. Tilføj sange først.")
+        .catch(() => {});
+      return endGame(game.guildDiscordId, "no_songs");
     }
 
     game.currentSong = song;
@@ -132,23 +153,30 @@ function setupMusicQuizHandler(client, supabase, options = {}) {
     const hints = [
       `🎤 **Kunstner:** ${song.artist}`,
       song.lyrics_snippet ? `📜 *"${song.lyrics_snippet}"*` : null,
-      `🔤 **Titel-mønster:** \`${scrambleTitle(song.title)}\` (${song.title.replace(/\s/g,'').length} bogstaver)`,
-      ...(Array.isArray(song.hints) ? song.hints.map(h => `💡 ${h}`) : []),
+      `🔤 **Titel-mønster:** \`${scrambleTitle(song.title)}\` (${song.title.replace(/\s/g, "").length} bogstaver)`,
+      ...(Array.isArray(song.hints) ? song.hints.map((h) => `💡 ${h}`) : []),
     ].filter(Boolean);
 
     const embed = new EmbedBuilder()
       .setColor(0x9b59b6)
       .setTitle(`🎵 Runde ${game.roundNumber}/${game.totalRounds}`)
       .setDescription(hints[0])
-      .setFooter({ text: `Du har ${game.timePerRound}s. Skriv titlen i chatten!` });
+      .setFooter({
+        text: `Du har ${game.timePerRound}s. Skriv titlen i chatten!`,
+      });
     await channel.send({ embeds: [embed] }).catch(() => {});
 
     // Reveal additional hints over time
     let hintIdx = 1;
-    const hintInterval = Math.max(5000, Math.floor((game.timePerRound * 1000) / Math.max(hints.length, 1)));
+    const hintInterval = Math.max(
+      5000,
+      Math.floor((game.timePerRound * 1000) / Math.max(hints.length, 1)),
+    );
     game.hintTimer = setInterval(async () => {
       if (!game.active || game.roundAnswered || hintIdx >= hints.length) {
-        clearInterval(game.hintTimer); game.hintTimer = null; return;
+        clearInterval(game.hintTimer);
+        game.hintTimer = null;
+        return;
       }
       await channel.send(hints[hintIdx]).catch(() => {});
       hintIdx += 1;
@@ -156,13 +184,20 @@ function setupMusicQuizHandler(client, supabase, options = {}) {
 
     // End-of-round timeout
     game.roundTimer = setTimeout(async () => {
-      if (game.hintTimer) { clearInterval(game.hintTimer); game.hintTimer = null; }
+      if (game.hintTimer) {
+        clearInterval(game.hintTimer);
+        game.hintTimer = null;
+      }
       if (!game.active) return;
       if (!game.roundAnswered) {
-        await channel.send(`⏰ Tiden er gået! Svaret var: **${song.title}** — *${song.artist}*`).catch(() => {});
+        await channel
+          .send(
+            `⏰ Tiden er gået! Svaret var: **${song.title}** — *${song.artist}*`,
+          )
+          .catch(() => {});
       }
       if (game.roundNumber >= game.totalRounds) {
-        return endGame(game.guildDiscordId, 'completed');
+        return endGame(game.guildDiscordId, "completed");
       }
       setTimeout(() => runRound(game), 3000);
     }, game.timePerRound * 1000);
@@ -170,7 +205,7 @@ function setupMusicQuizHandler(client, supabase, options = {}) {
 
   async function startGame(guildDiscordId, channel, guildUuid, settings) {
     if (activeGames.has(guildDiscordId)) {
-      return { ok: false, error: 'Et spil kører allerede her.' };
+      return { ok: false, error: "Et spil kører allerede her." };
     }
     const game = {
       active: true,
@@ -187,12 +222,16 @@ function setupMusicQuizHandler(client, supabase, options = {}) {
       sessionScores: new Map(), // userId -> { username, points }
     };
     activeGames.set(guildDiscordId, game);
-    await channel.send(`🎶 **Musik Quiz starter!** ${game.totalRounds} runder · ${game.timePerRound}s per runde.`).catch(() => {});
+    await channel
+      .send(
+        `🎶 **Musik Quiz starter!** ${game.totalRounds} runder · ${game.timePerRound}s per runde.`,
+      )
+      .catch(() => {});
     setTimeout(() => runRound(game), 2500);
     return { ok: true };
   }
 
-  async function endGame(guildDiscordId, reason = 'manual') {
+  async function endGame(guildDiscordId, reason = "manual") {
     const game = activeGames.get(guildDiscordId);
     if (!game) return;
     game.active = false;
@@ -206,13 +245,20 @@ function setupMusicQuizHandler(client, supabase, options = {}) {
 
     const embed = new EmbedBuilder()
       .setColor(0x2ecc71)
-      .setTitle('🏁 Quiz slut!')
-      .setDescription(reason === 'no_songs'
-        ? 'Ingen sange i puljen.'
-        : (scores.length === 0
-            ? 'Ingen rigtige svar denne gang.'
-            : scores.slice(0, 10).map((s, i) =>
-                `**${i + 1}.** <@${s.userId}> — **${s.points}** point`).join('\n')));
+      .setTitle("🏁 Quiz slut!")
+      .setDescription(
+        reason === "no_songs"
+          ? "Ingen sange i puljen."
+          : scores.length === 0
+            ? "Ingen rigtige svar denne gang."
+            : scores
+                .slice(0, 10)
+                .map(
+                  (s, i) =>
+                    `**${i + 1}.** <@${s.userId}> — **${s.points}** point`,
+                )
+                .join("\n"),
+      );
     await game.channel.send({ embeds: [embed] }).catch(() => {});
   }
 
@@ -221,9 +267,13 @@ function setupMusicQuizHandler(client, supabase, options = {}) {
     if (!game || !game.active) return false;
     if (game.hintTimer) clearInterval(game.hintTimer);
     if (game.roundTimer) clearTimeout(game.roundTimer);
-    game.channel.send(`⏭️ Runde sprunget over. Svaret var: **${game.currentSong?.title}** — *${game.currentSong?.artist}*`).catch(() => {});
+    game.channel
+      .send(
+        `⏭️ Runde sprunget over. Svaret var: **${game.currentSong?.title}** — *${game.currentSong?.artist}*`,
+      )
+      .catch(() => {});
     if (game.roundNumber >= game.totalRounds) {
-      endGame(guildDiscordId, 'completed');
+      endGame(guildDiscordId, "completed");
     } else {
       setTimeout(() => runRound(game), 2000);
     }
@@ -231,7 +281,7 @@ function setupMusicQuizHandler(client, supabase, options = {}) {
   }
 
   // ---------- message listener (guesses) ----------
-  client.on('messageCreate', async (message) => {
+  client.on("messageCreate", async (message) => {
     try {
       if (message.author.bot || !message.guild) return;
       if (shouldHandleGuild && !shouldHandleGuild(message.guild.id)) return;
@@ -244,29 +294,45 @@ function setupMusicQuizHandler(client, supabase, options = {}) {
       const sim = similarity(message.content, game.currentSong.title);
       if (sim >= 0.75) {
         game.roundAnswered = true;
-        if (game.hintTimer) { clearInterval(game.hintTimer); game.hintTimer = null; }
+        if (game.hintTimer) {
+          clearInterval(game.hintTimer);
+          game.hintTimer = null;
+        }
 
         const points = sim === 1 ? 10 : sim >= 0.85 ? 8 : 6;
-        const prev = game.sessionScores.get(message.author.id) || { username: message.author.username, points: 0 };
+        const prev = game.sessionScores.get(message.author.id) || {
+          username: message.author.username,
+          points: 0,
+        };
         prev.points += points;
         prev.username = message.author.username;
         game.sessionScores.set(message.author.id, prev);
 
-        await awardPoints(game.guildUuid, message.author.id, message.author.username, points, true).catch(() => {});
+        await awardPoints(
+          game.guildUuid,
+          message.author.id,
+          message.author.username,
+          points,
+          true,
+        ).catch(() => {});
 
-        await message.channel.send(`✅ <@${message.author.id}> svarede rigtigt! **${game.currentSong.title}** — *${game.currentSong.artist}* (+${points} point)`).catch(() => {});
+        await message.channel
+          .send(
+            `✅ <@${message.author.id}> svarede rigtigt! **${game.currentSong.title}** — *${game.currentSong.artist}* (+${points} point)`,
+          )
+          .catch(() => {});
       }
     } catch (e) {
-      console.error('[MusicQuiz] message error:', e.message);
+      console.error("[MusicQuiz] message error:", e.message);
     }
   });
 
   // ---------- slash command listener ----------
-  client.on('interactionCreate', async (interaction) => {
+  client.on("interactionCreate", async (interaction) => {
     try {
       if (!interaction.isChatInputCommand()) return;
       const resolved = resolveInteractionCommand(interaction);
-      if (!resolved.logicalName?.startsWith('musicquiz-')) return;
+      if (!resolved.logicalName?.startsWith("musicquiz-")) return;
       if (!interaction.guild) return;
       if (shouldHandleGuild && !shouldHandleGuild(interaction.guild.id)) return;
 
@@ -278,9 +344,13 @@ function setupMusicQuizHandler(client, supabase, options = {}) {
           guildId: interaction.guild.id,
           commandName,
           userId: interaction.user.id,
-          roleIds: interaction.member?.roles?.cache ? [...interaction.member.roles.cache.keys()] : [],
+          roleIds: interaction.member?.roles?.cache
+            ? [...interaction.member.roles.cache.keys()]
+            : [],
           channelId: interaction.channelId,
-          isAdmin: Boolean(interaction.member?.permissions?.has?.('Administrator')),
+          isAdmin: Boolean(
+            interaction.member?.permissions?.has?.("Administrator"),
+          ),
         });
 
         if (!access.allowed) {
@@ -290,14 +360,15 @@ function setupMusicQuizHandler(client, supabase, options = {}) {
               commandName,
               userId: interaction.user.id,
               channelId: interaction.channelId,
-              source: 'slash',
-              status: 'blocked',
+              source: "slash",
+              status: "blocked",
               latencyMs: Date.now() - commandStartedAt,
-              blockedReason: access.reason || 'access',
+              blockedReason: access.reason || "access",
             });
           }
           return interaction.reply({
-            content: access.message || '🚫 Du har ikke adgang til denne command.',
+            content:
+              access.message || "🚫 Du har ikke adgang til denne command.",
             flags: 64,
           });
         }
@@ -305,52 +376,76 @@ function setupMusicQuizHandler(client, supabase, options = {}) {
 
       const sub = interaction.options.getSubcommand();
 
-      if (sub === 'start') {
+      if (sub === "start") {
         const settings = await getSettings(interaction.guild.id);
         if (!settings) {
-          return interaction.reply({ content: '❌ Musik Quiz er ikke aktiveret. Aktiver den i dashboardet først.', flags: 64 });
+          return interaction.reply({
+            content:
+              "❌ Musik Quiz er ikke aktiveret. Aktiver den i dashboardet først.",
+            flags: 64,
+          });
         }
         const channelId = settings.channel_id || interaction.channel.id;
-        const channel = await interaction.guild.channels.fetch(channelId).catch(() => null);
+        const channel = await interaction.guild.channels
+          .fetch(channelId)
+          .catch(() => null);
         if (!channel) {
-          return interaction.reply({ content: '❌ Quiz-kanalen findes ikke.', flags: 64 });
+          return interaction.reply({
+            content: "❌ Quiz-kanalen findes ikke.",
+            flags: 64,
+          });
         }
-        const result = await startGame(interaction.guild.id, channel, settings._guildUuid, settings);
-        if (!result.ok) return interaction.reply({ content: `❌ ${result.error}`, flags: 64 });
+        const result = await startGame(
+          interaction.guild.id,
+          channel,
+          settings._guildUuid,
+          settings,
+        );
+        if (!result.ok)
+          return interaction.reply({
+            content: `❌ ${result.error}`,
+            flags: 64,
+          });
         if (queueCommandExecution) {
           void queueCommandExecution({
             guildId: interaction.guild.id,
             commandName,
             userId: interaction.user.id,
             channelId: interaction.channelId,
-            source: 'slash',
-            status: 'success',
+            source: "slash",
+            status: "success",
             latencyMs: Date.now() - commandStartedAt,
           });
         }
-        return interaction.reply({ content: `✅ Quiz starter i <#${channel.id}>`, flags: 64 });
+        return interaction.reply({
+          content: `✅ Quiz starter i <#${channel.id}>`,
+          flags: 64,
+        });
       }
 
-      if (sub === 'stop') {
+      if (sub === "stop") {
         if (!activeGames.has(interaction.guild.id)) {
-          return interaction.reply({ content: '❌ Ingen aktiv quiz.', flags: 64 });
+          return interaction.reply({
+            content: "❌ Ingen aktiv quiz.",
+            flags: 64,
+          });
         }
-        await endGame(interaction.guild.id, 'manual');
+        await endGame(interaction.guild.id, "manual");
         if (queueCommandExecution) {
           void queueCommandExecution({
             guildId: interaction.guild.id,
             commandName,
             userId: interaction.user.id,
             channelId: interaction.channelId,
-            source: 'slash',
-            status: 'success',
+            source: "slash",
+            status: "success",
             latencyMs: Date.now() - commandStartedAt,
           });
         }
-        return interaction.reply({ content: '🛑 Quiz stoppet.', flags: 64 });
+        return interaction.reply({ content: "🛑 Quiz stoppet.", flags: 64 });
       }
 
-      if (sub === 'skip') {
+      if (sub === "skip") {
         const ok = skipRound(interaction.guild.id);
         if (queueCommandExecution) {
           void queueCommandExecution({
@@ -358,47 +453,63 @@ function setupMusicQuizHandler(client, supabase, options = {}) {
             commandName,
             userId: interaction.user.id,
             channelId: interaction.channelId,
-            source: 'slash',
-            status: 'success',
+            source: "slash",
+            status: "success",
             latencyMs: Date.now() - commandStartedAt,
           });
         }
-        return interaction.reply({ content: ok ? '⏭️ Sprunget over.' : '❌ Ingen aktiv runde.', flags: 64 });
+        return interaction.reply({
+          content: ok ? "⏭️ Sprunget over." : "❌ Ingen aktiv runde.",
+          flags: 64,
+        });
       }
 
-      if (sub === 'leaderboard') {
+      if (sub === "leaderboard") {
         const guild = await getGuildRow(interaction.guild.id);
-        if (!guild) return interaction.reply({ content: '❌ Server ikke fundet.', flags: 64 });
+        if (!guild)
+          return interaction.reply({
+            content: "❌ Server ikke fundet.",
+            flags: 64,
+          });
         const { data } = await supabase
-          .from('music_quiz_scores')
-          .select('user_id, username, points, rounds_won')
-          .eq('guild_id', guild.id)
-          .order('points', { ascending: false })
+          .from("music_quiz_scores")
+          .select("user_id, username, points, rounds_won")
+          .eq("guild_id", guild.id)
+          .order("points", { ascending: false })
           .limit(10);
 
         const embed = new EmbedBuilder()
           .setColor(0xf1c40f)
-          .setTitle('🏆 Musik Quiz Leaderboard')
-          .setDescription((data && data.length)
-            ? data.map((r, i) => `**${i + 1}.** <@${r.user_id}> — **${r.points}** pt · ${r.rounds_won} sejre`).join('\n')
-            : 'Ingen scores endnu.');
+          .setTitle("🏆 Musik Quiz Leaderboard")
+          .setDescription(
+            data && data.length
+              ? data
+                  .map(
+                    (r, i) =>
+                      `**${i + 1}.** <@${r.user_id}> — **${r.points}** pt · ${r.rounds_won} sejre`,
+                  )
+                  .join("\n")
+              : "Ingen scores endnu.",
+          );
         if (queueCommandExecution) {
           void queueCommandExecution({
             guildId: interaction.guild.id,
             commandName,
             userId: interaction.user.id,
             channelId: interaction.channelId,
-            source: 'slash',
-            status: 'success',
+            source: "slash",
+            status: "success",
             latencyMs: Date.now() - commandStartedAt,
           });
         }
         return interaction.reply({ embeds: [embed] });
       }
     } catch (e) {
-      console.error('[MusicQuiz] interaction error:', e.message);
+      console.error("[MusicQuiz] interaction error:", e.message);
       if (interaction.isRepliable() && !interaction.replied) {
-        await interaction.reply({ content: '❌ Fejl i quiz-kommando.', flags: 64 }).catch(() => {});
+        await interaction
+          .reply({ content: "❌ Fejl i quiz-kommando.", flags: 64 })
+          .catch(() => {});
       }
     }
   });
@@ -406,23 +517,32 @@ function setupMusicQuizHandler(client, supabase, options = {}) {
   // Realtime: settingsCache is shared across clients, so subscribe only once per process.
   if (!settingsRealtimeSub) {
     try {
-      settingsRealtimeSub = createRealtimeSubscription(supabase, 'music_quiz_settings_changes', [
-        {
-          filter: { event: '*', schema: 'public', table: 'music_quiz_settings' },
-          callback: (payload) => {
-            const guildUuid = payload.new?.guild_id || payload.old?.guild_id;
-            if (!guildUuid) return;
-            settingsCache.clear();
+      settingsRealtimeSub = createRealtimeSubscription(
+        supabase,
+        "music_quiz_settings_changes",
+        [
+          {
+            filter: {
+              event: "*",
+              schema: "public",
+              table: "music_quiz_settings",
+            },
+            callback: (payload) => {
+              const guildUuid = payload.new?.guild_id || payload.old?.guild_id;
+              if (!guildUuid) return;
+              settingsCache.clear();
+            },
           },
-        },
-      ], { label: 'MusicQuizSettings' });
+        ],
+        { label: "MusicQuizSettings" },
+      );
     } catch (e) {
-      console.warn('[MusicQuiz] realtime setup failed:', e.message);
+      console.warn("[MusicQuiz] realtime setup failed:", e.message);
       settingsRealtimeSub = null;
     }
   }
 
-  console.log('[MusicQuiz] Handler initialized');
+  console.log("[MusicQuiz] Handler initialized");
   return { getSettings, invalidateCache, endGame, startGame };
 }
 

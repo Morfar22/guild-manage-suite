@@ -1,36 +1,37 @@
 /**
  * Join to Create (JTC) Handler
- * 
+ *
  * Handles automatic voice channel creation and deletion
  * Supports multiple triggers with role requirements
- * 
+ *
  * Usage:
  * const jtcHandler = require('./jtcHandler');
  * jtcHandler.init(client, supabaseUrl, supabaseKey, botSecret);
- * 
+ *
  * Required intents: GuildVoiceStates
  */
 
-let supabaseUrl = '';
-let supabaseKey = '';
-let botSecretKey = '';
+let supabaseUrl = "";
+let supabaseKey = "";
+let botSecretKey = "";
 
 // Deduplication: track recently processed events to prevent double handling
 const recentEvents = new Map();
 const DEDUP_WINDOW_MS = 5000; // 5 second window
-const APP_API_BASE = process.env.APP_API_BASE || 'https://bot.nethost-solutions.dk';
+const APP_API_BASE =
+  process.env.APP_API_BASE || "https://bot.nethost-solutions.dk";
 
 function isDuplicateEvent(key) {
   const now = Date.now();
   const lastTime = recentEvents.get(key);
-  
+
   if (lastTime && now - lastTime < DEDUP_WINDOW_MS) {
     console.log(`🎤 JTC duplicate event skipped: ${key}`);
     return true;
   }
-  
+
   recentEvents.set(key, now);
-  
+
   // Cleanup old entries every 100 events
   if (recentEvents.size > 100) {
     for (const [k, v] of recentEvents) {
@@ -39,19 +40,19 @@ function isDuplicateEvent(key) {
       }
     }
   }
-  
+
   return false;
 }
 
 async function callJTCHandler(action, data) {
   const response = await fetch(`${APP_API_BASE}/api/public/jtc-handler`, {
-    method: 'POST',
+    method: "POST",
     headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${supabaseKey}`,
-      'x-bot-secret': botSecretKey
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${supabaseKey}`,
+      "x-bot-secret": botSecretKey,
     },
-    body: JSON.stringify({ action, ...data })
+    body: JSON.stringify({ action, ...data }),
   });
 
   if (!response.ok) {
@@ -77,11 +78,11 @@ function init(client, url, key, secret, config = {}) {
   supabaseKey = key;
   botSecretKey = secret;
 
-  console.log('🎤 JTC Handler initialized (multi-trigger support)');
+  console.log("🎤 JTC Handler initialized (multi-trigger support)");
 
-  client.on('voiceStateUpdate', async (oldState, newState) => {
+  client.on("voiceStateUpdate", async (oldState, newState) => {
     const guildId = newState.guild?.id || oldState.guild?.id;
-    
+
     // Check if this bot instance should handle this guild
     if (!guildId || !shouldHandleGuild(guildId)) return;
 
@@ -90,28 +91,32 @@ function init(client, url, key, secret, config = {}) {
       if (!oldState.channelId && newState.channelId) {
         await handleVoiceJoin(newState);
       }
-      
+
       // User left a channel
       if (oldState.channelId && !newState.channelId) {
         await handleVoiceLeave(oldState);
       }
-      
+
       // User switched channels
-      if (oldState.channelId && newState.channelId && oldState.channelId !== newState.channelId) {
+      if (
+        oldState.channelId &&
+        newState.channelId &&
+        oldState.channelId !== newState.channelId
+      ) {
         await handleVoiceLeave(oldState);
         await handleVoiceJoin(newState);
       }
     } catch (error) {
-      console.error('JTC voiceStateUpdate error:', error);
+      console.error("JTC voiceStateUpdate error:", error);
     }
   });
 }
 
 async function handleVoiceJoin(voiceState) {
   const { guild, channel, member } = voiceState;
-  
+
   if (!channel || !member) return;
-  
+
   // Dedup check: prevent double handling when multiple bots process same event
   const dedupKey = `join:${guild.id}:${channel.id}:${member.id}`;
   if (isDuplicateEvent(dedupKey)) return;
@@ -122,72 +127,83 @@ async function handleVoiceJoin(voiceState) {
     try {
       fullMember = await guild.members.fetch(member.id);
     } catch (fetchErr) {
-      console.warn('JTC: Failed to fetch full member data, falling back to cached member:', fetchErr);
+      console.warn(
+        "JTC: Failed to fetch full member data, falling back to cached member:",
+        fetchErr,
+      );
     }
 
     // Get user's role IDs for role requirement check
-    const userRoles = (fullMember.roles?.cache?.map(role => String(role.id)) || []).filter(Boolean);
-    console.log(`🎤 JTC role payload - user=${fullMember.id}, rolesCount=${userRoles.length}`);
+    const userRoles = (
+      fullMember.roles?.cache?.map((role) => String(role.id)) || []
+    ).filter(Boolean);
+    console.log(
+      `🎤 JTC role payload - user=${fullMember.id}, rolesCount=${userRoles.length}`,
+    );
 
     // Check if this is a JTC trigger channel
-    const result = await callJTCHandler('check_trigger', {
+    const result = await callJTCHandler("check_trigger", {
       discordGuildId: guild.id,
       channelId: channel.id,
       userId: member.id,
       userName: member.displayName || member.user.username,
-      userRoles: userRoles
+      userRoles: userRoles,
     });
 
     if (result.shouldCreate) {
-      console.log(`🎤 Creating JTC channel for ${member.displayName} in ${guild.name} (trigger: ${result.trigger?.name || 'legacy'})`);
-      
-      await callJTCHandler('create_channel', {
+      console.log(
+        `🎤 Creating JTC channel for ${member.displayName} in ${guild.name} (trigger: ${result.trigger?.name || "legacy"})`,
+      );
+
+      await callJTCHandler("create_channel", {
         discordGuildId: guild.id,
         channelId: channel.id,
         userId: member.id,
         userName: member.displayName || member.user.username,
-        triggerId: result.trigger?.id
+        triggerId: result.trigger?.id,
       });
-    } else if (result.reason === 'missing_role') {
+    } else if (result.reason === "missing_role") {
       // User doesn't have the required role - optionally notify them
-      console.log(`🎤 User ${member.displayName} missing role for JTC trigger (requires: ${result.requiredRoleName})`);
-      
+      console.log(
+        `🎤 User ${member.displayName} missing role for JTC trigger (requires: ${result.requiredRoleName})`,
+      );
+
       // Disconnect user from the trigger channel since they can't use it
       try {
         await member.voice.disconnect();
       } catch (err) {
-        console.error('Failed to disconnect user without role:', err);
+        console.error("Failed to disconnect user without role:", err);
       }
     }
   } catch (error) {
-    console.error('JTC handleVoiceJoin error:', error);
+    console.error("JTC handleVoiceJoin error:", error);
   }
 }
 
 async function handleVoiceLeave(voiceState) {
   const { guild, channel } = voiceState;
-  
+
   if (!channel) return;
 
   try {
     // Check if channel is empty and is a JTC channel
     if (channel.members.size === 0) {
-      const result = await callJTCHandler('check_empty', {
+      const result = await callJTCHandler("check_empty", {
         discordGuildId: guild.id,
-        channelId: channel.id
+        channelId: channel.id,
       });
 
       if (result.shouldDelete) {
         console.log(`🎤 Deleting empty JTC channel in ${guild.name}`);
-        
-        await callJTCHandler('delete_channel', {
+
+        await callJTCHandler("delete_channel", {
           discordGuildId: guild.id,
-          channelId: channel.id
+          channelId: channel.id,
         });
       }
     }
   } catch (error) {
-    console.error('JTC handleVoiceLeave error:', error);
+    console.error("JTC handleVoiceLeave error:", error);
   }
 }
 

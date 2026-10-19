@@ -1,12 +1,13 @@
-import type { TablesUpdate } from '@/integrations/supabase/types';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
-import { useGuild } from '@/contexts/GuildContext';
+import type { TablesUpdate } from "@/integrations/supabase/types";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { useGuild } from "@/contexts/GuildContext";
+import type { Untyped } from "@/types/untyped";
 
-export type TicketStatus = 'open' | 'claimed' | 'closed';
-export type TicketType = 'support' | 'application';
-export type TicketAttention = 'normal' | 'watch' | 'urgent';
-export type TicketPriority = 'low' | 'normal' | 'high' | 'urgent';
+export type TicketStatus = "open" | "claimed" | "closed";
+export type TicketType = "support" | "application";
+export type TicketAttention = "normal" | "watch" | "urgent";
+export type TicketPriority = "low" | "normal" | "high" | "urgent";
 
 export interface Ticket {
   id: string;
@@ -51,7 +52,7 @@ export interface CategoryQuestion {
   label: string;
   placeholder: string;
   required: boolean;
-  style: 'short' | 'paragraph' | 'select';
+  style: "short" | "paragraph" | "select";
   options?: string[];
   multi?: boolean;
 }
@@ -71,7 +72,7 @@ export interface TicketCategory {
 }
 
 // Helper to transform DB response to typed category
-function transformCategory(cat: any): TicketCategory {
+function transformCategory(cat: Untyped): TicketCategory {
   return {
     ...cat,
     questions: Array.isArray(cat.questions) ? cat.questions : [],
@@ -94,54 +95,68 @@ export interface TicketStats {
   overdueSla: number;
 }
 
-export function getTicketAgeHours(ticket: Pick<Ticket, 'created_at'>, now = Date.now()) {
-  return Math.max(0, (now - new Date(ticket.created_at).getTime()) / (1000 * 60 * 60));
+export function getTicketAgeHours(
+  ticket: Pick<Ticket, "created_at">,
+  now = Date.now(),
+) {
+  return Math.max(
+    0,
+    (now - new Date(ticket.created_at).getTime()) / (1000 * 60 * 60),
+  );
 }
 
-export function getTicketAttention(ticket: Pick<Ticket, 'status' | 'claimed_by_id' | 'created_at'>, now = Date.now()): TicketAttention {
-  if (ticket.status === 'closed') return 'normal';
+export function getTicketAttention(
+  ticket: Pick<Ticket, "status" | "claimed_by_id" | "created_at">,
+  now = Date.now(),
+): TicketAttention {
+  if (ticket.status === "closed") return "normal";
 
   const ageHours = getTicketAgeHours(ticket, now);
   if (!ticket.claimed_by_id) {
-    if (ageHours >= 6) return 'urgent';
-    if (ageHours >= 1) return 'watch';
-    return 'normal';
+    if (ageHours >= 6) return "urgent";
+    if (ageHours >= 1) return "watch";
+    return "normal";
   }
 
-  if (ageHours >= 24) return 'urgent';
-  if (ageHours >= 12) return 'watch';
-  return 'normal';
+  if (ageHours >= 24) return "urgent";
+  if (ageHours >= 12) return "watch";
+  return "normal";
 }
 
-export function useTickets(status?: TicketStatus, excludeApplications: boolean = true) {
+export function useTickets(
+  status?: TicketStatus,
+  excludeApplications: boolean = true,
+) {
   const { selectedGuild } = useGuild();
 
   return useQuery({
-    queryKey: ['tickets', selectedGuild?.id, status, excludeApplications],
+    queryKey: ["tickets", selectedGuild?.id, status, excludeApplications],
     queryFn: async () => {
       if (!selectedGuild?.id) return [];
 
       let query = supabase
-        .from('tickets')
-        .select('*, ticket_categories(*)')
-        .eq('guild_id', selectedGuild.id)
-        .order('created_at', { ascending: false });
+        .from("tickets")
+        .select("*, ticket_categories(*)")
+        .eq("guild_id", selectedGuild.id)
+        .order("created_at", { ascending: false });
 
       if (status) {
-        query = query.eq('status', status);
+        query = query.eq("status", status);
       }
 
       // Filter out application tickets if requested (default behavior for Tickets page)
       if (excludeApplications) {
-        query = query.eq('ticket_type', 'support');
+        query = query.eq("ticket_type", "support");
       }
 
       const { data, error } = await query;
       if (error) throw error;
       // Transform ticket_categories to handle questions
-      return (data || []).map((ticket: any) => ({
+      return (data || []).map((ticket: Untyped) => ({
         ...ticket,
-        ticket_categories: ticket.ticket_categories ? transformCategory(ticket.ticket_categories) : null,
+        ticket_categories: ticket.ticket_categories
+          ? transformCategory(ticket.ticket_categories)
+          : null,
       })) as Ticket[];
     },
     enabled: !!selectedGuild?.id,
@@ -151,21 +166,23 @@ export function useTickets(status?: TicketStatus, excludeApplications: boolean =
 
 export function useTicket(ticketId: string | undefined) {
   return useQuery({
-    queryKey: ['ticket', ticketId],
+    queryKey: ["ticket", ticketId],
     queryFn: async () => {
       if (!ticketId) return null;
 
       const { data, error } = await supabase
-        .from('tickets')
-        .select('*, ticket_categories(*)')
-        .eq('id', ticketId)
+        .from("tickets")
+        .select("*, ticket_categories(*)")
+        .eq("id", ticketId)
         .maybeSingle();
 
       if (error) throw error;
       if (!data) return null;
       return {
         ...data,
-        ticket_categories: data.ticket_categories ? transformCategory(data.ticket_categories) : null,
+        ticket_categories: data.ticket_categories
+          ? transformCategory(data.ticket_categories)
+          : null,
       } as Ticket;
     },
     enabled: !!ticketId,
@@ -175,15 +192,15 @@ export function useTicket(ticketId: string | undefined) {
 
 export function useTicketMessages(ticketId: string | undefined) {
   return useQuery({
-    queryKey: ['ticket-messages', ticketId],
+    queryKey: ["ticket-messages", ticketId],
     queryFn: async () => {
       if (!ticketId) return [];
 
       const { data, error } = await supabase
-        .from('ticket_messages')
-        .select('*')
-        .eq('ticket_id', ticketId)
-        .order('created_at', { ascending: true });
+        .from("ticket_messages")
+        .select("*")
+        .eq("ticket_id", ticketId)
+        .order("created_at", { ascending: true });
 
       if (error) throw error;
       return data as TicketMessage[];
@@ -197,15 +214,15 @@ export function useTicketCategories() {
   const { selectedGuild } = useGuild();
 
   return useQuery({
-    queryKey: ['ticket-categories', selectedGuild?.id],
+    queryKey: ["ticket-categories", selectedGuild?.id],
     queryFn: async () => {
       if (!selectedGuild?.id) return [];
 
       const { data, error } = await supabase
-        .from('ticket_categories')
-        .select('*')
-        .eq('guild_id', selectedGuild.id)
-        .order('name');
+        .from("ticket_categories")
+        .select("*")
+        .eq("guild_id", selectedGuild.id)
+        .order("name");
 
       if (error) throw error;
       return (data || []).map(transformCategory) as TicketCategory[];
@@ -218,18 +235,20 @@ export function useTicketStats(excludeApplications: boolean = true) {
   const { selectedGuild } = useGuild();
 
   return useQuery({
-    queryKey: ['ticket-stats', selectedGuild?.id, excludeApplications],
+    queryKey: ["ticket-stats", selectedGuild?.id, excludeApplications],
     queryFn: async () => {
       if (!selectedGuild?.id) return null;
 
       let query = supabase
-        .from('tickets')
-        .select('status, created_at, closed_at, ticket_type, claimed_by_id, priority, sla_due_at')
-        .eq('guild_id', selectedGuild.id);
+        .from("tickets")
+        .select(
+          "status, created_at, closed_at, ticket_type, claimed_by_id, priority, sla_due_at",
+        )
+        .eq("guild_id", selectedGuild.id);
 
       // Filter out application tickets if requested
       if (excludeApplications) {
-        query = query.eq('ticket_type', 'support');
+        query = query.eq("ticket_type", "support");
       }
 
       const { data: tickets, error } = await query;
@@ -242,22 +261,38 @@ export function useTicketStats(excludeApplications: boolean = true) {
 
       const stats: TicketStats = {
         totalTickets: tickets.length,
-        openTickets: tickets.filter(t => t.status === 'open').length,
-        claimedTickets: tickets.filter(t => t.status === 'claimed').length,
-        closedTickets: tickets.filter(t => t.status === 'closed').length,
-        unclaimedTickets: tickets.filter(t => t.status === 'open' && !t.claimed_by_id).length,
-        needsAttention: tickets.filter(t => getTicketAttention(t as Ticket, now.getTime()) !== 'normal').length,
+        openTickets: tickets.filter((t) => t.status === "open").length,
+        claimedTickets: tickets.filter((t) => t.status === "claimed").length,
+        closedTickets: tickets.filter((t) => t.status === "closed").length,
+        unclaimedTickets: tickets.filter(
+          (t) => t.status === "open" && !t.claimed_by_id,
+        ).length,
+        needsAttention: tickets.filter(
+          (t) => getTicketAttention(t as Ticket, now.getTime()) !== "normal",
+        ).length,
         avgResponseTime: null,
         avgResolutionTime: null,
         oldestOpenHours: null,
-        ticketsToday: tickets.filter(t => new Date(t.created_at) >= today).length,
-        ticketsThisWeek: tickets.filter(t => new Date(t.created_at) >= weekAgo).length,
-        urgentTickets: tickets.filter(t => t.status !== 'closed' && (t as any).priority === 'urgent').length,
-        overdueSla: tickets.filter(t => t.status !== 'closed' && (t as any).sla_due_at && new Date((t as any).sla_due_at).getTime() < now.getTime()).length,
+        ticketsToday: tickets.filter((t) => new Date(t.created_at) >= today)
+          .length,
+        ticketsThisWeek: tickets.filter(
+          (t) => new Date(t.created_at) >= weekAgo,
+        ).length,
+        urgentTickets: tickets.filter(
+          (t) => t.status !== "closed" && (t as Untyped).priority === "urgent",
+        ).length,
+        overdueSla: tickets.filter(
+          (t) =>
+            t.status !== "closed" &&
+            (t as Untyped).sla_due_at &&
+            new Date((t as Untyped).sla_due_at).getTime() < now.getTime(),
+        ).length,
       };
 
       // Calculate average response time for closed tickets
-      const closedWithTime = tickets.filter(t => t.status === 'closed' && t.closed_at);
+      const closedWithTime = tickets.filter(
+        (t) => t.status === "closed" && t.closed_at,
+      );
       if (closedWithTime.length > 0) {
         const totalMs = closedWithTime.reduce((acc, t) => {
           const created = new Date(t.created_at).getTime();
@@ -271,10 +306,16 @@ export function useTicketStats(excludeApplications: boolean = true) {
         stats.avgResolutionTime = avgHours;
       }
 
-      const activeTickets = tickets.filter(t => t.status !== 'closed');
+      const activeTickets = tickets.filter((t) => t.status !== "closed");
       if (activeTickets.length > 0) {
         stats.oldestOpenHours = Math.max(
-          ...activeTickets.map(t => Math.max(0, (now.getTime() - new Date(t.created_at).getTime()) / (1000 * 60 * 60)))
+          ...activeTickets.map((t) =>
+            Math.max(
+              0,
+              (now.getTime() - new Date(t.created_at).getTime()) /
+                (1000 * 60 * 60),
+            ),
+          ),
         );
       }
 
@@ -289,7 +330,7 @@ export function useTicketStats(excludeApplications: boolean = true) {
 interface CategoryInput {
   name: string;
   description?: string | null;
-  ticket_type?: 'support' | 'application';
+  ticket_type?: "support" | "application";
   emoji?: string;
   welcome_message?: string;
   staff_role_id?: string | null;
@@ -302,22 +343,22 @@ export function useCreateCategory() {
 
   return useMutation({
     mutationFn: async (category: CategoryInput) => {
-      if (!selectedGuild?.id) throw new Error('No guild selected');
+      if (!selectedGuild?.id) throw new Error("No guild selected");
 
       const insertData = {
         name: category.name,
         description: category.description || null,
-        ticket_type: category.ticket_type || 'support',
-        emoji: category.emoji || '🎫',
-        welcome_message: category.welcome_message || 'Tak for din henvendelse!',
+        ticket_type: category.ticket_type || "support",
+        emoji: category.emoji || "🎫",
+        welcome_message: category.welcome_message || "Tak for din henvendelse!",
         staff_role_id: category.staff_role_id || null,
         questions: (category.questions || []) as unknown,
         guild_id: selectedGuild.id,
       };
 
       const { data, error } = await supabase
-        .from('ticket_categories')
-        .insert(insertData as any)
+        .from("ticket_categories")
+        .insert(insertData as Untyped)
         .select()
         .single();
 
@@ -325,7 +366,9 @@ export function useCreateCategory() {
       return transformCategory(data);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['ticket-categories', selectedGuild?.id] });
+      queryClient.invalidateQueries({
+        queryKey: ["ticket-categories", selectedGuild?.id],
+      });
     },
   });
 }
@@ -335,21 +378,31 @@ export function useUpdateCategory() {
   const { selectedGuild } = useGuild();
 
   return useMutation({
-    mutationFn: async ({ id, ...updates }: Partial<CategoryInput> & { id: string }) => {
+    mutationFn: async ({
+      id,
+      ...updates
+    }: Partial<CategoryInput> & { id: string }) => {
       // Build update object manually to handle questions properly
-      const updateData: TablesUpdate<'ticket_categories'> = {};
+      const updateData: TablesUpdate<"ticket_categories"> = {};
       if (updates.name !== undefined) updateData.name = updates.name;
-      if (updates.description !== undefined) updateData.description = updates.description;
-      if (updates.ticket_type !== undefined) updateData.ticket_type = updates.ticket_type;
+      if (updates.description !== undefined)
+        updateData.description = updates.description;
+      if (updates.ticket_type !== undefined)
+        updateData.ticket_type = updates.ticket_type;
       if (updates.emoji !== undefined) updateData.emoji = updates.emoji;
-      if (updates.welcome_message !== undefined) updateData.welcome_message = updates.welcome_message;
-      if (updates.staff_role_id !== undefined) updateData.staff_role_id = updates.staff_role_id;
-      if (updates.questions !== undefined) updateData.questions = updates.questions.map(question => ({ ...question }));
+      if (updates.welcome_message !== undefined)
+        updateData.welcome_message = updates.welcome_message;
+      if (updates.staff_role_id !== undefined)
+        updateData.staff_role_id = updates.staff_role_id;
+      if (updates.questions !== undefined)
+        updateData.questions = updates.questions.map((question) => ({
+          ...question,
+        }));
 
       const { data, error } = await supabase
-        .from('ticket_categories')
+        .from("ticket_categories")
         .update(updateData)
-        .eq('id', id)
+        .eq("id", id)
         .select()
         .single();
 
@@ -357,7 +410,9 @@ export function useUpdateCategory() {
       return transformCategory(data);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['ticket-categories', selectedGuild?.id] });
+      queryClient.invalidateQueries({
+        queryKey: ["ticket-categories", selectedGuild?.id],
+      });
     },
   });
 }
@@ -369,14 +424,16 @@ export function useDeleteCategory() {
   return useMutation({
     mutationFn: async (categoryId: string) => {
       const { error } = await supabase
-        .from('ticket_categories')
+        .from("ticket_categories")
         .delete()
-        .eq('id', categoryId);
+        .eq("id", categoryId);
 
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['ticket-categories', selectedGuild?.id] });
+      queryClient.invalidateQueries({
+        queryKey: ["ticket-categories", selectedGuild?.id],
+      });
     },
   });
 }
@@ -387,44 +444,47 @@ export function useDeleteTicket() {
 
   return useMutation({
     mutationFn: async (ticketId: string) => {
-      if (!selectedGuild?.id) throw new Error('No guild selected');
+      if (!selectedGuild?.id) throw new Error("No guild selected");
 
       const { data: ticket, error: lookupError } = await supabase
-        .from('tickets')
-        .select('id, status')
-        .eq('id', ticketId)
-        .eq('guild_id', selectedGuild.id)
+        .from("tickets")
+        .select("id, status")
+        .eq("id", ticketId)
+        .eq("guild_id", selectedGuild.id)
         .maybeSingle();
 
       if (lookupError) throw lookupError;
-      if (!ticket) throw new Error('Ticket not found');
-      if (ticket.status !== 'closed') {
-        throw new Error('Only closed tickets can be permanently deleted');
+      if (!ticket) throw new Error("Ticket not found");
+      if (ticket.status !== "closed") {
+        throw new Error("Only closed tickets can be permanently deleted");
       }
 
       const { error: messageError } = await supabase
-        .from('ticket_messages')
+        .from("ticket_messages")
         .delete()
-        .eq('ticket_id', ticketId);
+        .eq("ticket_id", ticketId);
 
       if (messageError) throw messageError;
 
       const { error } = await supabase
-        .from('tickets')
+        .from("tickets")
         .delete()
-        .eq('id', ticketId)
-        .eq('guild_id', selectedGuild.id)
-        .eq('status', 'closed');
+        .eq("id", ticketId)
+        .eq("guild_id", selectedGuild.id)
+        .eq("status", "closed");
 
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['tickets', selectedGuild?.id] });
-      queryClient.invalidateQueries({ queryKey: ['ticket-stats', selectedGuild?.id] });
+      queryClient.invalidateQueries({
+        queryKey: ["tickets", selectedGuild?.id],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["ticket-stats", selectedGuild?.id],
+      });
     },
   });
 }
-
 
 export interface TicketInternalNote {
   id: string;
@@ -447,23 +507,26 @@ export function useUpdateTicketOperations() {
       updates,
     }: {
       id: string;
-      updates: Partial<Pick<Ticket,
-        'priority' |
-        'tags' |
-        'sla_due_at' |
-        'escalated_at' |
-        'transferred_to_role_id' |
-        'transferred_to_role_name' |
-        'resolution'
-      >>;
+      updates: Partial<
+        Pick<
+          Ticket,
+          | "priority"
+          | "tags"
+          | "sla_due_at"
+          | "escalated_at"
+          | "transferred_to_role_id"
+          | "transferred_to_role_name"
+          | "resolution"
+        >
+      >;
     }) => {
-      if (!selectedGuild?.id) throw new Error('No guild selected');
+      if (!selectedGuild?.id) throw new Error("No guild selected");
 
       const { data, error } = await supabase
-        .from('tickets')
+        .from("tickets")
         .update({ ...updates, updated_at: new Date().toISOString() })
-        .eq('id', id)
-        .eq('guild_id', selectedGuild.id)
+        .eq("id", id)
+        .eq("guild_id", selectedGuild.id)
         .select()
         .single();
 
@@ -471,23 +534,27 @@ export function useUpdateTicketOperations() {
       return data as Ticket;
     },
     onSuccess: (ticket) => {
-      queryClient.invalidateQueries({ queryKey: ['ticket', ticket.id] });
-      queryClient.invalidateQueries({ queryKey: ['tickets', selectedGuild?.id] });
-      queryClient.invalidateQueries({ queryKey: ['ticket-stats', selectedGuild?.id] });
+      queryClient.invalidateQueries({ queryKey: ["ticket", ticket.id] });
+      queryClient.invalidateQueries({
+        queryKey: ["tickets", selectedGuild?.id],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["ticket-stats", selectedGuild?.id],
+      });
     },
   });
 }
 
 export function useTicketInternalNotes(ticketId: string | undefined) {
   return useQuery({
-    queryKey: ['ticket-internal-notes', ticketId],
+    queryKey: ["ticket-internal-notes", ticketId],
     queryFn: async () => {
       if (!ticketId) return [];
       const { data, error } = await supabase
-        .from('ticket_internal_notes')
-        .select('*')
-        .eq('ticket_id', ticketId)
-        .order('created_at', { ascending: false });
+        .from("ticket_internal_notes")
+        .select("*")
+        .eq("ticket_id", ticketId)
+        .order("created_at", { ascending: false });
       if (error) throw error;
       return data as TicketInternalNote[];
     },
@@ -512,10 +579,11 @@ export function useCreateTicketInternalNote(ticketId: string | undefined) {
       authorName?: string | null;
       authorDiscordId?: string | null;
     }) => {
-      if (!ticketId || !selectedGuild?.id) throw new Error('Ticket eller guild mangler');
+      if (!ticketId || !selectedGuild?.id)
+        throw new Error("Ticket eller guild mangler");
 
       const { data, error } = await supabase
-        .from('ticket_internal_notes')
+        .from("ticket_internal_notes")
         .insert({
           guild_id: selectedGuild.id,
           ticket_id: ticketId,
@@ -531,7 +599,9 @@ export function useCreateTicketInternalNote(ticketId: string | undefined) {
       return data as TicketInternalNote;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['ticket-internal-notes', ticketId] });
+      queryClient.invalidateQueries({
+        queryKey: ["ticket-internal-notes", ticketId],
+      });
     },
   });
 }
@@ -542,21 +612,21 @@ export function useReopenTicket() {
 
   return useMutation({
     mutationFn: async (ticketId: string) => {
-      if (!selectedGuild?.id) throw new Error('No guild selected');
+      if (!selectedGuild?.id) throw new Error("No guild selected");
 
       const now = new Date().toISOString();
       const { data, error } = await supabase
-        .from('tickets')
+        .from("tickets")
         .update({
-          status: 'open',
+          status: "open",
           reopened_at: now,
           closed_at: null,
           closed_by_id: null,
           closed_by_name: null,
           updated_at: now,
         })
-        .eq('id', ticketId)
-        .eq('guild_id', selectedGuild.id)
+        .eq("id", ticketId)
+        .eq("guild_id", selectedGuild.id)
         .select()
         .single();
 
@@ -564,9 +634,13 @@ export function useReopenTicket() {
       return data as Ticket;
     },
     onSuccess: (ticket) => {
-      queryClient.invalidateQueries({ queryKey: ['ticket', ticket.id] });
-      queryClient.invalidateQueries({ queryKey: ['tickets', selectedGuild?.id] });
-      queryClient.invalidateQueries({ queryKey: ['ticket-stats', selectedGuild?.id] });
+      queryClient.invalidateQueries({ queryKey: ["ticket", ticket.id] });
+      queryClient.invalidateQueries({
+        queryKey: ["tickets", selectedGuild?.id],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["ticket-stats", selectedGuild?.id],
+      });
     },
   });
 }

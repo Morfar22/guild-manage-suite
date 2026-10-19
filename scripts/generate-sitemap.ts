@@ -22,7 +22,7 @@ const docEntries: Entry[] = docCategories.flatMap((cat) =>
     path: `/docs/${cat.slug}/${p.slug}`,
     changefreq: "monthly",
     priority: "0.7",
-  }))
+  })),
 );
 
 const entries = [...staticEntries, ...docEntries];
@@ -39,7 +39,7 @@ const xml = [
       `  </url>`,
     ]
       .filter(Boolean)
-      .join("\n")
+      .join("\n"),
   ),
   `</urlset>`,
 ].join("\n");

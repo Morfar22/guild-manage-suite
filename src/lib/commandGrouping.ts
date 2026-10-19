@@ -1,10 +1,11 @@
-import routeConfig from '../../shared/command-routes.json';
+import routeConfig from "../../shared/command-routes.json";
+import type { Untyped } from "@/types/untyped";
 
 type FlatCommand = {
   name: string;
   description?: string;
-  options?: Array<Record<string, any>>;
-  [key: string]: any;
+  options?: Array<Record<string, Untyped>>;
+  [key: string]: Untyped;
 };
 
 type CommandRoute = {
@@ -19,12 +20,18 @@ type CommandRoute = {
 };
 
 const routes = routeConfig.routes as CommandRoute[];
-const roots = routeConfig.roots as Record<string, { description?: string; groups?: Record<string, string> }>;
+const roots = routeConfig.roots as Record<
+  string,
+  { description?: string; groups?: Record<string, string> }
+>;
 const routeByLogical = new Map(routes.map((route) => [route.logical, route]));
 
-function makeSubcommandFromFlat(route: CommandRoute, flatDefinition: FlatCommand) {
+function makeSubcommandFromFlat(
+  route: CommandRoute,
+  flatDefinition: FlatCommand,
+) {
   const nested = (flatDefinition.options || []).find(
-    (option) => option?.type === 1 && option.name === route.sub
+    (option) => option?.type === 1 && option.name === route.sub,
   );
 
   if (nested) {
@@ -32,7 +39,7 @@ function makeSubcommandFromFlat(route: CommandRoute, flatDefinition: FlatCommand
   }
 
   const options = (flatDefinition.options || []).filter(
-    (option) => option?.type !== 1 && option?.type !== 2
+    (option) => option?.type !== 1 && option?.type !== 2,
   );
 
   return {
@@ -44,8 +51,10 @@ function makeSubcommandFromFlat(route: CommandRoute, flatDefinition: FlatCommand
 }
 
 export function groupFlatCommandDefinitions(flatDefinitions: FlatCommand[]) {
-  const sourceByName = new Map(flatDefinitions.map((definition) => [definition.name, definition]));
-  const rootCommands = new Map<string, any>();
+  const sourceByName = new Map(
+    flatDefinitions.map((definition) => [definition.name, definition]),
+  );
+  const rootCommands = new Map<string, Untyped>();
 
   for (const route of routes) {
     if (route.passthrough) continue;
@@ -53,7 +62,7 @@ export function groupFlatCommandDefinitions(flatDefinitions: FlatCommand[]) {
     const sourceDefinition = sourceByName.get(route.source);
     if (!sourceDefinition) {
       throw new Error(
-        `Grouped command route "${route.logical}" mangler source-definition "${route.source}"`
+        `Grouped command route "${route.logical}" mangler source-definition "${route.source}"`,
       );
     }
 
@@ -71,13 +80,15 @@ export function groupFlatCommandDefinitions(flatDefinitions: FlatCommand[]) {
 
     if (route.group) {
       let groupDefinition = rootCommand.options.find(
-        (option: any) => option.type === 2 && option.name === route.group
+        (option: Untyped) => option.type === 2 && option.name === route.group,
       );
       if (!groupDefinition) {
         groupDefinition = {
           type: 2,
           name: route.group,
-          description: roots[route.root]?.groups?.[route.group] || `${route.group} commands`,
+          description:
+            roots[route.root]?.groups?.[route.group] ||
+            `${route.group} commands`,
           options: [],
         };
         rootCommand.options.push(groupDefinition);
@@ -96,7 +107,9 @@ export function groupFlatCommandDefinitions(flatDefinitions: FlatCommand[]) {
     }
     for (const option of command.options) {
       if (option.type === 2 && option.options?.length > 25) {
-        throw new Error(`Discord subcommand limit overskredet for /${command.name} ${option.name}`);
+        throw new Error(
+          `Discord subcommand limit overskredet for /${command.name} ${option.name}`,
+        );
       }
     }
   }
@@ -106,7 +119,6 @@ export function groupFlatCommandDefinitions(flatDefinitions: FlatCommand[]) {
 
 export const canonicalLogicalCommands = routes.map((route) => route.logical);
 
-
 export function getCommandSlashPath(logicalName: string): string {
   const route = routeByLogical.get(logicalName);
   if (!route) return `/${logicalName}`;
@@ -115,5 +127,5 @@ export function getCommandSlashPath(logicalName: string): string {
   const parts = [route.root];
   if (route.group) parts.push(route.group);
   if (route.sub) parts.push(route.sub);
-  return `/${parts.join(' ')}`;
+  return `/${parts.join(" ")}`;
 }

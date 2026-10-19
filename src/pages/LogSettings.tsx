@@ -1,25 +1,36 @@
-import { useState } from 'react';
-import { useGuild } from '@/contexts/GuildContext';
-import { useLogSettings, LOG_CATEGORIES, LogSettingKey } from '@/hooks/useLogSettings';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Switch } from '@/components/ui/switch';
-import { Label } from '@/components/ui/label';
-import { ChannelSelect } from '@/components/ui/channel-select';
-import { Skeleton } from '@/components/ui/skeleton';
-import { 
-  FileText, 
-  Users, 
-  MessageSquare, 
-  Shield, 
-  Hash, 
-  Mic, 
+import { useState } from "react";
+import { useGuild } from "@/contexts/GuildContext";
+import type { Untyped } from "@/types/untyped";
+import {
+  useLogSettings,
+  LOG_CATEGORIES,
+  LogSettingKey,
+} from "@/hooks/useLogSettings";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import { ChannelSelect } from "@/components/ui/channel-select";
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+  FileText,
+  Users,
+  MessageSquare,
+  Shield,
+  Hash,
+  Mic,
   Settings,
   Save,
   Loader2,
   MessageCircle,
   Smile,
-} from 'lucide-react';
+} from "lucide-react";
 
 const iconMap: Record<string, React.ReactNode> = {
   Users: <Users className="h-5 w-5" />,
@@ -36,47 +47,49 @@ export default function LogSettings() {
   const { selectedGuild } = useGuild();
   const { data: settings, isLoading, updateSettings } = useLogSettings();
 
-  const [localSettings, setLocalSettings] = useState<Record<string, boolean | string>>({});
+  const [localSettings, setLocalSettings] = useState<
+    Record<string, boolean | string>
+  >({});
   const [hasChanges, setHasChanges] = useState(false);
 
   const getSettingValue = (key: string): boolean => {
     if (key in localSettings) {
       return localSettings[key] as boolean;
     }
-    return (settings as any)?.[key] ?? false;
+    return (settings as Untyped)?.[key] ?? false;
   };
 
   const getChannelValue = (): string => {
-    if ('log_channel_id' in localSettings) {
+    if ("log_channel_id" in localSettings) {
       return localSettings.log_channel_id as string;
     }
-    return settings?.log_channel_id ?? '';
+    return settings?.log_channel_id ?? "";
   };
 
   const getBoostChannelValue = (): string => {
-    if ('boost_channel_id' in localSettings) {
+    if ("boost_channel_id" in localSettings) {
       return localSettings.boost_channel_id as string;
     }
-    return settings?.boost_channel_id ?? '';
+    return settings?.boost_channel_id ?? "";
   };
 
   const handleToggle = (key: LogSettingKey, value: boolean) => {
-    setLocalSettings(prev => ({ ...prev, [key]: value }));
+    setLocalSettings((prev) => ({ ...prev, [key]: value }));
     setHasChanges(true);
   };
 
   const handleChannelChange = (value: string) => {
-    setLocalSettings(prev => ({ ...prev, log_channel_id: value }));
+    setLocalSettings((prev) => ({ ...prev, log_channel_id: value }));
     setHasChanges(true);
   };
 
   const handleBoostChannelChange = (value: string) => {
-    setLocalSettings(prev => ({ ...prev, boost_channel_id: value }));
+    setLocalSettings((prev) => ({ ...prev, boost_channel_id: value }));
     setHasChanges(true);
   };
 
   const handleSave = () => {
-    updateSettings.mutate(localSettings as any);
+    updateSettings.mutate(localSettings as Untyped);
     setHasChanges(false);
     setLocalSettings({});
   };
@@ -84,20 +97,20 @@ export default function LogSettings() {
   const enableAllInCategory = (categoryKey: string) => {
     const category = LOG_CATEGORIES[categoryKey as keyof typeof LOG_CATEGORIES];
     const newSettings: Record<string, boolean> = {};
-    category.settings.forEach(s => {
+    category.settings.forEach((s) => {
       newSettings[s.key] = true;
     });
-    setLocalSettings(prev => ({ ...prev, ...newSettings }));
+    setLocalSettings((prev) => ({ ...prev, ...newSettings }));
     setHasChanges(true);
   };
 
   const disableAllInCategory = (categoryKey: string) => {
     const category = LOG_CATEGORIES[categoryKey as keyof typeof LOG_CATEGORIES];
     const newSettings: Record<string, boolean> = {};
-    category.settings.forEach(s => {
+    category.settings.forEach((s) => {
       newSettings[s.key] = false;
     });
-    setLocalSettings(prev => ({ ...prev, ...newSettings }));
+    setLocalSettings((prev) => ({ ...prev, ...newSettings }));
     setHasChanges(true);
   };
 
@@ -117,9 +130,14 @@ export default function LogSettings() {
             <FileText className="h-8 w-8 text-primary" />
             Log Indstillinger
           </h1>
-          <p className="text-muted-foreground">Konfigurer hvilke events der skal logges til din log-kanal</p>
+          <p className="text-muted-foreground">
+            Konfigurer hvilke events der skal logges til din log-kanal
+          </p>
         </div>
-        <Button onClick={handleSave} disabled={!hasChanges || updateSettings.isPending}>
+        <Button
+          onClick={handleSave}
+          disabled={!hasChanges || updateSettings.isPending}
+        >
           {updateSettings.isPending ? (
             <Loader2 className="h-4 w-4 mr-2 animate-spin" />
           ) : (
@@ -133,7 +151,9 @@ export default function LogSettings() {
       <Card>
         <CardHeader>
           <CardTitle>Log Kanal</CardTitle>
-          <CardDescription>Vælg hvilken kanal logs skal sendes til</CardDescription>
+          <CardDescription>
+            Vælg hvilken kanal logs skal sendes til
+          </CardDescription>
         </CardHeader>
         <CardContent>
           {isLoading ? (
@@ -146,7 +166,8 @@ export default function LogSettings() {
                 placeholder="Vælg en log-kanal..."
               />
               <p className="text-xs text-muted-foreground mt-2">
-                Alle aktiverede logs sendes til denne kanal (medmindre en specifik kanal er valgt)
+                Alle aktiverede logs sendes til denne kanal (medmindre en
+                specifik kanal er valgt)
               </p>
             </div>
           )}
@@ -159,7 +180,9 @@ export default function LogSettings() {
           <CardTitle className="flex items-center gap-2">
             🚀 Boost Log Kanal
           </CardTitle>
-          <CardDescription>Vælg en separat kanal til server boost notifikationer (valgfrit)</CardDescription>
+          <CardDescription>
+            Vælg en separat kanal til server boost notifikationer (valgfrit)
+          </CardDescription>
         </CardHeader>
         <CardContent>
           {isLoading ? (
@@ -232,11 +255,15 @@ export default function LogSettings() {
                   >
                     <div className="space-y-0.5">
                       <Label className="font-medium">{setting.label}</Label>
-                      <p className="text-xs text-muted-foreground">{setting.description}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {setting.description}
+                      </p>
                     </div>
                     <Switch
                       checked={getSettingValue(setting.key)}
-                      onCheckedChange={(checked) => handleToggle(setting.key, checked)}
+                      onCheckedChange={(checked) =>
+                        handleToggle(setting.key, checked)
+                      }
                     />
                   </div>
                 ))}

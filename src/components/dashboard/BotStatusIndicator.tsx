@@ -1,33 +1,36 @@
-import { useBotStatus } from '@/hooks/useBotStatus';
-import { cn } from '@/lib/utils';
+import { useBotStatus } from "@/hooks/useBotStatus";
+import { cn } from "@/lib/utils";
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
-} from '@/components/ui/tooltip';
+} from "@/components/ui/tooltip";
 
 interface BotStatusIndicatorProps {
   className?: string;
   showLabel?: boolean;
 }
 
-export function BotStatusIndicator({ className, showLabel = false }: BotStatusIndicatorProps) {
+export function BotStatusIndicator({
+  className,
+  showLabel = false,
+}: BotStatusIndicatorProps) {
   const { status, isOnline, loading } = useBotStatus();
 
   // Determine status: online, slow, offline
   const getStatusInfo = () => {
     if (loading) {
       return {
-        color: 'bg-muted-foreground',
-        label: 'Checking...',
+        color: "bg-muted-foreground",
+        label: "Checking...",
         pulse: false,
       };
     }
 
     if (!isOnline) {
       return {
-        color: 'bg-destructive',
-        label: 'Offline',
+        color: "bg-destructive",
+        label: "Offline",
         pulse: false,
       };
     }
@@ -35,15 +38,15 @@ export function BotStatusIndicator({ className, showLabel = false }: BotStatusIn
     // Check latency for slow status
     if (status?.latency_ms && status.latency_ms > 500) {
       return {
-        color: 'bg-yellow-500',
+        color: "bg-yellow-500",
         label: `Slow (${status.latency_ms}ms)`,
         pulse: true,
       };
     }
 
     return {
-      color: 'bg-green-500',
-      label: status?.latency_ms ? `Online (${status.latency_ms}ms)` : 'Online',
+      color: "bg-green-500",
+      label: status?.latency_ms ? `Online (${status.latency_ms}ms)` : "Online",
       pulse: true,
     };
   };
@@ -56,18 +59,18 @@ export function BotStatusIndicator({ className, showLabel = false }: BotStatusIn
         <div className={cn("flex items-center gap-2", className)}>
           <span className="relative flex h-2.5 w-2.5">
             {statusInfo.pulse && (
-              <span 
+              <span
                 className={cn(
                   "animate-ping absolute inline-flex h-full w-full rounded-full opacity-75",
-                  statusInfo.color
-                )} 
+                  statusInfo.color,
+                )}
               />
             )}
-            <span 
+            <span
               className={cn(
                 "relative inline-flex rounded-full h-2.5 w-2.5",
-                statusInfo.color
-              )} 
+                statusInfo.color,
+              )}
             />
           </span>
           {showLabel && (

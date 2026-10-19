@@ -1,12 +1,19 @@
-// @ts-nocheck
 // Migrated from Supabase Edge Function `modmail-handler` to a TanStack server route.
-import { createFileRoute } from '@tanstack/react-router'
-import { createClient } from '@supabase/supabase-js'
+// @ts-nocheck
+import { safeEqual } from "@/lib/server/api-auth";
+import { createFileRoute } from "@tanstack/react-router";
+import { createClient } from "@supabase/supabase-js";
+import type { Untyped } from "@/types/untyped";
 
-const __env = (k: string) => process.env[k] ?? (k === 'SUPABASE_ANON_KEY' ? process.env['SUPABASE_PUBLISHABLE_KEY'] : undefined)
-let __handler: (req: Request) => Response | Promise<Response>
-const __serve = (fn: any, _opts?: any) => { __handler = fn }
-
+const __env = (k: string) =>
+  process.env[k] ??
+  (k === "SUPABASE_ANON_KEY"
+    ? process.env["SUPABASE_PUBLISHABLE_KEY"]
+    : undefined);
+let __handler: (req: Request) => Response | Promise<Response>;
+const __serve = (fn: Untyped, _opts?: Untyped) => {
+  __handler = fn;
+};
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -25,7 +32,7 @@ __serve(async (req) => {
     const botSecret = req.headers.get("x-bot-secret");
     const expectedSecret = __env("BOT_SECRET_KEY");
 
-    if (!botSecret || botSecret !== expectedSecret) {
+    if (!safeEqual(botSecret, expectedSecret)) {
       console.error("[Modmail] Invalid or missing bot secret");
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
@@ -141,7 +148,14 @@ __serve(async (req) => {
       }
 
       case "saveMessage": {
-        const { threadId, authorType, authorId, authorName, content, attachments } = params;
+        const {
+          threadId,
+          authorType,
+          authorId,
+          authorName,
+          content,
+          attachments,
+        } = params;
         const { error } = await supabase.from("modmail_messages").insert({
           thread_id: threadId,
           author_type: authorType,
@@ -211,7 +225,7 @@ __serve(async (req) => {
 
       case "closeThread": {
         const { channelId } = params;
-        
+
         // First get the thread
         const { data: thread, error: threadError } = await supabase
           .from("modmail_threads")
@@ -222,13 +236,16 @@ __serve(async (req) => {
           .maybeSingle();
 
         if (threadError || !thread) {
-          return new Response(JSON.stringify({ 
-            error: threadError?.message || "Thread not found",
-            thread: null 
-          }), {
-            status: threadError ? 500 : 404,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          });
+          return new Response(
+            JSON.stringify({
+              error: threadError?.message || "Thread not found",
+              thread: null,
+            }),
+            {
+              status: threadError ? 500 : 404,
+              headers: { ...corsHeaders, "Content-Type": "application/json" },
+            },
+          );
         }
 
         // Get close message from settings
@@ -256,13 +273,16 @@ __serve(async (req) => {
           });
         }
 
-        return new Response(JSON.stringify({ 
-          success: true, 
-          thread, 
-          closeMessage: settings?.close_message 
-        }), {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+        return new Response(
+          JSON.stringify({
+            success: true,
+            thread,
+            closeMessage: settings?.close_message,
+          }),
+          {
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          },
+        );
       }
 
       case "claimThread": {
@@ -278,22 +298,28 @@ __serve(async (req) => {
           .maybeSingle();
 
         if (threadError || !thread) {
-          return new Response(JSON.stringify({ 
-            error: threadError?.message || "Thread not found" 
-          }), {
-            status: threadError ? 500 : 404,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          });
+          return new Response(
+            JSON.stringify({
+              error: threadError?.message || "Thread not found",
+            }),
+            {
+              status: threadError ? 500 : 404,
+              headers: { ...corsHeaders, "Content-Type": "application/json" },
+            },
+          );
         }
 
         if (thread.claimed_by_id) {
-          return new Response(JSON.stringify({ 
-            error: "already_claimed",
-            claimedByName: thread.claimed_by_name 
-          }), {
-            status: 409,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          });
+          return new Response(
+            JSON.stringify({
+              error: "already_claimed",
+              claimedByName: thread.claimed_by_name,
+            }),
+            {
+              status: 409,
+              headers: { ...corsHeaders, "Content-Type": "application/json" },
+            },
+          );
         }
 
         // Update thread with claim info
@@ -326,7 +352,8 @@ __serve(async (req) => {
     }
   } catch (error) {
     console.error("[Modmail] Unexpected error:", error);
-    const errorMessage = error instanceof Error ? error.message : "Unknown error";
+    const errorMessage =
+      error instanceof Error ? error.message : "Unknown error";
     return new Response(JSON.stringify({ error: errorMessage }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -334,10 +361,9 @@ __serve(async (req) => {
   }
 });
 
+const __call = ({ request }: { request: Request }) => __handler(request);
 
-const __call = ({ request }: { request: Request }) => __handler(request)
-
-export const Route = createFileRoute('/api/public/modmail-handler')({
+export const Route = createFileRoute("/api/public/modmail-handler")({
   server: {
     handlers: {
       GET: __call,
@@ -348,4 +374,4 @@ export const Route = createFileRoute('/api/public/modmail-handler')({
       OPTIONS: __call,
     },
   },
-})
+});

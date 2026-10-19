@@ -44,8 +44,7 @@ export async function requireGuildAdmin(
 export function requireBotSecret(req: Request) {
   const expected = process.env.BOT_SECRET_KEY;
   const supplied = req.headers.get("x-bot-secret");
-  if (!expected || !supplied || supplied !== expected)
-    throw apiError(401, "Unauthorized");
+  if (!safeEqual(supplied, expected)) throw apiError(401, "Unauthorized");
 }
 
 export async function requireGuildChannel(
@@ -69,4 +68,25 @@ export async function requireGuildChannel(
   const channel = await response.json();
   if (channel.guild_id !== discordGuildId)
     throw apiError(403, "Channel does not belong to this guild");
+}
+
+/**
+ * Constant-time string comparison for shared secrets (bot secret, API keys).
+ * Works in Node, Workers and Deno without depending on node:crypto.
+ */
+export function safeEqual(
+  supplied: string | null | undefined,
+  expected: string | null | undefined,
+): boolean {
+  if (typeof supplied !== "string" || typeof expected !== "string")
+    return false;
+  if (!supplied || !expected) return false;
+  const enc = new TextEncoder();
+  const a = enc.encode(supplied);
+  const b = enc.encode(expected);
+  let diff = a.length ^ b.length;
+  const len = Math.max(a.length, b.length);
+  for (let i = 0; i < len; i++)
+    diff |= (a[i % a.length] ?? 0) ^ (b[i % b.length] ?? 0);
+  return diff === 0;
 }

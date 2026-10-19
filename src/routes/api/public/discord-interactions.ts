@@ -1,14 +1,20 @@
 // @ts-nocheck
-import { resolveGuildBotToken } from '@/lib/server/guild-bot-token'
+import type { Untyped } from "@/types/untyped";
+import { resolveGuildBotToken } from "@/lib/server/guild-bot-token";
 // Migrated from Supabase Edge Function `discord-interactions` to a TanStack server route.
-import { createFileRoute } from '@tanstack/react-router'
-import { createClient } from '@supabase/supabase-js'
-import nacl from 'tweetnacl'
+import { createFileRoute } from "@tanstack/react-router";
+import { createClient } from "@supabase/supabase-js";
+import nacl from "tweetnacl";
 
-const __env = (k: string) => process.env[k] ?? (k === 'SUPABASE_ANON_KEY' ? process.env['SUPABASE_PUBLISHABLE_KEY'] : undefined)
-let __handler: (req: Request) => Response | Promise<Response>
-const __serve = (fn: any, _opts?: any) => { __handler = fn }
-
+const __env = (k: string) =>
+  process.env[k] ??
+  (k === "SUPABASE_ANON_KEY"
+    ? process.env["SUPABASE_PUBLISHABLE_KEY"]
+    : undefined);
+let __handler: (req: Request) => Response | Promise<Response>;
+const __serve = (fn: Untyped, _opts?: Untyped) => {
+  __handler = fn;
+};
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -42,7 +48,7 @@ const TextInputStyle = {
 // Verify Discord signature using tweetnacl
 async function verifyDiscordSignature(
   request: Request,
-  body: string
+  body: string,
 ): Promise<boolean> {
   const signature = request.headers.get("X-Signature-Ed25519");
   const timestamp = request.headers.get("X-Signature-Timestamp");
@@ -79,8 +85,8 @@ async function verifyDiscordSignature(
           bodySnippet,
         },
         null,
-        2
-      )
+        2,
+      ),
     );
     return false;
   }
@@ -91,16 +97,20 @@ async function verifyDiscordSignature(
 
     // Convert hex public key to Uint8Array
     const keyBytes = new Uint8Array(
-      publicKey.match(/.{1,2}/g)!.map((byte) => parseInt(byte, 16))
+      publicKey.match(/.{1,2}/g)!.map((byte) => parseInt(byte, 16)),
     );
 
     // Convert hex signature to Uint8Array
     const signatureBytes = new Uint8Array(
-      signature.match(/.{1,2}/g)!.map((byte) => parseInt(byte, 16))
+      signature.match(/.{1,2}/g)!.map((byte) => parseInt(byte, 16)),
     );
 
     // Verify the signature
-    const isValid = nacl.sign.detached.verify(message, signatureBytes, keyBytes);
+    const isValid = nacl.sign.detached.verify(
+      message,
+      signatureBytes,
+      keyBytes,
+    );
 
     console.log("Signature verification result:", isValid);
     return isValid;
@@ -132,11 +142,11 @@ function deferredEphemeral(content: string): Response {
         flags: 64,
       },
     }),
-    { headers: { "Content-Type": "application/json" } }
+    { headers: { "Content-Type": "application/json" } },
   );
 }
 
-async function sendFollowupEphemeral(interaction: any, content: string) {
+async function sendFollowupEphemeral(interaction: Untyped, content: string) {
   const applicationId = interaction.application_id;
   const token = interaction.token;
   if (!applicationId || !token) {
@@ -150,7 +160,7 @@ async function sendFollowupEphemeral(interaction: any, content: string) {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ content, flags: 64 }),
-    }
+    },
   );
 
   if (!res.ok) {
@@ -159,23 +169,29 @@ async function sendFollowupEphemeral(interaction: any, content: string) {
   }
 }
 
-
 const getBotTokenForGuild = resolveGuildBotToken;
 
-async function getInteractionBotToken(interaction: any): Promise<string> {
-  const db = createClient(__env("SUPABASE_URL")!, __env("SUPABASE_SERVICE_ROLE_KEY")!);
+async function getInteractionBotToken(interaction: Untyped): Promise<string> {
+  const db = createClient(
+    __env("SUPABASE_URL")!,
+    __env("SUPABASE_SERVICE_ROLE_KEY")!,
+  );
   return resolveGuildBotToken(db, interaction.guild_id);
 }
 
 function getGiveawayEntries(entries: unknown): string[] {
-  return Array.isArray(entries) ? entries.filter((entry): entry is string => typeof entry === "string") : [];
+  return Array.isArray(entries)
+    ? entries.filter((entry): entry is string => typeof entry === "string")
+    : [];
 }
 
 function getGiveawayWinners(winners: unknown): string[] {
-  return Array.isArray(winners) ? winners.filter((winner): winner is string => typeof winner === "string") : [];
+  return Array.isArray(winners)
+    ? winners.filter((winner): winner is string => typeof winner === "string")
+    : [];
 }
 
-function buildGiveawayMessagePayload(giveaway: any) {
+function buildGiveawayMessagePayload(giveaway: Untyped) {
   const entries = getGiveawayEntries(giveaway.entries);
   const winners = getGiveawayWinners(giveaway.winners);
   const hasEnded = giveaway.ended || new Date(giveaway.ends_at) <= new Date();
@@ -209,54 +225,70 @@ function buildGiveawayMessagePayload(giveaway: any) {
   if (hasEnded) {
     fields.push({
       name: "🎊 Resultat",
-      value: winners.length > 0 ? winners.map((winnerId) => `<@${winnerId}>`).join(", ") : "Ingen gyldige deltagere.",
+      value:
+        winners.length > 0
+          ? winners.map((winnerId) => `<@${winnerId}>`).join(", ")
+          : "Ingen gyldige deltagere.",
       inline: false,
     });
   }
 
   return {
-    content: hasEnded ? "🎉 Giveawayen er afsluttet." : "Klik på knappen nedenfor for at deltage!",
-    embeds: [{
-      title: hasEnded ? "🎉 Giveaway afsluttet" : "🎉 Giveaway!",
-      description: `**${giveaway.prize}**${giveaway.description ? `\n\n${giveaway.description}` : ""}`,
-      color: hasEnded ? 0x57F287 : 0x5865F2,
-      fields,
-      footer: {
-        text: `Giveaway ID: ${giveaway.id}`,
+    content: hasEnded
+      ? "🎉 Giveawayen er afsluttet."
+      : "Klik på knappen nedenfor for at deltage!",
+    embeds: [
+      {
+        title: hasEnded ? "🎉 Giveaway afsluttet" : "🎉 Giveaway!",
+        description: `**${giveaway.prize}**${giveaway.description ? `\n\n${giveaway.description}` : ""}`,
+        color: hasEnded ? 0x57f287 : 0x5865f2,
+        fields,
+        footer: {
+          text: `Giveaway ID: ${giveaway.id}`,
+        },
+        timestamp: new Date(giveaway.ends_at).toISOString(),
       },
-      timestamp: new Date(giveaway.ends_at).toISOString(),
-    }],
-    components: [{
-      type: 1,
-      components: [{
-        type: 2,
-        style: hasEnded ? 2 : 3,
-        custom_id: `giveaway_enter_${giveaway.id}`,
-        label: hasEnded ? "Giveaway afsluttet" : `Deltag (${entries.length})`,
-        emoji: { name: "🎉" },
-        disabled: hasEnded,
-      }],
-    }],
+    ],
+    components: [
+      {
+        type: 1,
+        components: [
+          {
+            type: 2,
+            style: hasEnded ? 2 : 3,
+            custom_id: `giveaway_enter_${giveaway.id}`,
+            label: hasEnded
+              ? "Giveaway afsluttet"
+              : `Deltag (${entries.length})`,
+            emoji: { name: "🎉" },
+            disabled: hasEnded,
+          },
+        ],
+      },
+    ],
   };
 }
 
 // Show modal with questions for any category (support or application)
 async function showTicketModal(
-  interaction: any,
+  interaction: Untyped,
   categoryId: string,
-  category: any
+  category: Untyped,
 ): Promise<Response> {
   const questions = category.questions || [];
-  
+
   // Build modal components (text inputs) from questions
-  const components = questions.slice(0, 5).map((q: any, index: number) => ({
+  const components = questions.slice(0, 5).map((q: Untyped, index: number) => ({
     type: 1, // Action row
     components: [
       {
         type: 4, // Text input
         custom_id: `question_${index}`,
         label: (q.label || `Question ${index + 1}`).substring(0, 45),
-        style: q.style === "paragraph" ? TextInputStyle.PARAGRAPH : TextInputStyle.SHORT,
+        style:
+          q.style === "paragraph"
+            ? TextInputStyle.PARAGRAPH
+            : TextInputStyle.SHORT,
         placeholder: q.placeholder?.substring(0, 100) || "",
         required: q.required !== false,
         min_length: q.required !== false ? 1 : 0,
@@ -267,29 +299,29 @@ async function showTicketModal(
 
   // Include channel_id in custom_id so we have it on modal submit
   const channelId = interaction.channel_id;
-  
+
   return new Response(
     JSON.stringify({
       type: InteractionResponseType.MODAL,
       data: {
         custom_id: `ticket_modal_${categoryId}_${channelId}`,
-        title: `${category.emoji || '🎫'} ${category.name}`.substring(0, 45),
+        title: `${category.emoji || "🎫"} ${category.name}`.substring(0, 45),
         components,
       },
     }),
-    { headers: { "Content-Type": "application/json" } }
+    { headers: { "Content-Type": "application/json" } },
   );
 }
 
 // Create a ticket thread (work function - do NOT use as direct interaction response)
 async function createTicketThreadWork(
-  interaction: any,
+  interaction: Untyped,
   categoryId: string,
-  applicationAnswers?: { question: string; answer: string }[]
+  applicationAnswers?: { question: string; answer: string }[],
 ): Promise<{ threadId: string }> {
   const supabase = createClient(
     __env("SUPABASE_URL")!,
-    __env("SUPABASE_SERVICE_ROLE_KEY")!
+    __env("SUPABASE_SERVICE_ROLE_KEY")!,
   );
 
   const botToken = await getInteractionBotToken(interaction);
@@ -297,11 +329,19 @@ async function createTicketThreadWork(
   const userId = interaction.member?.user?.id || interaction.user?.id;
   const userName =
     interaction.member?.user?.username || interaction.user?.username;
-  
-  // Get channel_id from multiple possible locations
-  const interactionChannelId = interaction.channel_id || interaction.channel?.id;
 
-  console.log("Creating ticket for user:", userName, "category:", categoryId, "interactionChannelId:", interactionChannelId);
+  // Get channel_id from multiple possible locations
+  const interactionChannelId =
+    interaction.channel_id || interaction.channel?.id;
+
+  console.log(
+    "Creating ticket for user:",
+    userName,
+    "category:",
+    categoryId,
+    "interactionChannelId:",
+    interactionChannelId,
+  );
 
   // Get the category details
   const { data: category, error: catError } = await supabase
@@ -324,7 +364,7 @@ async function createTicketThreadWork(
 
   // Create a private thread in the channel - use settings or fallback to interaction channel
   const channelId = settings?.thread_category_id || interactionChannelId;
-  
+
   if (!channelId) {
     console.error("No channel ID available for thread creation");
     throw new Error("No channel for thread creation");
@@ -349,7 +389,7 @@ async function createTicketThreadWork(
           type: 12, // Private thread
           invitable: false,
         }),
-      }
+      },
     );
 
     if (!threadResponse.ok) {
@@ -357,7 +397,7 @@ async function createTicketThreadWork(
       console.error("Failed to create thread:", errorText);
 
       throw new Error(
-        "Could not create ticket. Please check that the bot has permission to create threads."
+        "Could not create ticket. Please check that the bot has permission to create threads.",
       );
     }
 
@@ -372,14 +412,16 @@ async function createTicketThreadWork(
         headers: {
           Authorization: `Bot ${botToken}`,
         },
-      }
+      },
     );
 
     // Build description with application answers if present
     let description = category.welcome_message;
-    const isApplication = category.ticket_type === 'application';
+    const isApplication = category.ticket_type === "application";
     if (applicationAnswers && applicationAnswers.length > 0) {
-      description = isApplication ? "**Application received!**\n\n" : "**Ticket Details**\n\n";
+      description = isApplication
+        ? "**Application received!**\n\n"
+        : "**Ticket Details**\n\n";
       applicationAnswers.forEach((qa) => {
         description += `**${qa.question}**\n${qa.answer}\n\n`;
       });
@@ -396,7 +438,7 @@ async function createTicketThreadWork(
     const welcomeEmbed = {
       title: `${category.emoji} ${category.name}`,
       description,
-      color: isApplication ? 0x57F287 : 0x5865f2, // Green for applications
+      color: isApplication ? 0x57f287 : 0x5865f2, // Green for applications
       fields: [
         {
           name: "Created by",
@@ -408,11 +450,15 @@ async function createTicketThreadWork(
           value: "🟢 Open",
           inline: true,
         },
-        ...(isApplication ? [{
-          name: "Type",
-          value: "📝 Application",
-          inline: true,
-        }] : []),
+        ...(isApplication
+          ? [
+              {
+                name: "Type",
+                value: "📝 Application",
+                inline: true,
+              },
+            ]
+          : []),
       ],
       footer: {
         text: `Ticket ID: ${ticketNumber}`,
@@ -421,69 +467,72 @@ async function createTicketThreadWork(
     };
 
     // Create action buttons for staff - different for applications
-    
+
     const actionRow = {
       type: 1,
-      components: isApplication ? [
-        {
-          type: 2,
-          style: 3, // Success (green)
-          label: "Approve",
-          custom_id: `application_approve_${thread.id}`,
-          emoji: { name: "✅" },
-        },
-        {
-          type: 2,
-          style: 4, // Danger (red)
-          label: "Deny",
-          custom_id: `application_deny_${thread.id}`,
-          emoji: { name: "❌" },
-        },
-        {
-          type: 2,
-          style: 1, // Primary (blue)
-          label: "Claim",
-          custom_id: `ticket_claim_${thread.id}`,
-          emoji: { name: "🙋" },
-        },
-      ] : [
-        {
-          type: 2,
-          style: 1, // Primary (blue)
-          label: "Claim",
-          custom_id: `ticket_claim_${thread.id}`,
-          emoji: { name: "🙋" },
-        },
-        {
-          type: 2,
-          style: 2, // Secondary (gray)
-          label: "Close (Archive)",
-          custom_id: `ticket_close_${thread.id}`,
-          emoji: { name: "📁" },
-        },
-        {
-          type: 2,
-          style: 4, // Danger (red)
-          label: "Close (Delete)",
-          custom_id: `ticket_delete_${thread.id}`,
-          emoji: { name: "🗑️" },
-        },
-      ],
+      components: isApplication
+        ? [
+            {
+              type: 2,
+              style: 3, // Success (green)
+              label: "Approve",
+              custom_id: `application_approve_${thread.id}`,
+              emoji: { name: "✅" },
+            },
+            {
+              type: 2,
+              style: 4, // Danger (red)
+              label: "Deny",
+              custom_id: `application_deny_${thread.id}`,
+              emoji: { name: "❌" },
+            },
+            {
+              type: 2,
+              style: 1, // Primary (blue)
+              label: "Claim",
+              custom_id: `ticket_claim_${thread.id}`,
+              emoji: { name: "🙋" },
+            },
+          ]
+        : [
+            {
+              type: 2,
+              style: 1, // Primary (blue)
+              label: "Claim",
+              custom_id: `ticket_claim_${thread.id}`,
+              emoji: { name: "🙋" },
+            },
+            {
+              type: 2,
+              style: 2, // Secondary (gray)
+              label: "Close (Archive)",
+              custom_id: `ticket_close_${thread.id}`,
+              emoji: { name: "📁" },
+            },
+            {
+              type: 2,
+              style: 4, // Danger (red)
+              label: "Close (Delete)",
+              custom_id: `ticket_delete_${thread.id}`,
+              emoji: { name: "🗑️" },
+            },
+          ],
     };
-    
+
     // If this is an application, save it to the applications table
     if (isApplication && applicationAnswers) {
-      await supabase
-        .from("applications")
-        .insert({
-          guild_id: category.guild_id,
-          discord_user_id: userId,
-          discord_username: userName,
-          application_type: category.name.toLowerCase().includes('whitelist') ? 'whitelist' : 
-                           category.name.toLowerCase().includes('staff') ? 'staff' : 'other',
-          status: 'pending',
-          answers: applicationAnswers,
-        });
+      await supabase.from("applications").insert({
+        guild_id: category.guild_id,
+        discord_user_id: userId,
+        discord_username: userName,
+        application_type: category.name.toLowerCase().includes("whitelist")
+          ? "whitelist"
+          : category.name.toLowerCase().includes("staff")
+            ? "staff"
+            : "other",
+        status: "pending",
+        answers: applicationAnswers,
+      });
       console.log("Application saved to database");
     }
 
@@ -534,9 +583,9 @@ async function createTicketThreadWork(
 }
 
 function deferAndCreateTicket(
-  interaction: any,
+  interaction: Untyped,
   categoryId: string,
-  applicationAnswers?: { question: string; answer: string }[]
+  applicationAnswers?: { question: string; answer: string }[],
 ): Response {
   // Return immediately so Discord doesn't show "Interaction failed"
   waitUntil(
@@ -545,13 +594,13 @@ function deferAndCreateTicket(
         const { threadId } = await createTicketThreadWork(
           interaction,
           categoryId,
-          applicationAnswers
+          applicationAnswers,
         );
         await sendFollowupEphemeral(
           interaction,
-          `✅ Your ticket has been created! View it here: <#${threadId}>`
+          `✅ Your ticket has been created! View it here: <#${threadId}>`,
         );
-      } catch (e: any) {
+      } catch (e: Untyped) {
         console.error("Background ticket creation failed:", e);
         const msg =
           typeof e?.message === "string" && e.message.length
@@ -559,16 +608,16 @@ function deferAndCreateTicket(
             : "An error occurred. Please try again later.";
         await sendFollowupEphemeral(interaction, `❌ ${msg}`);
       }
-    })()
+    })(),
   );
 
   return deferredEphemeral("⏳ Creating your ticket...");
 }
 
 // Handle modal submission for all ticket types
-async function handleModalSubmit(interaction: any): Promise<Response> {
+async function handleModalSubmit(interaction: Untyped): Promise<Response> {
   const customId = interaction.data?.custom_id || "";
-  
+
   if (!customId.startsWith("ticket_modal_")) {
     return new Response(
       JSON.stringify({
@@ -578,7 +627,7 @@ async function handleModalSubmit(interaction: any): Promise<Response> {
           flags: 64,
         },
       }),
-      { headers: { "Content-Type": "application/json" } }
+      { headers: { "Content-Type": "application/json" } },
     );
   }
 
@@ -586,18 +635,23 @@ async function handleModalSubmit(interaction: any): Promise<Response> {
   const parts = customId.replace("ticket_modal_", "").split("_");
   const categoryId = parts[0];
   const originalChannelId = parts[1];
-  
+
   // Inject the channel_id into interaction if missing (modal submits don't always include it)
   if (!interaction.channel_id && originalChannelId) {
     interaction.channel_id = originalChannelId;
   }
-  
-  console.log("Modal submit - categoryId:", categoryId, "channelId:", interaction.channel_id);
-  
+
+  console.log(
+    "Modal submit - categoryId:",
+    categoryId,
+    "channelId:",
+    interaction.channel_id,
+  );
+
   // Get the category to retrieve questions
   const supabase = createClient(
     __env("SUPABASE_URL")!,
-    __env("SUPABASE_SERVICE_ROLE_KEY")!
+    __env("SUPABASE_SERVICE_ROLE_KEY")!,
   );
 
   const { data: category } = await supabase
@@ -607,12 +661,12 @@ async function handleModalSubmit(interaction: any): Promise<Response> {
     .single();
 
   const questions = category?.questions || [];
-  
+
   // Extract answers from modal components
   const answers: { question: string; answer: string }[] = [];
   const components = interaction.data?.components || [];
-  
-  components.forEach((row: any, index: number) => {
+
+  components.forEach((row: Untyped, index: number) => {
     const input = row.components?.[0];
     if (input) {
       const question = questions[index]?.label || `Question ${index + 1}`;
@@ -631,12 +685,12 @@ async function handleModalSubmit(interaction: any): Promise<Response> {
 
 // Handle claim ticket
 async function handleClaimTicket(
-  interaction: any,
-  threadId: string
+  interaction: Untyped,
+  threadId: string,
 ): Promise<Response> {
   const supabase = createClient(
     __env("SUPABASE_URL")!,
-    __env("SUPABASE_SERVICE_ROLE_KEY")!
+    __env("SUPABASE_SERVICE_ROLE_KEY")!,
   );
 
   const userId = interaction.member?.user?.id || interaction.user?.id;
@@ -661,12 +715,16 @@ async function handleClaimTicket(
     JSON.stringify({
       type: InteractionResponseType.UPDATE_MESSAGE,
       data: {
-        embeds: interaction.message.embeds.map((embed: any) => ({
+        embeds: interaction.message.embeds.map((embed: Untyped) => ({
           ...embed,
-          fields: embed.fields?.map((field: any) =>
+          fields: embed.fields?.map((field: Untyped) =>
             field.name === "Status"
-              ? { name: "Status", value: `🟡 Claimed by <@${userId}>`, inline: true }
-              : field
+              ? {
+                  name: "Status",
+                  value: `🟡 Claimed by <@${userId}>`,
+                  inline: true,
+                }
+              : field,
           ),
         })),
         components: [
@@ -700,143 +758,202 @@ async function handleClaimTicket(
         ],
       },
     }),
-    { headers: { "Content-Type": "application/json" } }
+    { headers: { "Content-Type": "application/json" } },
   );
 }
 
 // Handle close ticket (archive or delete)
 async function handleCloseTicket(
-  interaction: any,
+  interaction: Untyped,
   threadId: string,
-  deleteThread: boolean = false
+  deleteThread: boolean = false,
 ): Promise<Response> {
   const userId = interaction.member?.user?.id || interaction.user?.id;
-  const userName = interaction.member?.user?.username || interaction.user?.username;
+  const userName =
+    interaction.member?.user?.username || interaction.user?.username;
 
   // Use waitUntil to keep the edge function alive for background work
-  waitUntil((async () => {
-    try {
-      const supabase = createClient(
-        __env("SUPABASE_URL")!,
-        __env("SUPABASE_SERVICE_ROLE_KEY")!
-      );
-      const botToken = await getInteractionBotToken(interaction);
+  waitUntil(
+    (async () => {
+      try {
+        const supabase = createClient(
+          __env("SUPABASE_URL")!,
+          __env("SUPABASE_SERVICE_ROLE_KEY")!,
+        );
+        const botToken = await getInteractionBotToken(interaction);
 
-      // Get ticket data first (for transcript)
-      const { data: ticket } = await supabase
-        .from("tickets")
-        .select("*, ticket_messages(*)")
-        .eq("channel_id", threadId)
-        .single();
+        // Get ticket data first (for transcript)
+        const { data: ticket } = await supabase
+          .from("tickets")
+          .select("*, ticket_messages(*)")
+          .eq("channel_id", threadId)
+          .single();
 
-      // Update ticket in database
-      await supabase
-        .from("tickets")
-        .update({
-          closed_by_id: userId,
-          closed_by_name: userName,
-          closed_at: new Date().toISOString(),
-          status: "closed",
-        })
-        .eq("channel_id", threadId);
+        // Update ticket in database
+        await supabase
+          .from("tickets")
+          .update({
+            closed_by_id: userId,
+            closed_by_name: userName,
+            closed_at: new Date().toISOString(),
+            status: "closed",
+          })
+          .eq("channel_id", threadId);
 
-      // Send transcript if configured
-      if (ticket) {
-        const { data: settings } = await supabase
-          .from("ticket_settings")
-          .select("transcript_channel_id")
-          .eq("guild_id", ticket.guild_id)
-          .maybeSingle();
+        // Send transcript if configured
+        if (ticket) {
+          const { data: settings } = await supabase
+            .from("ticket_settings")
+            .select("transcript_channel_id")
+            .eq("guild_id", ticket.guild_id)
+            .maybeSingle();
 
-        if (settings?.transcript_channel_id) {
-          const messages = ticket.ticket_messages || [];
-          const messageCount = messages.length;
-          const createdAt = new Date(ticket.created_at);
-          const closedAt = new Date();
-          const durationMin = Math.round((closedAt.getTime() - createdAt.getTime()) / (1000 * 60));
+          if (settings?.transcript_channel_id) {
+            const messages = ticket.ticket_messages || [];
+            const messageCount = messages.length;
+            const createdAt = new Date(ticket.created_at);
+            const closedAt = new Date();
+            const durationMin = Math.round(
+              (closedAt.getTime() - createdAt.getTime()) / (1000 * 60),
+            );
 
-          const recentMessages = messages
-            .sort((a: any, b: any) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
-            .slice(-10)
-            .map((m: any) => `**${m.author_name || m.author_id}:** ${(m.content || "").slice(0, 100)}${(m.content || "").length > 100 ? "..." : ""}`)
-            .join("\n");
+            const recentMessages = messages
+              .sort(
+                (a: Untyped, b: Untyped) =>
+                  new Date(a.created_at).getTime() -
+                  new Date(b.created_at).getTime(),
+              )
+              .slice(-10)
+              .map(
+                (m: Untyped) =>
+                  `**${m.author_name || m.author_id}:** ${(m.content || "").slice(0, 100)}${(m.content || "").length > 100 ? "..." : ""}`,
+              )
+              .join("\n");
 
-          const transcriptEmbed = {
-            title: "📝 Ticket Transcript",
-            description: `Ticket from **${ticket.creator_name || ticket.creator_id}** has been closed.`,
-            color: 0x5865F2,
-            fields: [
-              { name: "Type", value: ticket.ticket_type === "application" ? "Application" : "Support", inline: true },
-              { name: "Messages", value: String(messageCount), inline: true },
-              { name: "Duration", value: `${durationMin} min`, inline: true },
-              { name: "Created", value: `<t:${Math.floor(createdAt.getTime() / 1000)}:R>`, inline: true },
-              { name: "Closed by", value: userName || userId, inline: true },
-              ...(recentMessages ? [{ name: "Recent messages", value: recentMessages.slice(0, 1024), inline: false }] : []),
-            ],
-            timestamp: closedAt.toISOString(),
-          };
+            const transcriptEmbed = {
+              title: "📝 Ticket Transcript",
+              description: `Ticket from **${ticket.creator_name || ticket.creator_id}** has been closed.`,
+              color: 0x5865f2,
+              fields: [
+                {
+                  name: "Type",
+                  value:
+                    ticket.ticket_type === "application"
+                      ? "Application"
+                      : "Support",
+                  inline: true,
+                },
+                { name: "Messages", value: String(messageCount), inline: true },
+                { name: "Duration", value: `${durationMin} min`, inline: true },
+                {
+                  name: "Created",
+                  value: `<t:${Math.floor(createdAt.getTime() / 1000)}:R>`,
+                  inline: true,
+                },
+                { name: "Closed by", value: userName || userId, inline: true },
+                ...(recentMessages
+                  ? [
+                      {
+                        name: "Recent messages",
+                        value: recentMessages.slice(0, 1024),
+                        inline: false,
+                      },
+                    ]
+                  : []),
+              ],
+              timestamp: closedAt.toISOString(),
+            };
 
-          const transcriptRes = await fetch(`https://discord.com/api/v10/channels/${settings.transcript_channel_id}/messages`, {
-            method: "POST",
-            headers: {
-              Authorization: `Bot ${botToken}`,
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({ embeds: [transcriptEmbed] }),
-          });
+            const transcriptRes = await fetch(
+              `https://discord.com/api/v10/channels/${settings.transcript_channel_id}/messages`,
+              {
+                method: "POST",
+                headers: {
+                  Authorization: `Bot ${botToken}`,
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify({ embeds: [transcriptEmbed] }),
+              },
+            );
 
-          if (!transcriptRes.ok) {
-            const errText = await transcriptRes.text();
-            console.error("Failed to send transcript:", transcriptRes.status, errText);
-          } else {
-            await transcriptRes.text();
-            console.log(`Transcript sent to channel ${settings.transcript_channel_id}`);
+            if (!transcriptRes.ok) {
+              const errText = await transcriptRes.text();
+              console.error(
+                "Failed to send transcript:",
+                transcriptRes.status,
+                errText,
+              );
+            } else {
+              await transcriptRes.text();
+              console.log(
+                `Transcript sent to channel ${settings.transcript_channel_id}`,
+              );
+            }
           }
         }
-      }
 
-      // Archive or delete the thread
-      if (deleteThread) {
-        const deleteRes = await fetch(`https://discord.com/api/v10/channels/${threadId}`, {
-          method: "DELETE",
-          headers: { Authorization: `Bot ${botToken}` },
-        });
-        if (!deleteRes.ok) {
-          await deleteRes.text();
-          const fallbackRes = await fetch(`https://discord.com/api/v10/channels/${threadId}`, {
-            method: "PATCH",
-            headers: { Authorization: `Bot ${botToken}`, "Content-Type": "application/json" },
-            body: JSON.stringify({ archived: true, locked: true }),
-          });
-          await fallbackRes.text();
+        // Archive or delete the thread
+        if (deleteThread) {
+          const deleteRes = await fetch(
+            `https://discord.com/api/v10/channels/${threadId}`,
+            {
+              method: "DELETE",
+              headers: { Authorization: `Bot ${botToken}` },
+            },
+          );
+          if (!deleteRes.ok) {
+            await deleteRes.text();
+            const fallbackRes = await fetch(
+              `https://discord.com/api/v10/channels/${threadId}`,
+              {
+                method: "PATCH",
+                headers: {
+                  Authorization: `Bot ${botToken}`,
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify({ archived: true, locked: true }),
+              },
+            );
+            await fallbackRes.text();
+          } else {
+            await deleteRes.text();
+          }
         } else {
-          await deleteRes.text();
+          const archiveRes = await fetch(
+            `https://discord.com/api/v10/channels/${threadId}`,
+            {
+              method: "PATCH",
+              headers: {
+                Authorization: `Bot ${botToken}`,
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({ archived: true, locked: true }),
+            },
+          );
+          await archiveRes.text();
         }
-      } else {
-        const archiveRes = await fetch(`https://discord.com/api/v10/channels/${threadId}`, {
-          method: "PATCH",
-          headers: { Authorization: `Bot ${botToken}`, "Content-Type": "application/json" },
-          body: JSON.stringify({ archived: true, locked: true }),
-        });
-        await archiveRes.text();
+      } catch (e) {
+        console.error("Error in close ticket background work:", e);
       }
-    } catch (e) {
-      console.error("Error in close ticket background work:", e);
-    }
-  })());
+    })(),
+  );
 
   // Return immediate response to Discord
   return new Response(
     JSON.stringify({
       type: InteractionResponseType.UPDATE_MESSAGE,
       data: {
-        embeds: interaction.message.embeds.map((embed: any) => ({
+        embeds: interaction.message.embeds.map((embed: Untyped) => ({
           ...embed,
           color: 0xed4245,
-          fields: embed.fields?.map((field: any) =>
+          fields: embed.fields?.map((field: Untyped) =>
             field.name === "Status"
-              ? { name: "Status", value: `🔴 Closed by <@${userId}>`, inline: true }
-              : field
+              ? {
+                  name: "Status",
+                  value: `🔴 Closed by <@${userId}>`,
+                  inline: true,
+                }
+              : field,
           ),
         })),
         components: [
@@ -856,23 +973,24 @@ async function handleCloseTicket(
         ],
       },
     }),
-    { headers: { "Content-Type": "application/json" } }
+    { headers: { "Content-Type": "application/json" } },
   );
 }
 
 // Handle approve application
 async function handleApproveApplication(
-  interaction: any,
-  threadId: string
+  interaction: Untyped,
+  threadId: string,
 ): Promise<Response> {
   const supabase = createClient(
     __env("SUPABASE_URL")!,
-    __env("SUPABASE_SERVICE_ROLE_KEY")!
+    __env("SUPABASE_SERVICE_ROLE_KEY")!,
   );
 
   const botToken = await getInteractionBotToken(interaction);
   const reviewerId = interaction.member?.user?.id || interaction.user?.id;
-  const reviewerName = interaction.member?.user?.username || interaction.user?.username;
+  const reviewerName =
+    interaction.member?.user?.username || interaction.user?.username;
   const guildId = interaction.guild_id;
 
   // Get the ticket to find the creator
@@ -888,7 +1006,7 @@ async function handleApproveApplication(
         type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
         data: { content: "❌ Could not find ticket.", flags: 64 },
       }),
-      { headers: { "Content-Type": "application/json" } }
+      { headers: { "Content-Type": "application/json" } },
     );
   }
 
@@ -914,7 +1032,7 @@ async function handleApproveApplication(
         {
           method: "PUT",
           headers: { Authorization: `Bot ${botToken}` },
-        }
+        },
       );
       console.log("Whitelist role assigned to user:", ticket.creator_id);
     } catch (e) {
@@ -941,12 +1059,14 @@ async function handleApproveApplication(
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      embeds: [{
-        title: "✅ Application Approved",
-        description: `Congratulations <@${ticket.creator_id}>! Your application has been approved by <@${reviewerId}>.${whitelistRoleId ? "\n\nYou have been granted the whitelist role!" : ""}`,
-        color: 0x57F287,
-        timestamp: new Date().toISOString(),
-      }],
+      embeds: [
+        {
+          title: "✅ Application Approved",
+          description: `Congratulations <@${ticket.creator_id}>! Your application has been approved by <@${reviewerId}>.${whitelistRoleId ? "\n\nYou have been granted the whitelist role!" : ""}`,
+          color: 0x57f287,
+          timestamp: new Date().toISOString(),
+        },
+      ],
     }),
   });
 
@@ -964,13 +1084,17 @@ async function handleApproveApplication(
     JSON.stringify({
       type: InteractionResponseType.UPDATE_MESSAGE,
       data: {
-        embeds: interaction.message.embeds.map((embed: any) => ({
+        embeds: interaction.message.embeds.map((embed: Untyped) => ({
           ...embed,
-          color: 0x57F287,
-          fields: embed.fields?.map((field: any) =>
+          color: 0x57f287,
+          fields: embed.fields?.map((field: Untyped) =>
             field.name === "Status"
-              ? { name: "Status", value: `✅ Approved by <@${reviewerId}>`, inline: true }
-              : field
+              ? {
+                  name: "Status",
+                  value: `✅ Approved by <@${reviewerId}>`,
+                  inline: true,
+                }
+              : field,
           ),
         })),
         components: [
@@ -990,23 +1114,24 @@ async function handleApproveApplication(
         ],
       },
     }),
-    { headers: { "Content-Type": "application/json" } }
+    { headers: { "Content-Type": "application/json" } },
   );
 }
 
 // Handle deny application
 async function handleDenyApplication(
-  interaction: any,
-  threadId: string
+  interaction: Untyped,
+  threadId: string,
 ): Promise<Response> {
   const supabase = createClient(
     __env("SUPABASE_URL")!,
-    __env("SUPABASE_SERVICE_ROLE_KEY")!
+    __env("SUPABASE_SERVICE_ROLE_KEY")!,
   );
 
   const botToken = await getInteractionBotToken(interaction);
   const reviewerId = interaction.member?.user?.id || interaction.user?.id;
-  const reviewerName = interaction.member?.user?.username || interaction.user?.username;
+  const reviewerName =
+    interaction.member?.user?.username || interaction.user?.username;
 
   // Get the ticket to find the creator
   const { data: ticket } = await supabase
@@ -1021,7 +1146,7 @@ async function handleDenyApplication(
         type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
         data: { content: "❌ Could not find ticket.", flags: 64 },
       }),
-      { headers: { "Content-Type": "application/json" } }
+      { headers: { "Content-Type": "application/json" } },
     );
   }
 
@@ -1057,12 +1182,14 @@ async function handleDenyApplication(
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      embeds: [{
-        title: "❌ Application Denied",
-        description: `<@${ticket.creator_id}>, your application has unfortunately been denied by <@${reviewerId}>.\n\nYou are welcome to apply again at a later time.`,
-        color: 0xED4245,
-        timestamp: new Date().toISOString(),
-      }],
+      embeds: [
+        {
+          title: "❌ Application Denied",
+          description: `<@${ticket.creator_id}>, your application has unfortunately been denied by <@${reviewerId}>.\n\nYou are welcome to apply again at a later time.`,
+          color: 0xed4245,
+          timestamp: new Date().toISOString(),
+        },
+      ],
     }),
   });
 
@@ -1080,13 +1207,17 @@ async function handleDenyApplication(
     JSON.stringify({
       type: InteractionResponseType.UPDATE_MESSAGE,
       data: {
-        embeds: interaction.message.embeds.map((embed: any) => ({
+        embeds: interaction.message.embeds.map((embed: Untyped) => ({
           ...embed,
-          color: 0xED4245,
-          fields: embed.fields?.map((field: any) =>
+          color: 0xed4245,
+          fields: embed.fields?.map((field: Untyped) =>
             field.name === "Status"
-              ? { name: "Status", value: `❌ Denied by <@${reviewerId}>`, inline: true }
-              : field
+              ? {
+                  name: "Status",
+                  value: `❌ Denied by <@${reviewerId}>`,
+                  inline: true,
+                }
+              : field,
           ),
         })),
         components: [
@@ -1106,22 +1237,25 @@ async function handleDenyApplication(
         ],
       },
     }),
-    { headers: { "Content-Type": "application/json" } }
+    { headers: { "Content-Type": "application/json" } },
   );
 }
 
 // Handle modmail claim button
-async function handleModmailClaim(interaction: any): Promise<Response> {
+async function handleModmailClaim(interaction: Untyped): Promise<Response> {
   const supabase = createClient(
     __env("SUPABASE_URL")!,
-    __env("SUPABASE_SERVICE_ROLE_KEY")!
+    __env("SUPABASE_SERVICE_ROLE_KEY")!,
   );
 
   const channelId = interaction.channel_id;
   const claimedById = interaction.member?.user?.id || interaction.user?.id;
-  const claimedByName = interaction.member?.user?.username || interaction.user?.username;
+  const claimedByName =
+    interaction.member?.user?.username || interaction.user?.username;
 
-  console.log(`[Modmail] Claiming thread in channel ${channelId} by ${claimedByName}`);
+  console.log(
+    `[Modmail] Claiming thread in channel ${channelId} by ${claimedByName}`,
+  );
 
   // First get the thread
   const { data: thread, error: threadError } = await supabase
@@ -1141,7 +1275,7 @@ async function handleModmailClaim(interaction: any): Promise<Response> {
           flags: 64,
         },
       }),
-      { headers: { "Content-Type": "application/json" } }
+      { headers: { "Content-Type": "application/json" } },
     );
   }
 
@@ -1154,7 +1288,7 @@ async function handleModmailClaim(interaction: any): Promise<Response> {
           flags: 64,
         },
       }),
-      { headers: { "Content-Type": "application/json" } }
+      { headers: { "Content-Type": "application/json" } },
     );
   }
 
@@ -1177,7 +1311,7 @@ async function handleModmailClaim(interaction: any): Promise<Response> {
           flags: 64,
         },
       }),
-      { headers: { "Content-Type": "application/json" } }
+      { headers: { "Content-Type": "application/json" } },
     );
   }
 
@@ -1216,15 +1350,15 @@ async function handleModmailClaim(interaction: any): Promise<Response> {
         ],
       },
     }),
-    { headers: { "Content-Type": "application/json" } }
+    { headers: { "Content-Type": "application/json" } },
   );
 }
 
 // Handle modmail close button
-async function handleModmailClose(interaction: any): Promise<Response> {
+async function handleModmailClose(interaction: Untyped): Promise<Response> {
   const supabase = createClient(
     __env("SUPABASE_URL")!,
-    __env("SUPABASE_SERVICE_ROLE_KEY")!
+    __env("SUPABASE_SERVICE_ROLE_KEY")!,
   );
 
   const botToken = await getInteractionBotToken(interaction);
@@ -1246,11 +1380,12 @@ async function handleModmailClose(interaction: any): Promise<Response> {
       JSON.stringify({
         type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
         data: {
-          content: "❌ Denne modmail er allerede lukket eller kunne ikke findes.",
+          content:
+            "❌ Denne modmail er allerede lukket eller kunne ikke findes.",
           flags: 64,
         },
       }),
-      { headers: { "Content-Type": "application/json" } }
+      { headers: { "Content-Type": "application/json" } },
     );
   }
 
@@ -1281,7 +1416,7 @@ async function handleModmailClose(interaction: any): Promise<Response> {
           flags: 64,
         },
       }),
-      { headers: { "Content-Type": "application/json" } }
+      { headers: { "Content-Type": "application/json" } },
     );
   }
 
@@ -1289,14 +1424,17 @@ async function handleModmailClose(interaction: any): Promise<Response> {
   if (settings?.close_message && thread.user_id) {
     try {
       // Create DM channel
-      const dmResponse = await fetch("https://discord.com/api/v10/users/@me/channels", {
-        method: "POST",
-        headers: {
-          Authorization: `Bot ${botToken}`,
-          "Content-Type": "application/json",
+      const dmResponse = await fetch(
+        "https://discord.com/api/v10/users/@me/channels",
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bot ${botToken}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ recipient_id: thread.user_id }),
         },
-        body: JSON.stringify({ recipient_id: thread.user_id }),
-      });
+      );
 
       if (dmResponse.ok) {
         const dm = await dmResponse.json();
@@ -1307,12 +1445,14 @@ async function handleModmailClose(interaction: any): Promise<Response> {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            embeds: [{
-              title: "📬 Modmail Closed",
-              description: settings.close_message,
-              color: 0xED4245,
-              timestamp: new Date().toISOString(),
-            }],
+            embeds: [
+              {
+                title: "📬 Modmail Closed",
+                description: settings.close_message,
+                color: 0xed4245,
+                timestamp: new Date().toISOString(),
+              },
+            ],
           }),
         });
       }
@@ -1342,28 +1482,31 @@ async function handleModmailClose(interaction: any): Promise<Response> {
         flags: 64,
       },
     }),
-    { headers: { "Content-Type": "application/json" } }
+    { headers: { "Content-Type": "application/json" } },
   );
 }
 
 // NEW APPLICATION SYSTEM: Handle submission approve from log channel buttons
 async function handleSubmissionApprove(
-  interaction: any,
-  submissionId: string
+  interaction: Untyped,
+  submissionId: string,
 ): Promise<Response> {
   const supabase = createClient(
     __env("SUPABASE_URL")!,
-    __env("SUPABASE_SERVICE_ROLE_KEY")!
+    __env("SUPABASE_SERVICE_ROLE_KEY")!,
   );
 
   const reviewerId = interaction.member?.user?.id || interaction.user?.id;
-  const reviewerName = interaction.member?.user?.username || interaction.user?.username;
+  const reviewerName =
+    interaction.member?.user?.username || interaction.user?.username;
   const guildId = interaction.guild_id;
 
   // Quick check - just verify submission exists and is pending
   const { data: submission, error: submissionError } = await supabase
     .from("application_submissions")
-    .select("id, status, discord_user_id, guild_id, form:application_forms(name, emoji, granted_role_id, approval_channel_id)")
+    .select(
+      "id, status, discord_user_id, guild_id, form:application_forms(name, emoji, granted_role_id, approval_channel_id)",
+    )
     .eq("id", submissionId)
     .single();
 
@@ -1373,7 +1516,7 @@ async function handleSubmissionApprove(
         type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
         data: { content: "❌ Application not found.", flags: 64 },
       }),
-      { headers: { "Content-Type": "application/json" } }
+      { headers: { "Content-Type": "application/json" } },
     );
   }
 
@@ -1381,13 +1524,21 @@ async function handleSubmissionApprove(
     return new Response(
       JSON.stringify({
         type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
-        data: { content: "❌ This application has already been processed.", flags: 64 },
+        data: {
+          content: "❌ This application has already been processed.",
+          flags: 64,
+        },
       }),
-      { headers: { "Content-Type": "application/json" } }
+      { headers: { "Content-Type": "application/json" } },
     );
   }
 
-  const form = submission.form as unknown as { name: string; emoji: string | null; granted_role_id: string | null; approval_channel_id: string | null };
+  const form = submission.form as unknown as {
+    name: string;
+    emoji: string | null;
+    granted_role_id: string | null;
+    approval_channel_id: string | null;
+  };
 
   // Do heavy work in background - MUST return response within 3 seconds
   waitUntil(
@@ -1413,7 +1564,7 @@ async function handleSubmissionApprove(
               {
                 method: "PUT",
                 headers: { Authorization: `Bot ${botToken}` },
-              }
+              },
             );
             if (roleRes.ok) {
               console.log("Role granted to user:", submission.discord_user_id);
@@ -1435,37 +1586,49 @@ async function handleSubmissionApprove(
         // Send DM to user if enabled
         if (settings?.dm_on_approval) {
           try {
-            const dmChannelRes = await fetch("https://discord.com/api/v10/users/@me/channels", {
-              method: "POST",
-              headers: {
-                Authorization: `Bot ${botToken}`,
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify({ recipient_id: submission.discord_user_id }),
-            });
-
-            if (dmChannelRes.ok) {
-              const dmChannel = await dmChannelRes.json();
-              let message = settings.approval_message || "Congratulations! Your application has been approved.";
-              message = message
-                .replace(/{form_name}/g, form.name)
-                .replace(/{user}/g, `<@${submission.discord_user_id}>`);
-
-              await fetch(`https://discord.com/api/v10/channels/${dmChannel.id}/messages`, {
+            const dmChannelRes = await fetch(
+              "https://discord.com/api/v10/users/@me/channels",
+              {
                 method: "POST",
                 headers: {
                   Authorization: `Bot ${botToken}`,
                   "Content-Type": "application/json",
                 },
                 body: JSON.stringify({
-                  embeds: [{
-                    title: "✅ Application Approved",
-                    description: message,
-                    color: 0x57F287,
-                    timestamp: new Date().toISOString(),
-                  }],
+                  recipient_id: submission.discord_user_id,
                 }),
-              });
+              },
+            );
+
+            if (dmChannelRes.ok) {
+              const dmChannel = await dmChannelRes.json();
+              let message =
+                settings.approval_message ||
+                "Congratulations! Your application has been approved.";
+              message = message
+                .replace(/{form_name}/g, form.name)
+                .replace(/{user}/g, `<@${submission.discord_user_id}>`);
+
+              await fetch(
+                `https://discord.com/api/v10/channels/${dmChannel.id}/messages`,
+                {
+                  method: "POST",
+                  headers: {
+                    Authorization: `Bot ${botToken}`,
+                    "Content-Type": "application/json",
+                  },
+                  body: JSON.stringify({
+                    embeds: [
+                      {
+                        title: "✅ Application Approved",
+                        description: message,
+                        color: 0x57f287,
+                        timestamp: new Date().toISOString(),
+                      },
+                    ],
+                  }),
+                },
+              );
             }
           } catch (e) {
             console.error("Failed to send approval DM:", e);
@@ -1475,22 +1638,27 @@ async function handleSubmissionApprove(
         // Post to approval channel if configured
         if (form.approval_channel_id) {
           try {
-            await fetch(`https://discord.com/api/v10/channels/${form.approval_channel_id}/messages`, {
-              method: "POST",
-              headers: {
-                Authorization: `Bot ${botToken}`,
-                "Content-Type": "application/json",
+            await fetch(
+              `https://discord.com/api/v10/channels/${form.approval_channel_id}/messages`,
+              {
+                method: "POST",
+                headers: {
+                  Authorization: `Bot ${botToken}`,
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                  embeds: [
+                    {
+                      title: `${form.emoji || "📝"} ${form.name} Approved`,
+                      description: `<@${submission.discord_user_id}> has been approved!`,
+                      color: 0x57f287,
+                      footer: { text: `Approved by ${reviewerName}` },
+                      timestamp: new Date().toISOString(),
+                    },
+                  ],
+                }),
               },
-              body: JSON.stringify({
-                embeds: [{
-                  title: `${form.emoji || "📝"} ${form.name} Approved`,
-                  description: `<@${submission.discord_user_id}> has been approved!`,
-                  color: 0x57F287,
-                  footer: { text: `Approved by ${reviewerName}` },
-                  timestamp: new Date().toISOString(),
-                }],
-              }),
-            });
+            );
           } catch (e) {
             console.error("Failed to post to approval channel:", e);
           }
@@ -1498,7 +1666,7 @@ async function handleSubmissionApprove(
       } catch (e) {
         console.error("Background approve work failed:", e);
       }
-    })()
+    })(),
   );
 
   // Return immediate UPDATE_MESSAGE response to satisfy Discord's 3-second limit
@@ -1506,9 +1674,9 @@ async function handleSubmissionApprove(
     JSON.stringify({
       type: InteractionResponseType.UPDATE_MESSAGE,
       data: {
-        embeds: interaction.message.embeds.map((embed: any) => ({
+        embeds: interaction.message.embeds.map((embed: Untyped) => ({
           ...embed,
-          color: 0x57F287, // Green
+          color: 0x57f287, // Green
           title: embed.title?.replace("📥", "✅") || "✅ Approved",
         })),
         components: [
@@ -1528,27 +1696,30 @@ async function handleSubmissionApprove(
         ],
       },
     }),
-    { headers: { "Content-Type": "application/json" } }
+    { headers: { "Content-Type": "application/json" } },
   );
 }
 
 // NEW APPLICATION SYSTEM: Handle submission deny from log channel buttons
 async function handleSubmissionDeny(
-  interaction: any,
-  submissionId: string
+  interaction: Untyped,
+  submissionId: string,
 ): Promise<Response> {
   const supabase = createClient(
     __env("SUPABASE_URL")!,
-    __env("SUPABASE_SERVICE_ROLE_KEY")!
+    __env("SUPABASE_SERVICE_ROLE_KEY")!,
   );
 
   const reviewerId = interaction.member?.user?.id || interaction.user?.id;
-  const reviewerName = interaction.member?.user?.username || interaction.user?.username;
+  const reviewerName =
+    interaction.member?.user?.username || interaction.user?.username;
 
   // Quick check - just verify submission exists and is pending
   const { data: submission, error: submissionError } = await supabase
     .from("application_submissions")
-    .select("id, status, discord_user_id, guild_id, form:application_forms(name, emoji, denial_channel_id)")
+    .select(
+      "id, status, discord_user_id, guild_id, form:application_forms(name, emoji, denial_channel_id)",
+    )
     .eq("id", submissionId)
     .single();
 
@@ -1558,7 +1729,7 @@ async function handleSubmissionDeny(
         type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
         data: { content: "❌ Application not found.", flags: 64 },
       }),
-      { headers: { "Content-Type": "application/json" } }
+      { headers: { "Content-Type": "application/json" } },
     );
   }
 
@@ -1566,13 +1737,20 @@ async function handleSubmissionDeny(
     return new Response(
       JSON.stringify({
         type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
-        data: { content: "❌ This application has already been processed.", flags: 64 },
+        data: {
+          content: "❌ This application has already been processed.",
+          flags: 64,
+        },
       }),
-      { headers: { "Content-Type": "application/json" } }
+      { headers: { "Content-Type": "application/json" } },
     );
   }
 
-  const form = submission.form as unknown as { name: string; emoji: string | null; denial_channel_id: string | null };
+  const form = submission.form as unknown as {
+    name: string;
+    emoji: string | null;
+    denial_channel_id: string | null;
+  };
 
   // Do heavy work in background - MUST return response within 3 seconds
   waitUntil(
@@ -1600,37 +1778,49 @@ async function handleSubmissionDeny(
         // Send DM to user if enabled
         if (settings?.dm_on_denial) {
           try {
-            const dmChannelRes = await fetch("https://discord.com/api/v10/users/@me/channels", {
-              method: "POST",
-              headers: {
-                Authorization: `Bot ${botToken}`,
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify({ recipient_id: submission.discord_user_id }),
-            });
-
-            if (dmChannelRes.ok) {
-              const dmChannel = await dmChannelRes.json();
-              let message = settings.denial_message || "Unfortunately, your application has been denied.";
-              message = message
-                .replace(/{form_name}/g, form.name)
-                .replace(/{user}/g, `<@${submission.discord_user_id}>`);
-
-              await fetch(`https://discord.com/api/v10/channels/${dmChannel.id}/messages`, {
+            const dmChannelRes = await fetch(
+              "https://discord.com/api/v10/users/@me/channels",
+              {
                 method: "POST",
                 headers: {
                   Authorization: `Bot ${botToken}`,
                   "Content-Type": "application/json",
                 },
                 body: JSON.stringify({
-                  embeds: [{
-                    title: "❌ Application Denied",
-                    description: message,
-                    color: 0xED4245,
-                    timestamp: new Date().toISOString(),
-                  }],
+                  recipient_id: submission.discord_user_id,
                 }),
-              });
+              },
+            );
+
+            if (dmChannelRes.ok) {
+              const dmChannel = await dmChannelRes.json();
+              let message =
+                settings.denial_message ||
+                "Unfortunately, your application has been denied.";
+              message = message
+                .replace(/{form_name}/g, form.name)
+                .replace(/{user}/g, `<@${submission.discord_user_id}>`);
+
+              await fetch(
+                `https://discord.com/api/v10/channels/${dmChannel.id}/messages`,
+                {
+                  method: "POST",
+                  headers: {
+                    Authorization: `Bot ${botToken}`,
+                    "Content-Type": "application/json",
+                  },
+                  body: JSON.stringify({
+                    embeds: [
+                      {
+                        title: "❌ Application Denied",
+                        description: message,
+                        color: 0xed4245,
+                        timestamp: new Date().toISOString(),
+                      },
+                    ],
+                  }),
+                },
+              );
             }
           } catch (e) {
             console.error("Failed to send denial DM:", e);
@@ -1640,22 +1830,27 @@ async function handleSubmissionDeny(
         // Post to denial channel if configured
         if (form.denial_channel_id) {
           try {
-            await fetch(`https://discord.com/api/v10/channels/${form.denial_channel_id}/messages`, {
-              method: "POST",
-              headers: {
-                Authorization: `Bot ${botToken}`,
-                "Content-Type": "application/json",
+            await fetch(
+              `https://discord.com/api/v10/channels/${form.denial_channel_id}/messages`,
+              {
+                method: "POST",
+                headers: {
+                  Authorization: `Bot ${botToken}`,
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                  embeds: [
+                    {
+                      title: `${form.emoji || "📝"} ${form.name} Afvist`,
+                      description: `<@${submission.discord_user_id}> er blevet afvist.`,
+                      color: 0xed4245,
+                      footer: { text: `Afvist af ${reviewerName}` },
+                      timestamp: new Date().toISOString(),
+                    },
+                  ],
+                }),
               },
-              body: JSON.stringify({
-                embeds: [{
-                  title: `${form.emoji || "📝"} ${form.name} Afvist`,
-                  description: `<@${submission.discord_user_id}> er blevet afvist.`,
-                  color: 0xED4245,
-                  footer: { text: `Afvist af ${reviewerName}` },
-                  timestamp: new Date().toISOString(),
-                }],
-              }),
-            });
+            );
           } catch (e) {
             console.error("Failed to post to denial channel:", e);
           }
@@ -1663,7 +1858,7 @@ async function handleSubmissionDeny(
       } catch (e) {
         console.error("Background deny work failed:", e);
       }
-    })()
+    })(),
   );
 
   // Return immediate UPDATE_MESSAGE response to satisfy Discord's 3-second limit
@@ -1671,9 +1866,9 @@ async function handleSubmissionDeny(
     JSON.stringify({
       type: InteractionResponseType.UPDATE_MESSAGE,
       data: {
-        embeds: interaction.message.embeds.map((embed: any) => ({
+        embeds: interaction.message.embeds.map((embed: Untyped) => ({
           ...embed,
-          color: 0xED4245, // Red
+          color: 0xed4245, // Red
           title: embed.title?.replace("📥", "❌") || "❌ Denied",
         })),
         components: [
@@ -1693,18 +1888,17 @@ async function handleSubmissionDeny(
         ],
       },
     }),
-    { headers: { "Content-Type": "application/json" } }
+    { headers: { "Content-Type": "application/json" } },
   );
 }
 
-
 async function handleApplicationStart(
-  interaction: any,
-  formId: string
+  interaction: Untyped,
+  formId: string,
 ): Promise<Response> {
   const supabase = createClient(
     __env("SUPABASE_URL")!,
-    __env("SUPABASE_SERVICE_ROLE_KEY")!
+    __env("SUPABASE_SERVICE_ROLE_KEY")!,
   );
 
   const guildId = interaction.guild_id;
@@ -1722,7 +1916,7 @@ async function handleApplicationStart(
         type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
         data: { content: "❌ Server not configured.", flags: 64 },
       }),
-      { headers: { "Content-Type": "application/json" } }
+      { headers: { "Content-Type": "application/json" } },
     );
   }
 
@@ -1739,43 +1933,52 @@ async function handleApplicationStart(
     return new Response(
       JSON.stringify({
         type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
-        data: { content: "❌ Application form not found or not active.", flags: 64 },
+        data: {
+          content: "❌ Application form not found or not active.",
+          flags: 64,
+        },
       }),
-      { headers: { "Content-Type": "application/json" } }
+      { headers: { "Content-Type": "application/json" } },
     );
   }
 
-  const questions = (form.questions || []) as any[];
+  const questions = (form.questions || []) as Untyped[];
 
   // If no questions, just acknowledge
   if (questions.length === 0) {
     return new Response(
       JSON.stringify({
         type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
-        data: { content: "❌ This application has no questions configured.", flags: 64 },
+        data: {
+          content: "❌ This application has no questions configured.",
+          flags: 64,
+        },
       }),
-      { headers: { "Content-Type": "application/json" } }
+      { headers: { "Content-Type": "application/json" } },
     );
   }
 
   // Build modal with questions (Discord max 5 text inputs per modal)
-  const modalComponents = questions.slice(0, 5).map((q: any, index: number) => ({
-    type: 1, // Action row
-    components: [
-      {
-        type: 4, // Text input
-        custom_id: String(q.id || `question_${index}`).substring(0, 100),
-        label: String(q.label || "Question").substring(0, 45),
-        style: q.type === "long" ? TextInputStyle.PARAGRAPH : TextInputStyle.SHORT,
-        ...(typeof q.placeholder === "string" && q.placeholder.length > 0
-          ? { placeholder: q.placeholder.substring(0, 100) }
-          : {}),
-        required: q.required !== false,
-        min_length: q.required !== false ? 1 : 0,
-        max_length: q.type === "long" ? 1024 : 256,
-      },
-    ],
-  }));
+  const modalComponents = questions
+    .slice(0, 5)
+    .map((q: Untyped, index: number) => ({
+      type: 1, // Action row
+      components: [
+        {
+          type: 4, // Text input
+          custom_id: String(q.id || `question_${index}`).substring(0, 100),
+          label: String(q.label || "Question").substring(0, 45),
+          style:
+            q.type === "long" ? TextInputStyle.PARAGRAPH : TextInputStyle.SHORT,
+          ...(typeof q.placeholder === "string" && q.placeholder.length > 0
+            ? { placeholder: q.placeholder.substring(0, 100) }
+            : {}),
+          required: q.required !== false,
+          min_length: q.required !== false ? 1 : 0,
+          max_length: q.type === "long" ? 1024 : 256,
+        },
+      ],
+    }));
 
   return new Response(
     JSON.stringify({
@@ -1786,19 +1989,23 @@ async function handleApplicationStart(
         components: modalComponents,
       },
     }),
-    { headers: { "Content-Type": "application/json" } }
+    { headers: { "Content-Type": "application/json" } },
   );
 }
 
 // Handle application form modal submit
-async function handleApplicationFormSubmit(interaction: any): Promise<Response> {
+async function handleApplicationFormSubmit(
+  interaction: Untyped,
+): Promise<Response> {
   const customId = interaction.data?.custom_id || "";
   const formId = customId.replace("application_form_", "");
 
   const guildId = interaction.guild_id;
   const userId = interaction.member?.user?.id || interaction.user?.id;
-  const userName = interaction.member?.user?.username || interaction.user?.username;
-  const userAvatar = interaction.member?.user?.avatar || interaction.user?.avatar;
+  const userName =
+    interaction.member?.user?.username || interaction.user?.username;
+  const userAvatar =
+    interaction.member?.user?.avatar || interaction.user?.avatar;
   const avatarUrl = userAvatar
     ? `https://cdn.discordapp.com/avatars/${userId}/${userAvatar}.png`
     : null;
@@ -1807,9 +2014,12 @@ async function handleApplicationFormSubmit(interaction: any): Promise<Response> 
     return new Response(
       JSON.stringify({
         type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
-        data: { content: "❌ Missing application data. Please try again.", flags: 64 },
+        data: {
+          content: "❌ Missing application data. Please try again.",
+          flags: 64,
+        },
       }),
-      { headers: { "Content-Type": "application/json" } }
+      { headers: { "Content-Type": "application/json" } },
     );
   }
 
@@ -1817,7 +2027,7 @@ async function handleApplicationFormSubmit(interaction: any): Promise<Response> 
     (async () => {
       const supabase = createClient(
         __env("SUPABASE_URL")!,
-        __env("SUPABASE_SERVICE_ROLE_KEY")!
+        __env("SUPABASE_SERVICE_ROLE_KEY")!,
       );
 
       try {
@@ -1846,17 +2056,21 @@ async function handleApplicationFormSubmit(interaction: any): Promise<Response> 
           return;
         }
 
-        const formQuestions = Array.isArray(form.questions) ? form.questions as any[] : [];
+        const formQuestions = Array.isArray(form.questions)
+          ? (form.questions as Untyped[])
+          : [];
 
         // Extract answers from modal
         const components = interaction.data?.components || [];
         const answers: { question: string; answer: string }[] = [];
 
-        components.forEach((row: any) => {
+        components.forEach((row: Untyped) => {
           const input = row.components?.[0];
           if (!input) return;
 
-          const questionDef = formQuestions.find((q: any) => q.id === input.custom_id);
+          const questionDef = formQuestions.find(
+            (q: Untyped) => q.id === input.custom_id,
+          );
           answers.push({
             question: questionDef?.label || input.custom_id,
             answer: input.value || "(No answer)",
@@ -1880,7 +2094,10 @@ async function handleApplicationFormSubmit(interaction: any): Promise<Response> 
 
         if (submitError || !submission) {
           console.error("Failed to save application submission:", submitError);
-          await sendFollowupEphemeral(interaction, "❌ Could not save your application. Please try again.");
+          await sendFollowupEphemeral(
+            interaction,
+            "❌ Could not save your application. Please try again.",
+          );
           return;
         }
 
@@ -1896,32 +2113,40 @@ async function handleApplicationFormSubmit(interaction: any): Promise<Response> 
         // Send DM if enabled
         if (settings?.dm_on_submit && botToken) {
           try {
-            const dmChannelRes = await fetch("https://discord.com/api/v10/users/@me/channels", {
-              method: "POST",
-              headers: {
-                Authorization: `Bot ${botToken}`,
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify({ recipient_id: userId }),
-            });
-
-            if (dmChannelRes.ok) {
-              const dmChannel = await dmChannelRes.json();
-              await fetch(`https://discord.com/api/v10/channels/${dmChannel.id}/messages`, {
+            const dmChannelRes = await fetch(
+              "https://discord.com/api/v10/users/@me/channels",
+              {
                 method: "POST",
                 headers: {
                   Authorization: `Bot ${botToken}`,
                   "Content-Type": "application/json",
                 },
-                body: JSON.stringify({
-                  embeds: [{
-                    title: "📝 Application Received",
-                    description: `Your application for **${form.name}** has been received and is awaiting review.`,
-                    color: 0x5865F2,
-                    timestamp: new Date().toISOString(),
-                  }],
-                }),
-              });
+                body: JSON.stringify({ recipient_id: userId }),
+              },
+            );
+
+            if (dmChannelRes.ok) {
+              const dmChannel = await dmChannelRes.json();
+              await fetch(
+                `https://discord.com/api/v10/channels/${dmChannel.id}/messages`,
+                {
+                  method: "POST",
+                  headers: {
+                    Authorization: `Bot ${botToken}`,
+                    "Content-Type": "application/json",
+                  },
+                  body: JSON.stringify({
+                    embeds: [
+                      {
+                        title: "📝 Application Received",
+                        description: `Your application for **${form.name}** has been received and is awaiting review.`,
+                        color: 0x5865f2,
+                        timestamp: new Date().toISOString(),
+                      },
+                    ],
+                  }),
+                },
+              );
             }
           } catch (e) {
             console.error("Failed to send DM:", e);
@@ -1957,25 +2182,30 @@ async function handleApplicationFormSubmit(interaction: any): Promise<Response> 
               ],
             };
 
-            await fetch(`https://discord.com/api/v10/channels/${settings.log_channel_id}/messages`, {
-              method: "POST",
-              headers: {
-                Authorization: `Bot ${botToken}`,
-                "Content-Type": "application/json",
+            await fetch(
+              `https://discord.com/api/v10/channels/${settings.log_channel_id}/messages`,
+              {
+                method: "POST",
+                headers: {
+                  Authorization: `Bot ${botToken}`,
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                  embeds: [
+                    {
+                      title: `📥 New Application: ${form.name}`,
+                      description: `**Applicant:** <@${userId}> (${userName})`,
+                      color: 0xfee75c,
+                      fields: fieldsEmbed.slice(0, 25),
+                      thumbnail: avatarUrl ? { url: avatarUrl } : undefined,
+                      footer: { text: `Submission ID: ${submission.id}` },
+                      timestamp: new Date().toISOString(),
+                    },
+                  ],
+                  components: [actionRow],
+                }),
               },
-              body: JSON.stringify({
-                embeds: [{
-                  title: `📥 New Application: ${form.name}`,
-                  description: `**Applicant:** <@${userId}> (${userName})`,
-                  color: 0xFEE75C,
-                  fields: fieldsEmbed.slice(0, 25),
-                  thumbnail: avatarUrl ? { url: avatarUrl } : undefined,
-                  footer: { text: `Submission ID: ${submission.id}` },
-                  timestamp: new Date().toISOString(),
-                }],
-                components: [actionRow],
-              }),
-            });
+            );
           } catch (e) {
             console.error("Failed to log application:", e);
           }
@@ -1983,13 +2213,16 @@ async function handleApplicationFormSubmit(interaction: any): Promise<Response> 
 
         await sendFollowupEphemeral(
           interaction,
-          "✅ Your application has been submitted! You will receive a message when it has been reviewed."
+          "✅ Your application has been submitted! You will receive a message when it has been reviewed.",
         );
       } catch (error) {
         console.error("Application submit background error:", error);
-        await sendFollowupEphemeral(interaction, "❌ Could not save your application. Please try again.");
+        await sendFollowupEphemeral(
+          interaction,
+          "❌ Could not save your application. Please try again.",
+        );
       }
-    })()
+    })(),
   );
 
   return new Response(
@@ -1997,17 +2230,17 @@ async function handleApplicationFormSubmit(interaction: any): Promise<Response> 
       type: InteractionResponseType.DEFERRED_CHANNEL_MESSAGE_WITH_SOURCE,
       data: { flags: 64 },
     }),
-    { headers: { "Content-Type": "application/json" } }
+    { headers: { "Content-Type": "application/json" } },
   );
 }
 
 // Handle FiveM slash commands - queue for FiveM server execution
 // Now supports subcommand structure: /fivem <group> <subcommand> <options>
 function handleFiveMSlashCommand(
-  interaction: any,
+  interaction: Untyped,
   group: string | null,
   subcommand: string,
-  subcommandOptions: any[]
+  subcommandOptions: Untyped[],
 ): Response {
   // Defer immediately to avoid Discord's 3-second timeout
   waitUntil(
@@ -2015,14 +2248,15 @@ function handleFiveMSlashCommand(
       try {
         const supabase = createClient(
           __env("SUPABASE_URL")!,
-          __env("SUPABASE_SERVICE_ROLE_KEY")!
+          __env("SUPABASE_SERVICE_ROLE_KEY")!,
         );
 
         const guildId = interaction.guild_id;
         const userId = interaction.member?.user?.id || interaction.user?.id;
-        const userName = interaction.member?.user?.username || interaction.user?.username;
+        const userName =
+          interaction.member?.user?.username || interaction.user?.username;
 
-        const commandData: Record<string, any> = {
+        const commandData: Record<string, Untyped> = {
           moderatorDiscordId: userId,
           moderatorName: userName,
           group: group || subcommand,
@@ -2033,15 +2267,27 @@ function handleFiveMSlashCommand(
           commandData[opt.name] = opt.value;
         }
 
-        const effectiveCommand = group && group !== subcommand
-          ? `${group}_${subcommand}`
-          : commandData.action
-            ? String(commandData.action)
-            : subcommand;
-        const cmdLabel = group ? `/fivem ${group} ${subcommand}` : `/fivem ${subcommand}`;
-        const directInfoCommand = ["players", "status"].includes(subcommand) && (!group || group === subcommand);
+        const effectiveCommand =
+          group && group !== subcommand
+            ? `${group}_${subcommand}`
+            : commandData.action
+              ? String(commandData.action)
+              : subcommand;
+        const cmdLabel = group
+          ? `/fivem ${group} ${subcommand}`
+          : `/fivem ${subcommand}`;
+        const directInfoCommand =
+          ["players", "status"].includes(subcommand) &&
+          (!group || group === subcommand);
 
-        console.log("FiveM command:", cmdLabel, "->", effectiveCommand, "options:", JSON.stringify(subcommandOptions));
+        console.log(
+          "FiveM command:",
+          cmdLabel,
+          "->",
+          effectiveCommand,
+          "options:",
+          JSON.stringify(subcommandOptions),
+        );
 
         // Get internal guild ID
         const { data: guild, error: guildError } = await supabase
@@ -2077,37 +2323,54 @@ function handleFiveMSlashCommand(
             .order("player_id", { ascending: true });
 
           if (playersErr) {
-            await sendFollowupEphemeral(interaction, `❌ Kunne ikke hente spillerliste: ${playersErr.message}`);
+            await sendFollowupEphemeral(
+              interaction,
+              `❌ Kunne ikke hente spillerliste: ${playersErr.message}`,
+            );
             return;
           }
 
           const count = players?.length || 0;
           if (count === 0) {
-            await sendFollowupEphemeral(interaction, "👥 **Spillere online:** 0\n\n*Ingen spillere på serveren lige nu.*");
+            await sendFollowupEphemeral(
+              interaction,
+              "👥 **Spillere online:** 0\n\n*Ingen spillere på serveren lige nu.*",
+            );
             return;
           }
 
-          const lines = players.map((p: any) => {
-            const name = p.character_name || p.discord_username || `Player #${p.player_id}`;
+          const lines = players.map((p: Untyped) => {
+            const name =
+              p.character_name ||
+              p.discord_username ||
+              `Player #${p.player_id}`;
             return `[${p.player_id}] ${name}${p.ping ? ` (${p.ping}ms)` : ""}`;
           });
           let body = lines.join("\n");
           if (body.length > 1800) body = body.slice(0, 1800) + "\n…";
-          await sendFollowupEphemeral(interaction, `👥 **Spillere online:** ${count}\n\`\`\`\n${body}\n\`\`\``);
+          await sendFollowupEphemeral(
+            interaction,
+            `👥 **Spillere online:** ${count}\n\`\`\`\n${body}\n\`\`\``,
+          );
           return;
         }
 
         if (directInfoCommand && subcommand === "status") {
           const { data: status } = await supabase
             .from("fivem_server_status")
-            .select("is_online, player_count, max_players, uptime_seconds, server_name")
+            .select(
+              "is_online, player_count, max_players, uptime_seconds, server_name",
+            )
             .eq("guild_id", internalGuildId)
             .order("updated_at", { ascending: false })
             .limit(1)
             .maybeSingle();
 
           if (!status) {
-            await sendFollowupEphemeral(interaction, "❌ Ingen serverstatus tilgængelig endnu.");
+            await sendFollowupEphemeral(
+              interaction,
+              "❌ Ingen serverstatus tilgængelig endnu.",
+            );
             return;
           }
 
@@ -2118,27 +2381,34 @@ function handleFiveMSlashCommand(
             `**${status.server_name || "FiveM Server"}**\n` +
               `Status: ${online}\n` +
               `Spillere: ${status.player_count || 0}/${status.max_players || 64}\n` +
-              `Uptime: ${uptime}`
+              `Uptime: ${uptime}`,
           );
           return;
         }
 
         // Queue the command for FiveM server
-        const { data: queuedRow, error: queueError } = await supabase.from("fivem_command_queue").insert({
-          guild_id: internalGuildId,
-          command_name: effectiveCommand,
-          command_data: commandData,
-          target_player_id: commandData.targetPlayerId || null,
-          target_discord_id: null,
-          target_name: null,
-          moderator_discord_id: userId,
-          moderator_name: userName,
-          status: "pending",
-        }).select("id").single();
+        const { data: queuedRow, error: queueError } = await supabase
+          .from("fivem_command_queue")
+          .insert({
+            guild_id: internalGuildId,
+            command_name: effectiveCommand,
+            command_data: commandData,
+            target_player_id: commandData.targetPlayerId || null,
+            target_discord_id: null,
+            target_name: null,
+            moderator_discord_id: userId,
+            moderator_name: userName,
+            status: "pending",
+          })
+          .select("id")
+          .single();
 
         if (queueError || !queuedRow?.id) {
           console.error("Error queuing FiveM command:", queueError);
-          await sendFollowupEphemeral(interaction, "❌ Failed to queue command.");
+          await sendFollowupEphemeral(
+            interaction,
+            "❌ Failed to queue command.",
+          );
           return;
         }
 
@@ -2169,24 +2439,34 @@ function handleFiveMSlashCommand(
         }
 
         if (!resultRow) {
-          await sendFollowupEphemeral(interaction, `⏳ \`${cmdLabel}\` queued, men FiveM-serveren svarede ikke i tide.`);
+          await sendFollowupEphemeral(
+            interaction,
+            `⏳ \`${cmdLabel}\` queued, men FiveM-serveren svarede ikke i tide.`,
+          );
           return;
         }
 
         if (resultRow.status === "failed") {
-          await sendFollowupEphemeral(interaction, `❌ \`${cmdLabel}\` fejlede: ${resultRow.result || "Ukendt fejl"}`);
+          await sendFollowupEphemeral(
+            interaction,
+            `❌ \`${cmdLabel}\` fejlede: ${resultRow.result || "Ukendt fejl"}`,
+          );
           return;
         }
 
         let responseMessage = `✅ \`${cmdLabel}\` udført`;
         const rawResult = (resultRow.result || "").trim();
-        if (rawResult) responseMessage += `\n\`\`\`\n${rawResult.slice(0, 1800)}\n\`\`\``;
+        if (rawResult)
+          responseMessage += `\n\`\`\`\n${rawResult.slice(0, 1800)}\n\`\`\``;
         await sendFollowupEphemeral(interaction, responseMessage);
-      } catch (e: any) {
+      } catch (e: Untyped) {
         console.error("Background FiveM command failed:", e);
-        await sendFollowupEphemeral(interaction, `❌ ${e?.message || "An error occurred."}`);
+        await sendFollowupEphemeral(
+          interaction,
+          `❌ ${e?.message || "An error occurred."}`,
+        );
       }
-    })()
+    })(),
   );
 
   // Return deferred response immediately (within <3 seconds)
@@ -2195,41 +2475,55 @@ function handleFiveMSlashCommand(
       type: InteractionResponseType.DEFERRED_CHANNEL_MESSAGE_WITH_SOURCE,
       data: { flags: 64 },
     }),
-    { headers: { "Content-Type": "application/json" } }
+    { headers: { "Content-Type": "application/json" } },
   );
 }
 
 // ===== JTC Control Panel Handlers =====
 
-async function verifyJTCOwner(supabase: any, voiceChannelId: string, userId: string) {
+async function verifyJTCOwner(
+  supabase: Untyped,
+  voiceChannelId: string,
+  userId: string,
+) {
   const { data } = await supabase
-    .from('jtc_channels')
-    .select('*')
-    .eq('channel_id', voiceChannelId)
+    .from("jtc_channels")
+    .select("*")
+    .eq("channel_id", voiceChannelId)
     .maybeSingle();
-  if (!data) return { ok: false, reason: 'Denne kanal er ikke en JTC kanal.' };
-  if (data.owner_id !== userId) return { ok: false, reason: 'Kun kanalens ejer kan bruge disse kontroller.' };
+  if (!data) return { ok: false, reason: "Denne kanal er ikke en JTC kanal." };
+  if (data.owner_id !== userId)
+    return {
+      ok: false,
+      reason: "Kun kanalens ejer kan bruge disse kontroller.",
+    };
   return { ok: true, data };
 }
 
 function jtcEphemeral(content: string): Response {
-  return new Response(JSON.stringify({
-    type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
-    data: { content, flags: 64 },
-  }), { headers: { "Content-Type": "application/json" } });
+  return new Response(
+    JSON.stringify({
+      type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
+      data: { content, flags: 64 },
+    }),
+    { headers: { "Content-Type": "application/json" } },
+  );
 }
 
-async function handleJTCControl(interaction: any, customId: string): Promise<Response> {
+async function handleJTCControl(
+  interaction: Untyped,
+  customId: string,
+): Promise<Response> {
   const userId = interaction.member?.user?.id || interaction.user?.id;
-  
+
   // Parse action and voice channel ID from custom_id: jtc_{action}_{voiceChannelId}
-  const parts = customId.split('_');
+  const parts = customId.split("_");
   const action = parts[1]; // lock, rename, limit, hide, kick, block, allow
-  const voiceChannelId = parts.slice(2).join('_');
+  const voiceChannelId = parts.slice(2).join("_");
 
   const supabase = createClient(
     __env("SUPABASE_URL")!,
-    __env("SUPABASE_SERVICE_ROLE_KEY")!
+    __env("SUPABASE_SERVICE_ROLE_KEY")!,
   );
 
   const check = await verifyJTCOwner(supabase, voiceChannelId, userId);
@@ -2239,313 +2533,462 @@ async function handleJTCControl(interaction: any, customId: string): Promise<Res
   const guildId = interaction.guild_id;
 
   switch (action) {
-    case 'lock': {
+    case "lock": {
       // Toggle lock: deny CONNECT for @everyone
-      const channelRes = await fetch(`https://discord.com/api/v10/channels/${voiceChannelId}`, {
-        headers: { 'Authorization': `Bot ${botToken}` },
-      });
-      if (!channelRes.ok) return jtcEphemeral('❌ Kunne ikke hente kanalinfo.');
+      const channelRes = await fetch(
+        `https://discord.com/api/v10/channels/${voiceChannelId}`,
+        {
+          headers: { Authorization: `Bot ${botToken}` },
+        },
+      );
+      if (!channelRes.ok) return jtcEphemeral("❌ Kunne ikke hente kanalinfo.");
       const channelData = await channelRes.json();
-      
-      const overwrites = channelData.permission_overwrites || [];
-      const everyoneOverwrite = overwrites.find((o: any) => o.id === guildId);
-      // Check if CONNECT (1048576) is denied
-      const connectDenied = everyoneOverwrite && (BigInt(everyoneOverwrite.deny || '0') & BigInt(1048576)) !== BigInt(0);
-      
-      const newDeny = connectDenied
-        ? String(BigInt(everyoneOverwrite?.deny || '0') & ~BigInt(1048576)) // Remove CONNECT deny
-        : String(BigInt(everyoneOverwrite?.deny || '0') | BigInt(1048576)); // Add CONNECT deny
 
-      await fetch(`https://discord.com/api/v10/channels/${voiceChannelId}/permissions/${guildId}`, {
-        method: 'PUT',
-        headers: { 'Authorization': `Bot ${botToken}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          id: guildId,
-          type: 0,
-          allow: everyoneOverwrite?.allow || '0',
-          deny: newDeny,
-        }),
-      });
+      const overwrites = channelData.permission_overwrites || [];
+      const everyoneOverwrite = overwrites.find(
+        (o: Untyped) => o.id === guildId,
+      );
+      // Check if CONNECT (1048576) is denied
+      const connectDenied =
+        everyoneOverwrite &&
+        (BigInt(everyoneOverwrite.deny || "0") & BigInt(1048576)) !== BigInt(0);
+
+      const newDeny = connectDenied
+        ? String(BigInt(everyoneOverwrite?.deny || "0") & ~BigInt(1048576)) // Remove CONNECT deny
+        : String(BigInt(everyoneOverwrite?.deny || "0") | BigInt(1048576)); // Add CONNECT deny
+
+      await fetch(
+        `https://discord.com/api/v10/channels/${voiceChannelId}/permissions/${guildId}`,
+        {
+          method: "PUT",
+          headers: {
+            Authorization: `Bot ${botToken}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            id: guildId,
+            type: 0,
+            allow: everyoneOverwrite?.allow || "0",
+            deny: newDeny,
+          }),
+        },
+      );
 
       const isNowLocked = !connectDenied;
-      return jtcEphemeral(isNowLocked ? '🔒 Kanalen er nu **låst**. Ingen kan joine.' : '🔓 Kanalen er nu **åben**. Alle kan joine igen.');
+      return jtcEphemeral(
+        isNowLocked
+          ? "🔒 Kanalen er nu **låst**. Ingen kan joine."
+          : "🔓 Kanalen er nu **åben**. Alle kan joine igen.",
+      );
     }
 
-    case 'hide': {
-      const channelRes = await fetch(`https://discord.com/api/v10/channels/${voiceChannelId}`, {
-        headers: { 'Authorization': `Bot ${botToken}` },
-      });
-      if (!channelRes.ok) return jtcEphemeral('❌ Kunne ikke hente kanalinfo.');
+    case "hide": {
+      const channelRes = await fetch(
+        `https://discord.com/api/v10/channels/${voiceChannelId}`,
+        {
+          headers: { Authorization: `Bot ${botToken}` },
+        },
+      );
+      if (!channelRes.ok) return jtcEphemeral("❌ Kunne ikke hente kanalinfo.");
       const channelData = await channelRes.json();
-      
+
       const overwrites = channelData.permission_overwrites || [];
-      const everyoneOverwrite = overwrites.find((o: any) => o.id === guildId);
-      const viewDenied = everyoneOverwrite && (BigInt(everyoneOverwrite.deny || '0') & BigInt(1024)) !== BigInt(0);
-      
+      const everyoneOverwrite = overwrites.find(
+        (o: Untyped) => o.id === guildId,
+      );
+      const viewDenied =
+        everyoneOverwrite &&
+        (BigInt(everyoneOverwrite.deny || "0") & BigInt(1024)) !== BigInt(0);
+
       const newDeny = viewDenied
-        ? String(BigInt(everyoneOverwrite?.deny || '0') & ~BigInt(1024))
-        : String(BigInt(everyoneOverwrite?.deny || '0') | BigInt(1024));
+        ? String(BigInt(everyoneOverwrite?.deny || "0") & ~BigInt(1024))
+        : String(BigInt(everyoneOverwrite?.deny || "0") | BigInt(1024));
 
-      await fetch(`https://discord.com/api/v10/channels/${voiceChannelId}/permissions/${guildId}`, {
-        method: 'PUT',
-        headers: { 'Authorization': `Bot ${botToken}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          id: guildId,
-          type: 0,
-          allow: everyoneOverwrite?.allow || '0',
-          deny: newDeny,
+      await fetch(
+        `https://discord.com/api/v10/channels/${voiceChannelId}/permissions/${guildId}`,
+        {
+          method: "PUT",
+          headers: {
+            Authorization: `Bot ${botToken}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            id: guildId,
+            type: 0,
+            allow: everyoneOverwrite?.allow || "0",
+            deny: newDeny,
+          }),
+        },
+      );
+
+      return jtcEphemeral(
+        viewDenied
+          ? "👁️ Kanalen er nu **synlig** for alle."
+          : "🙈 Kanalen er nu **skjult** fra andre.",
+      );
+    }
+
+    case "rename": {
+      return new Response(
+        JSON.stringify({
+          type: InteractionResponseType.MODAL,
+          data: {
+            custom_id: `jtc_rename_modal_${voiceChannelId}`,
+            title: "✏️ Omdøb Kanal",
+            components: [
+              {
+                type: 1,
+                components: [
+                  {
+                    type: 4,
+                    custom_id: "new_name",
+                    label: "Nyt kanalnavn",
+                    style: TextInputStyle.SHORT,
+                    placeholder: "Skriv det nye kanalnavn...",
+                    required: true,
+                    min_length: 1,
+                    max_length: 100,
+                  },
+                ],
+              },
+            ],
+          },
         }),
-      });
-
-      return jtcEphemeral(viewDenied ? '👁️ Kanalen er nu **synlig** for alle.' : '🙈 Kanalen er nu **skjult** fra andre.');
+        { headers: { "Content-Type": "application/json" } },
+      );
     }
 
-    case 'rename': {
-      return new Response(JSON.stringify({
-        type: InteractionResponseType.MODAL,
-        data: {
-          custom_id: `jtc_rename_modal_${voiceChannelId}`,
-          title: '✏️ Omdøb Kanal',
-          components: [{
-            type: 1,
-            components: [{
-              type: 4,
-              custom_id: 'new_name',
-              label: 'Nyt kanalnavn',
-              style: TextInputStyle.SHORT,
-              placeholder: 'Skriv det nye kanalnavn...',
-              required: true,
-              min_length: 1,
-              max_length: 100,
-            }],
-          }],
-        },
-      }), { headers: { "Content-Type": "application/json" } });
+    case "limit": {
+      return new Response(
+        JSON.stringify({
+          type: InteractionResponseType.MODAL,
+          data: {
+            custom_id: `jtc_limit_modal_${voiceChannelId}`,
+            title: "👥 Sæt Brugergrænse",
+            components: [
+              {
+                type: 1,
+                components: [
+                  {
+                    type: 4,
+                    custom_id: "user_limit",
+                    label: "Brugergrænse (0 = ingen grænse)",
+                    style: TextInputStyle.SHORT,
+                    placeholder: "0",
+                    required: true,
+                    min_length: 1,
+                    max_length: 2,
+                  },
+                ],
+              },
+            ],
+          },
+        }),
+        { headers: { "Content-Type": "application/json" } },
+      );
     }
 
-    case 'limit': {
-      return new Response(JSON.stringify({
-        type: InteractionResponseType.MODAL,
-        data: {
-          custom_id: `jtc_limit_modal_${voiceChannelId}`,
-          title: '👥 Sæt Brugergrænse',
-          components: [{
-            type: 1,
-            components: [{
-              type: 4,
-              custom_id: 'user_limit',
-              label: 'Brugergrænse (0 = ingen grænse)',
-              style: TextInputStyle.SHORT,
-              placeholder: '0',
-              required: true,
-              min_length: 1,
-              max_length: 2,
-            }],
-          }],
-        },
-      }), { headers: { "Content-Type": "application/json" } });
+    case "kick": {
+      return new Response(
+        JSON.stringify({
+          type: InteractionResponseType.MODAL,
+          data: {
+            custom_id: `jtc_kick_modal_${voiceChannelId}`,
+            title: "🚫 Kick Bruger",
+            components: [
+              {
+                type: 1,
+                components: [
+                  {
+                    type: 4,
+                    custom_id: "user_id",
+                    label: "Bruger ID (højreklik → Kopier ID)",
+                    style: TextInputStyle.SHORT,
+                    placeholder: "123456789012345678",
+                    required: true,
+                    min_length: 17,
+                    max_length: 20,
+                  },
+                ],
+              },
+            ],
+          },
+        }),
+        { headers: { "Content-Type": "application/json" } },
+      );
     }
 
-    case 'kick': {
-      return new Response(JSON.stringify({
-        type: InteractionResponseType.MODAL,
-        data: {
-          custom_id: `jtc_kick_modal_${voiceChannelId}`,
-          title: '🚫 Kick Bruger',
-          components: [{
-            type: 1,
-            components: [{
-              type: 4,
-              custom_id: 'user_id',
-              label: 'Bruger ID (højreklik → Kopier ID)',
-              style: TextInputStyle.SHORT,
-              placeholder: '123456789012345678',
-              required: true,
-              min_length: 17,
-              max_length: 20,
-            }],
-          }],
-        },
-      }), { headers: { "Content-Type": "application/json" } });
+    case "block": {
+      return new Response(
+        JSON.stringify({
+          type: InteractionResponseType.MODAL,
+          data: {
+            custom_id: `jtc_block_modal_${voiceChannelId}`,
+            title: "⛔ Bloker Bruger",
+            components: [
+              {
+                type: 1,
+                components: [
+                  {
+                    type: 4,
+                    custom_id: "user_id",
+                    label: "Bruger ID (højreklik → Kopier ID)",
+                    style: TextInputStyle.SHORT,
+                    placeholder: "123456789012345678",
+                    required: true,
+                    min_length: 17,
+                    max_length: 20,
+                  },
+                ],
+              },
+            ],
+          },
+        }),
+        { headers: { "Content-Type": "application/json" } },
+      );
     }
 
-    case 'block': {
-      return new Response(JSON.stringify({
-        type: InteractionResponseType.MODAL,
-        data: {
-          custom_id: `jtc_block_modal_${voiceChannelId}`,
-          title: '⛔ Bloker Bruger',
-          components: [{
-            type: 1,
-            components: [{
-              type: 4,
-              custom_id: 'user_id',
-              label: 'Bruger ID (højreklik → Kopier ID)',
-              style: TextInputStyle.SHORT,
-              placeholder: '123456789012345678',
-              required: true,
-              min_length: 17,
-              max_length: 20,
-            }],
-          }],
-        },
-      }), { headers: { "Content-Type": "application/json" } });
-    }
-
-    case 'allow': {
-      return new Response(JSON.stringify({
-        type: InteractionResponseType.MODAL,
-        data: {
-          custom_id: `jtc_allow_modal_${voiceChannelId}`,
-          title: '✅ Tillad Bruger',
-          components: [{
-            type: 1,
-            components: [{
-              type: 4,
-              custom_id: 'user_id',
-              label: 'Bruger ID (højreklik → Kopier ID)',
-              style: TextInputStyle.SHORT,
-              placeholder: '123456789012345678',
-              required: true,
-              min_length: 17,
-              max_length: 20,
-            }],
-          }],
-        },
-      }), { headers: { "Content-Type": "application/json" } });
+    case "allow": {
+      return new Response(
+        JSON.stringify({
+          type: InteractionResponseType.MODAL,
+          data: {
+            custom_id: `jtc_allow_modal_${voiceChannelId}`,
+            title: "✅ Tillad Bruger",
+            components: [
+              {
+                type: 1,
+                components: [
+                  {
+                    type: 4,
+                    custom_id: "user_id",
+                    label: "Bruger ID (højreklik → Kopier ID)",
+                    style: TextInputStyle.SHORT,
+                    placeholder: "123456789012345678",
+                    required: true,
+                    min_length: 17,
+                    max_length: 20,
+                  },
+                ],
+              },
+            ],
+          },
+        }),
+        { headers: { "Content-Type": "application/json" } },
+      );
     }
 
     default:
-      return jtcEphemeral('❌ Ukendt handling.');
+      return jtcEphemeral("❌ Ukendt handling.");
   }
 }
 
-async function handleJTCRenameSubmit(interaction: any, customId: string): Promise<Response> {
-  const voiceChannelId = customId.replace('jtc_rename_modal_', '');
+async function handleJTCRenameSubmit(
+  interaction: Untyped,
+  customId: string,
+): Promise<Response> {
+  const voiceChannelId = customId.replace("jtc_rename_modal_", "");
   const userId = interaction.member?.user?.id || interaction.user?.id;
-  const supabase = createClient(__env("SUPABASE_URL")!, __env("SUPABASE_SERVICE_ROLE_KEY")!);
+  const supabase = createClient(
+    __env("SUPABASE_URL")!,
+    __env("SUPABASE_SERVICE_ROLE_KEY")!,
+  );
   const check = await verifyJTCOwner(supabase, voiceChannelId, userId);
   if (!check.ok) return jtcEphemeral(`❌ ${check.reason}`);
 
   const newName = interaction.data?.components?.[0]?.components?.[0]?.value;
-  if (!newName) return jtcEphemeral('❌ Intet navn angivet.');
+  if (!newName) return jtcEphemeral("❌ Intet navn angivet.");
 
   const botToken = await getInteractionBotToken(interaction);
-  const res = await fetch(`https://discord.com/api/v10/channels/${voiceChannelId}`, {
-    method: 'PATCH',
-    headers: { 'Authorization': `Bot ${botToken}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ name: newName }),
-  });
+  const res = await fetch(
+    `https://discord.com/api/v10/channels/${voiceChannelId}`,
+    {
+      method: "PATCH",
+      headers: {
+        Authorization: `Bot ${botToken}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ name: newName }),
+    },
+  );
 
-  if (!res.ok) return jtcEphemeral('❌ Kunne ikke omdøbe kanalen. Prøv igen.');
+  if (!res.ok) return jtcEphemeral("❌ Kunne ikke omdøbe kanalen. Prøv igen.");
   return jtcEphemeral(`✏️ Kanalen er omdøbt til **${newName}**!`);
 }
 
-async function handleJTCLimitSubmit(interaction: any, customId: string): Promise<Response> {
-  const voiceChannelId = customId.replace('jtc_limit_modal_', '');
+async function handleJTCLimitSubmit(
+  interaction: Untyped,
+  customId: string,
+): Promise<Response> {
+  const voiceChannelId = customId.replace("jtc_limit_modal_", "");
   const userId = interaction.member?.user?.id || interaction.user?.id;
-  const supabase = createClient(__env("SUPABASE_URL")!, __env("SUPABASE_SERVICE_ROLE_KEY")!);
+  const supabase = createClient(
+    __env("SUPABASE_URL")!,
+    __env("SUPABASE_SERVICE_ROLE_KEY")!,
+  );
   const check = await verifyJTCOwner(supabase, voiceChannelId, userId);
   if (!check.ok) return jtcEphemeral(`❌ ${check.reason}`);
 
   const limitStr = interaction.data?.components?.[0]?.components?.[0]?.value;
   const limit = parseInt(limitStr, 10);
-  if (isNaN(limit) || limit < 0 || limit > 99) return jtcEphemeral('❌ Ugyldig grænse. Brug et tal mellem 0-99.');
+  if (isNaN(limit) || limit < 0 || limit > 99)
+    return jtcEphemeral("❌ Ugyldig grænse. Brug et tal mellem 0-99.");
 
   const botToken = await getInteractionBotToken(interaction);
-  const res = await fetch(`https://discord.com/api/v10/channels/${voiceChannelId}`, {
-    method: 'PATCH',
-    headers: { 'Authorization': `Bot ${botToken}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ user_limit: limit }),
-  });
+  const res = await fetch(
+    `https://discord.com/api/v10/channels/${voiceChannelId}`,
+    {
+      method: "PATCH",
+      headers: {
+        Authorization: `Bot ${botToken}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ user_limit: limit }),
+    },
+  );
 
-  if (!res.ok) return jtcEphemeral('❌ Kunne ikke ændre grænsen. Prøv igen.');
-  return jtcEphemeral(limit === 0 ? '👥 Brugergrænsen er fjernet.' : `👥 Brugergrænsen er sat til **${limit}**.`);
+  if (!res.ok) return jtcEphemeral("❌ Kunne ikke ændre grænsen. Prøv igen.");
+  return jtcEphemeral(
+    limit === 0
+      ? "👥 Brugergrænsen er fjernet."
+      : `👥 Brugergrænsen er sat til **${limit}**.`,
+  );
 }
 
-async function handleJTCKickSubmit(interaction: any, customId: string): Promise<Response> {
-  const voiceChannelId = customId.replace('jtc_kick_modal_', '');
+async function handleJTCKickSubmit(
+  interaction: Untyped,
+  customId: string,
+): Promise<Response> {
+  const voiceChannelId = customId.replace("jtc_kick_modal_", "");
   const userId = interaction.member?.user?.id || interaction.user?.id;
-  const supabase = createClient(__env("SUPABASE_URL")!, __env("SUPABASE_SERVICE_ROLE_KEY")!);
+  const supabase = createClient(
+    __env("SUPABASE_URL")!,
+    __env("SUPABASE_SERVICE_ROLE_KEY")!,
+  );
   const check = await verifyJTCOwner(supabase, voiceChannelId, userId);
   if (!check.ok) return jtcEphemeral(`❌ ${check.reason}`);
 
-  const targetId = interaction.data?.components?.[0]?.components?.[0]?.value?.trim();
-  if (!targetId || !/^\d{17,20}$/.test(targetId)) return jtcEphemeral('❌ Ugyldigt bruger ID.');
-  if (targetId === userId) return jtcEphemeral('❌ Du kan ikke kicke dig selv.');
+  const targetId =
+    interaction.data?.components?.[0]?.components?.[0]?.value?.trim();
+  if (!targetId || !/^\d{17,20}$/.test(targetId))
+    return jtcEphemeral("❌ Ugyldigt bruger ID.");
+  if (targetId === userId)
+    return jtcEphemeral("❌ Du kan ikke kicke dig selv.");
 
   const botToken = await getInteractionBotToken(interaction);
   const guildId = interaction.guild_id;
 
   // Disconnect user from voice (set channel_id to null)
-  const res = await fetch(`https://discord.com/api/v10/guilds/${guildId}/members/${targetId}`, {
-    method: 'PATCH',
-    headers: { 'Authorization': `Bot ${botToken}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ channel_id: null }),
-  });
+  const res = await fetch(
+    `https://discord.com/api/v10/guilds/${guildId}/members/${targetId}`,
+    {
+      method: "PATCH",
+      headers: {
+        Authorization: `Bot ${botToken}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ channel_id: null }),
+    },
+  );
 
-  if (!res.ok) return jtcEphemeral('❌ Kunne ikke kicke brugeren. Er de i kanalen?');
+  if (!res.ok)
+    return jtcEphemeral("❌ Kunne ikke kicke brugeren. Er de i kanalen?");
   return jtcEphemeral(`🚫 <@${targetId}> er blevet kicket fra kanalen.`);
 }
 
-async function handleJTCBlockSubmit(interaction: any, customId: string): Promise<Response> {
-  const voiceChannelId = customId.replace('jtc_block_modal_', '');
+async function handleJTCBlockSubmit(
+  interaction: Untyped,
+  customId: string,
+): Promise<Response> {
+  const voiceChannelId = customId.replace("jtc_block_modal_", "");
   const userId = interaction.member?.user?.id || interaction.user?.id;
-  const supabase = createClient(__env("SUPABASE_URL")!, __env("SUPABASE_SERVICE_ROLE_KEY")!);
+  const supabase = createClient(
+    __env("SUPABASE_URL")!,
+    __env("SUPABASE_SERVICE_ROLE_KEY")!,
+  );
   const check = await verifyJTCOwner(supabase, voiceChannelId, userId);
   if (!check.ok) return jtcEphemeral(`❌ ${check.reason}`);
 
-  const targetId = interaction.data?.components?.[0]?.components?.[0]?.value?.trim();
-  if (!targetId || !/^\d{17,20}$/.test(targetId)) return jtcEphemeral('❌ Ugyldigt bruger ID.');
-  if (targetId === userId) return jtcEphemeral('❌ Du kan ikke blokere dig selv.');
+  const targetId =
+    interaction.data?.components?.[0]?.components?.[0]?.value?.trim();
+  if (!targetId || !/^\d{17,20}$/.test(targetId))
+    return jtcEphemeral("❌ Ugyldigt bruger ID.");
+  if (targetId === userId)
+    return jtcEphemeral("❌ Du kan ikke blokere dig selv.");
 
   const botToken = await getInteractionBotToken(interaction);
   const guildId = interaction.guild_id;
 
   // Deny CONNECT and VIEW for the user on the voice channel
-  await fetch(`https://discord.com/api/v10/channels/${voiceChannelId}/permissions/${targetId}`, {
-    method: 'PUT',
-    headers: { 'Authorization': `Bot ${botToken}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      id: targetId,
-      type: 1, // Member
-      deny: String(BigInt(1048576) | BigInt(1024)), // CONNECT + VIEW_CHANNEL
-    }),
-  });
+  await fetch(
+    `https://discord.com/api/v10/channels/${voiceChannelId}/permissions/${targetId}`,
+    {
+      method: "PUT",
+      headers: {
+        Authorization: `Bot ${botToken}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        id: targetId,
+        type: 1, // Member
+        deny: String(BigInt(1048576) | BigInt(1024)), // CONNECT + VIEW_CHANNEL
+      }),
+    },
+  );
 
   // Also disconnect them if they're in the channel
-  await fetch(`https://discord.com/api/v10/guilds/${guildId}/members/${targetId}`, {
-    method: 'PATCH',
-    headers: { 'Authorization': `Bot ${botToken}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ channel_id: null }),
-  }).catch(() => {});
+  await fetch(
+    `https://discord.com/api/v10/guilds/${guildId}/members/${targetId}`,
+    {
+      method: "PATCH",
+      headers: {
+        Authorization: `Bot ${botToken}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ channel_id: null }),
+    },
+  ).catch(() => {});
 
   return jtcEphemeral(`⛔ <@${targetId}> er blokeret fra din kanal.`);
 }
 
-async function handleJTCAllowSubmit(interaction: any, customId: string): Promise<Response> {
-  const voiceChannelId = customId.replace('jtc_allow_modal_', '');
+async function handleJTCAllowSubmit(
+  interaction: Untyped,
+  customId: string,
+): Promise<Response> {
+  const voiceChannelId = customId.replace("jtc_allow_modal_", "");
   const userId = interaction.member?.user?.id || interaction.user?.id;
-  const supabase = createClient(__env("SUPABASE_URL")!, __env("SUPABASE_SERVICE_ROLE_KEY")!);
+  const supabase = createClient(
+    __env("SUPABASE_URL")!,
+    __env("SUPABASE_SERVICE_ROLE_KEY")!,
+  );
   const check = await verifyJTCOwner(supabase, voiceChannelId, userId);
   if (!check.ok) return jtcEphemeral(`❌ ${check.reason}`);
 
-  const targetId = interaction.data?.components?.[0]?.components?.[0]?.value?.trim();
-  if (!targetId || !/^\d{17,20}$/.test(targetId)) return jtcEphemeral('❌ Ugyldigt bruger ID.');
+  const targetId =
+    interaction.data?.components?.[0]?.components?.[0]?.value?.trim();
+  if (!targetId || !/^\d{17,20}$/.test(targetId))
+    return jtcEphemeral("❌ Ugyldigt bruger ID.");
 
   const botToken = await getInteractionBotToken(interaction);
 
   // Allow CONNECT and VIEW for the user on the voice channel
-  await fetch(`https://discord.com/api/v10/channels/${voiceChannelId}/permissions/${targetId}`, {
-    method: 'PUT',
-    headers: { 'Authorization': `Bot ${botToken}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      id: targetId,
-      type: 1, // Member
-      allow: String(BigInt(1048576) | BigInt(1024)), // CONNECT + VIEW_CHANNEL
-      deny: '0',
-    }),
-  });
+  await fetch(
+    `https://discord.com/api/v10/channels/${voiceChannelId}/permissions/${targetId}`,
+    {
+      method: "PUT",
+      headers: {
+        Authorization: `Bot ${botToken}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        id: targetId,
+        type: 1, // Member
+        allow: String(BigInt(1048576) | BigInt(1024)), // CONNECT + VIEW_CHANNEL
+        deny: "0",
+      }),
+    },
+  );
 
   return jtcEphemeral(`✅ <@${targetId}> har nu adgang til din kanal.`);
 }
@@ -2568,14 +3011,19 @@ __serve(async (req) => {
     }
 
     const interaction = JSON.parse(body);
-    console.log("Interaction type:", interaction.type, "custom_id:", interaction.data?.custom_id);
+    console.log(
+      "Interaction type:",
+      interaction.type,
+      "custom_id:",
+      interaction.data?.custom_id,
+    );
 
     // Handle PING (Discord verification)
     if (interaction.type === InteractionType.PING) {
       console.log("Responding to PING");
       return new Response(
         JSON.stringify({ type: InteractionResponseType.PONG }),
-        { headers: { "Content-Type": "application/json" } }
+        { headers: { "Content-Type": "application/json" } },
       );
     }
 
@@ -2584,10 +3032,11 @@ __serve(async (req) => {
       const commandName = interaction.data?.name;
       const guildId = interaction.guild_id;
       const userId = interaction.member?.user?.id || interaction.user?.id;
-      const userName = interaction.member?.user?.username || interaction.user?.username;
-      
+      const userName =
+        interaction.member?.user?.username || interaction.user?.username;
+
       console.log("Slash command:", commandName, "from user:", userName);
-      
+
       // Handle /fivem command with subcommand groups
       if (commandName === "fivem") {
         const options = interaction.data?.options || [];
@@ -2602,15 +3051,25 @@ __serve(async (req) => {
                   type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
                   data: { content: "❌ Invalid command format.", flags: 64 },
                 }),
-                { headers: { "Content-Type": "application/json" } }
+                { headers: { "Content-Type": "application/json" } },
               );
             }
-            return handleFiveMSlashCommand(interaction, first.name, nested.name, nested.options || []);
+            return handleFiveMSlashCommand(
+              interaction,
+              first.name,
+              nested.name,
+              nested.options || [],
+            );
           }
 
-          return handleFiveMSlashCommand(interaction, null, first.name, first.options || []);
+          return handleFiveMSlashCommand(
+            interaction,
+            null,
+            first.name,
+            first.options || [],
+          );
         }
-        
+
         return new Response(
           JSON.stringify({
             type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
@@ -2619,7 +3078,7 @@ __serve(async (req) => {
               flags: 64,
             },
           }),
-          { headers: { "Content-Type": "application/json" } }
+          { headers: { "Content-Type": "application/json" } },
         );
       }
 
@@ -2628,31 +3087,34 @@ __serve(async (req) => {
         const discordGuildId = interaction.guild_id;
         const supabase = createClient(
           __env("SUPABASE_URL")!,
-          __env("SUPABASE_SERVICE_ROLE_KEY")!
+          __env("SUPABASE_SERVICE_ROLE_KEY")!,
         );
 
         // Resolve internal guild UUID from Discord guild ID
         const { data: guild } = await supabase
-          .from('guilds')
-          .select('id')
-          .eq('guild_id', discordGuildId)
+          .from("guilds")
+          .select("id")
+          .eq("guild_id", discordGuildId)
           .maybeSingle();
 
         if (!guild) {
           return new Response(
             JSON.stringify({
               type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
-              data: { content: "❌ Server ikke fundet i databasen.", flags: 64 },
+              data: {
+                content: "❌ Server ikke fundet i databasen.",
+                flags: 64,
+              },
             }),
-            { headers: { "Content-Type": "application/json" } }
+            { headers: { "Content-Type": "application/json" } },
           );
         }
 
         const { data: topUsers, error: lbError } = await supabase
-          .from('user_levels')
-          .select('user_id, discord_username, xp, level, total_messages')
-          .eq('guild_id', guild.id)
-          .order('xp', { ascending: false })
+          .from("user_levels")
+          .select("user_id, discord_username, xp, level, total_messages")
+          .eq("guild_id", guild.id)
+          .order("xp", { ascending: false })
           .limit(10);
 
         if (lbError || !topUsers || topUsers.length === 0) {
@@ -2660,15 +3122,16 @@ __serve(async (req) => {
             JSON.stringify({
               type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
               data: {
-                content: "🏆 **Leaderboard**\n\nIngen har optjent XP endnu. Begynd at chatte for at komme på ranglisten!",
+                content:
+                  "🏆 **Leaderboard**\n\nIngen har optjent XP endnu. Begynd at chatte for at komme på ranglisten!",
                 flags: 64,
               },
             }),
-            { headers: { "Content-Type": "application/json" } }
+            { headers: { "Content-Type": "application/json" } },
           );
         }
 
-        const medals = ['🥇', '🥈', '🥉'];
+        const medals = ["🥇", "🥈", "🥉"];
         const lines = topUsers.map((u, i) => {
           const prefix = i < 3 ? medals[i] : `**${i + 1}.**`;
           const name = u.discord_username || `<@${u.user_id}>`;
@@ -2679,19 +3142,21 @@ __serve(async (req) => {
           JSON.stringify({
             type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
             data: {
-              embeds: [{
-                title: '🏆 XP Leaderboard',
-                description: lines.join('\n'),
-                color: 0x5865F2,
-                footer: { text: `Top ${topUsers.length} brugere` },
-                timestamp: new Date().toISOString(),
-              }],
+              embeds: [
+                {
+                  title: "🏆 XP Leaderboard",
+                  description: lines.join("\n"),
+                  color: 0x5865f2,
+                  footer: { text: `Top ${topUsers.length} brugere` },
+                  timestamp: new Date().toISOString(),
+                },
+              ],
             },
           }),
-          { headers: { "Content-Type": "application/json" } }
+          { headers: { "Content-Type": "application/json" } },
         );
       }
-      
+
       // Unknown slash command
       return new Response(
         JSON.stringify({
@@ -2701,14 +3166,14 @@ __serve(async (req) => {
             flags: 64,
           },
         }),
-        { headers: { "Content-Type": "application/json" } }
+        { headers: { "Content-Type": "application/json" } },
       );
     }
 
     // Handle modal submissions
     if (interaction.type === InteractionType.MODAL_SUBMIT) {
       const modalCustomId = interaction.data?.custom_id || "";
-      
+
       // JTC rename modal
       if (modalCustomId.startsWith("jtc_rename_modal_")) {
         return await handleJTCRenameSubmit(interaction, modalCustomId);
@@ -2738,7 +3203,7 @@ __serve(async (req) => {
       if (modalCustomId.startsWith("application_form_")) {
         return await handleApplicationFormSubmit(interaction);
       }
-      
+
       // Legacy ticket modal
       return await handleModalSubmit(interaction);
     }
@@ -2755,7 +3220,7 @@ __serve(async (req) => {
           // Check if this is an application category with questions
           const supabase = createClient(
             __env("SUPABASE_URL")!,
-            __env("SUPABASE_SERVICE_ROLE_KEY")!
+            __env("SUPABASE_SERVICE_ROLE_KEY")!,
           );
 
           const { data: category } = await supabase
@@ -2768,8 +3233,16 @@ __serve(async (req) => {
             const questions = category.questions || [];
             // If any category has questions, show modal first
             if (questions.length > 0) {
-              console.log("Showing ticket modal with", questions.length, "questions");
-              return await showTicketModal(interaction, selectedCategoryId, category);
+              console.log(
+                "Showing ticket modal with",
+                questions.length,
+                "questions",
+              );
+              return await showTicketModal(
+                interaction,
+                selectedCategoryId,
+                category,
+              );
             }
           }
 
@@ -2801,13 +3274,13 @@ __serve(async (req) => {
         const threadId = customId.replace("ticket_delete_", "");
         return await handleCloseTicket(interaction, threadId, true);
       }
-      
+
       // Approve application button
       if (customId.startsWith("application_approve_")) {
         const threadId = customId.replace("application_approve_", "");
         return await handleApproveApplication(interaction, threadId);
       }
-      
+
       // Deny application button (legacy ticket system)
       if (customId.startsWith("application_deny_")) {
         const threadId = customId.replace("application_deny_", "");
@@ -2857,9 +3330,12 @@ __serve(async (req) => {
           return new Response(
             JSON.stringify({
               type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
-              data: { content: "❌ Kunne ikke finde bruger eller server.", flags: 64 },
+              data: {
+                content: "❌ Kunne ikke finde bruger eller server.",
+                flags: 64,
+              },
             }),
-            { headers: { "Content-Type": "application/json" } }
+            { headers: { "Content-Type": "application/json" } },
           );
         }
 
@@ -2877,33 +3353,52 @@ __serve(async (req) => {
 
               let res = await fetch(url, {
                 method,
-                headers: { Authorization: `Bot ${botToken}`, "Content-Type": "application/json" },
+                headers: {
+                  Authorization: `Bot ${botToken}`,
+                  "Content-Type": "application/json",
+                },
               });
 
               // Retry on rate limit
-              for (let attempt = 0; attempt < 3 && res.status === 429; attempt++) {
+              for (
+                let attempt = 0;
+                attempt < 3 && res.status === 429;
+                attempt++
+              ) {
                 const retryData = await res.json().catch(() => ({}));
                 const retryAfter = (retryData.retry_after || 2) * 1000;
                 await new Promise((r) => setTimeout(r, retryAfter));
                 res = await fetch(url, {
                   method,
-                  headers: { Authorization: `Bot ${botToken}`, "Content-Type": "application/json" },
+                  headers: {
+                    Authorization: `Bot ${botToken}`,
+                    "Content-Type": "application/json",
+                  },
                 });
               }
 
               if (res.ok || res.status === 204) {
                 const action = hasRole ? "fjernet" : "fået";
-                await sendFollowupEphemeral(interaction, `✅ Du har ${action} rollen <@&${roleId}>`);
+                await sendFollowupEphemeral(
+                  interaction,
+                  `✅ Du har ${action} rollen <@&${roleId}>`,
+                );
               } else {
                 const errText = await res.text().catch(() => "");
                 console.error(`Role toggle failed: ${res.status} ${errText}`);
-                await sendFollowupEphemeral(interaction, "❌ Kunne ikke ændre din rolle. Tjek at botten har de rette tilladelser.");
+                await sendFollowupEphemeral(
+                  interaction,
+                  "❌ Kunne ikke ændre din rolle. Tjek at botten har de rette tilladelser.",
+                );
               }
             } catch (e) {
               console.error("Reaction role toggle error:", e);
-              await sendFollowupEphemeral(interaction, "❌ Der opstod en fejl.");
+              await sendFollowupEphemeral(
+                interaction,
+                "❌ Der opstod en fejl.",
+              );
             }
-          })()
+          })(),
         );
 
         return deferredEphemeral("⏳ Opdaterer din rolle...");
@@ -2936,7 +3431,7 @@ __serve(async (req) => {
             try {
               const supabase = createClient(
                 __env("SUPABASE_URL")!,
-                __env("SUPABASE_SERVICE_ROLE_KEY")!
+                __env("SUPABASE_SERVICE_ROLE_KEY")!,
               );
 
               const { data: poll, error } = await supabase
@@ -2946,27 +3441,41 @@ __serve(async (req) => {
                 .single();
 
               if (error || !poll || poll.ended) {
-                await sendFollowupEphemeral(interaction, "❌ Denne afstemning er afsluttet.");
+                await sendFollowupEphemeral(
+                  interaction,
+                  "❌ Denne afstemning er afsluttet.",
+                );
                 return;
               }
 
-              const pollOptions = (poll.options || []) as Array<{ label: string; votes: number; voters: string[] }>;
+              const pollOptions = (poll.options || []) as Array<{
+                label: string;
+                votes: number;
+                voters: string[];
+              }>;
 
               if (pollOptions[optionIndex]?.voters?.includes(userId)) {
-                await sendFollowupEphemeral(interaction, "❌ Du har allerede stemt på denne mulighed.");
+                await sendFollowupEphemeral(
+                  interaction,
+                  "❌ Du har allerede stemt på denne mulighed.",
+                );
                 return;
               }
 
-              const allowMultiple = (poll.votes as any)?.allow_multiple ?? false;
+              const allowMultiple =
+                (poll.votes as Untyped)?.allow_multiple ?? false;
               if (!allowMultiple) {
                 for (const opt of pollOptions) {
-                  opt.voters = (opt.voters || []).filter((v: string) => v !== userId);
+                  opt.voters = (opt.voters || []).filter(
+                    (v: string) => v !== userId,
+                  );
                   opt.votes = opt.voters.length;
                 }
               }
 
               pollOptions[optionIndex].voters.push(userId);
-              pollOptions[optionIndex].votes = pollOptions[optionIndex].voters.length;
+              pollOptions[optionIndex].votes =
+                pollOptions[optionIndex].voters.length;
 
               await supabase
                 .from("polls")
@@ -2977,21 +3486,30 @@ __serve(async (req) => {
               const botToken = await getInteractionBotToken(interaction);
               if (poll.message_id && botToken) {
                 try {
-                  const totalVotes = pollOptions.reduce((sum: number, o: any) => sum + o.votes, 0);
+                  const totalVotes = pollOptions.reduce(
+                    (sum: number, o: Untyped) => sum + o.votes,
+                    0,
+                  );
                   const updatedDesc = pollOptions
-                    .map((o: any, i: number) => {
-                      const pct = totalVotes > 0 ? Math.round((o.votes / totalVotes) * 100) : 0;
-                      const bar = "█".repeat(Math.round(pct / 10)) + "░".repeat(10 - Math.round(pct / 10));
+                    .map((o: Untyped, i: number) => {
+                      const pct =
+                        totalVotes > 0
+                          ? Math.round((o.votes / totalVotes) * 100)
+                          : 0;
+                      const bar =
+                        "█".repeat(Math.round(pct / 10)) +
+                        "░".repeat(10 - Math.round(pct / 10));
                       return `**${i + 1}.** ${o.label}\n${bar} ${pct}% (${o.votes})`;
                     })
                     .join("\n\n");
 
-                  const channelId = interaction.channel_id || interaction.channel?.id;
+                  const channelId =
+                    interaction.channel_id || interaction.channel?.id;
                   if (channelId) {
                     // Get the original message to preserve embed properties
                     const msgRes = await fetch(
                       `https://discord.com/api/v10/channels/${channelId}/messages/${poll.message_id}`,
-                      { headers: { Authorization: `Bot ${botToken}` } }
+                      { headers: { Authorization: `Bot ${botToken}` } },
                     );
                     if (msgRes.ok) {
                       const msg = await msgRes.json();
@@ -3007,7 +3525,7 @@ __serve(async (req) => {
                             "Content-Type": "application/json",
                           },
                           body: JSON.stringify({ embeds: [embed] }),
-                        }
+                        },
                       );
                     }
                   }
@@ -3018,13 +3536,16 @@ __serve(async (req) => {
 
               await sendFollowupEphemeral(
                 interaction,
-                `✅ Du stemte på **${pollOptions[optionIndex].label}**!`
+                `✅ Du stemte på **${pollOptions[optionIndex].label}**!`,
               );
-            } catch (e: any) {
+            } catch (e: Untyped) {
               console.error("[Poll] Vote error:", e);
-              await sendFollowupEphemeral(interaction, "❌ Kunne ikke registrere din stemme.");
+              await sendFollowupEphemeral(
+                interaction,
+                "❌ Kunne ikke registrere din stemme.",
+              );
             }
-          })()
+          })(),
         );
 
         return deferredEphemeral("⏳ Registrerer din stemme...");
@@ -3042,9 +3563,12 @@ __serve(async (req) => {
           return new Response(
             JSON.stringify({
               type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
-              data: { content: "❌ Kunne ikke finde bruger eller server.", flags: 64 },
+              data: {
+                content: "❌ Kunne ikke finde bruger eller server.",
+                flags: 64,
+              },
             }),
-            { headers: { "Content-Type": "application/json" } }
+            { headers: { "Content-Type": "application/json" } },
           );
         }
 
@@ -3053,7 +3577,7 @@ __serve(async (req) => {
             try {
               const innerSupabase = createClient(
                 __env("SUPABASE_URL")!,
-                __env("SUPABASE_SERVICE_ROLE_KEY")!
+                __env("SUPABASE_SERVICE_ROLE_KEY")!,
               );
 
               const { data: guildRow } = await innerSupabase
@@ -3063,7 +3587,10 @@ __serve(async (req) => {
                 .maybeSingle();
 
               if (!guildRow) {
-                await sendFollowupEphemeral(interaction, "❌ Server ikke fundet.");
+                await sendFollowupEphemeral(
+                  interaction,
+                  "❌ Server ikke fundet.",
+                );
                 return;
               }
 
@@ -3075,17 +3602,29 @@ __serve(async (req) => {
                 .maybeSingle();
 
               if (!giveaway) {
-                await sendFollowupEphemeral(interaction, "❌ Giveaway ikke fundet.");
+                await sendFollowupEphemeral(
+                  interaction,
+                  "❌ Giveaway ikke fundet.",
+                );
                 return;
               }
 
-              if (giveaway.required_role_id && !memberRoles.includes(giveaway.required_role_id)) {
-                await sendFollowupEphemeral(interaction, `❌ Du skal have rollen <@&${giveaway.required_role_id}> for at deltage.`);
+              if (
+                giveaway.required_role_id &&
+                !memberRoles.includes(giveaway.required_role_id)
+              ) {
+                await sendFollowupEphemeral(
+                  interaction,
+                  `❌ Du skal have rollen <@&${giveaway.required_role_id}> for at deltage.`,
+                );
                 return;
               }
 
               if (giveaway.ended || new Date(giveaway.ends_at) <= new Date()) {
-                await sendFollowupEphemeral(interaction, "❌ Giveawayen er afsluttet.");
+                await sendFollowupEphemeral(
+                  interaction,
+                  "❌ Giveawayen er afsluttet.",
+                );
                 return;
               }
 
@@ -3104,27 +3643,41 @@ __serve(async (req) => {
                 throw updateError;
               }
 
-              const botToken = await getBotTokenForGuild(innerSupabase, guildId);
-              await fetch(`https://discord.com/api/v10/channels/${giveaway.channel_id}/messages/${interaction.message.id}`, {
-                method: "PATCH",
-                headers: {
-                  Authorization: `Bot ${botToken}`,
-                  "Content-Type": "application/json",
+              const botToken = await getBotTokenForGuild(
+                innerSupabase,
+                guildId,
+              );
+              await fetch(
+                `https://discord.com/api/v10/channels/${giveaway.channel_id}/messages/${interaction.message.id}`,
+                {
+                  method: "PATCH",
+                  headers: {
+                    Authorization: `Bot ${botToken}`,
+                    "Content-Type": "application/json",
+                  },
+                  body: JSON.stringify(
+                    buildGiveawayMessagePayload({
+                      ...giveaway,
+                      entries: updatedEntries,
+                    }),
+                  ),
                 },
-                body: JSON.stringify(buildGiveawayMessagePayload({ ...giveaway, entries: updatedEntries })),
-              });
+              );
 
               await sendFollowupEphemeral(
                 interaction,
                 alreadyEntered
                   ? `✅ Du er fjernet fra giveawayen. (${updatedEntries.length} deltagere)`
-                  : `✅ Du deltager nu i giveawayen! (${updatedEntries.length} deltagere)`
+                  : `✅ Du deltager nu i giveawayen! (${updatedEntries.length} deltagere)`,
               );
             } catch (e) {
               console.error("Giveaway button error:", e);
-              await sendFollowupEphemeral(interaction, "❌ Der opstod en fejl ved giveaway-knappen.");
+              await sendFollowupEphemeral(
+                interaction,
+                "❌ Der opstod en fejl ved giveaway-knappen.",
+              );
             }
-          })()
+          })(),
         );
 
         return deferredEphemeral("⏳ Opdaterer giveaway...");
@@ -3136,8 +3689,10 @@ __serve(async (req) => {
       if (customId.startsWith("suggestion_")) {
         // Return empty ack - the bot gateway handler will handle the actual response
         return new Response(
-          JSON.stringify({ type: InteractionResponseType.DEFERRED_UPDATE_MESSAGE }),
-          { headers: { "Content-Type": "application/json" } }
+          JSON.stringify({
+            type: InteractionResponseType.DEFERRED_UPDATE_MESSAGE,
+          }),
+          { headers: { "Content-Type": "application/json" } },
         );
       }
     }
@@ -3151,7 +3706,7 @@ __serve(async (req) => {
           flags: 64,
         },
       }),
-      { headers: { "Content-Type": "application/json" } }
+      { headers: { "Content-Type": "application/json" } },
     );
   } catch (error) {
     console.error("Error handling interaction:", error);
@@ -3159,10 +3714,9 @@ __serve(async (req) => {
   }
 });
 
+const __call = ({ request }: { request: Request }) => __handler(request);
 
-const __call = ({ request }: { request: Request }) => __handler(request)
-
-export const Route = createFileRoute('/api/public/discord-interactions')({
+export const Route = createFileRoute("/api/public/discord-interactions")({
   server: {
     handlers: {
       GET: __call,
@@ -3173,4 +3727,4 @@ export const Route = createFileRoute('/api/public/discord-interactions')({
       OPTIONS: __call,
     },
   },
-})
+});

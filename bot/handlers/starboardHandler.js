@@ -1,5 +1,5 @@
 // Starboard Handler - Highlights popular messages
-const { EmbedBuilder } = require('discord.js');
+const { EmbedBuilder } = require("discord.js");
 
 class StarboardHandler {
   constructor(client, supabase, config = {}) {
@@ -10,9 +10,13 @@ class StarboardHandler {
   }
 
   async init() {
-    this.client.on('messageReactionAdd', (reaction, user) => this.handleReactionAdd(reaction, user));
-    this.client.on('messageReactionRemove', (reaction, user) => this.handleReactionRemove(reaction, user));
-    console.log('[Starboard] Handler initialized');
+    this.client.on("messageReactionAdd", (reaction, user) =>
+      this.handleReactionAdd(reaction, user),
+    );
+    this.client.on("messageReactionRemove", (reaction, user) =>
+      this.handleReactionRemove(reaction, user),
+    );
+    console.log("[Starboard] Handler initialized");
   }
 
   async getSettings(guildId) {
@@ -22,9 +26,9 @@ class StarboardHandler {
     }
 
     const { data, error } = await this.supabase
-      .from('starboard_settings')
-      .select('*')
-      .eq('guild_id', guildId)
+      .from("starboard_settings")
+      .select("*")
+      .eq("guild_id", guildId)
       .single();
 
     if (error || !data) return null;
@@ -44,7 +48,7 @@ class StarboardHandler {
         try {
           await reaction.fetch();
         } catch (e) {
-          console.error('[Starboard] Failed to fetch reaction:', e);
+          console.error("[Starboard] Failed to fetch reaction:", e);
           return;
         }
       }
@@ -57,9 +61,9 @@ class StarboardHandler {
 
       // Get guild settings from database
       const { data: guild } = await this.supabase
-        .from('guilds')
-        .select('id')
-        .eq('guild_id', message.guild.id)
+        .from("guilds")
+        .select("id")
+        .eq("guild_id", message.guild.id)
         .single();
 
       if (!guild) return;
@@ -69,7 +73,11 @@ class StarboardHandler {
 
       // Check if reaction matches configured emoji
       const reactionEmoji = reaction.emoji.name;
-      if (reactionEmoji !== settings.emoji && reaction.emoji.toString() !== settings.emoji) return;
+      if (
+        reactionEmoji !== settings.emoji &&
+        reaction.emoji.toString() !== settings.emoji
+      )
+        return;
 
       // Ignore self-star if configured
       if (settings.ignore_self_star && user.id === message.author.id) return;
@@ -81,7 +89,7 @@ class StarboardHandler {
       let count = reaction.count;
       if (settings.ignore_self_star) {
         const users = await reaction.users.fetch();
-        count = users.filter(u => u.id !== message.author.id).size;
+        count = users.filter((u) => u.id !== message.author.id).size;
       }
 
       // Check threshold
@@ -89,7 +97,7 @@ class StarboardHandler {
 
       await this.updateStarboardEntry(message, count, settings, guild.id);
     } catch (error) {
-      console.error('[Starboard] Error handling reaction add:', error);
+      console.error("[Starboard] Error handling reaction add:", error);
     }
   }
 
@@ -110,9 +118,9 @@ class StarboardHandler {
       if (!this.shouldHandleGuild(message.guild.id)) return;
 
       const { data: guild } = await this.supabase
-        .from('guilds')
-        .select('id')
-        .eq('guild_id', message.guild.id)
+        .from("guilds")
+        .select("id")
+        .eq("guild_id", message.guild.id)
         .single();
 
       if (!guild) return;
@@ -121,21 +129,25 @@ class StarboardHandler {
       if (!settings || !settings.enabled) return;
 
       const reactionEmoji = reaction.emoji.name;
-      if (reactionEmoji !== settings.emoji && reaction.emoji.toString() !== settings.emoji) return;
+      if (
+        reactionEmoji !== settings.emoji &&
+        reaction.emoji.toString() !== settings.emoji
+      )
+        return;
 
       // Get updated count
       let count = reaction.count || 0;
       if (settings.ignore_self_star && count > 0) {
         const users = await reaction.users.fetch();
-        count = users.filter(u => u.id !== message.author.id).size;
+        count = users.filter((u) => u.id !== message.author.id).size;
       }
 
       // Check if entry exists
       const { data: entry } = await this.supabase
-        .from('starboard_entries')
-        .select('*')
-        .eq('guild_id', guild.id)
-        .eq('message_id', message.id)
+        .from("starboard_entries")
+        .select("*")
+        .eq("guild_id", guild.id)
+        .eq("message_id", message.id)
         .single();
 
       if (!entry) return;
@@ -148,7 +160,7 @@ class StarboardHandler {
         await this.updateStarboardEntry(message, count, settings, guild.id);
       }
     } catch (error) {
-      console.error('[Starboard] Error handling reaction remove:', error);
+      console.error("[Starboard] Error handling reaction remove:", error);
     }
   }
 
@@ -159,15 +171,17 @@ class StarboardHandler {
         await message.fetch();
       }
 
-      const starboardChannel = await this.client.channels.fetch(settings.channel_id);
+      const starboardChannel = await this.client.channels.fetch(
+        settings.channel_id,
+      );
       if (!starboardChannel) return;
 
       // Check for existing entry
       const { data: existingEntry } = await this.supabase
-        .from('starboard_entries')
-        .select('*')
-        .eq('guild_id', guildId)
-        .eq('message_id', message.id)
+        .from("starboard_entries")
+        .select("*")
+        .eq("guild_id", guildId)
+        .eq("message_id", message.id)
         .single();
 
       const embed = this.createStarboardEmbed(message, count, settings.emoji);
@@ -175,47 +189,48 @@ class StarboardHandler {
       if (existingEntry?.starboard_message_id) {
         // Update existing message
         try {
-          const starboardMessage = await starboardChannel.messages.fetch(existingEntry.starboard_message_id);
+          const starboardMessage = await starboardChannel.messages.fetch(
+            existingEntry.starboard_message_id,
+          );
           await starboardMessage.edit({
             content: `${settings.emoji} **${count}** | <#${message.channel.id}>`,
-            embeds: [embed]
+            embeds: [embed],
           });
         } catch (e) {
           // Message may have been deleted, create new one
           const newMessage = await starboardChannel.send({
             content: `${settings.emoji} **${count}** | <#${message.channel.id}>`,
-            embeds: [embed]
+            embeds: [embed],
           });
-          
+
           await this.supabase
-            .from('starboard_entries')
+            .from("starboard_entries")
             .update({ starboard_message_id: newMessage.id, star_count: count })
-            .eq('id', existingEntry.id);
+            .eq("id", existingEntry.id);
         }
 
         // Update count in database
         await this.supabase
-          .from('starboard_entries')
+          .from("starboard_entries")
           .update({ star_count: count })
-          .eq('id', existingEntry.id);
+          .eq("id", existingEntry.id);
       } else {
         // Create new starboard message
         const starboardMessage = await starboardChannel.send({
           content: `${settings.emoji} **${count}** | <#${message.channel.id}>`,
-          embeds: [embed]
+          embeds: [embed],
         });
 
         // Get attachments
-        const attachments = message.attachments.map(a => ({
+        const attachments = message.attachments.map((a) => ({
           url: a.url,
           name: a.name,
-          contentType: a.contentType
+          contentType: a.contentType,
         }));
 
         // Insert or update entry
-        await this.supabase
-          .from('starboard_entries')
-          .upsert({
+        await this.supabase.from("starboard_entries").upsert(
+          {
             guild_id: guildId,
             message_id: message.id,
             channel_id: message.channel.id,
@@ -224,25 +239,27 @@ class StarboardHandler {
             content: message.content?.substring(0, 4000),
             attachments,
             starboard_message_id: starboardMessage.id,
-            star_count: count
-          }, { onConflict: 'guild_id,message_id' });
+            star_count: count,
+          },
+          { onConflict: "guild_id,message_id" },
+        );
       }
     } catch (error) {
-      console.error('[Starboard] Error updating entry:', error);
+      console.error("[Starboard] Error updating entry:", error);
     }
   }
 
   createStarboardEmbed(message, count, emoji) {
     const embed = new EmbedBuilder()
-      .setColor(0xFFD700)
+      .setColor(0xffd700)
       .setAuthor({
         name: message.author.username,
-        iconURL: message.author.displayAvatarURL({ dynamic: true })
+        iconURL: message.author.displayAvatarURL({ dynamic: true }),
       })
       .setTimestamp(message.createdAt)
       .addFields({
-        name: 'Original',
-        value: `[Hop til besked](${message.url})`
+        name: "Original",
+        value: `[Hop til besked](${message.url})`,
       });
 
     if (message.content) {
@@ -250,8 +267,8 @@ class StarboardHandler {
     }
 
     // Add first image if present
-    const imageAttachment = message.attachments.find(a => 
-      a.contentType?.startsWith('image/')
+    const imageAttachment = message.attachments.find((a) =>
+      a.contentType?.startsWith("image/"),
     );
     if (imageAttachment) {
       embed.setImage(imageAttachment.url);
@@ -271,7 +288,9 @@ class StarboardHandler {
         const channel = await this.client.channels.fetch(settings.channel_id);
         if (channel) {
           try {
-            const message = await channel.messages.fetch(entry.starboard_message_id);
+            const message = await channel.messages.fetch(
+              entry.starboard_message_id,
+            );
             await message.delete();
           } catch (e) {
             // Message already deleted
@@ -280,12 +299,9 @@ class StarboardHandler {
       }
 
       // Remove from database
-      await this.supabase
-        .from('starboard_entries')
-        .delete()
-        .eq('id', entry.id);
+      await this.supabase.from("starboard_entries").delete().eq("id", entry.id);
     } catch (error) {
-      console.error('[Starboard] Error removing entry:', error);
+      console.error("[Starboard] Error removing entry:", error);
     }
   }
 }

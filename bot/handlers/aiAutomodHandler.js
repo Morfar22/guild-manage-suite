@@ -1,14 +1,16 @@
 /**
  * AI Auto-Moderation Handler
- * 
+ *
  * Uses AI to analyze messages for toxicity, spam, NSFW, and hate speech.
  * Integrates with the self-hosted ai-automod API route.
  */
 
-const { Events, EmbedBuilder } = require('discord.js');
-const { isAutomodBypassed } = require('./automodBypass');
+const { Events, EmbedBuilder } = require("discord.js");
+const { isAutomodBypassed } = require("./automodBypass");
 
-const APP_API_BASE = (process.env.APP_API_BASE || 'https://bot.nethost-solutions.dk').replace(/\/$/, '');
+const APP_API_BASE = (
+  process.env.APP_API_BASE || "https://bot.nethost-solutions.dk"
+).replace(/\/$/, "");
 const AI_AUTOMOD_URL = `${APP_API_BASE}/api/public/ai-automod`;
 const BOT_SECRET = process.env.BOT_SECRET_KEY;
 
@@ -24,14 +26,15 @@ function setupAIAutomodHandler(client, supabase, options = {}) {
     if (shouldHandleGuild && !shouldHandleGuild(message.guild.id)) return;
 
     // Global automod bypass roles
-    if (message.member && await isAutomodBypassed(supabase, message.member)) return;
+    if (message.member && (await isAutomodBypassed(supabase, message.member)))
+      return;
 
     try {
       // Get guild internal ID
       const { data: guild } = await supabase
-        .from('guilds')
-        .select('id')
-        .eq('guild_id', message.guild.id)
+        .from("guilds")
+        .select("id")
+        .eq("guild_id", message.guild.id)
         .single();
 
       if (!guild) return;
@@ -40,13 +43,16 @@ function setupAIAutomodHandler(client, supabase, options = {}) {
       let settings = settingsCache.get(guild.id);
       if (!settings || Date.now() - settings._cachedAt > CACHE_TTL) {
         const { data } = await supabase
-          .from('ai_automod_settings')
-          .select('*')
-          .eq('guild_id', guild.id)
+          .from("ai_automod_settings")
+          .select("*")
+          .eq("guild_id", guild.id)
           .maybeSingle();
 
         if (!data || !data.enabled) {
-          settingsCache.set(guild.id, { enabled: false, _cachedAt: Date.now() });
+          settingsCache.set(guild.id, {
+            enabled: false,
+            _cachedAt: Date.now(),
+          });
           return;
         }
         settings = { ...data, _cachedAt: Date.now() };
@@ -60,10 +66,13 @@ function setupAIAutomodHandler(client, supabase, options = {}) {
 
       // Call AI automod edge function
       const response = await fetch(AI_AUTOMOD_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-bot-secret': BOT_SECRET },
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-bot-secret": BOT_SECRET,
+        },
         body: JSON.stringify({
-          action: 'analyze',
+          action: "analyze",
           data: {
             message_content: message.content,
             guild_id: guild.id,
@@ -77,14 +86,16 @@ function setupAIAutomodHandler(client, supabase, options = {}) {
               check_nsfw: settings.check_nsfw,
               check_hate_speech: settings.check_hate_speech,
               custom_instructions: settings.custom_instructions,
-            }
-          }
-        })
+            },
+          },
+        }),
       });
 
       if (!response.ok) {
-        const errorBody = await response.text().catch(() => '');
-        console.error(`[AI-AutoMod] API error ${response.status}: ${errorBody.slice(0, 500)}`);
+        const errorBody = await response.text().catch(() => "");
+        console.error(
+          `[AI-AutoMod] API error ${response.status}: ${errorBody.slice(0, 500)}`,
+        );
         return;
       }
 
@@ -94,60 +105,92 @@ function setupAIAutomodHandler(client, supabase, options = {}) {
       if (!analysis?.flagged) return;
 
       // Take action
-      const actionTaken = settings.action || 'delete';
+      const actionTaken = settings.action || "delete";
 
       switch (actionTaken) {
-        case 'delete':
+        case "delete":
           await message.delete().catch(() => {});
           break;
-        case 'warn':
-          await message.reply({
-            content: `⚠️ ${message.author}, din besked blev flagget af AI: ${analysis.reason}`,
-            allowedMentions: { users: [message.author.id] }
-          }).catch(() => {});
+        case "warn":
+          await message
+            .reply({
+              content: `⚠️ ${message.author}, din besked blev flagget af AI: ${analysis.reason}`,
+              allowedMentions: { users: [message.author.id] },
+            })
+            .catch(() => {});
           break;
-        case 'mute':
+        case "mute":
           await message.delete().catch(() => {});
-          await message.member?.timeout(600_000, `AI Auto-Mod: ${analysis.reason}`).catch(() => {});
+          await message.member
+            ?.timeout(600_000, `AI Auto-Mod: ${analysis.reason}`)
+            .catch(() => {});
           break;
-        case 'kick':
+        case "kick":
           await message.delete().catch(() => {});
-          await message.member?.kick(`AI Auto-Mod: ${analysis.reason}`).catch(() => {});
+          await message.member
+            ?.kick(`AI Auto-Mod: ${analysis.reason}`)
+            .catch(() => {});
           break;
-        case 'ban':
+        case "ban":
           await message.delete().catch(() => {});
-          await message.member?.ban({ reason: `AI Auto-Mod: ${analysis.reason}` }).catch(() => {});
+          await message.member
+            ?.ban({ reason: `AI Auto-Mod: ${analysis.reason}` })
+            .catch(() => {});
           break;
       }
 
       // Log to automod_logs
-      await supabase.from('automod_logs').insert({
-        guild_id: guild.id,
-        rule_type: 'ai_toxicity',
-        user_id: message.author.id,
-        user_name: message.author.username,
-        channel_id: message.channel.id,
-        message_content: message.content.substring(0, 500),
-        action_taken: actionTaken,
-      }).catch(() => {});
+      await supabase
+        .from("automod_logs")
+        .insert({
+          guild_id: guild.id,
+          rule_type: "ai_toxicity",
+          user_id: message.author.id,
+          user_name: message.author.username,
+          channel_id: message.channel.id,
+          message_content: message.content.substring(0, 500),
+          action_taken: actionTaken,
+        })
+        .catch(() => {});
 
       // Notify moderators in log channel
       if (settings.notify_moderators && settings.log_channel_id) {
-        const logChannel = message.guild.channels.cache.get(settings.log_channel_id);
+        const logChannel = message.guild.channels.cache.get(
+          settings.log_channel_id,
+        );
         if (logChannel) {
-          const severityColors = { low: 0xFFA500, medium: 0xFF6600, high: 0xFF0000 };
+          const severityColors = {
+            low: 0xffa500,
+            medium: 0xff6600,
+            high: 0xff0000,
+          };
           const logEmbed = new EmbedBuilder()
-            .setTitle('🤖 AI Auto-Mod Alert')
-            .setColor(severityColors[analysis.severity] || 0xFF0000)
+            .setTitle("🤖 AI Auto-Mod Alert")
+            .setColor(severityColors[analysis.severity] || 0xff0000)
             .addFields(
-              { name: 'Bruger', value: `<@${message.author.id}> (${message.author.username})`, inline: true },
-              { name: 'Kanal', value: `<#${message.channel.id}>`, inline: true },
-              { name: 'Kategori', value: analysis.category, inline: true },
-              { name: 'Alvorlighed', value: analysis.severity, inline: true },
-              { name: 'Konfidensen', value: `${analysis.confidence}%`, inline: true },
-              { name: 'Handling', value: actionTaken, inline: true },
-              { name: 'Årsag', value: analysis.reason || 'N/A' },
-              { name: 'Besked', value: message.content.substring(0, 500) || 'N/A' },
+              {
+                name: "Bruger",
+                value: `<@${message.author.id}> (${message.author.username})`,
+                inline: true,
+              },
+              {
+                name: "Kanal",
+                value: `<#${message.channel.id}>`,
+                inline: true,
+              },
+              { name: "Kategori", value: analysis.category, inline: true },
+              { name: "Alvorlighed", value: analysis.severity, inline: true },
+              {
+                name: "Konfidensen",
+                value: `${analysis.confidence}%`,
+                inline: true,
+              },
+              { name: "Handling", value: actionTaken, inline: true },
+              { name: "Årsag", value: analysis.reason || "N/A" },
+              {
+                name: "Besked",
+                value: message.content.substring(0, 500) || "N/A",
+              },
             )
             .setTimestamp();
           await logChannel.send({ embeds: [logEmbed] }).catch(() => {});
@@ -155,13 +198,13 @@ function setupAIAutomodHandler(client, supabase, options = {}) {
       }
     } catch (err) {
       // Don't spam errors - AI automod failures should be silent
-      if (!err.message?.includes('Rate limited')) {
-        console.error('[AI-AutoMod] Error:', err.message);
+      if (!err.message?.includes("Rate limited")) {
+        console.error("[AI-AutoMod] Error:", err.message);
       }
     }
   });
 
-  console.log('[AI-AutoMod] Handler initialized');
+  console.log("[AI-AutoMod] Handler initialized");
 }
 
 module.exports = { setupAIAutomodHandler };

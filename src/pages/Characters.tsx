@@ -1,28 +1,79 @@
-import { useState } from 'react';
+import { useState } from "react";
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { useCharacters, useCharacterStats, useCreateCharacter, useUpdateCharacter, useDeleteCharacter, CharacterStatus, Character } from '@/hooks/useCharacters';
-import { useGuild } from '@/contexts/GuildContext';
-import { useToast } from '@/hooks/use-toast';
-import { Users, Heart, Skull, UserX, Search, User, Plus, Pencil, Trash2 } from 'lucide-react';
-import { formatDistanceToNow } from 'date-fns';
-import { da } from 'date-fns/locale';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import {
+  useCharacters,
+  useCharacterStats,
+  useCreateCharacter,
+  useUpdateCharacter,
+  useDeleteCharacter,
+  CharacterStatus,
+  Character,
+} from "@/hooks/useCharacters";
+import { useGuild } from "@/contexts/GuildContext";
+import { useToast } from "@/hooks/use-toast";
+import {
+  Users,
+  Heart,
+  Skull,
+  UserX,
+  Search,
+  User,
+  Plus,
+  Pencil,
+  Trash2,
+} from "lucide-react";
+import { formatDistanceToNow } from "date-fns";
+import { da } from "date-fns/locale";
 
 function StatusBadge({ status }: { status: CharacterStatus }) {
   const config = {
-    alive: { label: 'I Live', variant: 'default' as const, icon: Heart },
-    dead: { label: 'Død', variant: 'destructive' as const, icon: Skull },
-    retired: { label: 'Pensioneret', variant: 'secondary' as const, icon: UserX },
+    alive: { label: "I Live", variant: "default" as const, icon: Heart },
+    dead: { label: "Død", variant: "destructive" as const, icon: Skull },
+    retired: {
+      label: "Pensioneret",
+      variant: "secondary" as const,
+      icon: UserX,
+    },
   };
 
   const { label, variant, icon: Icon } = config[status];
@@ -48,38 +99,45 @@ interface CharacterFormData {
 }
 
 const emptyForm: CharacterFormData = {
-  discord_user_id: '',
-  discord_username: '',
-  name: '',
+  discord_user_id: "",
+  discord_username: "",
+  name: "",
   age: null,
-  background: '',
-  faction: '',
-  occupation: '',
-  appearance: '',
-  status: 'alive',
+  background: "",
+  faction: "",
+  occupation: "",
+  appearance: "",
+  status: "alive",
 };
 
 export default function Characters() {
-  const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState<CharacterStatus | undefined>();
-  
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState<
+    CharacterStatus | undefined
+  >();
+
   const { data: stats, isLoading: statsLoading } = useCharacterStats();
   const { data: characters, isLoading } = useCharacters(statusFilter);
   const { selectedGuild } = useGuild();
   const { toast } = useToast();
-  
+
   const createCharacter = useCreateCharacter();
   const updateCharacter = useUpdateCharacter();
   const deleteCharacter = useDeleteCharacter();
 
   const [isCreateOpen, setIsCreateOpen] = useState(false);
-  const [editingCharacter, setEditingCharacter] = useState<Character | null>(null);
+  const [editingCharacter, setEditingCharacter] = useState<Character | null>(
+    null,
+  );
   const [formData, setFormData] = useState<CharacterFormData>(emptyForm);
 
-  const filteredCharacters = characters?.filter(char =>
-    char.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    char.discord_username?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    char.faction?.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredCharacters = characters?.filter(
+    (char) =>
+      char.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      char.discord_username
+        ?.toLowerCase()
+        .includes(searchQuery.toLowerCase()) ||
+      char.faction?.toLowerCase().includes(searchQuery.toLowerCase()),
   );
 
   const resetForm = () => {
@@ -96,13 +154,13 @@ export default function Characters() {
     setEditingCharacter(character);
     setFormData({
       discord_user_id: character.discord_user_id,
-      discord_username: character.discord_username || '',
+      discord_username: character.discord_username || "",
       name: character.name,
       age: character.age,
-      background: character.background || '',
-      faction: character.faction || '',
-      occupation: character.occupation || '',
-      appearance: character.appearance || '',
+      background: character.background || "",
+      faction: character.faction || "",
+      occupation: character.occupation || "",
+      appearance: character.appearance || "",
       status: character.status,
     });
     setIsCreateOpen(true);
@@ -111,9 +169,9 @@ export default function Characters() {
   const handleSubmit = async () => {
     if (!formData.name || !formData.discord_user_id) {
       toast({
-        title: 'Fejl',
-        description: 'Navn og Discord bruger-ID er påkrævet',
-        variant: 'destructive',
+        title: "Fejl",
+        description: "Navn og Discord bruger-ID er påkrævet",
+        variant: "destructive",
       });
       return;
     }
@@ -131,7 +189,10 @@ export default function Characters() {
           status: formData.status,
           discord_username: formData.discord_username || null,
         });
-        toast({ title: 'Karakter opdateret', description: `${formData.name} er blevet opdateret` });
+        toast({
+          title: "Karakter opdateret",
+          description: `${formData.name} er blevet opdateret`,
+        });
       } else {
         await createCharacter.mutateAsync({
           guild_id: selectedGuild!.id,
@@ -147,16 +208,19 @@ export default function Characters() {
           avatar_url: null,
           is_active: true,
         });
-        toast({ title: 'Karakter oprettet', description: `${formData.name} er blevet tilføjet` });
+        toast({
+          title: "Karakter oprettet",
+          description: `${formData.name} er blevet tilføjet`,
+        });
       }
-      
+
       setIsCreateOpen(false);
       resetForm();
     } catch (error) {
       toast({
-        title: 'Fejl',
-        description: 'Kunne ikke gemme karakter',
-        variant: 'destructive',
+        title: "Fejl",
+        description: "Kunne ikke gemme karakter",
+        variant: "destructive",
       });
     }
   };
@@ -164,23 +228,28 @@ export default function Characters() {
   const handleDelete = async (character: Character) => {
     try {
       await deleteCharacter.mutateAsync(character.id);
-      toast({ title: 'Karakter slettet', description: `${character.name} er blevet slettet` });
+      toast({
+        title: "Karakter slettet",
+        description: `${character.name} er blevet slettet`,
+      });
     } catch (error) {
       toast({
-        title: 'Fejl',
-        description: 'Kunne ikke slette karakter',
-        variant: 'destructive',
+        title: "Fejl",
+        description: "Kunne ikke slette karakter",
+        variant: "destructive",
       });
     }
   };
 
   return (
     <>
-    <div className="space-y-6">
+      <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold">Karakterer</h1>
-            <p className="text-muted-foreground">Administrer alle RP-karakterer på serveren</p>
+            <p className="text-muted-foreground">
+              Administrer alle RP-karakterer på serveren
+            </p>
           </div>
           <Button onClick={handleCreate} className="gap-2">
             <Plus className="h-4 w-4" />
@@ -204,12 +273,13 @@ export default function Characters() {
           <Card>
             <CardHeader className="pb-2">
               <CardDescription className="flex items-center gap-1">
-                <Heart className="h-4 w-4" />
-                I Live
+                <Heart className="h-4 w-4" />I Live
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <p className="text-2xl font-bold text-primary">{stats?.alive || 0}</p>
+              <p className="text-2xl font-bold text-primary">
+                {stats?.alive || 0}
+              </p>
             </CardContent>
           </Card>
           <Card>
@@ -220,7 +290,9 @@ export default function Characters() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <p className="text-2xl font-bold text-destructive">{stats?.dead || 0}</p>
+              <p className="text-2xl font-bold text-destructive">
+                {stats?.dead || 0}
+              </p>
             </CardContent>
           </Card>
           <Card>
@@ -231,7 +303,9 @@ export default function Characters() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <p className="text-2xl font-bold text-muted-foreground">{stats?.retired || 0}</p>
+              <p className="text-2xl font-bold text-muted-foreground">
+                {stats?.retired || 0}
+              </p>
             </CardContent>
           </Card>
           <Card>
@@ -266,30 +340,30 @@ export default function Characters() {
           <CardContent>
             <div className="flex gap-2 mb-4">
               <Button
-                variant={statusFilter === undefined ? 'default' : 'outline'}
+                variant={statusFilter === undefined ? "default" : "outline"}
                 size="sm"
                 onClick={() => setStatusFilter(undefined)}
               >
                 Alle
               </Button>
               <Button
-                variant={statusFilter === 'alive' ? 'default' : 'outline'}
+                variant={statusFilter === "alive" ? "default" : "outline"}
                 size="sm"
-                onClick={() => setStatusFilter('alive')}
+                onClick={() => setStatusFilter("alive")}
               >
                 I Live
               </Button>
               <Button
-                variant={statusFilter === 'dead' ? 'default' : 'outline'}
+                variant={statusFilter === "dead" ? "default" : "outline"}
                 size="sm"
-                onClick={() => setStatusFilter('dead')}
+                onClick={() => setStatusFilter("dead")}
               >
                 Døde
               </Button>
               <Button
-                variant={statusFilter === 'retired' ? 'default' : 'outline'}
+                variant={statusFilter === "retired" ? "default" : "outline"}
                 size="sm"
-                onClick={() => setStatusFilter('retired')}
+                onClick={() => setStatusFilter("retired")}
               >
                 Pensioneret
               </Button>
@@ -305,7 +379,9 @@ export default function Characters() {
                       <CardContent className="pt-4">
                         <div className="flex items-start gap-4">
                           <Avatar className="h-12 w-12">
-                            <AvatarImage src={character.avatar_url || undefined} />
+                            <AvatarImage
+                              src={character.avatar_url || undefined}
+                            />
                             <AvatarFallback>
                               <User className="h-6 w-6" />
                             </AvatarFallback>
@@ -313,29 +389,45 @@ export default function Characters() {
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center justify-between gap-2">
                               <div className="flex items-center gap-2">
-                                <h3 className="font-semibold truncate">{character.name}</h3>
+                                <h3 className="font-semibold truncate">
+                                  {character.name}
+                                </h3>
                                 <StatusBadge status={character.status} />
                               </div>
                               <div className="flex gap-1">
-                                <Button variant="ghost" size="icon" onClick={() => handleEdit(character)}>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => handleEdit(character)}
+                                >
                                   <Pencil className="h-4 w-4" />
                                 </Button>
                                 <AlertDialog>
                                   <AlertDialogTrigger asChild>
-                                    <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive">
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="text-destructive hover:text-destructive"
+                                    >
                                       <Trash2 className="h-4 w-4" />
                                     </Button>
                                   </AlertDialogTrigger>
                                   <AlertDialogContent>
                                     <AlertDialogHeader>
-                                      <AlertDialogTitle>Slet karakter?</AlertDialogTitle>
+                                      <AlertDialogTitle>
+                                        Slet karakter?
+                                      </AlertDialogTitle>
                                       <AlertDialogDescription>
-                                        Er du sikker på at du vil slette <strong>{character.name}</strong>? Denne handling kan ikke fortrydes.
+                                        Er du sikker på at du vil slette{" "}
+                                        <strong>{character.name}</strong>? Denne
+                                        handling kan ikke fortrydes.
                                       </AlertDialogDescription>
                                     </AlertDialogHeader>
                                     <AlertDialogFooter>
-                                      <AlertDialogCancel>Annuller</AlertDialogCancel>
-                                      <AlertDialogAction 
+                                      <AlertDialogCancel>
+                                        Annuller
+                                      </AlertDialogCancel>
+                                      <AlertDialogAction
                                         onClick={() => handleDelete(character)}
                                         className="bg-destructive hover:bg-destructive/90"
                                       >
@@ -347,13 +439,29 @@ export default function Characters() {
                               </div>
                             </div>
                             <p className="text-sm text-muted-foreground">
-                              Spillet af: {character.discord_username || character.discord_user_id}
+                              Spillet af:{" "}
+                              {character.discord_username ||
+                                character.discord_user_id}
                             </p>
-                            {(character.age || character.faction || character.occupation) && (
+                            {(character.age ||
+                              character.faction ||
+                              character.occupation) && (
                               <div className="flex flex-wrap gap-2 mt-2">
-                                {character.age && <Badge variant="outline">{character.age} år</Badge>}
-                                {character.faction && <Badge variant="outline">{character.faction}</Badge>}
-                                {character.occupation && <Badge variant="outline">{character.occupation}</Badge>}
+                                {character.age && (
+                                  <Badge variant="outline">
+                                    {character.age} år
+                                  </Badge>
+                                )}
+                                {character.faction && (
+                                  <Badge variant="outline">
+                                    {character.faction}
+                                  </Badge>
+                                )}
+                                {character.occupation && (
+                                  <Badge variant="outline">
+                                    {character.occupation}
+                                  </Badge>
+                                )}
                               </div>
                             )}
                             {character.background && (
@@ -362,7 +470,11 @@ export default function Characters() {
                               </p>
                             )}
                             <p className="text-xs text-muted-foreground mt-2">
-                              Oprettet {formatDistanceToNow(new Date(character.created_at), { addSuffix: true, locale: da })}
+                              Oprettet{" "}
+                              {formatDistanceToNow(
+                                new Date(character.created_at),
+                                { addSuffix: true, locale: da },
+                              )}
                             </p>
                           </div>
                         </div>
@@ -373,8 +485,14 @@ export default function Characters() {
               ) : (
                 <div className="text-center py-8">
                   <Users className="h-12 w-12 mx-auto text-muted-foreground mb-2" />
-                  <p className="text-muted-foreground">Ingen karakterer fundet</p>
-                  <Button variant="outline" className="mt-4" onClick={handleCreate}>
+                  <p className="text-muted-foreground">
+                    Ingen karakterer fundet
+                  </p>
+                  <Button
+                    variant="outline"
+                    className="mt-4"
+                    onClick={handleCreate}
+                  >
                     <Plus className="h-4 w-4 mr-2" />
                     Opret den første karakter
                   </Button>
@@ -386,12 +504,22 @@ export default function Characters() {
       </div>
 
       {/* Create/Edit Dialog */}
-      <Dialog open={isCreateOpen} onOpenChange={(open) => { setIsCreateOpen(open); if (!open) resetForm(); }}>
+      <Dialog
+        open={isCreateOpen}
+        onOpenChange={(open) => {
+          setIsCreateOpen(open);
+          if (!open) resetForm();
+        }}
+      >
         <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle>{editingCharacter ? 'Rediger karakter' : 'Opret ny karakter'}</DialogTitle>
+            <DialogTitle>
+              {editingCharacter ? "Rediger karakter" : "Opret ny karakter"}
+            </DialogTitle>
             <DialogDescription>
-              {editingCharacter ? 'Opdater karakterens oplysninger' : 'Tilføj en ny karakter til databasen'}
+              {editingCharacter
+                ? "Opdater karakterens oplysninger"
+                : "Tilføj en ny karakter til databasen"}
             </DialogDescription>
           </DialogHeader>
 
@@ -402,7 +530,12 @@ export default function Characters() {
                 <Input
                   id="discord_user_id"
                   value={formData.discord_user_id}
-                  onChange={(e) => setFormData({ ...formData, discord_user_id: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      discord_user_id: e.target.value,
+                    })
+                  }
                   placeholder="123456789012345678"
                   disabled={!!editingCharacter}
                 />
@@ -412,7 +545,12 @@ export default function Characters() {
                 <Input
                   id="discord_username"
                   value={formData.discord_username}
-                  onChange={(e) => setFormData({ ...formData, discord_username: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      discord_username: e.target.value,
+                    })
+                  }
                   placeholder="brugernavn"
                 />
               </div>
@@ -424,7 +562,9 @@ export default function Characters() {
                 <Input
                   id="name"
                   value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, name: e.target.value })
+                  }
                   placeholder="John Doe"
                 />
               </div>
@@ -433,8 +573,13 @@ export default function Characters() {
                 <Input
                   id="age"
                   type="number"
-                  value={formData.age || ''}
-                  onChange={(e) => setFormData({ ...formData, age: e.target.value ? parseInt(e.target.value) : null })}
+                  value={formData.age || ""}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      age: e.target.value ? parseInt(e.target.value) : null,
+                    })
+                  }
                   placeholder="25"
                 />
               </div>
@@ -446,7 +591,9 @@ export default function Characters() {
                 <Input
                   id="faction"
                   value={formData.faction}
-                  onChange={(e) => setFormData({ ...formData, faction: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, faction: e.target.value })
+                  }
                   placeholder="Politi, Bande, osv."
                 />
               </div>
@@ -455,7 +602,9 @@ export default function Characters() {
                 <Input
                   id="occupation"
                   value={formData.occupation}
-                  onChange={(e) => setFormData({ ...formData, occupation: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, occupation: e.target.value })
+                  }
                   placeholder="Mekaniker, Læge, osv."
                 />
               </div>
@@ -465,7 +614,9 @@ export default function Characters() {
               <Label htmlFor="status">Status</Label>
               <Select
                 value={formData.status}
-                onValueChange={(value) => setFormData({ ...formData, status: value as CharacterStatus })}
+                onValueChange={(value) =>
+                  setFormData({ ...formData, status: value as CharacterStatus })
+                }
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Vælg status" />
@@ -483,7 +634,9 @@ export default function Characters() {
               <Textarea
                 id="background"
                 value={formData.background}
-                onChange={(e) => setFormData({ ...formData, background: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, background: e.target.value })
+                }
                 placeholder="Beskriv karakterens baggrundshistorie..."
                 rows={3}
               />
@@ -494,7 +647,9 @@ export default function Characters() {
               <Textarea
                 id="appearance"
                 value={formData.appearance}
-                onChange={(e) => setFormData({ ...formData, appearance: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, appearance: e.target.value })
+                }
                 placeholder="Beskriv karakterens udseende..."
                 rows={2}
               />
@@ -502,17 +657,24 @@ export default function Characters() {
           </div>
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => { setIsCreateOpen(false); resetForm(); }}>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setIsCreateOpen(false);
+                resetForm();
+              }}
+            >
               Annuller
             </Button>
-            <Button 
+            <Button
               onClick={handleSubmit}
               disabled={createCharacter.isPending || updateCharacter.isPending}
             >
-              {createCharacter.isPending || updateCharacter.isPending 
-                ? 'Gemmer...' 
-                : editingCharacter ? 'Opdater' : 'Opret'
-              }
+              {createCharacter.isPending || updateCharacter.isPending
+                ? "Gemmer..."
+                : editingCharacter
+                  ? "Opdater"
+                  : "Opret"}
             </Button>
           </DialogFooter>
         </DialogContent>

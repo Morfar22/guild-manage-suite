@@ -1,47 +1,60 @@
-import { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Switch } from '@/components/ui/switch';
-import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Loader2, Mail, Save, MessageSquare, Users, Clock } from 'lucide-react';
-import { useModmail } from '@/hooks/useModmail';
-import { useDiscordRoles } from '@/hooks/useDiscordRoles';
-import { ChannelSelect } from '@/components/ui/channel-select';
+import { useState, useEffect } from "react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Loader2, Mail, Save, MessageSquare, Users, Clock } from "lucide-react";
+import { useModmail } from "@/hooks/useModmail";
+import { useDiscordRoles } from "@/hooks/useDiscordRoles";
+import { ChannelSelect } from "@/components/ui/channel-select";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import { formatDistanceToNow } from 'date-fns';
-import { da } from 'date-fns/locale';
+} from "@/components/ui/select";
+import { formatDistanceToNow } from "date-fns";
+import { da } from "date-fns/locale";
 
 export default function ModmailSettings() {
-  const { settings, openThreads, closedThreads, stats, isLoading, updateSettings } = useModmail();
+  const {
+    settings,
+    openThreads,
+    closedThreads,
+    stats,
+    isLoading,
+    updateSettings,
+  } = useModmail();
   const rolesQuery = useDiscordRoles();
   const roles = rolesQuery.data ?? [];
 
   const [enabled, setEnabled] = useState(false);
-  const [categoryId, setCategoryId] = useState('');
-  const [staffRoleId, setStaffRoleId] = useState('');
-  const [logChannelId, setLogChannelId] = useState('');
-  const [welcomeMessage, setWelcomeMessage] = useState('');
-  const [closeMessage, setCloseMessage] = useState('');
+  const [categoryId, setCategoryId] = useState("");
+  const [staffRoleId, setStaffRoleId] = useState("");
+  const [logChannelId, setLogChannelId] = useState("");
+  const [welcomeMessage, setWelcomeMessage] = useState("");
+  const [closeMessage, setCloseMessage] = useState("");
 
   useEffect(() => {
     if (settings) {
       setEnabled(settings.enabled);
-      setCategoryId(settings.category_id ?? '');
-      setStaffRoleId(settings.staff_role_id ?? '');
-      setLogChannelId(settings.log_channel_id ?? '');
-      setWelcomeMessage(settings.welcome_message ?? '');
-      setCloseMessage(settings.close_message ?? '');
+      setCategoryId(settings.category_id ?? "");
+      setStaffRoleId(settings.staff_role_id ?? "");
+      setLogChannelId(settings.log_channel_id ?? "");
+      setWelcomeMessage(settings.welcome_message ?? "");
+      setCloseMessage(settings.close_message ?? "");
     }
   }, [settings]);
 
@@ -114,7 +127,9 @@ export default function ModmailSettings() {
         <TabsList>
           <TabsTrigger value="settings">Indstillinger</TabsTrigger>
           <TabsTrigger value="open">Åbne ({openThreads.length})</TabsTrigger>
-          <TabsTrigger value="closed">Lukkede ({closedThreads.length})</TabsTrigger>
+          <TabsTrigger value="closed">
+            Lukkede ({closedThreads.length})
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="settings">
@@ -165,7 +180,11 @@ export default function ModmailSettings() {
                   />
                 </div>
 
-                <Button onClick={handleSave} disabled={updateSettings.isPending} className="w-full">
+                <Button
+                  onClick={handleSave}
+                  disabled={updateSettings.isPending}
+                  className="w-full"
+                >
                   {updateSettings.isPending ? (
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   ) : (
@@ -220,7 +239,9 @@ export default function ModmailSettings() {
               {openThreads.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-12 text-center">
                   <MessageSquare className="h-12 w-12 text-muted-foreground/30" />
-                  <p className="mt-4 text-muted-foreground">Ingen åbne samtaler</p>
+                  <p className="mt-4 text-muted-foreground">
+                    Ingen åbne samtaler
+                  </p>
                 </div>
               ) : (
                 <div className="space-y-4">
@@ -233,13 +254,15 @@ export default function ModmailSettings() {
                         <Avatar>
                           <AvatarImage src={thread.user_avatar ?? undefined} />
                           <AvatarFallback>
-                            {thread.user_name?.slice(0, 2).toUpperCase() ?? '??'}
+                            {thread.user_name?.slice(0, 2).toUpperCase() ??
+                              "??"}
                           </AvatarFallback>
                         </Avatar>
                         <div>
                           <p className="font-medium">{thread.user_name}</p>
                           <p className="text-sm text-muted-foreground">
-                            Åbnet {formatDistanceToNow(new Date(thread.created_at), {
+                            Åbnet{" "}
+                            {formatDistanceToNow(new Date(thread.created_at), {
                               addSuffix: true,
                               locale: da,
                             })}
@@ -268,7 +291,9 @@ export default function ModmailSettings() {
               {closedThreads.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-12 text-center">
                   <MessageSquare className="h-12 w-12 text-muted-foreground/30" />
-                  <p className="mt-4 text-muted-foreground">Ingen lukkede samtaler</p>
+                  <p className="mt-4 text-muted-foreground">
+                    Ingen lukkede samtaler
+                  </p>
                 </div>
               ) : (
                 <div className="space-y-4">
@@ -281,16 +306,19 @@ export default function ModmailSettings() {
                         <Avatar>
                           <AvatarImage src={thread.user_avatar ?? undefined} />
                           <AvatarFallback>
-                            {thread.user_name?.slice(0, 2).toUpperCase() ?? '??'}
+                            {thread.user_name?.slice(0, 2).toUpperCase() ??
+                              "??"}
                           </AvatarFallback>
                         </Avatar>
                         <div>
                           <p className="font-medium">{thread.user_name}</p>
                           <p className="text-sm text-muted-foreground">
-                            Lukket {thread.closed_at && formatDistanceToNow(new Date(thread.closed_at), {
-                              addSuffix: true,
-                              locale: da,
-                            })}
+                            Lukket{" "}
+                            {thread.closed_at &&
+                              formatDistanceToNow(new Date(thread.closed_at), {
+                                addSuffix: true,
+                                locale: da,
+                              })}
                           </p>
                         </div>
                       </div>

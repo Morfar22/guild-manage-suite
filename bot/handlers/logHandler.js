@@ -1,27 +1,31 @@
-const { resolveInteractionCommand } = require('../commandRouting');
+const { resolveInteractionCommand } = require("../commandRouting");
 /**
  * Log Handler for Discord Bot
- * 
- * This handler listens for various Discord events and sends them to the 
+ *
+ * This handler listens for various Discord events and sends them to the
  * bot-log-events edge function for logging to the configured log channel.
- * 
- * Now includes: timeout/untimeout, server updates, pin/unpin, 
+ *
+ * Now includes: timeout/untimeout, server updates, pin/unpin,
  * and audit log lookups for who deleted messages and who changed roles.
  */
 
-const { Events, AuditLogEvent } = require('discord.js');
-const { randomUUID } = require('crypto');
+const { Events, AuditLogEvent } = require("discord.js");
+const { randomUUID } = require("crypto");
 
 // Deduplication cache to prevent duplicate log events
 const recentEvents = new Map();
 const DEDUPE_WINDOW_MS = 5000;
-const APP_API_BASE = process.env.APP_API_BASE || 'https://bot.nethost-solutions.dk';
+const APP_API_BASE =
+  process.env.APP_API_BASE || "https://bot.nethost-solutions.dk";
 const LOG_HTTP_TIMEOUT_MS = Number(process.env.LOG_HTTP_TIMEOUT_MS || 8000);
-const LOG_HTTP_RETRIES = Math.max(1, Math.min(5, Number(process.env.LOG_HTTP_RETRIES || 3)));
+const LOG_HTTP_RETRIES = Math.max(
+  1,
+  Math.min(5, Number(process.env.LOG_HTTP_RETRIES || 3)),
+);
 
-const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-function flattenCommandOptions(options = [], prefix = '') {
+function flattenCommandOptions(options = [], prefix = "") {
   const values = [];
 
   for (const option of options) {
@@ -38,7 +42,7 @@ function flattenCommandOptions(options = [], prefix = '') {
       option.role?.id ??
       option.channel?.id ??
       option.attachment?.name ??
-      '(ingen værdi)';
+      "(ingen værdi)";
 
     values.push(`${key}: ${String(value)}`);
   }
@@ -54,22 +58,30 @@ async function postLogWithRetry(url, options, eventType) {
     const timer = setTimeout(() => controller.abort(), LOG_HTTP_TIMEOUT_MS);
 
     try {
-      const response = await fetch(url, { ...options, signal: controller.signal });
+      const response = await fetch(url, {
+        ...options,
+        signal: controller.signal,
+      });
       clearTimeout(timer);
 
       if (response.ok) return response;
 
-      const body = await response.text().catch(() => '');
+      const body = await response.text().catch(() => "");
       const retryable = response.status === 429 || response.status >= 500;
       if (!retryable || attempt === LOG_HTTP_RETRIES) {
-        throw new Error(`HTTP ${response.status}: ${body.slice(0, 500) || response.statusText}`);
+        throw new Error(
+          `HTTP ${response.status}: ${body.slice(0, 500) || response.statusText}`,
+        );
       }
 
       let retryAfterMs = 350 * attempt;
       if (response.status === 429) {
         try {
           const parsed = JSON.parse(body);
-          retryAfterMs = Math.max(retryAfterMs, Math.ceil(Number(parsed.retry_after || 0) * 1000));
+          retryAfterMs = Math.max(
+            retryAfterMs,
+            Math.ceil(Number(parsed.retry_after || 0) * 1000),
+          );
         } catch {}
       }
 
@@ -79,7 +91,8 @@ async function postLogWithRetry(url, options, eventType) {
       lastError = error;
 
       if (attempt === LOG_HTTP_RETRIES) break;
-      const delay = error?.name === 'AbortError' ? 500 * attempt : 300 * attempt;
+      const delay =
+        error?.name === "AbortError" ? 500 * attempt : 300 * attempt;
       await sleep(delay);
     }
   }
@@ -91,11 +104,12 @@ function getEventKey(guildId, eventType, data) {
   const keyParts = [guildId, eventType];
   if (data.user_id) keyParts.push(data.user_id);
   if (data.channel_id) keyParts.push(data.channel_id);
-  if (data.voice_channel_from) keyParts.push('from');
-  if (data.voice_channel_to) keyParts.push('to');
+  if (data.voice_channel_from) keyParts.push("from");
+  if (data.voice_channel_to) keyParts.push("to");
   if (data.role_id) keyParts.push(data.role_id);
   if (data.message_id) keyParts.push(data.message_id);
-  if (data.content && !data.message_id) keyParts.push(data.content.substring(0, 50));
+  if (data.content && !data.message_id)
+    keyParts.push(data.content.substring(0, 50));
   if (data.old_content) keyParts.push(data.old_content.substring(0, 30));
   if (data.new_content) keyParts.push(data.new_content.substring(0, 30));
   if (data.invite_code) keyParts.push(data.invite_code);
@@ -105,13 +119,13 @@ function getEventKey(guildId, eventType, data) {
   if (data.thread_name) keyParts.push(data.thread_name);
   if (data.target_id) keyParts.push(data.target_id);
   if (data.command_name) keyParts.push(data.command_name);
-  return keyParts.join(':');
+  return keyParts.join(":");
 }
 
 function isDuplicateEvent(eventKey) {
   const now = Date.now();
   const lastSent = recentEvents.get(eventKey);
-  if (lastSent && (now - lastSent) < DEDUPE_WINDOW_MS) return true;
+  if (lastSent && now - lastSent < DEDUPE_WINDOW_MS) return true;
   if (recentEvents.size > 1000) {
     for (const [key, timestamp] of recentEvents) {
       if (now - timestamp > DEDUPE_WINDOW_MS * 5) recentEvents.delete(key);
@@ -123,7 +137,11 @@ function isDuplicateEvent(eventKey) {
 
 async function sendLogEvent(config, guildId, eventType, data = {}) {
   if (!guildId) return;
-  if (typeof config?.shouldLogGuild === 'function' && !config.shouldLogGuild(guildId)) return;
+  if (
+    typeof config?.shouldLogGuild === "function" &&
+    !config.shouldLogGuild(guildId)
+  )
+    return;
 
   const eventKey = getEventKey(guildId, eventType, data);
   if (isDuplicateEvent(eventKey)) return;
@@ -144,44 +162,59 @@ async function sendLogEvent(config, guildId, eventType, data = {}) {
     const response = await postLogWithRetry(
       `${APP_API_BASE}/api/public/bot-log-events`,
       {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
-          'x-bot-secret': config.botSecretKey,
-          'x-log-event-id': eventId,
+          "Content-Type": "application/json",
+          "x-bot-secret": config.botSecretKey,
+          "x-log-event-id": eventId,
         },
-        body: JSON.stringify({ guild_id: guildId, event_type: eventType, data: enrichedData }),
+        body: JSON.stringify({
+          guild_id: guildId,
+          event_type: eventType,
+          data: enrichedData,
+        }),
       },
-      eventType
+      eventType,
     );
 
     const result = await response.json().catch(() => ({ logged: true }));
     if (!result.logged && result.reason) return;
 
     if (result.error) {
-      console.error(`[LogHandler] [${eventId}] ${eventType} blev afvist:`, result.error);
+      console.error(
+        `[LogHandler] [${eventId}] ${eventType} blev afvist:`,
+        result.error,
+      );
     }
   } catch (error) {
-    console.error(`[LogHandler] [${eventId}] Kunne ikke sende ${eventType}:`, error?.stack || error?.message || error);
+    console.error(
+      `[LogHandler] [${eventId}] Kunne ikke sende ${eventType}:`,
+      error?.stack || error?.message || error,
+    );
   }
 }
 
 // Helper to fetch recent audit log entry
 async function fetchAuditLog(guild, actionType, targetId, withinMs = 15000) {
-  if (!guild?.members?.me?.permissions?.has?.('ViewAuditLog')) return null;
+  if (!guild?.members?.me?.permissions?.has?.("ViewAuditLog")) return null;
 
   for (let attempt = 0; attempt < 2; attempt++) {
     try {
-      const auditLogs = await guild.fetchAuditLogs({ type: actionType, limit: 3 });
-      const entry = auditLogs.entries.find(candidate => {
-        if ((Date.now() - candidate.createdTimestamp) >= withinMs) return false;
+      const auditLogs = await guild.fetchAuditLogs({
+        type: actionType,
+        limit: 3,
+      });
+      const entry = auditLogs.entries.find((candidate) => {
+        if (Date.now() - candidate.createdTimestamp >= withinMs) return false;
         return !targetId || candidate.target?.id === targetId;
       });
 
       if (entry) return entry;
     } catch (error) {
       if (attempt === 1) {
-        console.warn(`[LogHandler] Audit log lookup fejlede i ${guild.id}: ${error?.message || error}`);
+        console.warn(
+          `[LogHandler] Audit log lookup fejlede i ${guild.id}: ${error?.message || error}`,
+        );
       }
       return null;
     }
@@ -196,8 +229,8 @@ function registerLogHandlers(client, config) {
   config = { ...config, client };
 
   // ──── Member Events ────
-  client.on('guildMemberAdd', async (member) => {
-    await sendLogEvent(config, member.guild.id, 'member_join', {
+  client.on("guildMemberAdd", async (member) => {
+    await sendLogEvent(config, member.guild.id, "member_join", {
       user_id: member.user.id,
       user_name: member.user.tag,
       user_avatar: member.user.displayAvatarURL(),
@@ -207,46 +240,62 @@ function registerLogHandlers(client, config) {
     });
   });
 
-  client.on('guildMemberRemove', async (member) => {
+  client.on("guildMemberRemove", async (member) => {
     // Check audit log for kick
-    const kickLog = await fetchAuditLog(member.guild, AuditLogEvent.MemberKick, member.user.id);
+    const kickLog = await fetchAuditLog(
+      member.guild,
+      AuditLogEvent.MemberKick,
+      member.user.id,
+    );
     if (kickLog) {
-      await sendLogEvent(config, member.guild.id, 'member_kick', {
+      await sendLogEvent(config, member.guild.id, "member_kick", {
         user_id: member.user.id,
         user_name: member.user.tag,
         user_avatar: member.user.displayAvatarURL(),
         moderator_id: kickLog.executor?.id,
         moderator_name: kickLog.executor?.tag,
-        reason: kickLog.reason || 'Ingen årsag angivet',
+        reason: kickLog.reason || "Ingen årsag angivet",
       });
       return;
     }
 
-    await sendLogEvent(config, member.guild.id, 'member_leave', {
+    await sendLogEvent(config, member.guild.id, "member_leave", {
       user_id: member.user.id,
       user_name: member.user.tag,
       user_avatar: member.user.displayAvatarURL(),
-      roles: member.roles.cache.filter(r => r.id !== member.guild.id).map(r => r.name).join(', ') || 'Ingen',
+      roles:
+        member.roles.cache
+          .filter((r) => r.id !== member.guild.id)
+          .map((r) => r.name)
+          .join(", ") || "Ingen",
       joined_at: member.joinedAt?.toISOString(),
     });
   });
 
-  client.on('guildBanAdd', async (ban) => {
+  client.on("guildBanAdd", async (ban) => {
     // Lookup who banned via audit log
-    const banLog = await fetchAuditLog(ban.guild, AuditLogEvent.MemberBanAdd, ban.user.id);
-    await sendLogEvent(config, ban.guild.id, 'member_ban', {
+    const banLog = await fetchAuditLog(
+      ban.guild,
+      AuditLogEvent.MemberBanAdd,
+      ban.user.id,
+    );
+    await sendLogEvent(config, ban.guild.id, "member_ban", {
       user_id: ban.user.id,
       user_name: ban.user.tag,
       user_avatar: ban.user.displayAvatarURL(),
-      reason: ban.reason || banLog?.reason || 'Ingen årsag angivet',
+      reason: ban.reason || banLog?.reason || "Ingen årsag angivet",
       moderator_id: banLog?.executor?.id,
       moderator_name: banLog?.executor?.tag,
     });
   });
 
-  client.on('guildBanRemove', async (ban) => {
-    const unbanLog = await fetchAuditLog(ban.guild, AuditLogEvent.MemberBanRemove, ban.user.id);
-    await sendLogEvent(config, ban.guild.id, 'member_unban', {
+  client.on("guildBanRemove", async (ban) => {
+    const unbanLog = await fetchAuditLog(
+      ban.guild,
+      AuditLogEvent.MemberBanRemove,
+      ban.user.id,
+    );
+    await sendLogEvent(config, ban.guild.id, "member_unban", {
       user_id: ban.user.id,
       user_name: ban.user.tag,
       user_avatar: ban.user.displayAvatarURL(),
@@ -256,15 +305,19 @@ function registerLogHandlers(client, config) {
   });
 
   // ──── Message Events ────
-  client.on('messageDelete', async (message) => {
+  client.on("messageDelete", async (message) => {
     if (!message.guild || message.author?.bot) return;
-    
+
     // Check audit log for who deleted the message
-    const deleteLog = await fetchAuditLog(message.guild, AuditLogEvent.MessageDelete, message.author?.id);
+    const deleteLog = await fetchAuditLog(
+      message.guild,
+      AuditLogEvent.MessageDelete,
+      message.author?.id,
+    );
     const deletedBy = deleteLog?.executor;
     const isSelfDelete = !deletedBy || deletedBy.id === message.author?.id;
 
-    await sendLogEvent(config, message.guild.id, 'message_delete', {
+    await sendLogEvent(config, message.guild.id, "message_delete", {
       user_id: message.author?.id,
       user_name: message.author?.tag,
       user_avatar: message.author?.displayAvatarURL(),
@@ -272,33 +325,36 @@ function registerLogHandlers(client, config) {
       channel_name: message.channel.name,
       message_id: message.id,
       message_created_at: message.createdAt?.toISOString(),
-      content: message.content || '(intet tekstindhold)',
-      attachments: message.attachments?.size > 0 ? message.attachments.map(a => a.url).join(', ') : null,
+      content: message.content || "(intet tekstindhold)",
+      attachments:
+        message.attachments?.size > 0
+          ? message.attachments.map((a) => a.url).join(", ")
+          : null,
       deleted_by_id: isSelfDelete ? null : deletedBy?.id,
       deleted_by_name: isSelfDelete ? null : deletedBy?.tag,
     });
   });
 
-  client.on('messageUpdate', async (oldMessage, newMessage) => {
+  client.on("messageUpdate", async (oldMessage, newMessage) => {
     if (!newMessage.guild || newMessage.author?.bot) return;
     if (oldMessage.content === newMessage.content) return;
-    await sendLogEvent(config, newMessage.guild.id, 'message_edit', {
+    await sendLogEvent(config, newMessage.guild.id, "message_edit", {
       user_id: newMessage.author?.id,
       user_name: newMessage.author?.tag,
       user_avatar: newMessage.author?.displayAvatarURL(),
       channel_id: newMessage.channel.id,
       channel_name: newMessage.channel.name,
       message_id: newMessage.id,
-      old_content: oldMessage.content || '(ukendt)',
-      new_content: newMessage.content || '(intet tekstindhold)',
+      old_content: oldMessage.content || "(ukendt)",
+      new_content: newMessage.content || "(intet tekstindhold)",
       message_url: newMessage.url,
     });
   });
 
-  client.on('messageDeleteBulk', async (messages) => {
+  client.on("messageDeleteBulk", async (messages) => {
     const firstMessage = messages.first();
     if (!firstMessage?.guild) return;
-    await sendLogEvent(config, firstMessage.guild.id, 'message_bulk_delete', {
+    await sendLogEvent(config, firstMessage.guild.id, "message_bulk_delete", {
       channel_id: firstMessage.channel.id,
       channel_name: firstMessage.channel.name,
       message_count: messages.size,
@@ -306,12 +362,16 @@ function registerLogHandlers(client, config) {
   });
 
   // ──── Message Pin/Unpin ────
-  client.on('channelPinsUpdate', async (channel) => {
+  client.on("channelPinsUpdate", async (channel) => {
     if (!channel.guild) return;
     // Check audit log for pin action
-    const pinLog = await fetchAuditLog(channel.guild, AuditLogEvent.MessagePin, null);
+    const pinLog = await fetchAuditLog(
+      channel.guild,
+      AuditLogEvent.MessagePin,
+      null,
+    );
     if (pinLog) {
-      await sendLogEvent(config, channel.guild.id, 'message_pin', {
+      await sendLogEvent(config, channel.guild.id, "message_pin", {
         channel_id: channel.id,
         channel_name: channel.name,
         user_id: pinLog.executor?.id,
@@ -322,9 +382,13 @@ function registerLogHandlers(client, config) {
       return;
     }
     // Check for unpin
-    const unpinLog = await fetchAuditLog(channel.guild, AuditLogEvent.MessageUnpin, null);
+    const unpinLog = await fetchAuditLog(
+      channel.guild,
+      AuditLogEvent.MessageUnpin,
+      null,
+    );
     if (unpinLog) {
-      await sendLogEvent(config, channel.guild.id, 'message_unpin', {
+      await sendLogEvent(config, channel.guild.id, "message_unpin", {
         channel_id: channel.id,
         channel_name: channel.name,
         user_id: unpinLog.executor?.id,
@@ -336,9 +400,13 @@ function registerLogHandlers(client, config) {
   });
 
   // ──── Role Events ────
-  client.on('roleCreate', async (role) => {
-    const log = await fetchAuditLog(role.guild, AuditLogEvent.RoleCreate, role.id);
-    await sendLogEvent(config, role.guild.id, 'role_create', {
+  client.on("roleCreate", async (role) => {
+    const log = await fetchAuditLog(
+      role.guild,
+      AuditLogEvent.RoleCreate,
+      role.id,
+    );
+    await sendLogEvent(config, role.guild.id, "role_create", {
       role_id: role.id,
       role_name: role.name,
       moderator_id: log?.executor?.id,
@@ -346,9 +414,13 @@ function registerLogHandlers(client, config) {
     });
   });
 
-  client.on('roleDelete', async (role) => {
-    const log = await fetchAuditLog(role.guild, AuditLogEvent.RoleDelete, role.id);
-    await sendLogEvent(config, role.guild.id, 'role_delete', {
+  client.on("roleDelete", async (role) => {
+    const log = await fetchAuditLog(
+      role.guild,
+      AuditLogEvent.RoleDelete,
+      role.id,
+    );
+    await sendLogEvent(config, role.guild.id, "role_delete", {
       role_id: role.id,
       role_name: role.name,
       moderator_id: log?.executor?.id,
@@ -356,42 +428,60 @@ function registerLogHandlers(client, config) {
     });
   });
 
-  client.on('roleUpdate', async (oldRole, newRole) => {
+  client.on("roleUpdate", async (oldRole, newRole) => {
     const changes = [];
-    if (oldRole.name !== newRole.name) changes.push(`Navn: ${oldRole.name} → ${newRole.name}`);
+    if (oldRole.name !== newRole.name)
+      changes.push(`Navn: ${oldRole.name} → ${newRole.name}`);
     if (oldRole.color !== newRole.color) {
-      const oldColor = oldRole.color.toString(16).padStart(6, '0');
-      const newColor = newRole.color.toString(16).padStart(6, '0');
+      const oldColor = oldRole.color.toString(16).padStart(6, "0");
+      const newColor = newRole.color.toString(16).padStart(6, "0");
       changes.push(`Farve: #${oldColor} → #${newColor}`);
     }
     if (oldRole.permissions.bitfield !== newRole.permissions.bitfield) {
       const oldPermissions = oldRole.permissions.toArray();
       const newPermissions = newRole.permissions.toArray();
-      const added = newPermissions.filter(permission => !oldPermissions.includes(permission));
-      const removed = oldPermissions.filter(permission => !newPermissions.includes(permission));
-      if (added.length) changes.push(`Tilladelser tilføjet: ${added.join(', ')}`);
-      if (removed.length) changes.push(`Tilladelser fjernet: ${removed.join(', ')}`);
+      const added = newPermissions.filter(
+        (permission) => !oldPermissions.includes(permission),
+      );
+      const removed = oldPermissions.filter(
+        (permission) => !newPermissions.includes(permission),
+      );
+      if (added.length)
+        changes.push(`Tilladelser tilføjet: ${added.join(", ")}`);
+      if (removed.length)
+        changes.push(`Tilladelser fjernet: ${removed.join(", ")}`);
     }
-    if (oldRole.position !== newRole.position) changes.push(`Placering: ${oldRole.position} → ${newRole.position}`);
-    if (oldRole.hoist !== newRole.hoist) changes.push(`Vist separat: ${newRole.hoist ? 'Ja' : 'Nej'}`);
-    if (oldRole.mentionable !== newRole.mentionable) changes.push(`Nævnbar: ${newRole.mentionable ? 'Ja' : 'Nej'}`);
+    if (oldRole.position !== newRole.position)
+      changes.push(`Placering: ${oldRole.position} → ${newRole.position}`);
+    if (oldRole.hoist !== newRole.hoist)
+      changes.push(`Vist separat: ${newRole.hoist ? "Ja" : "Nej"}`);
+    if (oldRole.mentionable !== newRole.mentionable)
+      changes.push(`Nævnbar: ${newRole.mentionable ? "Ja" : "Nej"}`);
     if (changes.length === 0) return;
 
-    const log = await fetchAuditLog(newRole.guild, AuditLogEvent.RoleUpdate, newRole.id);
-    await sendLogEvent(config, newRole.guild.id, 'role_update', {
+    const log = await fetchAuditLog(
+      newRole.guild,
+      AuditLogEvent.RoleUpdate,
+      newRole.id,
+    );
+    await sendLogEvent(config, newRole.guild.id, "role_update", {
       role_id: newRole.id,
       role_name: newRole.name,
-      changes: changes.join('\n'),
+      changes: changes.join("\n"),
       moderator_id: log?.executor?.id,
       moderator_name: log?.executor?.tag,
     });
   });
 
   // ──── Channel Events ────
-  client.on('channelCreate', async (channel) => {
+  client.on("channelCreate", async (channel) => {
     if (!channel.guild) return;
-    const log = await fetchAuditLog(channel.guild, AuditLogEvent.ChannelCreate, channel.id);
-    await sendLogEvent(config, channel.guild.id, 'channel_create', {
+    const log = await fetchAuditLog(
+      channel.guild,
+      AuditLogEvent.ChannelCreate,
+      channel.id,
+    );
+    await sendLogEvent(config, channel.guild.id, "channel_create", {
       channel_id: channel.id,
       channel_name: channel.name,
       channel_type: channel.type,
@@ -400,10 +490,14 @@ function registerLogHandlers(client, config) {
     });
   });
 
-  client.on('channelDelete', async (channel) => {
+  client.on("channelDelete", async (channel) => {
     if (!channel.guild) return;
-    const log = await fetchAuditLog(channel.guild, AuditLogEvent.ChannelDelete, channel.id);
-    await sendLogEvent(config, channel.guild.id, 'channel_delete', {
+    const log = await fetchAuditLog(
+      channel.guild,
+      AuditLogEvent.ChannelDelete,
+      channel.id,
+    );
+    await sendLogEvent(config, channel.guild.id, "channel_delete", {
       channel_id: channel.id,
       channel_name: channel.name,
       moderator_id: log?.executor?.id,
@@ -411,60 +505,97 @@ function registerLogHandlers(client, config) {
     });
   });
 
-  client.on('channelUpdate', async (oldChannel, newChannel) => {
+  client.on("channelUpdate", async (oldChannel, newChannel) => {
     if (!newChannel.guild) return;
     const changes = [];
-    if (oldChannel.name !== newChannel.name) changes.push(`Navn: ${oldChannel.name} → ${newChannel.name}`);
-    if (oldChannel.topic !== newChannel.topic) changes.push(`Emne: ${oldChannel.topic || '(tomt)'} → ${newChannel.topic || '(tomt)'}`);
-    if (oldChannel.parentId !== newChannel.parentId) changes.push(`Kategori: ${oldChannel.parent?.name || 'Ingen'} → ${newChannel.parent?.name || 'Ingen'}`);
-    if (oldChannel.nsfw !== newChannel.nsfw) changes.push(`NSFW: ${newChannel.nsfw ? 'Ja' : 'Nej'}`);
-    if (oldChannel.rateLimitPerUser !== newChannel.rateLimitPerUser) changes.push(`Slowmode: ${oldChannel.rateLimitPerUser || 0}s → ${newChannel.rateLimitPerUser || 0}s`);
+    if (oldChannel.name !== newChannel.name)
+      changes.push(`Navn: ${oldChannel.name} → ${newChannel.name}`);
+    if (oldChannel.topic !== newChannel.topic)
+      changes.push(
+        `Emne: ${oldChannel.topic || "(tomt)"} → ${newChannel.topic || "(tomt)"}`,
+      );
+    if (oldChannel.parentId !== newChannel.parentId)
+      changes.push(
+        `Kategori: ${oldChannel.parent?.name || "Ingen"} → ${newChannel.parent?.name || "Ingen"}`,
+      );
+    if (oldChannel.nsfw !== newChannel.nsfw)
+      changes.push(`NSFW: ${newChannel.nsfw ? "Ja" : "Nej"}`);
+    if (oldChannel.rateLimitPerUser !== newChannel.rateLimitPerUser)
+      changes.push(
+        `Slowmode: ${oldChannel.rateLimitPerUser || 0}s → ${newChannel.rateLimitPerUser || 0}s`,
+      );
     if (changes.length === 0) return;
 
-    const log = await fetchAuditLog(newChannel.guild, AuditLogEvent.ChannelUpdate, newChannel.id);
+    const log = await fetchAuditLog(
+      newChannel.guild,
+      AuditLogEvent.ChannelUpdate,
+      newChannel.id,
+    );
 
     // Skip stats-channel name updates by the bot itself (spam from stats counters)
-    if (log?.executor?.id === client.user?.id && changes.length === 1 && oldChannel.name !== newChannel.name) {
+    if (
+      log?.executor?.id === client.user?.id &&
+      changes.length === 1 &&
+      oldChannel.name !== newChannel.name
+    ) {
       return;
     }
 
-    await sendLogEvent(config, newChannel.guild.id, 'channel_update', {
+    await sendLogEvent(config, newChannel.guild.id, "channel_update", {
       channel_id: newChannel.id,
       channel_name: newChannel.name,
-      changes: changes.join('\n'),
+      changes: changes.join("\n"),
       moderator_id: log?.executor?.id,
       moderator_name: log?.executor?.tag,
     });
   });
 
   // ──── Voice Events ────
-  client.on('voiceStateUpdate', async (oldState, newState) => {
+  client.on("voiceStateUpdate", async (oldState, newState) => {
     const guildId = newState.guild?.id || oldState.guild?.id;
     if (!guildId) return;
     const userId = newState.member?.user.id || oldState.member?.user.id;
     const userName = newState.member?.user.tag || oldState.member?.user.tag;
-    const userAvatar = newState.member?.user.displayAvatarURL() || oldState.member?.user.displayAvatarURL();
+    const userAvatar =
+      newState.member?.user.displayAvatarURL() ||
+      oldState.member?.user.displayAvatarURL();
 
     // Voice Join
     if (!oldState.channelId && newState.channelId) {
-      await sendLogEvent(config, guildId, 'voice_join', {
-        user_id: userId, user_name: userName, user_avatar: userAvatar,
-        channel_id: newState.channelId, channel_name: newState.channel?.name,
+      await sendLogEvent(config, guildId, "voice_join", {
+        user_id: userId,
+        user_name: userName,
+        user_avatar: userAvatar,
+        channel_id: newState.channelId,
+        channel_name: newState.channel?.name,
       });
     }
     // Voice Leave
     else if (oldState.channelId && !newState.channelId) {
-      await sendLogEvent(config, guildId, 'voice_leave', {
-        user_id: userId, user_name: userName, user_avatar: userAvatar,
-        channel_id: oldState.channelId, channel_name: oldState.channel?.name,
+      await sendLogEvent(config, guildId, "voice_leave", {
+        user_id: userId,
+        user_name: userName,
+        user_avatar: userAvatar,
+        channel_id: oldState.channelId,
+        channel_name: oldState.channel?.name,
       });
     }
     // Voice Move
-    else if (oldState.channelId && newState.channelId && oldState.channelId !== newState.channelId) {
-      const moveLog = await fetchAuditLog(newState.guild, AuditLogEvent.MemberMove, null);
+    else if (
+      oldState.channelId &&
+      newState.channelId &&
+      oldState.channelId !== newState.channelId
+    ) {
+      const moveLog = await fetchAuditLog(
+        newState.guild,
+        AuditLogEvent.MemberMove,
+        null,
+      );
       if (moveLog && moveLog.executor?.id !== userId) {
-        await sendLogEvent(config, guildId, 'member_voice_move', {
-          user_id: userId, user_name: userName, user_avatar: userAvatar,
+        await sendLogEvent(config, guildId, "member_voice_move", {
+          user_id: userId,
+          user_name: userName,
+          user_avatar: userAvatar,
           voice_channel_from: oldState.channel?.name,
           voice_channel_to: newState.channel?.name,
           voice_channel_from_id: oldState.channelId,
@@ -475,8 +606,10 @@ function registerLogHandlers(client, config) {
         return;
       }
 
-      await sendLogEvent(config, guildId, 'voice_move', {
-        user_id: userId, user_name: userName, user_avatar: userAvatar,
+      await sendLogEvent(config, guildId, "voice_move", {
+        user_id: userId,
+        user_name: userName,
+        user_avatar: userAvatar,
         voice_channel_from: oldState.channel?.name,
         voice_channel_to: newState.channel?.name,
         voice_channel_from_id: oldState.channelId,
@@ -485,41 +618,65 @@ function registerLogHandlers(client, config) {
     }
 
     // Server Mute
-    if (oldState.channelId && newState.channelId && oldState.serverMute !== newState.serverMute) {
-      await sendLogEvent(config, guildId, 'voice_server_mute', {
-        user_id: userId, user_name: userName, user_avatar: userAvatar,
+    if (
+      oldState.channelId &&
+      newState.channelId &&
+      oldState.serverMute !== newState.serverMute
+    ) {
+      await sendLogEvent(config, guildId, "voice_server_mute", {
+        user_id: userId,
+        user_name: userName,
+        user_avatar: userAvatar,
         muted: newState.serverMute,
         channel_name: newState.channel?.name || oldState.channel?.name,
       });
     }
 
     // Server Deafen
-    if (oldState.channelId && newState.channelId && oldState.serverDeaf !== newState.serverDeaf) {
-      await sendLogEvent(config, guildId, 'voice_server_deafen', {
-        user_id: userId, user_name: userName, user_avatar: userAvatar,
+    if (
+      oldState.channelId &&
+      newState.channelId &&
+      oldState.serverDeaf !== newState.serverDeaf
+    ) {
+      await sendLogEvent(config, guildId, "voice_server_deafen", {
+        user_id: userId,
+        user_name: userName,
+        user_avatar: userAvatar,
         deafened: newState.serverDeaf,
         channel_name: newState.channel?.name || oldState.channel?.name,
       });
     }
 
     // Screen Share
-    if (oldState.channelId && newState.channelId && oldState.streaming !== newState.streaming) {
-      const eventType = newState.streaming ? 'screen_share_start' : 'screen_share_stop';
+    if (
+      oldState.channelId &&
+      newState.channelId &&
+      oldState.streaming !== newState.streaming
+    ) {
+      const eventType = newState.streaming
+        ? "screen_share_start"
+        : "screen_share_stop";
       await sendLogEvent(config, guildId, eventType, {
-        user_id: userId, user_name: userName, user_avatar: userAvatar,
+        user_id: userId,
+        user_name: userName,
+        user_avatar: userAvatar,
         channel_name: newState.channel?.name || oldState.channel?.name,
       });
     }
   });
 
   // ──── Member Update (Nickname, Role Add/Remove, Boost, Timeout) ────
-  client.on('guildMemberUpdate', async (oldMember, newMember) => {
+  client.on("guildMemberUpdate", async (oldMember, newMember) => {
     // Nickname Change
     if (oldMember.nickname !== newMember.nickname) {
-      const log = await fetchAuditLog(newMember.guild, AuditLogEvent.MemberUpdate, newMember.user.id);
+      const log = await fetchAuditLog(
+        newMember.guild,
+        AuditLogEvent.MemberUpdate,
+        newMember.user.id,
+      );
       const changedBy = log?.executor;
       const isSelf = !changedBy || changedBy.id === newMember.user.id;
-      await sendLogEvent(config, newMember.guild.id, 'nickname_change', {
+      await sendLogEvent(config, newMember.guild.id, "nickname_change", {
         user_id: newMember.user.id,
         user_name: newMember.user.tag,
         user_avatar: newMember.user.displayAvatarURL(),
@@ -534,8 +691,12 @@ function registerLogHandlers(client, config) {
     const oldTimeout = oldMember.communicationDisabledUntilTimestamp;
     const newTimeout = newMember.communicationDisabledUntilTimestamp;
     if (!oldTimeout && newTimeout && newTimeout > Date.now()) {
-      const log = await fetchAuditLog(newMember.guild, AuditLogEvent.MemberUpdate, newMember.user.id);
-      await sendLogEvent(config, newMember.guild.id, 'member_timeout', {
+      const log = await fetchAuditLog(
+        newMember.guild,
+        AuditLogEvent.MemberUpdate,
+        newMember.user.id,
+      );
+      await sendLogEvent(config, newMember.guild.id, "member_timeout", {
         user_id: newMember.user.id,
         user_name: newMember.user.tag,
         user_avatar: newMember.user.displayAvatarURL(),
@@ -544,9 +705,17 @@ function registerLogHandlers(client, config) {
         moderator_name: log?.executor?.tag,
         reason: log?.reason || null,
       });
-    } else if (oldTimeout && oldTimeout > Date.now() && (!newTimeout || newTimeout <= Date.now())) {
-      const log = await fetchAuditLog(newMember.guild, AuditLogEvent.MemberUpdate, newMember.user.id);
-      await sendLogEvent(config, newMember.guild.id, 'member_untimeout', {
+    } else if (
+      oldTimeout &&
+      oldTimeout > Date.now() &&
+      (!newTimeout || newTimeout <= Date.now())
+    ) {
+      const log = await fetchAuditLog(
+        newMember.guild,
+        AuditLogEvent.MemberUpdate,
+        newMember.user.id,
+      );
+      await sendLogEvent(config, newMember.guild.id, "member_untimeout", {
         user_id: newMember.user.id,
         user_name: newMember.user.tag,
         user_avatar: newMember.user.displayAvatarURL(),
@@ -558,15 +727,19 @@ function registerLogHandlers(client, config) {
     // Role Add/Remove with audit log lookup for who changed
     const oldRoles = oldMember.roles.cache;
     const newRoles = newMember.roles.cache;
-    const addedRoles = newRoles.filter(r => !oldRoles.has(r.id));
-    const removedRoles = oldRoles.filter(r => !newRoles.has(r.id));
+    const addedRoles = newRoles.filter((r) => !oldRoles.has(r.id));
+    const removedRoles = oldRoles.filter((r) => !newRoles.has(r.id));
 
     if (addedRoles.size > 0 || removedRoles.size > 0) {
-      const log = await fetchAuditLog(newMember.guild, AuditLogEvent.MemberRoleUpdate, newMember.user.id);
+      const log = await fetchAuditLog(
+        newMember.guild,
+        AuditLogEvent.MemberRoleUpdate,
+        newMember.user.id,
+      );
       const changedBy = log?.executor;
 
       for (const [, role] of addedRoles) {
-        await sendLogEvent(config, newMember.guild.id, 'role_add', {
+        await sendLogEvent(config, newMember.guild.id, "role_add", {
           user_id: newMember.user.id,
           user_name: newMember.user.tag,
           user_avatar: newMember.user.displayAvatarURL(),
@@ -578,7 +751,7 @@ function registerLogHandlers(client, config) {
       }
 
       for (const [, role] of removedRoles) {
-        await sendLogEvent(config, newMember.guild.id, 'role_remove', {
+        await sendLogEvent(config, newMember.guild.id, "role_remove", {
           user_id: newMember.user.id,
           user_name: newMember.user.tag,
           user_avatar: newMember.user.displayAvatarURL(),
@@ -592,7 +765,7 @@ function registerLogHandlers(client, config) {
 
     // Server Boost
     if (!oldMember.premiumSince && newMember.premiumSince) {
-      await sendLogEvent(config, newMember.guild.id, 'server_boost', {
+      await sendLogEvent(config, newMember.guild.id, "server_boost", {
         user_id: newMember.user.id,
         user_name: newMember.user.tag,
         user_avatar: newMember.user.displayAvatarURL(),
@@ -601,7 +774,7 @@ function registerLogHandlers(client, config) {
       });
     }
     if (oldMember.premiumSince && !newMember.premiumSince) {
-      await sendLogEvent(config, newMember.guild.id, 'server_boost_remove', {
+      await sendLogEvent(config, newMember.guild.id, "server_boost_remove", {
         user_id: newMember.user.id,
         user_name: newMember.user.tag,
         user_avatar: newMember.user.displayAvatarURL(),
@@ -612,23 +785,37 @@ function registerLogHandlers(client, config) {
   });
 
   // ──── Server Update ────
-  client.on('guildUpdate', async (oldGuild, newGuild) => {
+  client.on("guildUpdate", async (oldGuild, newGuild) => {
     const changes = [];
-    if (oldGuild.name !== newGuild.name) changes.push(`Navn: ${oldGuild.name} → ${newGuild.name}`);
-    if (oldGuild.icon !== newGuild.icon) changes.push('Server-ikon ændret');
-    if (oldGuild.banner !== newGuild.banner) changes.push('Server-banner ændret');
-    if (oldGuild.verificationLevel !== newGuild.verificationLevel) changes.push(`Verifikationsniveau: ${newGuild.verificationLevel}`);
-    if (oldGuild.defaultMessageNotifications !== newGuild.defaultMessageNotifications) changes.push('Standard-notifikationer ændret');
-    if (oldGuild.explicitContentFilter !== newGuild.explicitContentFilter) changes.push(`Eksplicit indholdsfilter: ${newGuild.explicitContentFilter}`);
-    if (oldGuild.systemChannelId !== newGuild.systemChannelId) changes.push('System-kanal ændret');
-    if (oldGuild.rulesChannelId !== newGuild.rulesChannelId) changes.push('Regel-kanal ændret');
-    if (oldGuild.vanityURLCode !== newGuild.vanityURLCode) changes.push(`Vanity URL: ${newGuild.vanityURLCode || 'Fjernet'}`);
-    if (oldGuild.description !== newGuild.description) changes.push('Beskrivelse ændret');
+    if (oldGuild.name !== newGuild.name)
+      changes.push(`Navn: ${oldGuild.name} → ${newGuild.name}`);
+    if (oldGuild.icon !== newGuild.icon) changes.push("Server-ikon ændret");
+    if (oldGuild.banner !== newGuild.banner)
+      changes.push("Server-banner ændret");
+    if (oldGuild.verificationLevel !== newGuild.verificationLevel)
+      changes.push(`Verifikationsniveau: ${newGuild.verificationLevel}`);
+    if (
+      oldGuild.defaultMessageNotifications !==
+      newGuild.defaultMessageNotifications
+    )
+      changes.push("Standard-notifikationer ændret");
+    if (oldGuild.explicitContentFilter !== newGuild.explicitContentFilter)
+      changes.push(
+        `Eksplicit indholdsfilter: ${newGuild.explicitContentFilter}`,
+      );
+    if (oldGuild.systemChannelId !== newGuild.systemChannelId)
+      changes.push("System-kanal ændret");
+    if (oldGuild.rulesChannelId !== newGuild.rulesChannelId)
+      changes.push("Regel-kanal ændret");
+    if (oldGuild.vanityURLCode !== newGuild.vanityURLCode)
+      changes.push(`Vanity URL: ${newGuild.vanityURLCode || "Fjernet"}`);
+    if (oldGuild.description !== newGuild.description)
+      changes.push("Beskrivelse ændret");
     if (changes.length === 0) return;
 
     const log = await fetchAuditLog(newGuild, AuditLogEvent.GuildUpdate, null);
-    await sendLogEvent(config, newGuild.id, 'server_update', {
-      changes: changes.join('\n'),
+    await sendLogEvent(config, newGuild.id, "server_update", {
+      changes: changes.join("\n"),
       moderator_id: log?.executor?.id,
       moderator_name: log?.executor?.tag,
       user_name: log?.executor?.tag,
@@ -637,8 +824,8 @@ function registerLogHandlers(client, config) {
   });
 
   // ──── Invite Events ────
-  client.on('inviteCreate', async (invite) => {
-    await sendLogEvent(config, invite.guild.id, 'invite_create', {
+  client.on("inviteCreate", async (invite) => {
+    await sendLogEvent(config, invite.guild.id, "invite_create", {
       user_id: invite.inviter?.id,
       user_name: invite.inviter?.tag,
       user_avatar: invite.inviter?.displayAvatarURL(),
@@ -650,8 +837,8 @@ function registerLogHandlers(client, config) {
     });
   });
 
-  client.on('inviteDelete', async (invite) => {
-    await sendLogEvent(config, invite.guild.id, 'invite_delete', {
+  client.on("inviteDelete", async (invite) => {
+    await sendLogEvent(config, invite.guild.id, "invite_delete", {
       invite_code: invite.code,
       channel_id: invite.channel?.id,
       channel_name: invite.channel?.name,
@@ -659,24 +846,24 @@ function registerLogHandlers(client, config) {
   });
 
   // ──── Emoji Events ────
-  client.on('emojiCreate', async (emoji) => {
-    await sendLogEvent(config, emoji.guild.id, 'emoji_create', {
+  client.on("emojiCreate", async (emoji) => {
+    await sendLogEvent(config, emoji.guild.id, "emoji_create", {
       emoji_name: emoji.name,
       emoji_id: emoji.id,
       user_name: emoji.author?.tag,
     });
   });
 
-  client.on('emojiDelete', async (emoji) => {
-    await sendLogEvent(config, emoji.guild.id, 'emoji_delete', {
+  client.on("emojiDelete", async (emoji) => {
+    await sendLogEvent(config, emoji.guild.id, "emoji_delete", {
       emoji_name: emoji.name,
       emoji_id: emoji.id,
     });
   });
 
-  client.on('emojiUpdate', async (oldEmoji, newEmoji) => {
+  client.on("emojiUpdate", async (oldEmoji, newEmoji) => {
     if (oldEmoji.name === newEmoji.name) return;
-    await sendLogEvent(config, newEmoji.guild.id, 'emoji_update', {
+    await sendLogEvent(config, newEmoji.guild.id, "emoji_update", {
       emoji_name: newEmoji.name,
       emoji_id: newEmoji.id,
       old_name: oldEmoji.name,
@@ -685,24 +872,24 @@ function registerLogHandlers(client, config) {
   });
 
   // ──── Sticker Events ────
-  client.on('stickerCreate', async (sticker) => {
-    await sendLogEvent(config, sticker.guild?.id, 'sticker_create', {
+  client.on("stickerCreate", async (sticker) => {
+    await sendLogEvent(config, sticker.guild?.id, "sticker_create", {
       sticker_name: sticker.name,
       sticker_id: sticker.id,
     });
   });
 
-  client.on('stickerDelete', async (sticker) => {
-    await sendLogEvent(config, sticker.guild?.id, 'sticker_delete', {
+  client.on("stickerDelete", async (sticker) => {
+    await sendLogEvent(config, sticker.guild?.id, "sticker_delete", {
       sticker_name: sticker.name,
       sticker_id: sticker.id,
     });
   });
 
   // ──── Thread Events ────
-  client.on('threadCreate', async (thread) => {
+  client.on("threadCreate", async (thread) => {
     if (!thread.guild) return;
-    await sendLogEvent(config, thread.guild.id, 'thread_create', {
+    await sendLogEvent(config, thread.guild.id, "thread_create", {
       channel_id: thread.id,
       thread_name: thread.name,
       channel_name: thread.parent?.name,
@@ -710,19 +897,19 @@ function registerLogHandlers(client, config) {
     });
   });
 
-  client.on('threadDelete', async (thread) => {
+  client.on("threadDelete", async (thread) => {
     if (!thread.guild) return;
-    await sendLogEvent(config, thread.guild.id, 'thread_delete', {
+    await sendLogEvent(config, thread.guild.id, "thread_delete", {
       channel_id: thread.id,
       thread_name: thread.name,
       channel_name: thread.parent?.name,
     });
   });
 
-  client.on('threadUpdate', async (oldThread, newThread) => {
+  client.on("threadUpdate", async (oldThread, newThread) => {
     if (!newThread.guild) return;
     if (!oldThread.archived && newThread.archived) {
-      await sendLogEvent(config, newThread.guild.id, 'thread_archive', {
+      await sendLogEvent(config, newThread.guild.id, "thread_archive", {
         channel_id: newThread.id,
         thread_name: newThread.name,
         channel_name: newThread.parent?.name,
@@ -731,21 +918,27 @@ function registerLogHandlers(client, config) {
   });
 
   // ──── Command Usage ────
-  client.on('interactionCreate', async (interaction) => {
+  client.on("interactionCreate", async (interaction) => {
     if (!interaction.isChatInputCommand()) return;
     if (!interaction.guild) return;
-    await sendLogEvent(config, interaction.guild.id, 'command_used', {
+    await sendLogEvent(config, interaction.guild.id, "command_used", {
       user_id: interaction.user.id,
       user_name: interaction.user.tag,
       user_avatar: interaction.user.displayAvatarURL(),
-      command_name: resolveInteractionCommand(interaction).logicalName || interaction.commandName,
-      command_options: flattenCommandOptions(interaction.options?.data || []).join('\n') || null,
+      command_name:
+        resolveInteractionCommand(interaction).logicalName ||
+        interaction.commandName,
+      command_options:
+        flattenCommandOptions(interaction.options?.data || []).join("\n") ||
+        null,
       channel_id: interaction.channel?.id,
       channel_name: interaction.channel?.name,
     });
   });
 
-  console.log('[LogHandler] ✅ v3 registreret: retry/timeout, correlation IDs, audit-log retry og beriget kontekst');
+  console.log(
+    "[LogHandler] ✅ v3 registreret: retry/timeout, correlation IDs, audit-log retry og beriget kontekst",
+  );
 }
 
 module.exports = { registerLogHandlers };

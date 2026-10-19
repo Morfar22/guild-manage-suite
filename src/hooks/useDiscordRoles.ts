@@ -1,6 +1,6 @@
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
-import { useGuild } from '@/contexts/GuildContext';
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { useGuild } from "@/contexts/GuildContext";
 
 export interface DiscordRole {
   id: string;
@@ -16,7 +16,7 @@ export function useDiscordRoles() {
   const { selectedGuild } = useGuild();
 
   return useQuery({
-    queryKey: ['discord-roles', selectedGuild?.id],
+    queryKey: ["discord-roles", selectedGuild?.id],
     queryFn: async () => {
       if (!selectedGuild?.id) return [];
 
@@ -25,14 +25,14 @@ export function useDiscordRoles() {
         {
           headers: {
             Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
-            'Content-Type': 'application/json',
+            "Content-Type": "application/json",
           },
-        }
+        },
       );
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || 'Failed to fetch roles');
+        throw new Error(errorData.error || "Failed to fetch roles");
       }
 
       const result = await response.json();

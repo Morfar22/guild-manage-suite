@@ -1,24 +1,26 @@
-import { useLocation, Link } from '@tanstack/react-router';
-import { useLanguage } from '@/contexts/LanguageContext';
-import { navGroups } from '@/lib/nav-items';
-import { ChevronRight, Home } from 'lucide-react';
+import { useLocation, Link } from "@tanstack/react-router";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { navGroups } from "@/lib/nav-items";
+import { ChevronRight, Home } from "lucide-react";
 
 export function Breadcrumbs() {
   const location = useLocation();
   const { t, language } = useLanguage();
 
-  if (location.pathname === '/dashboard') return null;
+  if (location.pathname === "/dashboard") return null;
 
   // Find the matching nav item and its group
-  let groupLabel = '';
-  let itemLabel = '';
+  let groupLabel = "";
+  let itemLabel = "";
 
   for (const group of navGroups) {
     const match = group.items.find((item) =>
-      item.end ? location.pathname === item.to : location.pathname.startsWith(item.to)
+      item.end
+        ? location.pathname === item.to
+        : location.pathname.startsWith(item.to),
     );
     if (match) {
-      groupLabel = language === 'da' ? group.labelDa : group.labelEn;
+      groupLabel = language === "da" ? group.labelDa : group.labelEn;
       itemLabel = t(match.labelKey);
       break;
     }

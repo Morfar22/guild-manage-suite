@@ -1,7 +1,8 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
-import { useGuild } from '@/contexts/GuildContext';
-import { toast } from 'sonner';
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { useGuild } from "@/contexts/GuildContext";
+import { toast } from "sonner";
+import type { Untyped } from "@/types/untyped";
 
 export interface AIAutomodSettings {
   id: string;
@@ -25,13 +26,13 @@ export function useAIAutomodSettings() {
   const queryClient = useQueryClient();
 
   const query = useQuery({
-    queryKey: ['ai-automod-settings', selectedGuild?.id],
+    queryKey: ["ai-automod-settings", selectedGuild?.id],
     queryFn: async () => {
       if (!selectedGuild?.id) return null;
       const { data, error } = await supabase
-        .from('ai_automod_settings' as any)
-        .select('*')
-        .eq('guild_id', selectedGuild.id)
+        .from("ai_automod_settings" as Untyped)
+        .select("*")
+        .eq("guild_id", selectedGuild.id)
         .maybeSingle();
       if (error) throw error;
       return data as unknown as AIAutomodSettings | null;
@@ -41,22 +42,25 @@ export function useAIAutomodSettings() {
 
   const upsert = useMutation({
     mutationFn: async (settings: Partial<AIAutomodSettings>) => {
-      if (!selectedGuild?.id) throw new Error('No guild selected');
+      if (!selectedGuild?.id) throw new Error("No guild selected");
       const { error } = await supabase
-        .from('ai_automod_settings' as any)
-        .upsert({
-          guild_id: selectedGuild.id,
-          ...settings,
-          updated_at: new Date().toISOString(),
-        }, { onConflict: 'guild_id' });
+        .from("ai_automod_settings" as Untyped)
+        .upsert(
+          {
+            guild_id: selectedGuild.id,
+            ...settings,
+            updated_at: new Date().toISOString(),
+          },
+          { onConflict: "guild_id" },
+        );
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['ai-automod-settings'] });
-      toast.success('AI Auto-Mod indstillinger gemt');
+      queryClient.invalidateQueries({ queryKey: ["ai-automod-settings"] });
+      toast.success("AI Auto-Mod indstillinger gemt");
     },
-    onError: (err: any) => {
-      toast.error('Fejl ved gemning: ' + err.message);
+    onError: (err: Untyped) => {
+      toast.error("Fejl ved gemning: " + err.message);
     },
   });
 

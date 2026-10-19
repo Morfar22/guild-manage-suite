@@ -1,11 +1,11 @@
 /**
  * Ticket Handler for Discord Bot
- * 
+ *
  * Environment variables required:
  * - BOT_SECRET_KEY: (samme som i Lovable Cloud secrets)
  * - APP_API_BASE: self-hosted dashboard/API base URL
  * - API_URL: optional override for the bot-tickets endpoint
- * 
+ *
  * Usage in your main bot file:
  * const { setupTicketHandler } = require('./ticketHandler');
  * setupTicketHandler(client);
@@ -22,10 +22,12 @@ const {
   TextInputStyle,
   StringSelectMenuBuilder,
   PermissionFlagsBits,
-} = require('discord.js');
-const { resolveInteractionCommand } = require('../commandRouting');
+} = require("discord.js");
+const { resolveInteractionCommand } = require("../commandRouting");
 
-const APP_API_BASE = (process.env.APP_API_BASE || 'https://bot.nethost-solutions.dk').replace(/\/$/, '');
+const APP_API_BASE = (
+  process.env.APP_API_BASE || "https://bot.nethost-solutions.dk"
+).replace(/\/$/, "");
 const API_URL = process.env.API_URL || `${APP_API_BASE}/api/public/bot-tickets`;
 const BOT_SECRET = process.env.BOT_SECRET_KEY;
 
@@ -67,30 +69,39 @@ setInterval(() => {
 
 async function callAPI(action, data) {
   if (!BOT_SECRET) {
-    throw new Error('BOT_SECRET_KEY mangler i bot runtime');
+    throw new Error("BOT_SECRET_KEY mangler i bot runtime");
   }
 
   let response;
   try {
     response = await fetch(API_URL, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-bot-secret': BOT_SECRET
-    },
-      body: JSON.stringify({ action, data })
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-bot-secret": BOT_SECRET,
+      },
+      body: JSON.stringify({ action, data }),
     });
   } catch (error) {
-    console.error(`[Tickets] API request failed for ${action} -> ${API_URL}:`, error);
+    console.error(
+      `[Tickets] API request failed for ${action} -> ${API_URL}:`,
+      error,
+    );
     throw new Error(`Ticket API kunne ikke nås: ${error?.message || error}`);
   }
 
   if (!response.ok) {
-    const raw = await response.text().catch(() => '');
+    const raw = await response.text().catch(() => "");
     let error = {};
-    try { error = raw ? JSON.parse(raw) : {}; } catch {}
-    console.error(`[Tickets] API ${action} returned ${response.status} from ${API_URL}: ${raw.slice(0, 500)}`);
-    throw new Error(error.error || `Ticket API request failed (${response.status})`);
+    try {
+      error = raw ? JSON.parse(raw) : {};
+    } catch {}
+    console.error(
+      `[Tickets] API ${action} returned ${response.status} from ${API_URL}: ${raw.slice(0, 500)}`,
+    );
+    throw new Error(
+      error.error || `Ticket API request failed (${response.status})`,
+    );
   }
 
   return response.json();
@@ -99,7 +110,9 @@ async function callAPI(action, data) {
 async function replyPrivate(interaction, content) {
   const payload = { content, ephemeral: true };
   if (interaction.deferred) {
-    return interaction.editReply({ content, components: [] }).catch(() => interaction.followUp(payload));
+    return interaction
+      .editReply({ content, components: [] })
+      .catch(() => interaction.followUp(payload));
   }
   if (interaction.replied) {
     return interaction.followUp(payload);
@@ -118,13 +131,16 @@ function memberHasRole(interaction, roleId) {
 async function requireTicketAccess(interaction, { allowCreator = false } = {}) {
   const channelId = interaction.channel?.id;
   if (!channelId) {
-    await replyPrivate(interaction, '❌ Kunne ikke finde ticket-kanalen.');
+    await replyPrivate(interaction, "❌ Kunne ikke finde ticket-kanalen.");
     return null;
   }
 
-  const { ticket } = await callAPI('getTicket', { channelId });
+  const { ticket } = await callAPI("getTicket", { channelId });
   if (!ticket) {
-    await replyPrivate(interaction, '❌ Denne kanal er ikke registreret som en ticket.');
+    await replyPrivate(
+      interaction,
+      "❌ Denne kanal er ikke registreret som en ticket.",
+    );
     return null;
   }
 
@@ -132,14 +148,17 @@ async function requireTicketAccess(interaction, { allowCreator = false } = {}) {
   const hasElevatedPermission = Boolean(
     permissions?.has?.(PermissionFlagsBits.Administrator) ||
     permissions?.has?.(PermissionFlagsBits.ManageThreads) ||
-    permissions?.has?.(PermissionFlagsBits.ManageChannels)
+    permissions?.has?.(PermissionFlagsBits.ManageChannels),
   );
   const staffRoleId = ticket.ticket_categories?.staff_role_id;
   const hasStaffRole = memberHasRole(interaction, staffRoleId);
   const isCreator = ticket.creator_id === interaction.user.id;
 
   if (!hasElevatedPermission && !hasStaffRole && !(allowCreator && isCreator)) {
-    await replyPrivate(interaction, '⛔ Du har ikke adgang til at administrere denne ticket.');
+    await replyPrivate(
+      interaction,
+      "⛔ Du har ikke adgang til at administrere denne ticket.",
+    );
     return null;
   }
 
@@ -147,26 +166,26 @@ async function requireTicketAccess(interaction, { allowCreator = false } = {}) {
 }
 
 // ---------------- Operating hours ----------------
-const DAY_KEYS = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
+const DAY_KEYS = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
 
 function isWithinOperatingHours(hours) {
   if (!hours || !hours.enabled) return { open: true };
-  const tz = hours.timezone || 'UTC';
+  const tz = hours.timezone || "UTC";
   let dayIdx, hh, mm;
   try {
-    const fmt = new Intl.DateTimeFormat('en-US', {
+    const fmt = new Intl.DateTimeFormat("en-US", {
       timeZone: tz,
-      weekday: 'short',
-      hour: '2-digit',
-      minute: '2-digit',
+      weekday: "short",
+      hour: "2-digit",
+      minute: "2-digit",
       hour12: false,
     });
     const parts = fmt.formatToParts(new Date());
-    const wd = parts.find((p) => p.type === 'weekday')?.value || 'Sun';
-    hh = parseInt(parts.find((p) => p.type === 'hour')?.value || '0', 10);
-    mm = parseInt(parts.find((p) => p.type === 'minute')?.value || '0', 10);
+    const wd = parts.find((p) => p.type === "weekday")?.value || "Sun";
+    hh = parseInt(parts.find((p) => p.type === "hour")?.value || "0", 10);
+    mm = parseInt(parts.find((p) => p.type === "minute")?.value || "0", 10);
     if (hh === 24) hh = 0;
-    dayIdx = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].indexOf(wd);
+    dayIdx = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].indexOf(wd);
     if (dayIdx < 0) dayIdx = new Date().getDay();
   } catch {
     const now = new Date();
@@ -176,22 +195,36 @@ function isWithinOperatingHours(hours) {
   }
   const dayCfg = hours.days?.[DAY_KEYS[dayIdx]];
   if (!dayCfg || !dayCfg.enabled) {
-    return { open: false, message: hours.closed_message || "We're currently closed. Please try again later." };
+    return {
+      open: false,
+      message:
+        hours.closed_message ||
+        "We're currently closed. Please try again later.",
+    };
   }
   const cur = hh * 60 + mm;
-  const [oH, oM] = String(dayCfg.open || '00:00').split(':').map((n) => parseInt(n, 10) || 0);
-  const [cH, cM] = String(dayCfg.close || '23:59').split(':').map((n) => parseInt(n, 10) || 0);
+  const [oH, oM] = String(dayCfg.open || "00:00")
+    .split(":")
+    .map((n) => parseInt(n, 10) || 0);
+  const [cH, cM] = String(dayCfg.close || "23:59")
+    .split(":")
+    .map((n) => parseInt(n, 10) || 0);
   const openMin = oH * 60 + oM;
   const closeMin = cH * 60 + cM;
-  const isOpen = closeMin >= openMin
-    ? cur >= openMin && cur <= closeMin
-    : cur >= openMin || cur <= closeMin; // wraps past midnight
+  const isOpen =
+    closeMin >= openMin
+      ? cur >= openMin && cur <= closeMin
+      : cur >= openMin || cur <= closeMin; // wraps past midnight
   if (!isOpen) {
-    return { open: false, message: hours.closed_message || "We're currently closed. Please try again later." };
+    return {
+      open: false,
+      message:
+        hours.closed_message ||
+        "We're currently closed. Please try again later.",
+    };
   }
   return { open: true };
 }
-
 
 /**
  * Setup ticket handler on Discord client
@@ -209,7 +242,7 @@ function setupTicketHandler(client, config = {}) {
   const remindTimers = new Map(); // channelId -> timeoutId
 
   // Listen for messages in ticket threads and save them
-  client.on('messageCreate', async (message) => {
+  client.on("messageCreate", async (message) => {
     if (message.author.bot) return;
     if (!message.channel?.isThread()) return;
     if (message.guild && !shouldHandleGuild(message.guild.id)) return;
@@ -220,29 +253,37 @@ function setupTicketHandler(client, config = {}) {
       if (message.author.id === timer.creatorId) {
         clearTimeout(timer.timeout);
         remindTimers.delete(message.channel.id);
-        console.log(`[Tickets] Auto-delete cancelled for ${message.channel.id} — creator responded`);
+        console.log(
+          `[Tickets] Auto-delete cancelled for ${message.channel.id} — creator responded`,
+        );
       }
     }
 
     // Save every message in a thread to the ticket_messages table
     // The API will silently fail if the thread isn't a ticket thread
     try {
-      await callAPI('saveMessage', {
+      await callAPI("saveMessage", {
         ticketChannelId: message.channel.id,
         authorId: message.author.id,
         authorName: message.author.username,
-        authorAvatar: message.author.displayAvatarURL?.({ dynamic: true }) || null,
-        content: message.content || '',
-        attachments: message.attachments?.size > 0 
-          ? [...message.attachments.values()].map(a => ({ url: a.url, name: a.name, size: a.size }))
-          : null,
+        authorAvatar:
+          message.author.displayAvatarURL?.({ dynamic: true }) || null,
+        content: message.content || "",
+        attachments:
+          message.attachments?.size > 0
+            ? [...message.attachments.values()].map((a) => ({
+                url: a.url,
+                name: a.name,
+                size: a.size,
+              }))
+            : null,
       });
     } catch (err) {
       // Silently ignore - thread might not be a ticket
     }
   });
 
-  client.on('interactionCreate', async (interaction) => {
+  client.on("interactionCreate", async (interaction) => {
     // Check if this bot instance should handle this guild
     if (interaction.guild && !shouldHandleGuild(interaction.guild.id)) return;
 
@@ -251,25 +292,30 @@ function setupTicketHandler(client, config = {}) {
       : null;
     const commandName = resolvedCommand?.logicalName || interaction.commandName;
     const ticketCommandNames = new Set([
-      'ticket',
-      'ticket-remind',
-      'ticket-close',
-      'ticket-claim',
-      'unclaim',
-      'ticket-add',
-      'rename',
-      'ticket-remove',
+      "ticket",
+      "ticket-remind",
+      "ticket-close",
+      "ticket-claim",
+      "unclaim",
+      "ticket-add",
+      "rename",
+      "ticket-remove",
     ]);
     const commandStartedAt = Date.now();
 
     const trackTicketCommand = (status, error = null, blockedReason = null) => {
-      if (!queueCommandExecution || !interaction.guild || !ticketCommandNames.has(commandName)) return;
+      if (
+        !queueCommandExecution ||
+        !interaction.guild ||
+        !ticketCommandNames.has(commandName)
+      )
+        return;
       void queueCommandExecution({
         guildId: interaction.guild.id,
         commandName,
         userId: interaction.user?.id,
         channelId: interaction.channelId,
-        source: 'slash',
+        source: "slash",
         status,
         latencyMs: Date.now() - commandStartedAt,
         blockedReason,
@@ -286,166 +332,235 @@ function setupTicketHandler(client, config = {}) {
         guildId: interaction.guild.id,
         commandName,
         userId: interaction.user.id,
-        roleIds: interaction.member?.roles?.cache ? [...interaction.member.roles.cache.keys()] : [],
+        roleIds: interaction.member?.roles?.cache
+          ? [...interaction.member.roles.cache.keys()]
+          : [],
         channelId: interaction.channelId,
-        isAdmin: Boolean(interaction.member?.permissions?.has?.(PermissionFlagsBits.Administrator)),
+        isAdmin: Boolean(
+          interaction.member?.permissions?.has?.(
+            PermissionFlagsBits.Administrator,
+          ),
+        ),
       });
 
       if (!access.allowed) {
-        trackTicketCommand('blocked', null, access.reason || 'access');
-        return replyPrivate(interaction, access.message || '🚫 Du har ikke adgang til denne command.');
+        trackTicketCommand("blocked", null, access.reason || "access");
+        return replyPrivate(
+          interaction,
+          access.message || "🚫 Du har ikke adgang til denne command.",
+        );
       }
     }
 
     // Handle /ticket-remind slash command
-    if (interaction.isChatInputCommand?.() && commandName === 'ticket-remind') {
+    if (interaction.isChatInputCommand?.() && commandName === "ticket-remind") {
       try {
         await handleTicketRemind(interaction, remindTimers);
-        trackTicketCommand('success');
+        trackTicketCommand("success");
       } catch (error) {
-        trackTicketCommand('error', error);
-        console.error('Ticket remind error:', error);
+        trackTicketCommand("error", error);
+        console.error("Ticket remind error:", error);
         if (!interaction.replied && !interaction.deferred) {
-          await interaction.reply({ content: '❌ Der opstod en fejl.', ephemeral: true }).catch(console.error);
+          await interaction
+            .reply({ content: "❌ Der opstod en fejl.", ephemeral: true })
+            .catch(console.error);
         }
       }
       return;
     }
 
     // Handle /ticket - create a new ticket via slash command
-    if (interaction.isChatInputCommand?.() && commandName === 'ticket') {
+    if (interaction.isChatInputCommand?.() && commandName === "ticket") {
       try {
         await handleTicketSlashCreate(interaction);
-        trackTicketCommand('success');
+        trackTicketCommand("success");
       } catch (error) {
-        trackTicketCommand('error', error);
-        console.error('Ticket create error:', error);
+        trackTicketCommand("error", error);
+        console.error("Ticket create error:", error);
         if (!interaction.replied && !interaction.deferred) {
-          await interaction.reply({ content: '❌ Der opstod en fejl.', ephemeral: true }).catch(console.error);
+          await interaction
+            .reply({ content: "❌ Der opstod en fejl.", ephemeral: true })
+            .catch(console.error);
         }
       }
       return;
     }
 
     // Handle /ticket-close
-    if (interaction.isChatInputCommand?.() && commandName === 'ticket-close') {
+    if (interaction.isChatInputCommand?.() && commandName === "ticket-close") {
       try {
         if (!interaction.channel?.isThread()) {
-          return interaction.reply({ content: '❌ Denne kommando kan kun bruges i en ticket-tråd.', ephemeral: true });
+          return interaction.reply({
+            content: "❌ Denne kommando kan kun bruges i en ticket-tråd.",
+            ephemeral: true,
+          });
         }
-        const deleteThread = interaction.options.getBoolean?.('delete') || false;
-        await handleCloseTicket(interaction, interaction.channel.id, deleteThread);
-        trackTicketCommand('success');
+        const deleteThread =
+          interaction.options.getBoolean?.("delete") || false;
+        await handleCloseTicket(
+          interaction,
+          interaction.channel.id,
+          deleteThread,
+        );
+        trackTicketCommand("success");
       } catch (error) {
-        trackTicketCommand('error', error);
-        console.error('Ticket close error:', error);
+        trackTicketCommand("error", error);
+        console.error("Ticket close error:", error);
         if (!interaction.replied && !interaction.deferred) {
-          await interaction.reply({ content: '❌ Der opstod en fejl.', ephemeral: true }).catch(console.error);
+          await interaction
+            .reply({ content: "❌ Der opstod en fejl.", ephemeral: true })
+            .catch(console.error);
         }
       }
       return;
     }
 
     // Handle /ticket-claim
-    if (interaction.isChatInputCommand?.() && commandName === 'ticket-claim') {
+    if (interaction.isChatInputCommand?.() && commandName === "ticket-claim") {
       try {
         if (!interaction.channel?.isThread()) {
-          return interaction.reply({ content: '❌ Denne kommando kan kun bruges i en ticket-tråd.', ephemeral: true });
+          return interaction.reply({
+            content: "❌ Denne kommando kan kun bruges i en ticket-tråd.",
+            ephemeral: true,
+          });
         }
         await handleClaimTicket(interaction, interaction.channel.id);
-        trackTicketCommand('success');
+        trackTicketCommand("success");
       } catch (error) {
-        trackTicketCommand('error', error);
-        console.error('Ticket claim error:', error);
+        trackTicketCommand("error", error);
+        console.error("Ticket claim error:", error);
         if (!interaction.replied && !interaction.deferred) {
-          await interaction.reply({ content: '❌ Der opstod en fejl.', ephemeral: true }).catch(console.error);
+          await interaction
+            .reply({ content: "❌ Der opstod en fejl.", ephemeral: true })
+            .catch(console.error);
         }
       }
       return;
     }
 
     // Handle /unclaim
-    if (interaction.isChatInputCommand?.() && commandName === 'unclaim') {
+    if (interaction.isChatInputCommand?.() && commandName === "unclaim") {
       try {
         if (!interaction.channel?.isThread()) {
-          return interaction.reply({ content: '❌ Denne kommando kan kun bruges i en ticket-tråd.', ephemeral: true });
+          return interaction.reply({
+            content: "❌ Denne kommando kan kun bruges i en ticket-tråd.",
+            ephemeral: true,
+          });
         }
         await handleUnclaimTicket(interaction, interaction.channel.id);
-        trackTicketCommand('success');
+        trackTicketCommand("success");
       } catch (error) {
-        trackTicketCommand('error', error);
-        console.error('Ticket unclaim error:', error);
+        trackTicketCommand("error", error);
+        console.error("Ticket unclaim error:", error);
         if (!interaction.replied && !interaction.deferred) {
-          await interaction.reply({ content: '❌ Der opstod en fejl.', ephemeral: true }).catch(console.error);
+          await interaction
+            .reply({ content: "❌ Der opstod en fejl.", ephemeral: true })
+            .catch(console.error);
         }
       }
       return;
     }
 
     // Handle /ticket-add
-    if (interaction.isChatInputCommand?.() && commandName === 'ticket-add') {
+    if (interaction.isChatInputCommand?.() && commandName === "ticket-add") {
       try {
         if (!interaction.channel?.isThread()) {
-          return interaction.reply({ content: '❌ Denne kommando kan kun bruges i en ticket-tråd.', ephemeral: true });
+          return interaction.reply({
+            content: "❌ Denne kommando kan kun bruges i en ticket-tråd.",
+            ephemeral: true,
+          });
         }
         const access = await requireTicketAccess(interaction);
         if (!access) return;
-        const user = interaction.options.getUser('user');
+        const user = interaction.options.getUser("user");
         await interaction.channel.members.add(user.id);
-        await interaction.reply({ content: `✅ <@${user.id}> er blevet tilføjet til denne ticket.`, ephemeral: true });
-        trackTicketCommand('success');
+        await interaction.reply({
+          content: `✅ <@${user.id}> er blevet tilføjet til denne ticket.`,
+          ephemeral: true,
+        });
+        trackTicketCommand("success");
       } catch (error) {
-        trackTicketCommand('error', error);
-        console.error('Ticket add error:', error);
+        trackTicketCommand("error", error);
+        console.error("Ticket add error:", error);
         if (!interaction.replied && !interaction.deferred) {
-          await interaction.reply({ content: '❌ Kunne ikke tilføje brugeren.', ephemeral: true }).catch(console.error);
+          await interaction
+            .reply({
+              content: "❌ Kunne ikke tilføje brugeren.",
+              ephemeral: true,
+            })
+            .catch(console.error);
         }
       }
       return;
     }
 
     // Handle /rename
-    if (interaction.isChatInputCommand?.() && commandName === 'rename') {
+    if (interaction.isChatInputCommand?.() && commandName === "rename") {
       try {
         if (!interaction.channel?.isThread()) {
-          return interaction.reply({ content: '❌ Denne kommando kan kun bruges i en ticket-tråd.', ephemeral: true });
+          return interaction.reply({
+            content: "❌ Denne kommando kan kun bruges i en ticket-tråd.",
+            ephemeral: true,
+          });
         }
         const access = await requireTicketAccess(interaction);
         if (!access) return;
-        const name = interaction.options.getString('name', true).trim();
+        const name = interaction.options.getString("name", true).trim();
         if (!name) {
-          return interaction.reply({ content: '❌ Navnet må ikke være tomt.', ephemeral: true });
+          return interaction.reply({
+            content: "❌ Navnet må ikke være tomt.",
+            ephemeral: true,
+          });
         }
         await interaction.channel.setName(name.slice(0, 100));
-        await interaction.reply({ content: `✅ Ticket-tråden hedder nu **${name.slice(0, 100)}**.`, ephemeral: true });
-        trackTicketCommand('success');
+        await interaction.reply({
+          content: `✅ Ticket-tråden hedder nu **${name.slice(0, 100)}**.`,
+          ephemeral: true,
+        });
+        trackTicketCommand("success");
       } catch (error) {
-        trackTicketCommand('error', error);
-        console.error('Ticket rename error:', error);
+        trackTicketCommand("error", error);
+        console.error("Ticket rename error:", error);
         if (!interaction.replied && !interaction.deferred) {
-          await interaction.reply({ content: '❌ Kunne ikke omdøbe ticketen.', ephemeral: true }).catch(console.error);
+          await interaction
+            .reply({
+              content: "❌ Kunne ikke omdøbe ticketen.",
+              ephemeral: true,
+            })
+            .catch(console.error);
         }
       }
       return;
     }
 
     // Handle /ticket-remove
-    if (interaction.isChatInputCommand?.() && commandName === 'ticket-remove') {
+    if (interaction.isChatInputCommand?.() && commandName === "ticket-remove") {
       try {
         if (!interaction.channel?.isThread()) {
-          return interaction.reply({ content: '❌ Denne kommando kan kun bruges i en ticket-tråd.', ephemeral: true });
+          return interaction.reply({
+            content: "❌ Denne kommando kan kun bruges i en ticket-tråd.",
+            ephemeral: true,
+          });
         }
         const access = await requireTicketAccess(interaction);
         if (!access) return;
-        const user = interaction.options.getUser('user');
+        const user = interaction.options.getUser("user");
         await interaction.channel.members.remove(user.id);
-        await interaction.reply({ content: `✅ <@${user.id}> er blevet fjernet fra denne ticket.`, ephemeral: true });
-        trackTicketCommand('success');
+        await interaction.reply({
+          content: `✅ <@${user.id}> er blevet fjernet fra denne ticket.`,
+          ephemeral: true,
+        });
+        trackTicketCommand("success");
       } catch (error) {
-        trackTicketCommand('error', error);
-        console.error('Ticket remove error:', error);
+        trackTicketCommand("error", error);
+        console.error("Ticket remove error:", error);
         if (!interaction.replied && !interaction.deferred) {
-          await interaction.reply({ content: '❌ Kunne ikke fjerne brugeren.', ephemeral: true }).catch(console.error);
+          await interaction
+            .reply({
+              content: "❌ Kunne ikke fjerne brugeren.",
+              ephemeral: true,
+            })
+            .catch(console.error);
         }
       }
       return;
@@ -453,53 +568,80 @@ function setupTicketHandler(client, config = {}) {
 
     // Helper: strip trailing panel-uuid suffix from custom_id
     const stripPanelSuffix = (rest) => {
-      const parts = rest.split('_');
-      if (parts.length > 1 && parts[parts.length - 1].length === 36 && parts[parts.length - 1].includes('-')) {
-        return { id: parts.slice(0, -1).join('_'), panelId: parts[parts.length - 1] };
+      const parts = rest.split("_");
+      if (
+        parts.length > 1 &&
+        parts[parts.length - 1].length === 36 &&
+        parts[parts.length - 1].includes("-")
+      ) {
+        return {
+          id: parts.slice(0, -1).join("_"),
+          panelId: parts[parts.length - 1],
+        };
       }
       return { id: rest, panelId: null };
     };
 
     // Handle ticket category select (dropdown from panel) — supports optional _<panelId> suffix
-    if (interaction.isStringSelectMenu?.() && interaction.customId?.startsWith('ticket_category_select')) {
+    if (
+      interaction.isStringSelectMenu?.() &&
+      interaction.customId?.startsWith("ticket_category_select")
+    ) {
       try {
-        const rest = interaction.customId.replace('ticket_category_select', '').replace(/^_/, '');
+        const rest = interaction.customId
+          .replace("ticket_category_select", "")
+          .replace(/^_/, "");
         const { panelId } = rest ? stripPanelSuffix(rest) : { panelId: null };
         const categoryId = interaction.values?.[0];
         if (!categoryId) {
-          return interaction.reply({ content: '❌ Ingen kategori valgt.', ephemeral: true });
+          return interaction.reply({
+            content: "❌ Ingen kategori valgt.",
+            ephemeral: true,
+          });
         }
         await startTicketFlow(interaction, categoryId, panelId);
       } catch (error) {
-        console.error('Select category handler error:', error);
+        console.error("Select category handler error:", error);
         if (!interaction.replied && !interaction.deferred) {
-          await interaction.reply({ content: '❌ Der opstod en fejl.', ephemeral: true }).catch(console.error);
+          await interaction
+            .reply({ content: "❌ Der opstod en fejl.", ephemeral: true })
+            .catch(console.error);
         }
       }
       return;
     }
 
     // Handle rich-field select-menu pick (multi-step flow)
-    if (interaction.isStringSelectMenu?.() && interaction.customId?.startsWith('ticket_pick_')) {
+    if (
+      interaction.isStringSelectMenu?.() &&
+      interaction.customId?.startsWith("ticket_pick_")
+    ) {
       try {
         await handlePickSubmit(interaction);
       } catch (error) {
-        console.error('Pick handler error:', error);
+        console.error("Pick handler error:", error);
         if (!interaction.replied && !interaction.deferred) {
-          await interaction.reply({ content: '❌ Der opstod en fejl.', ephemeral: true }).catch(console.error);
+          await interaction
+            .reply({ content: "❌ Der opstod en fejl.", ephemeral: true })
+            .catch(console.error);
         }
       }
       return;
     }
 
     // Handle modal submit (both application and support tickets with questions)
-    if (interaction.isModalSubmit?.() && interaction.customId?.startsWith('ticket_modal_')) {
+    if (
+      interaction.isModalSubmit?.() &&
+      interaction.customId?.startsWith("ticket_modal_")
+    ) {
       try {
         await handleTicketModalSubmit(interaction);
       } catch (error) {
-        console.error('Modal submit handler error:', error);
+        console.error("Modal submit handler error:", error);
         if (!interaction.replied && !interaction.deferred) {
-          await interaction.reply({ content: '❌ Der opstod en fejl.', ephemeral: true }).catch(console.error);
+          await interaction
+            .reply({ content: "❌ Der opstod en fejl.", ephemeral: true })
+            .catch(console.error);
         }
       }
       return;
@@ -510,51 +652,70 @@ function setupTicketHandler(client, config = {}) {
     const customId = interaction.customId;
 
     // Ticket rating buttons: ticket_rate_<ticketUuid>_<1-5>
-    if (customId.startsWith('ticket_rate_')) {
+    if (customId.startsWith("ticket_rate_")) {
       try {
         await handleRateTicket(interaction);
       } catch (error) {
-        console.error('Rating handler error:', error);
+        console.error("Rating handler error:", error);
         if (!interaction.replied && !interaction.deferred) {
-          await interaction.reply({ content: '❌ Kunne ikke gemme rating.', ephemeral: true }).catch(console.error);
+          await interaction
+            .reply({ content: "❌ Kunne ikke gemme rating.", ephemeral: true })
+            .catch(console.error);
         }
       }
       return;
     }
 
     try {
-      if (customId.startsWith('ticket_create_')) {
-        const { id: categoryId, panelId } = stripPanelSuffix(customId.replace('ticket_create_', ''));
+      if (customId.startsWith("ticket_create_")) {
+        const { id: categoryId, panelId } = stripPanelSuffix(
+          customId.replace("ticket_create_", ""),
+        );
         await startTicketFlow(interaction, categoryId, panelId);
         return;
       }
-      if (customId.startsWith('ticket_claim_')) {
-        await handleClaimTicket(interaction, customId.replace('ticket_claim_', ''));
+      if (customId.startsWith("ticket_claim_")) {
+        await handleClaimTicket(
+          interaction,
+          customId.replace("ticket_claim_", ""),
+        );
         return;
       }
-      if (customId.startsWith('ticket_unclaim_')) {
-        await handleUnclaimTicket(interaction, customId.replace('ticket_unclaim_', ''));
+      if (customId.startsWith("ticket_unclaim_")) {
+        await handleUnclaimTicket(
+          interaction,
+          customId.replace("ticket_unclaim_", ""),
+        );
         return;
       }
-      if (customId.startsWith('ticket_close_')) {
-        await handleCloseTicket(interaction, customId.replace('ticket_close_', ''), false);
+      if (customId.startsWith("ticket_close_")) {
+        await handleCloseTicket(
+          interaction,
+          customId.replace("ticket_close_", ""),
+          false,
+        );
         return;
       }
-      if (customId.startsWith('ticket_delete_')) {
-        await handleCloseTicket(interaction, customId.replace('ticket_delete_', ''), true);
+      if (customId.startsWith("ticket_delete_")) {
+        await handleCloseTicket(
+          interaction,
+          customId.replace("ticket_delete_", ""),
+          true,
+        );
         return;
       }
     } catch (error) {
-      console.error('Ticket handler error:', error);
+      console.error("Ticket handler error:", error);
       if (!interaction.replied && !interaction.deferred) {
-        await interaction.reply({ content: '❌ Der opstod en fejl.', ephemeral: true }).catch(console.error);
+        await interaction
+          .reply({ content: "❌ Der opstod en fejl.", ephemeral: true })
+          .catch(console.error);
       }
     }
   });
 
-  console.log('✅ Ticket handler initialized');
+  console.log("✅ Ticket handler initialized");
 }
-
 
 async function handleTicketSlashCreate(interaction) {
   await interaction.deferReply({ ephemeral: true });
@@ -562,10 +723,13 @@ async function handleTicketSlashCreate(interaction) {
   const guildId = interaction.guild.id;
 
   // Get ticket categories for this guild
-  const { categories } = await callAPI('getCategories', { guildId });
+  const { categories } = await callAPI("getCategories", { guildId });
 
   if (!categories || categories.length === 0) {
-    return interaction.editReply({ content: '❌ Der er ingen ticket-kategorier sat op endnu. En administrator skal først konfigurere tickets i dashboardet.' });
+    return interaction.editReply({
+      content:
+        "❌ Der er ingen ticket-kategorier sat op endnu. En administrator skal først konfigurere tickets i dashboardet.",
+    });
   }
 
   if (categories.length === 1) {
@@ -576,20 +740,20 @@ async function handleTicketSlashCreate(interaction) {
 
   // Multiple categories - show select menu
   const select = new StringSelectMenuBuilder()
-    .setCustomId('ticket_category_select')
-    .setPlaceholder('Vælg en kategori')
+    .setCustomId("ticket_category_select")
+    .setPlaceholder("Vælg en kategori")
     .addOptions(
-      categories.map(c => ({
-        label: `${c.emoji || '🎫'} ${c.name}`.substring(0, 100),
-        description: (c.description || 'Opret en ticket').substring(0, 100),
+      categories.map((c) => ({
+        label: `${c.emoji || "🎫"} ${c.name}`.substring(0, 100),
+        description: (c.description || "Opret en ticket").substring(0, 100),
         value: c.id,
-      }))
+      })),
     );
 
   const row = new ActionRowBuilder().addComponents(select);
 
   await interaction.editReply({
-    content: '📋 Vælg en ticket-kategori:',
+    content: "📋 Vælg en ticket-kategori:",
     components: [row],
   });
 }
@@ -598,22 +762,26 @@ async function handleTicketSlashCreate(interaction) {
 
 function splitQuestions(category) {
   const all = Array.isArray(category.questions) ? category.questions : [];
-  const selectQuestions = all.filter((q) => q.style === 'select' && Array.isArray(q.options) && q.options.length > 0);
-  const textQuestions = all.filter((q) => q.style !== 'select').slice(0, 5);
+  const selectQuestions = all.filter(
+    (q) =>
+      q.style === "select" && Array.isArray(q.options) && q.options.length > 0,
+  );
+  const textQuestions = all.filter((q) => q.style !== "select").slice(0, 5);
   return { selectQuestions, textQuestions };
 }
 
 async function startTicketFlow(interaction, categoryId, panelId) {
   // Fetch category
-  const { category } = await callAPI('getCategory', { categoryId });
+  const { category } = await callAPI("getCategory", { categoryId });
   if (!category) {
-    const reply = { content: '❌ Kategori ikke fundet.', ephemeral: true };
-    if (interaction.deferred || interaction.replied) return interaction.editReply(reply);
+    const reply = { content: "❌ Kategori ikke fundet.", ephemeral: true };
+    if (interaction.deferred || interaction.replied)
+      return interaction.editReply(reply);
     return interaction.reply(reply);
   }
 
   // Prevent duplicate active tickets for the same user/category.
-  const { ticket: existingTicket } = await callAPI('getOpenTicketForUser', {
+  const { ticket: existingTicket } = await callAPI("getOpenTicketForUser", {
     guildId: category.guild_id,
     categoryId,
     creatorId: interaction.user.id,
@@ -621,19 +789,31 @@ async function startTicketFlow(interaction, categoryId, panelId) {
   if (existingTicket) {
     return replyPrivate(
       interaction,
-      `⚠️ Du har allerede en aktiv ticket i denne kategori: <#${existingTicket.channel_id}>`
+      `⚠️ Du har allerede en aktiv ticket i denne kategori: <#${existingTicket.channel_id}>`,
     );
   }
 
   // Operating hours check (panel override → settings fallback)
-  const { settings } = await callAPI('getSettings', { guildId: category.guild_id, panelId: panelId || undefined });
+  const { settings } = await callAPI("getSettings", {
+    guildId: category.guild_id,
+    panelId: panelId || undefined,
+  });
   const hoursCheck = isWithinOperatingHours(settings?.operating_hours);
   if (!hoursCheck.open) {
-    const reply = { content: `🕒 ${hoursCheck.message}`, ephemeral: true, components: [] };
-    if (interaction.isStringSelectMenu?.() && !interaction.deferred && !interaction.replied) {
+    const reply = {
+      content: `🕒 ${hoursCheck.message}`,
+      ephemeral: true,
+      components: [],
+    };
+    if (
+      interaction.isStringSelectMenu?.() &&
+      !interaction.deferred &&
+      !interaction.replied
+    ) {
       return interaction.update(reply).catch(() => interaction.reply(reply));
     }
-    if (interaction.deferred || interaction.replied) return interaction.editReply(reply);
+    if (interaction.deferred || interaction.replied)
+      return interaction.editReply(reply);
     return interaction.reply(reply);
   }
 
@@ -667,15 +847,20 @@ async function startTicketFlow(interaction, categoryId, panelId) {
 function showTextModal(interaction, category, textQuestions) {
   const modal = new ModalBuilder()
     .setCustomId(`ticket_modal_${category.id}`)
-    .setTitle(`${category.emoji || '🎫'} ${category.name}`.substring(0, 45));
+    .setTitle(`${category.emoji || "🎫"} ${category.name}`.substring(0, 45));
 
   const rows = textQuestions.slice(0, 5).map((q, index) => {
     const input = new TextInputBuilder()
       .setCustomId(`question_${index}`)
       .setLabel(String(q.label || `Spørgsmål ${index + 1}`).substring(0, 45))
       .setRequired(q.required !== false)
-      .setStyle(q.style === 'paragraph' ? TextInputStyle.Paragraph : TextInputStyle.Short);
-    if (q.placeholder) input.setPlaceholder(String(q.placeholder).substring(0, 100));
+      .setStyle(
+        q.style === "paragraph"
+          ? TextInputStyle.Paragraph
+          : TextInputStyle.Short,
+      );
+    if (q.placeholder)
+      input.setPlaceholder(String(q.placeholder).substring(0, 100));
     return new ActionRowBuilder().addComponents(input);
   });
 
@@ -686,8 +871,13 @@ function showTextModal(interaction, category, textQuestions) {
 async function askNextSelect(interaction, categoryId, firstTime = false) {
   const state = getFlow(interaction.user.id, categoryId);
   if (!state) {
-    const reply = { content: '⚠️ Din session udløb. Prøv igen.', ephemeral: true, components: [] };
-    if (interaction.deferred || interaction.replied) return interaction.editReply(reply);
+    const reply = {
+      content: "⚠️ Din session udløb. Prøv igen.",
+      ephemeral: true,
+      components: [],
+    };
+    if (interaction.deferred || interaction.replied)
+      return interaction.editReply(reply);
     return interaction.reply(reply);
   }
 
@@ -698,22 +888,26 @@ async function askNextSelect(interaction, categoryId, firstTime = false) {
 
   const select = new StringSelectMenuBuilder()
     .setCustomId(`ticket_pick_${categoryId}_${state.currentSelectIdx}`)
-    .setPlaceholder(String(q.label || 'Vælg...').substring(0, 100))
+    .setPlaceholder(String(q.label || "Vælg...").substring(0, 100))
     .setMinValues(minValues)
     .setMaxValues(maxValues)
     .addOptions(
       q.options.slice(0, 25).map((opt, i) => ({
         label: String(opt).substring(0, 100),
         value: `opt_${i}`,
-      }))
+      })),
     );
 
   const row = new ActionRowBuilder().addComponents(select);
-  const content = `**${q.label}** ${q.multi ? '_(vælg en eller flere)_' : ''}\n_Trin ${state.currentSelectIdx + 1} af ${state.selectQuestions.length}_`;
+  const content = `**${q.label}** ${q.multi ? "_(vælg en eller flere)_" : ""}\n_Trin ${state.currentSelectIdx + 1} af ${state.selectQuestions.length}_`;
 
   if (firstTime) {
     // Initial response to the triggering button/select
-    if (interaction.isStringSelectMenu?.() && !interaction.deferred && !interaction.replied) {
+    if (
+      interaction.isStringSelectMenu?.() &&
+      !interaction.deferred &&
+      !interaction.replied
+    ) {
       return interaction.update({ content, components: [row] });
     }
     if (!interaction.deferred && !interaction.replied) {
@@ -728,28 +922,33 @@ async function askNextSelect(interaction, categoryId, firstTime = false) {
 
 async function handlePickSubmit(interaction) {
   // custom_id: ticket_pick_<categoryId>_<idx>
-  const rest = interaction.customId.replace('ticket_pick_', '');
-  const lastUnderscore = rest.lastIndexOf('_');
+  const rest = interaction.customId.replace("ticket_pick_", "");
+  const lastUnderscore = rest.lastIndexOf("_");
   const categoryId = rest.slice(0, lastUnderscore);
   const idx = parseInt(rest.slice(lastUnderscore + 1), 10);
 
   const state = getFlow(interaction.user.id, categoryId);
   if (!state || state.currentSelectIdx !== idx) {
-    return interaction.update({
-      content: '⚠️ Denne session er ikke længere aktiv. Start venligst forfra.',
-      components: [],
-    }).catch(() => {});
+    return interaction
+      .update({
+        content:
+          "⚠️ Denne session er ikke længere aktiv. Start venligst forfra.",
+        components: [],
+      })
+      .catch(() => {});
   }
 
   const q = state.selectQuestions[idx];
-  const picks = (interaction.values || []).map((v) => {
-    const optIdx = parseInt(String(v).replace('opt_', ''), 10);
-    return q.options[optIdx];
-  }).filter(Boolean);
+  const picks = (interaction.values || [])
+    .map((v) => {
+      const optIdx = parseInt(String(v).replace("opt_", ""), 10);
+      return q.options[optIdx];
+    })
+    .filter(Boolean);
 
   state.selectAnswers.push({
     question: q.label || `Spørgsmål ${idx + 1}`,
-    answer: picks.length > 0 ? picks.join(', ') : '(Intet valgt)',
+    answer: picks.length > 0 ? picks.join(", ") : "(Intet valgt)",
   });
   state.currentSelectIdx = idx + 1;
   setFlow(interaction.user.id, categoryId, state);
@@ -767,54 +966,87 @@ async function handlePickSubmit(interaction) {
   }
 
   // No text questions — create ticket now
-  await interaction.update({ content: '⏳ Opretter ticket...', components: [] });
+  await interaction.update({
+    content: "⏳ Opretter ticket...",
+    components: [],
+  });
   const answers = [...state.selectAnswers];
   clearFlow(interaction.user.id, categoryId);
-  await handleCreateTicket(interaction, categoryId, answers, state.category, state.settings);
+  await handleCreateTicket(
+    interaction,
+    categoryId,
+    answers,
+    state.category,
+    state.settings,
+  );
 }
 
 async function handleTicketModalSubmit(interaction) {
-  const categoryId = interaction.customId.replace('ticket_modal_', '');
+  const categoryId = interaction.customId.replace("ticket_modal_", "");
   await interaction.deferReply({ ephemeral: true });
 
   const state = getFlow(interaction.user.id, categoryId);
-  const category = state?.category || (await callAPI('getCategory', { categoryId })).category;
+  const category =
+    state?.category || (await callAPI("getCategory", { categoryId })).category;
   if (!category) {
-    return interaction.editReply({ content: '❌ Kategori ikke fundet.' });
+    return interaction.editReply({ content: "❌ Kategori ikke fundet." });
   }
 
-  const textQuestions = state?.textQuestions || (Array.isArray(category.questions) ? category.questions.filter((q) => q.style !== 'select') : []);
+  const textQuestions =
+    state?.textQuestions ||
+    (Array.isArray(category.questions)
+      ? category.questions.filter((q) => q.style !== "select")
+      : []);
   const textAnswers = textQuestions.slice(0, 5).map((q, index) => {
-    let value = '';
-    try { value = interaction.fields.getTextInputValue(`question_${index}`); } catch { /* missing */ }
+    let value = "";
+    try {
+      value = interaction.fields.getTextInputValue(`question_${index}`);
+    } catch {
+      /* missing */
+    }
     return {
       question: q.label || `Spørgsmål ${index + 1}`,
-      answer: value || '(Intet svar)',
+      answer: value || "(Intet svar)",
     };
   });
 
   const combined = [...(state?.selectAnswers || []), ...textAnswers];
   const settings = state?.settings;
   clearFlow(interaction.user.id, categoryId);
-  await handleCreateTicket(interaction, categoryId, combined, category, settings);
+  await handleCreateTicket(
+    interaction,
+    categoryId,
+    combined,
+    category,
+    settings,
+  );
 }
 
-async function handleCreateTicket(interaction, categoryId, applicationAnswers, presetCategory, presetSettings) {
+async function handleCreateTicket(
+  interaction,
+  categoryId,
+  applicationAnswers,
+  presetCategory,
+  presetSettings,
+) {
   // If we're already deferred/updated (button flow or modal), don't defer again
   if (!interaction.deferred && !interaction.replied) {
     await interaction.deferReply({ ephemeral: true });
   }
 
-  const category = presetCategory || (await callAPI('getCategory', { categoryId })).category;
+  const category =
+    presetCategory || (await callAPI("getCategory", { categoryId })).category;
 
   if (!category) {
-    return interaction.editReply({ content: '❌ Kategori ikke fundet.' });
+    return interaction.editReply({ content: "❌ Kategori ikke fundet." });
   }
 
-  const settings = presetSettings || (await callAPI('getSettings', { guildId: category.guild_id })).settings;
+  const settings =
+    presetSettings ||
+    (await callAPI("getSettings", { guildId: category.guild_id })).settings;
 
   // Re-check immediately before creation to avoid race-condition duplicates.
-  const { ticket: existingTicket } = await callAPI('getOpenTicketForUser', {
+  const { ticket: existingTicket } = await callAPI("getOpenTicketForUser", {
     guildId: category.guild_id,
     categoryId,
     creatorId: interaction.user.id,
@@ -828,12 +1060,15 @@ async function handleCreateTicket(interaction, categoryId, applicationAnswers, p
 
   // Get parent channel
   const parentChannel = settings?.thread_category_id
-    ? await interaction.guild.channels.fetch(settings.thread_category_id).catch(() => null)
+    ? await interaction.guild.channels
+        .fetch(settings.thread_category_id)
+        .catch(() => null)
     : interaction.channel;
 
   if (!parentChannel?.threads?.create) {
     return interaction.editReply({
-      content: '❌ Ticket parent er ikke en tekstkanal, der understøtter private threads. Ret den i ticket-indstillingerne.',
+      content:
+        "❌ Ticket parent er ikke en tekstkanal, der understøtter private threads. Ret den i ticket-indstillingerne.",
       components: [],
     });
   }
@@ -841,9 +1076,12 @@ async function handleCreateTicket(interaction, categoryId, applicationAnswers, p
   // Create thread
   const ticketNumber = Date.now().toString(36).toUpperCase();
   const thread = await parentChannel.threads.create({
-    name: `${category.emoji || '🎫'} ${category.name}-${ticketNumber}`.substring(0, 100),
+    name: `${category.emoji || "🎫"} ${category.name}-${ticketNumber}`.substring(
+      0,
+      100,
+    ),
     type: ChannelType.PrivateThread,
-    invitable: false
+    invitable: false,
   });
 
   // Add creator to thread
@@ -853,47 +1091,68 @@ async function handleCreateTicket(interaction, categoryId, applicationAnswers, p
     try {
       const pingMsg = await thread.send({
         content: `<@&${category.staff_role_id}>`,
-        allowedMentions: { roles: [category.staff_role_id] }
+        allowedMentions: { roles: [category.staff_role_id] },
       });
-      setTimeout(() => { pingMsg.delete().catch(() => {}); }, 1500);
+      setTimeout(() => {
+        pingMsg.delete().catch(() => {});
+      }, 1500);
     } catch (error) {
-      console.error('Failed to notify staff role:', error);
+      console.error("Failed to notify staff role:", error);
     }
   }
 
   // Create embed
-  let description = category.welcome_message || 'Tak for din henvendelse!';
-  const isApplication = category.ticket_type === 'application';
+  let description = category.welcome_message || "Tak for din henvendelse!";
+  const isApplication = category.ticket_type === "application";
   if (Array.isArray(applicationAnswers) && applicationAnswers.length > 0) {
-    const header = isApplication ? '**Ansøgning modtaget!**' : '**Oplysninger fra bruger:**';
+    const header = isApplication
+      ? "**Ansøgning modtaget!**"
+      : "**Oplysninger fra bruger:**";
     description = `${header}\n\n`;
     for (const qa of applicationAnswers) {
       description += `**${qa.question}**\n${qa.answer}\n\n`;
     }
-    description += `---\n${category.welcome_message || ''}`;
+    description += `---\n${category.welcome_message || ""}`;
   }
 
   const embed = new EmbedBuilder()
-    .setTitle(`${category.emoji || '🎫'} ${category.name}`)
+    .setTitle(`${category.emoji || "🎫"} ${category.name}`)
     .setDescription(description)
-    .setColor(0x5865F2)
+    .setColor(0x5865f2)
     .addFields(
-      { name: 'Oprettet af', value: `<@${interaction.user.id}>`, inline: true },
-      { name: 'Status', value: '🟢 Åben', inline: true }
+      { name: "Oprettet af", value: `<@${interaction.user.id}>`, inline: true },
+      { name: "Status", value: "🟢 Åben", inline: true },
     )
     .setFooter({ text: `Ticket ID: ${ticketNumber}` })
     .setTimestamp();
 
   const row = new ActionRowBuilder().addComponents(
-    new ButtonBuilder().setCustomId(`ticket_claim_${thread.id}`).setLabel('Claim').setStyle(ButtonStyle.Primary).setEmoji('🙋'),
-    new ButtonBuilder().setCustomId(`ticket_close_${thread.id}`).setLabel('Close (Archive)').setStyle(ButtonStyle.Secondary).setEmoji('📁'),
-    new ButtonBuilder().setCustomId(`ticket_delete_${thread.id}`).setLabel('Close (Delete)').setStyle(ButtonStyle.Danger).setEmoji('🗑️')
+    new ButtonBuilder()
+      .setCustomId(`ticket_claim_${thread.id}`)
+      .setLabel("Claim")
+      .setStyle(ButtonStyle.Primary)
+      .setEmoji("🙋"),
+    new ButtonBuilder()
+      .setCustomId(`ticket_close_${thread.id}`)
+      .setLabel("Close (Archive)")
+      .setStyle(ButtonStyle.Secondary)
+      .setEmoji("📁"),
+    new ButtonBuilder()
+      .setCustomId(`ticket_delete_${thread.id}`)
+      .setLabel("Close (Delete)")
+      .setStyle(ButtonStyle.Danger)
+      .setEmoji("🗑️"),
   );
 
   await thread.send({ embeds: [embed], components: [row] });
 
   const firstAnswer = Array.isArray(applicationAnswers)
-    ? applicationAnswers.find((entry) => entry?.answer && entry.answer !== '(Intet svar)' && entry.answer !== '(Intet valgt)')
+    ? applicationAnswers.find(
+        (entry) =>
+          entry?.answer &&
+          entry.answer !== "(Intet svar)" &&
+          entry.answer !== "(Intet valgt)",
+      )
     : null;
   const ticketSubject = firstAnswer?.answer
     ? `${category.name}: ${String(firstAnswer.answer).slice(0, 90)}`
@@ -902,7 +1161,7 @@ async function handleCreateTicket(interaction, categoryId, applicationAnswers, p
   // Save to database via API. Roll the Discord thread back if persistence fails,
   // otherwise staff end up with orphaned ticket channels.
   try {
-    await callAPI('createTicket', {
+    await callAPI("createTicket", {
       guildId: category.guild_id,
       categoryId,
       channelId: thread.id,
@@ -914,52 +1173,85 @@ async function handleCreateTicket(interaction, categoryId, applicationAnswers, p
       answers: applicationAnswers || [],
     });
   } catch (error) {
-    console.error('[Tickets] Failed to persist ticket, deleting orphan thread:', error);
+    console.error(
+      "[Tickets] Failed to persist ticket, deleting orphan thread:",
+      error,
+    );
     await thread.delete().catch(() => {});
     return interaction.editReply({
-      content: '❌ Ticketen kunne ikke gemmes. Den midlertidige Discord-tråd er ryddet op igen.',
+      content:
+        "❌ Ticketen kunne ikke gemmes. Den midlertidige Discord-tråd er ryddet op igen.",
       components: [],
     });
   }
 
-  await interaction.editReply({ content: `✅ Ticket oprettet: <#${thread.id}>`, components: [] });
+  await interaction.editReply({
+    content: `✅ Ticket oprettet: <#${thread.id}>`,
+    components: [],
+  });
 }
-
 
 async function handleClaimTicket(interaction, threadId) {
   const access = await requireTicketAccess(interaction);
   if (!access) return;
 
   try {
-    await callAPI('claimTicket', {
+    await callAPI("claimTicket", {
       channelId: threadId,
       claimedById: interaction.user.id,
-      claimedByName: interaction.user.username
+      claimedByName: interaction.user.username,
     });
   } catch (error) {
-    return replyPrivate(interaction, `⚠️ ${error?.message || 'Ticketen kunne ikke claimes.'}`);
+    return replyPrivate(
+      interaction,
+      `⚠️ ${error?.message || "Ticketen kunne ikke claimes."}`,
+    );
   }
 
   // For button interactions, update the original message embed
   if (interaction.isButton?.() && interaction.message?.embeds?.[0]) {
-    const embed = EmbedBuilder.from(interaction.message.embeds[0])
-      .setFields(interaction.message.embeds[0].fields.map(f => 
-        f.name === 'Status' ? { name: 'Status', value: `🟡 Claimed af <@${interaction.user.id}>`, inline: true } : f
-      ));
+    const embed = EmbedBuilder.from(interaction.message.embeds[0]).setFields(
+      interaction.message.embeds[0].fields.map((f) =>
+        f.name === "Status"
+          ? {
+              name: "Status",
+              value: `🟡 Claimed af <@${interaction.user.id}>`,
+              inline: true,
+            }
+          : f,
+      ),
+    );
 
     const row = new ActionRowBuilder().addComponents(
-      new ButtonBuilder().setCustomId(`ticket_unclaim_${threadId}`).setLabel('Unclaim').setStyle(ButtonStyle.Secondary).setEmoji('↩️'),
-      new ButtonBuilder().setCustomId(`ticket_close_${threadId}`).setLabel('Close (Archive)').setStyle(ButtonStyle.Secondary).setEmoji('📁'),
-      new ButtonBuilder().setCustomId(`ticket_delete_${threadId}`).setLabel('Close (Delete)').setStyle(ButtonStyle.Danger).setEmoji('🗑️')
+      new ButtonBuilder()
+        .setCustomId(`ticket_unclaim_${threadId}`)
+        .setLabel("Unclaim")
+        .setStyle(ButtonStyle.Secondary)
+        .setEmoji("↩️"),
+      new ButtonBuilder()
+        .setCustomId(`ticket_close_${threadId}`)
+        .setLabel("Close (Archive)")
+        .setStyle(ButtonStyle.Secondary)
+        .setEmoji("📁"),
+      new ButtonBuilder()
+        .setCustomId(`ticket_delete_${threadId}`)
+        .setLabel("Close (Delete)")
+        .setStyle(ButtonStyle.Danger)
+        .setEmoji("🗑️"),
     );
 
     await interaction.update({ embeds: [embed], components: [row] });
   } else {
     // Slash command - just reply
     if (!interaction.replied && !interaction.deferred) {
-      await interaction.reply({ content: `✅ Ticket claimed af <@${interaction.user.id}>`, ephemeral: true });
+      await interaction.reply({
+        content: `✅ Ticket claimed af <@${interaction.user.id}>`,
+        ephemeral: true,
+      });
     } else {
-      await interaction.editReply({ content: `✅ Ticket claimed af <@${interaction.user.id}>` });
+      await interaction.editReply({
+        content: `✅ Ticket claimed af <@${interaction.user.id}>`,
+      });
     }
   }
 }
@@ -972,93 +1264,155 @@ async function handleUnclaimTicket(interaction, threadId) {
     const permissions = interaction.memberPermissions;
     const canOverride = Boolean(
       permissions?.has?.(PermissionFlagsBits.Administrator) ||
-      permissions?.has?.(PermissionFlagsBits.ManageChannels)
+      permissions?.has?.(PermissionFlagsBits.ManageChannels),
     );
     if (!canOverride) {
-      return replyPrivate(interaction, `⛔ Ticketen er claimed af <@${ticket.claimed_by_id}>.`);
+      return replyPrivate(
+        interaction,
+        `⛔ Ticketen er claimed af <@${ticket.claimed_by_id}>.`,
+      );
     }
   }
 
-  await callAPI('unclaimTicket', { channelId: threadId });
+  await callAPI("unclaimTicket", { channelId: threadId });
 
   if (interaction.isButton?.() && interaction.message?.embeds?.[0]) {
     const embed = EmbedBuilder.from(interaction.message.embeds[0])
-      .setColor(0x5865F2)
-      .setFields(interaction.message.embeds[0].fields.map((field) =>
-        field.name === 'Status' ? { name: 'Status', value: '🟢 Åben', inline: true } : field
-      ));
+      .setColor(0x5865f2)
+      .setFields(
+        interaction.message.embeds[0].fields.map((field) =>
+          field.name === "Status"
+            ? { name: "Status", value: "🟢 Åben", inline: true }
+            : field,
+        ),
+      );
 
     const row = new ActionRowBuilder().addComponents(
-      new ButtonBuilder().setCustomId(`ticket_claim_${threadId}`).setLabel('Claim').setStyle(ButtonStyle.Primary).setEmoji('🙋'),
-      new ButtonBuilder().setCustomId(`ticket_close_${threadId}`).setLabel('Close (Archive)').setStyle(ButtonStyle.Secondary).setEmoji('📁'),
-      new ButtonBuilder().setCustomId(`ticket_delete_${threadId}`).setLabel('Close (Delete)').setStyle(ButtonStyle.Danger).setEmoji('🗑️')
+      new ButtonBuilder()
+        .setCustomId(`ticket_claim_${threadId}`)
+        .setLabel("Claim")
+        .setStyle(ButtonStyle.Primary)
+        .setEmoji("🙋"),
+      new ButtonBuilder()
+        .setCustomId(`ticket_close_${threadId}`)
+        .setLabel("Close (Archive)")
+        .setStyle(ButtonStyle.Secondary)
+        .setEmoji("📁"),
+      new ButtonBuilder()
+        .setCustomId(`ticket_delete_${threadId}`)
+        .setLabel("Close (Delete)")
+        .setStyle(ButtonStyle.Danger)
+        .setEmoji("🗑️"),
     );
 
     await interaction.update({ embeds: [embed], components: [row] });
   } else {
-    await replyPrivate(interaction, '↩️ Ticketen er frigivet og kan claimes igen.');
+    await replyPrivate(
+      interaction,
+      "↩️ Ticketen er frigivet og kan claimes igen.",
+    );
   }
 }
 
 async function handleCloseTicket(interaction, threadId, deleteThread = false) {
-  const access = await requireTicketAccess(interaction, { allowCreator: !deleteThread });
+  const access = await requireTicketAccess(interaction, {
+    allowCreator: !deleteThread,
+  });
   if (!access) return;
 
-  const result = await callAPI('closeTicket', {
+  const result = await callAPI("closeTicket", {
     channelId: threadId,
     closedById: interaction.user.id,
-    closedByName: interaction.user.username
+    closedByName: interaction.user.username,
   });
 
   // Trigger AI summary asynchronously (fire-and-forget)
   if (result?.ticket_id) {
     const SUMMARY_URL = `${APP_API_BASE}/api/public/ai-ticket-summary`;
     fetch(SUMMARY_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-bot-secret': BOT_SECRET },
-      body: JSON.stringify({ action: 'summarize', data: { ticket_id: result.ticket_id } })
-    }).then(async (response) => {
-      if (!response.ok) {
-        const errorBody = await response.text().catch(() => '');
-        console.error(`[Tickets] AI summary API error ${response.status}: ${errorBody.slice(0, 500)}`);
-      }
-    }).catch(err => console.error('[Tickets] AI summary network error:', err.message));
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-bot-secret": BOT_SECRET,
+      },
+      body: JSON.stringify({
+        action: "summarize",
+        data: { ticket_id: result.ticket_id },
+      }),
+    })
+      .then(async (response) => {
+        if (!response.ok) {
+          const errorBody = await response.text().catch(() => "");
+          console.error(
+            `[Tickets] AI summary API error ${response.status}: ${errorBody.slice(0, 500)}`,
+          );
+        }
+      })
+      .catch((err) =>
+        console.error("[Tickets] AI summary network error:", err.message),
+      );
 
     // Trigger HTML transcript generation + DM (fire-and-forget)
     const TRANSCRIPT_URL = `${APP_API_BASE}/api/public/generate-ticket-transcript`;
     fetch(TRANSCRIPT_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-bot-secret': BOT_SECRET },
-      body: JSON.stringify({ ticket_id: result.ticket_id })
-    }).catch(err => console.error('[Tickets] Transcript error:', err.message));
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-bot-secret": BOT_SECRET,
+      },
+      body: JSON.stringify({ ticket_id: result.ticket_id }),
+    }).catch((err) =>
+      console.error("[Tickets] Transcript error:", err.message),
+    );
   }
 
   // For button interactions, update the original message embed
   if (interaction.isButton?.() && interaction.message?.embeds?.[0]) {
     const embed = EmbedBuilder.from(interaction.message.embeds[0])
-      .setColor(0xED4245)
-      .setFields(interaction.message.embeds[0].fields.map(f => 
-        f.name === 'Status' ? { name: 'Status', value: `🔴 Lukket af <@${interaction.user.id}>`, inline: true } : f
-      ));
+      .setColor(0xed4245)
+      .setFields(
+        interaction.message.embeds[0].fields.map((f) =>
+          f.name === "Status"
+            ? {
+                name: "Status",
+                value: `🔴 Lukket af <@${interaction.user.id}>`,
+                inline: true,
+              }
+            : f,
+        ),
+      );
 
     const row = new ActionRowBuilder().addComponents(
-      new ButtonBuilder().setCustomId('disabled').setLabel('Ticket Lukket').setStyle(ButtonStyle.Secondary).setEmoji('🔒').setDisabled(true)
+      new ButtonBuilder()
+        .setCustomId("disabled")
+        .setLabel("Ticket Lukket")
+        .setStyle(ButtonStyle.Secondary)
+        .setEmoji("🔒")
+        .setDisabled(true),
     );
 
     await interaction.update({ embeds: [embed], components: [row] });
   } else {
     // Slash command - reply
     if (!interaction.replied && !interaction.deferred) {
-      await interaction.reply({ content: `🔒 Ticket lukket af <@${interaction.user.id}>`, ephemeral: true });
+      await interaction.reply({
+        content: `🔒 Ticket lukket af <@${interaction.user.id}>`,
+        ephemeral: true,
+      });
     } else {
-      await interaction.editReply({ content: `🔒 Ticket lukket af <@${interaction.user.id}>` });
+      await interaction.editReply({
+        content: `🔒 Ticket lukket af <@${interaction.user.id}>`,
+      });
     }
   }
 
   if (interaction.channel?.isThread()) {
     if (deleteThread) {
       await interaction.channel.delete().catch(async (err) => {
-        console.error('Failed to delete thread, falling back to archive:', err.message);
+        console.error(
+          "Failed to delete thread, falling back to archive:",
+          err.message,
+        );
         await interaction.channel.setArchived(true).catch(console.error);
         await interaction.channel.setLocked(true).catch(console.error);
       });
@@ -1074,7 +1428,10 @@ const TWELVE_HOURS = 12 * 60 * 60 * 1000;
 async function handleTicketRemind(interaction, remindTimers) {
   // Must be used inside a thread
   if (!interaction.channel?.isThread()) {
-    return interaction.reply({ content: '❌ Denne kommando kan kun bruges i en ticket-tråd.', ephemeral: true });
+    return interaction.reply({
+      content: "❌ Denne kommando kan kun bruges i en ticket-tråd.",
+      ephemeral: true,
+    });
   }
 
   const access = await requireTicketAccess(interaction);
@@ -1082,53 +1439,74 @@ async function handleTicketRemind(interaction, remindTimers) {
 
   // Check if already reminded
   if (remindTimers.has(interaction.channel.id)) {
-    return interaction.reply({ content: '⚠️ Der er allerede sendt en påmindelse for denne ticket.', ephemeral: true });
+    return interaction.reply({
+      content: "⚠️ Der er allerede sendt en påmindelse for denne ticket.",
+      ephemeral: true,
+    });
   }
 
   // Get ticket info from API to find the creator
   let ticket;
   try {
-    const result = await callAPI('getTicket', { channelId: interaction.channel.id });
+    const result = await callAPI("getTicket", {
+      channelId: interaction.channel.id,
+    });
     ticket = result?.ticket;
   } catch {
-    return interaction.reply({ content: '❌ Kunne ikke finde ticket-info for denne tråd.', ephemeral: true });
+    return interaction.reply({
+      content: "❌ Kunne ikke finde ticket-info for denne tråd.",
+      ephemeral: true,
+    });
   }
 
   if (!ticket) {
-    return interaction.reply({ content: '❌ Denne tråd er ikke en aktiv ticket.', ephemeral: true });
+    return interaction.reply({
+      content: "❌ Denne tråd er ikke en aktiv ticket.",
+      ephemeral: true,
+    });
   }
 
   const creatorId = ticket.creator_discord_id || ticket.creatorId;
   if (!creatorId) {
-    return interaction.reply({ content: '❌ Kunne ikke finde ticket-ejeren.', ephemeral: true });
+    return interaction.reply({
+      content: "❌ Kunne ikke finde ticket-ejeren.",
+      ephemeral: true,
+    });
   }
 
   // Send reminder ping
   const reminderEmbed = new EmbedBuilder()
-    .setTitle('⏰ Ticket Påmindelse')
-    .setDescription(`<@${creatorId}>, du har en åben ticket der venter på dit svar!\n\n⚠️ **Hvis du ikke svarer inden 12 timer, lukkes denne ticket automatisk.**`)
-    .setColor(0xFFA500)
+    .setTitle("⏰ Ticket Påmindelse")
+    .setDescription(
+      `<@${creatorId}>, du har en åben ticket der venter på dit svar!\n\n⚠️ **Hvis du ikke svarer inden 12 timer, lukkes denne ticket automatisk.**`,
+    )
+    .setColor(0xffa500)
     .setTimestamp();
 
-  await interaction.reply({ content: `<@${creatorId}>`, embeds: [reminderEmbed] });
+  await interaction.reply({
+    content: `<@${creatorId}>`,
+    embeds: [reminderEmbed],
+  });
 
   // Set 12-hour auto-delete timer
   const timeout = setTimeout(async () => {
     try {
       remindTimers.delete(interaction.channel.id);
-      
+
       // Close the ticket via API
-      await callAPI('closeTicket', {
+      await callAPI("closeTicket", {
         channelId: interaction.channel.id,
         closedById: interaction.client.user.id,
-        closedByName: 'Auto-lukning (ingen svar)',
+        closedByName: "Auto-lukning (ingen svar)",
       });
 
       // Send closing message
       const closeEmbed = new EmbedBuilder()
-        .setTitle('🔒 Ticket Auto-Lukket')
-        .setDescription('Denne ticket er automatisk blevet lukket da der ikke blev svaret inden for 12 timer efter påmindelsen.')
-        .setColor(0xED4245)
+        .setTitle("🔒 Ticket Auto-Lukket")
+        .setDescription(
+          "Denne ticket er automatisk blevet lukket da der ikke blev svaret inden for 12 timer efter påmindelsen.",
+        )
+        .setColor(0xed4245)
         .setTimestamp();
 
       await interaction.channel.send({ embeds: [closeEmbed] }).catch(() => {});
@@ -1137,21 +1515,24 @@ async function handleTicketRemind(interaction, remindTimers) {
       await interaction.channel.setArchived(true).catch(() => {});
       await interaction.channel.setLocked(true).catch(() => {});
 
-      console.log(`[Tickets] Auto-closed ticket ${interaction.channel.id} — no response after remind`);
+      console.log(
+        `[Tickets] Auto-closed ticket ${interaction.channel.id} — no response after remind`,
+      );
     } catch (err) {
-      console.error('[Tickets] Auto-close error:', err.message);
+      console.error("[Tickets] Auto-close error:", err.message);
     }
   }, TWELVE_HOURS);
 
   remindTimers.set(interaction.channel.id, { timeout, creatorId });
-  console.log(`[Tickets] Remind sent for ${interaction.channel.id}, auto-delete in 12h`);
+  console.log(
+    `[Tickets] Remind sent for ${interaction.channel.id}, auto-delete in 12h`,
+  );
 }
-
 
 async function handleRateTicket(interaction) {
   // ticket_rate_<ticketUuid>_<n>
-  const raw = interaction.customId.replace('ticket_rate_', '');
-  const lastUnderscore = raw.lastIndexOf('_');
+  const raw = interaction.customId.replace("ticket_rate_", "");
+  const lastUnderscore = raw.lastIndexOf("_");
   if (lastUnderscore < 0) return;
   const ticketId = raw.slice(0, lastUnderscore);
   const rating = parseInt(raw.slice(lastUnderscore + 1), 10);
@@ -1159,8 +1540,8 @@ async function handleRateTicket(interaction) {
 
   const RATE_URL = `${APP_API_BASE}/api/public/submit-ticket-rating`;
   const resp = await fetch(RATE_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'x-bot-secret': BOT_SECRET },
+    method: "POST",
+    headers: { "Content-Type": "application/json", "x-bot-secret": BOT_SECRET },
     body: JSON.stringify({
       ticket_id: ticketId,
       rated_by_id: interaction.user.id,
@@ -1169,21 +1550,30 @@ async function handleRateTicket(interaction) {
   });
 
   if (!resp.ok) {
-    return interaction.reply({ content: '❌ Kunne ikke gemme rating.', ephemeral: true });
+    return interaction.reply({
+      content: "❌ Kunne ikke gemme rating.",
+      ephemeral: true,
+    });
   }
 
   // Update the DM message to confirm and disable buttons
-  const stars = '★'.repeat(rating) + '☆'.repeat(5 - rating);
+  const stars = "★".repeat(rating) + "☆".repeat(5 - rating);
   const disabled = new ActionRowBuilder().addComponents(
-    [1, 2, 3, 4, 5].map(n =>
-      new ButtonBuilder().setCustomId(`disabled_${n}`).setLabel(`${n} ★`).setStyle(ButtonStyle.Secondary).setDisabled(true)
-    )
+    [1, 2, 3, 4, 5].map((n) =>
+      new ButtonBuilder()
+        .setCustomId(`disabled_${n}`)
+        .setLabel(`${n} ★`)
+        .setStyle(ButtonStyle.Secondary)
+        .setDisabled(true),
+    ),
   );
-  await interaction.update({
-    content: `✅ Tak for din rating: **${stars}** (${rating}/5)`,
-    embeds: interaction.message?.embeds || [],
-    components: [disabled],
-  }).catch(() => {});
+  await interaction
+    .update({
+      content: `✅ Tak for din rating: **${stars}** (${rating}/5)`,
+      embeds: interaction.message?.embeds || [],
+      components: [disabled],
+    })
+    .catch(() => {});
 }
 
 module.exports = { setupTicketHandler };

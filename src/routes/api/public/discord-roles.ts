@@ -1,13 +1,19 @@
-// @ts-nocheck
 // Migrated from Supabase Edge Function `discord-roles` to a TanStack server route.
-import { createFileRoute } from '@tanstack/react-router'
-import { createClient } from '@supabase/supabase-js'
-import { vpsDiscordRequest } from '@/lib/vps-discord-bridge'
+// @ts-nocheck
+import { createFileRoute } from "@tanstack/react-router";
+import { createClient } from "@supabase/supabase-js";
+import { vpsDiscordRequest } from "@/lib/vps-discord-bridge";
+import type { Untyped } from "@/types/untyped";
 
-const __env = (k: string) => process.env[k] ?? (k === 'SUPABASE_ANON_KEY' ? process.env['SUPABASE_PUBLISHABLE_KEY'] : undefined)
-let __handler: (req: Request) => Response | Promise<Response>
-const __serve = (fn: any, _opts?: any) => { __handler = fn }
-
+const __env = (k: string) =>
+  process.env[k] ??
+  (k === "SUPABASE_ANON_KEY"
+    ? process.env["SUPABASE_PUBLISHABLE_KEY"]
+    : undefined);
+let __handler: (req: Request) => Response | Promise<Response>;
+const __serve = (fn: Untyped, _opts?: Untyped) => {
+  __handler = fn;
+};
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -22,7 +28,6 @@ interface DiscordRole {
   position: number;
   managed: boolean;
 }
-
 
 __serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -46,7 +51,8 @@ __serve(async (req) => {
       { global: { headers: { Authorization: authHeader } } },
     );
 
-    const { data: claimsData, error: claimsError } = await supabaseAuthed.auth.getClaims(token);
+    const { data: claimsData, error: claimsError } =
+      await supabaseAuthed.auth.getClaims(token);
     if (claimsError || !claimsData?.claims?.sub) {
       console.error("getClaims failed", claimsError);
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
@@ -67,14 +73,20 @@ __serve(async (req) => {
     const guildId = url.searchParams.get("guildId");
 
     if (!guildId) {
-      return new Response(JSON.stringify({ error: "Missing guildId parameter" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return new Response(
+        JSON.stringify({ error: "Missing guildId parameter" }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
     }
 
     // Check if user is a global admin/staff (bypass guild access check)
-    const { data: isGlobalAdmin } = await supabaseAdmin.rpc("has_admin_or_staff_role", { _user_id: userId });
+    const { data: isGlobalAdmin } = await supabaseAdmin.rpc(
+      "has_admin_or_staff_role",
+      { _user_id: userId },
+    );
 
     if (!isGlobalAdmin) {
       // Verify user has access to this guild
@@ -110,9 +122,15 @@ __serve(async (req) => {
     }
 
     // Discord operations are performed by the VPS. Cloudflare never holds bot tokens.
-    const roles: DiscordRole[] = await vpsDiscordRequest(guild.guild_id, '/roles');
-    const botMember = await vpsDiscordRequest(guild.guild_id, '/bot-member').catch((error) => {
-      console.warn('Could not resolve bot member roles:', error);
+    const roles: DiscordRole[] = await vpsDiscordRequest(
+      guild.guild_id,
+      "/roles",
+    );
+    const botMember = await vpsDiscordRequest(
+      guild.guild_id,
+      "/bot-member",
+    ).catch((error) => {
+      console.warn("Could not resolve bot member roles:", error);
       return null;
     });
 
@@ -126,11 +144,12 @@ __serve(async (req) => {
       0,
     );
     const permissionBits = botRoles.reduce(
-      (bits, role: any) => bits | BigInt(role.permissions || "0"),
+      (bits, role: Untyped) => bits | BigInt(role.permissions || "0"),
       0n,
     );
     const hasAdministrator = (permissionBits & 8n) === 8n;
-    const hasManageRoles = hasAdministrator || (permissionBits & 268435456n) === 268435456n;
+    const hasManageRoles =
+      hasAdministrator || (permissionBits & 268435456n) === 268435456n;
 
     const filteredRoles = roles
       .filter((role) => role.name !== "@everyone")
@@ -147,7 +166,8 @@ __serve(async (req) => {
           reason = 'Botten mangler "Manage Roles"';
         } else if ((role.position || 0) >= highestBotRolePosition) {
           assignable = false;
-          reason = "Rollen ligger over eller på niveau med bottens højeste rolle";
+          reason =
+            "Rollen ligger over eller på niveau med bottens højeste rolle";
         }
 
         return {
@@ -163,19 +183,22 @@ __serve(async (req) => {
 
     console.log(
       `Fetched ${filteredRoles.length} roles for guild ${guild.guild_id}; ` +
-      `${filteredRoles.filter((r) => r.assignable).length} assignable`
+        `${filteredRoles.filter((r) => r.assignable).length} assignable`,
     );
 
-    return new Response(JSON.stringify({
-      roles: filteredRoles,
-      bot_permissions: {
-        manage_roles: hasManageRoles,
-        administrator: hasAdministrator,
-        highest_role_position: highestBotRolePosition,
+    return new Response(
+      JSON.stringify({
+        roles: filteredRoles,
+        bot_permissions: {
+          manage_roles: hasManageRoles,
+          administrator: hasAdministrator,
+          highest_role_position: highestBotRolePosition,
+        },
+      }),
+      {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
       },
-    }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    );
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : "Unknown error";
     console.error("discord-roles error:", message);
@@ -186,10 +209,9 @@ __serve(async (req) => {
   }
 });
 
+const __call = ({ request }: { request: Request }) => __handler(request);
 
-const __call = ({ request }: { request: Request }) => __handler(request)
-
-export const Route = createFileRoute('/api/public/discord-roles')({
+export const Route = createFileRoute("/api/public/discord-roles")({
   server: {
     handlers: {
       GET: __call,
@@ -200,4 +222,4 @@ export const Route = createFileRoute('/api/public/discord-roles')({
       OPTIONS: __call,
     },
   },
-})
+});

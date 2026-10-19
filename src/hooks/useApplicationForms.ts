@@ -1,13 +1,14 @@
-import type { TablesUpdate } from '@/integrations/supabase/types';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
-import { useGuild } from '@/contexts/GuildContext';
-import { toast } from 'sonner';
+import type { TablesUpdate } from "@/integrations/supabase/types";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { useGuild } from "@/contexts/GuildContext";
+import { toast } from "sonner";
+import type { Untyped } from "@/types/untyped";
 
 export interface ApplicationQuestion {
   id: string;
   label: string;
-  type: 'short' | 'long' | 'select' | 'number';
+  type: "short" | "long" | "select" | "number";
   required: boolean;
   placeholder?: string;
   options?: string[];
@@ -41,18 +42,18 @@ export function useApplicationForms() {
   const { selectedGuild } = useGuild();
 
   return useQuery({
-    queryKey: ['application-forms', selectedGuild?.id],
+    queryKey: ["application-forms", selectedGuild?.id],
     queryFn: async () => {
       if (!selectedGuild?.id) return [];
 
       const { data, error } = await supabase
-        .from('application_forms')
-        .select('*')
-        .eq('guild_id', selectedGuild.id)
-        .order('created_at', { ascending: true });
+        .from("application_forms")
+        .select("*")
+        .eq("guild_id", selectedGuild.id)
+        .order("created_at", { ascending: true });
 
       if (error) throw error;
-      return (data || []).map(d => ({
+      return (data || []).map((d) => ({
         ...d,
         questions: (d.questions || []) as unknown as ApplicationQuestion[],
       })) as ApplicationForm[];
@@ -65,15 +66,15 @@ export function useApplicationForm(formId: string | undefined) {
   const { selectedGuild } = useGuild();
 
   return useQuery({
-    queryKey: ['application-form', formId],
+    queryKey: ["application-form", formId],
     queryFn: async () => {
       if (!formId || !selectedGuild?.id) return null;
 
       const { data, error } = await supabase
-        .from('application_forms')
-        .select('*')
-        .eq('id', formId)
-        .eq('guild_id', selectedGuild.id)
+        .from("application_forms")
+        .select("*")
+        .eq("id", formId)
+        .eq("guild_id", selectedGuild.id)
         .single();
 
       if (error) throw error;
@@ -91,18 +92,22 @@ export function useCreateApplicationForm() {
   const { selectedGuild } = useGuild();
 
   return useMutation({
-    mutationFn: async (form: Partial<Omit<ApplicationForm, 'id' | 'guild_id' | 'created_at' | 'updated_at'>>) => {
-      if (!selectedGuild?.id) throw new Error('No guild selected');
+    mutationFn: async (
+      form: Partial<
+        Omit<ApplicationForm, "id" | "guild_id" | "created_at" | "updated_at">
+      >,
+    ) => {
+      if (!selectedGuild?.id) throw new Error("No guild selected");
 
       const { data, error } = await supabase
-        .from('application_forms')
+        .from("application_forms")
         .insert({
-          name: form.name || 'Untitled',
+          name: form.name || "Untitled",
           description: form.description,
           emoji: form.emoji,
           enabled: form.enabled,
           guild_id: selectedGuild.id,
-          questions: (form.questions || []) as unknown as any,
+          questions: (form.questions || []) as unknown as Untyped,
           granted_role_id: form.granted_role_id,
           approval_channel_id: form.approval_channel_id,
           denial_channel_id: form.denial_channel_id,
@@ -116,11 +121,13 @@ export function useCreateApplicationForm() {
       return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['application-forms', selectedGuild?.id] });
-      toast.success('Application form created');
+      queryClient.invalidateQueries({
+        queryKey: ["application-forms", selectedGuild?.id],
+      });
+      toast.success("Application form created");
     },
     onError: (error) => {
-      toast.error('Failed to create form: ' + error.message);
+      toast.error("Failed to create form: " + error.message);
     },
   });
 }
@@ -130,30 +137,44 @@ export function useUpdateApplicationForm() {
   const { selectedGuild } = useGuild();
 
   return useMutation({
-    mutationFn: async ({ id, ...form }: Partial<ApplicationForm> & { id: string }) => {
-      if (!selectedGuild?.id) throw new Error('No guild selected');
+    mutationFn: async ({
+      id,
+      ...form
+    }: Partial<ApplicationForm> & { id: string }) => {
+      if (!selectedGuild?.id) throw new Error("No guild selected");
 
-      const updateData: TablesUpdate<'application_forms'> = {};
+      const updateData: TablesUpdate<"application_forms"> = {};
       if (form.name !== undefined) updateData.name = form.name;
-      if (form.description !== undefined) updateData.description = form.description;
+      if (form.description !== undefined)
+        updateData.description = form.description;
       if (form.emoji !== undefined) updateData.emoji = form.emoji;
       if (form.enabled !== undefined) updateData.enabled = form.enabled;
-      if (form.questions !== undefined) updateData.questions = form.questions as unknown as any;
-      if (form.granted_role_id !== undefined) updateData.granted_role_id = form.granted_role_id;
-      if (form.approval_channel_id !== undefined) updateData.approval_channel_id = form.approval_channel_id;
-      if (form.denial_channel_id !== undefined) updateData.denial_channel_id = form.denial_channel_id;
-      if (form.allow_reapply !== undefined) updateData.allow_reapply = form.allow_reapply;
-      if (form.reapply_cooldown_hours !== undefined) updateData.reapply_cooldown_hours = form.reapply_cooldown_hours;
-      if (form.ai_screening_enabled !== undefined) updateData.ai_screening_enabled = form.ai_screening_enabled ?? false;
-      if (form.ai_screening_prompt !== undefined) updateData.ai_screening_prompt = form.ai_screening_prompt;
-      if (form.ai_auto_approve_threshold !== undefined) updateData.ai_auto_approve_threshold = form.ai_auto_approve_threshold;
-      if (form.ai_auto_deny_threshold !== undefined) updateData.ai_auto_deny_threshold = form.ai_auto_deny_threshold;
+      if (form.questions !== undefined)
+        updateData.questions = form.questions as unknown as Untyped;
+      if (form.granted_role_id !== undefined)
+        updateData.granted_role_id = form.granted_role_id;
+      if (form.approval_channel_id !== undefined)
+        updateData.approval_channel_id = form.approval_channel_id;
+      if (form.denial_channel_id !== undefined)
+        updateData.denial_channel_id = form.denial_channel_id;
+      if (form.allow_reapply !== undefined)
+        updateData.allow_reapply = form.allow_reapply;
+      if (form.reapply_cooldown_hours !== undefined)
+        updateData.reapply_cooldown_hours = form.reapply_cooldown_hours;
+      if (form.ai_screening_enabled !== undefined)
+        updateData.ai_screening_enabled = form.ai_screening_enabled ?? false;
+      if (form.ai_screening_prompt !== undefined)
+        updateData.ai_screening_prompt = form.ai_screening_prompt;
+      if (form.ai_auto_approve_threshold !== undefined)
+        updateData.ai_auto_approve_threshold = form.ai_auto_approve_threshold;
+      if (form.ai_auto_deny_threshold !== undefined)
+        updateData.ai_auto_deny_threshold = form.ai_auto_deny_threshold;
 
       const { data, error } = await supabase
-        .from('application_forms')
+        .from("application_forms")
         .update(updateData)
-        .eq('id', id)
-        .eq('guild_id', selectedGuild.id)
+        .eq("id", id)
+        .eq("guild_id", selectedGuild.id)
         .select()
         .single();
 
@@ -161,12 +182,16 @@ export function useUpdateApplicationForm() {
       return data;
     },
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ['application-forms', selectedGuild?.id] });
-      queryClient.invalidateQueries({ queryKey: ['application-form', data.id] });
-      toast.success('Application form updated');
+      queryClient.invalidateQueries({
+        queryKey: ["application-forms", selectedGuild?.id],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["application-form", data.id],
+      });
+      toast.success("Application form updated");
     },
     onError: (error) => {
-      toast.error('Failed to update form: ' + error.message);
+      toast.error("Failed to update form: " + error.message);
     },
   });
 }
@@ -177,22 +202,24 @@ export function useDeleteApplicationForm() {
 
   return useMutation({
     mutationFn: async (formId: string) => {
-      if (!selectedGuild?.id) throw new Error('No guild selected');
+      if (!selectedGuild?.id) throw new Error("No guild selected");
 
       const { error } = await supabase
-        .from('application_forms')
+        .from("application_forms")
         .delete()
-        .eq('id', formId)
-        .eq('guild_id', selectedGuild.id);
+        .eq("id", formId)
+        .eq("guild_id", selectedGuild.id);
 
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['application-forms', selectedGuild?.id] });
-      toast.success('Application form deleted');
+      queryClient.invalidateQueries({
+        queryKey: ["application-forms", selectedGuild?.id],
+      });
+      toast.success("Application form deleted");
     },
     onError: (error) => {
-      toast.error('Failed to delete form: ' + error.message);
+      toast.error("Failed to delete form: " + error.message);
     },
   });
 }

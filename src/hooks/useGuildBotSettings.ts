@@ -1,8 +1,8 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
-import { useGuild } from '@/contexts/GuildContext';
-import { toast } from 'sonner';
-import { invokeFunction } from '@/lib/functions-client';
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { useGuild } from "@/contexts/GuildContext";
+import { toast } from "sonner";
+import { invokeFunction } from "@/lib/functions-client";
 
 export interface GuildBotSettings {
   id: string;
@@ -68,29 +68,29 @@ export function useGuildBotSettings() {
   const queryClient = useQueryClient();
 
   const query = useQuery({
-    queryKey: ['guild-bot-settings', selectedGuild?.id],
+    queryKey: ["guild-bot-settings", selectedGuild?.id],
     queryFn: async () => {
       if (!selectedGuild?.id) return null;
 
       const { data: session } = await supabase.auth.getSession();
       if (!session?.session?.access_token) {
-        throw new Error('Not authenticated');
+        throw new Error("Not authenticated");
       }
 
       const response = await fetch(
         `/api/public/guild-bot-config?guild_id=${selectedGuild.id}`,
         {
-          method: 'GET',
+          method: "GET",
           headers: {
             Authorization: `Bearer ${session.session.access_token}`,
-            'Content-Type': 'application/json',
+            "Content-Type": "application/json",
           },
-        }
+        },
       );
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to fetch bot settings');
+        throw new Error(errorData.error || "Failed to fetch bot settings");
       }
 
       const result = await response.json();
@@ -101,84 +101,88 @@ export function useGuildBotSettings() {
 
   const updateMutation = useMutation({
     mutationFn: async (data: UpdateBotSettingsData) => {
-      if (!selectedGuild?.id) throw new Error('No guild selected');
+      if (!selectedGuild?.id) throw new Error("No guild selected");
 
       const { data: session } = await supabase.auth.getSession();
       if (!session?.session?.access_token) {
-        throw new Error('Not authenticated');
+        throw new Error("Not authenticated");
       }
 
       const response = await fetch(
         `/api/public/guild-bot-config?guild_id=${selectedGuild.id}`,
         {
-          method: 'POST',
+          method: "POST",
           headers: {
             Authorization: `Bearer ${session.session.access_token}`,
-            'Content-Type': 'application/json',
+            "Content-Type": "application/json",
           },
           body: JSON.stringify(data),
-        }
+        },
       );
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to update bot settings');
+        throw new Error(errorData.error || "Failed to update bot settings");
       }
 
       const result = await response.json();
       return result.settings as GuildBotSettings;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['guild-bot-settings', selectedGuild?.id] });
-      toast.success('Bot indstillinger gemt');
+      queryClient.invalidateQueries({
+        queryKey: ["guild-bot-settings", selectedGuild?.id],
+      });
+      toast.success("Bot indstillinger gemt");
     },
     onError: (error) => {
-      console.error('Error updating bot settings:', error);
-      toast.error('Kunne ikke gemme bot indstillinger');
+      console.error("Error updating bot settings:", error);
+      toast.error("Kunne ikke gemme bot indstillinger");
     },
   });
 
   const deleteMutation = useMutation({
     mutationFn: async () => {
-      if (!selectedGuild?.id) throw new Error('No guild selected');
+      if (!selectedGuild?.id) throw new Error("No guild selected");
 
       const { data: session } = await supabase.auth.getSession();
       if (!session?.session?.access_token) {
-        throw new Error('Not authenticated');
+        throw new Error("Not authenticated");
       }
 
       const response = await fetch(
         `/api/public/guild-bot-config?guild_id=${selectedGuild.id}`,
         {
-          method: 'DELETE',
+          method: "DELETE",
           headers: {
             Authorization: `Bearer ${session.session.access_token}`,
-            'Content-Type': 'application/json',
+            "Content-Type": "application/json",
           },
-        }
+        },
       );
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to delete bot settings');
+        throw new Error(errorData.error || "Failed to delete bot settings");
       }
 
       return true;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['guild-bot-settings', selectedGuild?.id] });
-      toast.success('Custom bot indstillinger slettet');
+      queryClient.invalidateQueries({
+        queryKey: ["guild-bot-settings", selectedGuild?.id],
+      });
+      toast.success("Custom bot indstillinger slettet");
     },
     onError: (error) => {
-      console.error('Error deleting bot settings:', error);
-      toast.error('Kunne ikke slette bot indstillinger');
+      console.error("Error deleting bot settings:", error);
+      toast.error("Kunne ikke slette bot indstillinger");
     },
   });
 
   const testTokenMutation = useMutation({
     mutationFn: async (token: string): Promise<BotTestResult> => {
-      const { data, error } = await invokeFunction('guild-bot-config', {
-        body: { action: 'test_token', token },
+      const { data, error } = await invokeFunction("guild-bot-config", {
+        body: { action: "test_token", token },
       });
 
       if (error) throw error;
@@ -203,24 +207,24 @@ export function useGuildBotSettings() {
 // Hook to get all active bots status
 export function useActiveBots() {
   return useQuery({
-    queryKey: ['active-bots'],
+    queryKey: ["active-bots"],
     queryFn: async (): Promise<ActiveBot[]> => {
       const { data: session } = await supabase.auth.getSession();
       if (!session?.session?.access_token) {
-        throw new Error('Not authenticated');
+        throw new Error("Not authenticated");
       }
 
       const response = await fetch(`/api/public/guild-bot-config`, {
-        method: 'POST',
+        method: "POST",
         headers: {
           Authorization: `Bearer ${session.session.access_token}`,
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
-        body: JSON.stringify({ action: 'get_status' }),
+        body: JSON.stringify({ action: "get_status" }),
       });
 
       if (!response.ok) {
-        let errorMsg = 'Failed to fetch active bots';
+        let errorMsg = "Failed to fetch active bots";
         try {
           const errorData = await response.json();
           errorMsg = errorData?.error || errorMsg;
@@ -253,24 +257,27 @@ export interface AdminBotStats {
 
 export function useAdminAllBots() {
   return useQuery({
-    queryKey: ['admin-all-bots'],
-    queryFn: async (): Promise<{ bots: AdminBotStatus[]; stats: AdminBotStats }> => {
+    queryKey: ["admin-all-bots"],
+    queryFn: async (): Promise<{
+      bots: AdminBotStatus[];
+      stats: AdminBotStats;
+    }> => {
       const { data: session } = await supabase.auth.getSession();
       if (!session?.session?.access_token) {
-        throw new Error('Not authenticated');
+        throw new Error("Not authenticated");
       }
 
       const response = await fetch(`/api/public/guild-bot-config`, {
-        method: 'POST',
+        method: "POST",
         headers: {
           Authorization: `Bearer ${session.session.access_token}`,
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
-        body: JSON.stringify({ action: 'admin_get_all_bots' }),
+        body: JSON.stringify({ action: "admin_get_all_bots" }),
       });
 
       if (!response.ok) {
-        let errorMsg = 'Failed to fetch all bots';
+        let errorMsg = "Failed to fetch all bots";
         try {
           const errorData = await response.json();
           errorMsg = errorData?.error || errorMsg;
@@ -297,35 +304,40 @@ export function useAdminLeaveGuild() {
   return useMutation({
     mutationFn: async (guildId: string) => {
       const { data: session } = await supabase.auth.getSession();
-      if (!session?.session?.access_token) throw new Error('Not authenticated');
+      if (!session?.session?.access_token) throw new Error("Not authenticated");
 
       const response = await fetch(`/api/public/guild-bot-config`, {
-        method: 'POST',
+        method: "POST",
         headers: {
           Authorization: `Bearer ${session.session.access_token}`,
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
-        body: JSON.stringify({ action: 'admin_leave_guild', guild_id: guildId }),
+        body: JSON.stringify({
+          action: "admin_leave_guild",
+          guild_id: guildId,
+        }),
       });
 
       if (!response.ok) {
         const err = await response.json().catch(() => ({}));
-        throw new Error(err.error || `Kunne ikke fjerne botten (HTTP ${response.status})`);
+        throw new Error(
+          err.error || `Kunne ikke fjerne botten (HTTP ${response.status})`,
+        );
       }
       const result = await response.json().catch(() => ({}));
       return result as { success?: boolean; warning?: string | null };
     },
     onSuccess: (result) => {
-      queryClient.invalidateQueries({ queryKey: ['admin-all-bots'] });
+      queryClient.invalidateQueries({ queryKey: ["admin-all-bots"] });
       if (result?.warning) {
         toast.warning(result.warning);
       } else {
-        toast.success('Botten er fjernet fra serveren');
+        toast.success("Botten er fjernet fra serveren");
       }
     },
     onError: (error: Error) => {
-      console.error('Error leaving guild:', error);
-      toast.error(error.message || 'Kunne ikke fjerne botten fra serveren');
+      console.error("Error leaving guild:", error);
+      toast.error(error.message || "Kunne ikke fjerne botten fra serveren");
     },
   });
 }

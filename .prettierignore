@@ -1,0 +1,14 @@
+package-lock.json
+bot/package-lock.json
+bot/deploy-agent/package-lock.json
+dist
+.output
+.vinxi
+.wrangler
+node_modules
+bot/node_modules
+src/routeTree.gen.ts
+bot/commandRoutes.generated.js
+shared/command-routes.json
+bot/command-routes.json
+supabase/migrations

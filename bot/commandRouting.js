@@ -1,13 +1,13 @@
-'use strict';
+"use strict";
 
-const fs = require('fs');
-const path = require('path');
+const fs = require("fs");
+const path = require("path");
 
 function loadRouteConfig() {
   const candidates = [
-    path.join(__dirname, 'command-routes.json'),
-    path.join(__dirname, 'shared', 'command-routes.json'),
-    path.join(__dirname, '..', 'shared', 'command-routes.json'),
+    path.join(__dirname, "command-routes.json"),
+    path.join(__dirname, "shared", "command-routes.json"),
+    path.join(__dirname, "..", "shared", "command-routes.json"),
   ];
 
   for (const candidate of candidates) {
@@ -17,10 +17,10 @@ function loadRouteConfig() {
   }
 
   try {
-    return require('./commandRoutes.generated');
+    return require("./commandRoutes.generated");
   } catch (error) {
     throw new Error(
-      `Command route catalog blev ikke fundet. Forsøgte JSON: ${candidates.join(', ')}. JS fallback fejlede: ${error.message}`
+      `Command route catalog blev ikke fundet. Forsøgte JSON: ${candidates.join(", ")}. JS fallback fejlede: ${error.message}`,
     );
   }
 }
@@ -35,7 +35,7 @@ const routeByLogical = new Map(routes.map((route) => [route.logical, route]));
 const routeByPath = new Map();
 for (const route of routes) {
   if (route.passthrough) continue;
-  const key = [route.root, route.group || '', route.sub || ''].join(':');
+  const key = [route.root, route.group || "", route.sub || ""].join(":");
   routeByPath.set(key, route);
 }
 
@@ -72,11 +72,14 @@ function resolveInteractionCommand(interaction) {
   const subcommand = safeGetSubcommand(interaction);
 
   // New grouped structure.
-  const groupedRoute = routeByPath.get([root, group || '', subcommand || ''].join(':'));
+  const groupedRoute = routeByPath.get(
+    [root, group || "", subcommand || ""].join(":"),
+  );
   if (groupedRoute) {
     return {
       logicalName: groupedRoute.logical,
-      handlerName: groupedRoute.handler || groupedRoute.source || groupedRoute.logical,
+      handlerName:
+        groupedRoute.handler || groupedRoute.source || groupedRoute.logical,
       root,
       group,
       subcommand,
@@ -86,11 +89,14 @@ function resolveInteractionCommand(interaction) {
   }
 
   // Dedicated passthrough roots, currently /fivem.
-  const passthrough = routes.find((route) => route.passthrough && route.root === root);
+  const passthrough = routes.find(
+    (route) => route.passthrough && route.root === root,
+  );
   if (passthrough) {
     return {
       logicalName: passthrough.logical,
-      handlerName: passthrough.handler || passthrough.source || passthrough.logical,
+      handlerName:
+        passthrough.handler || passthrough.source || passthrough.logical,
       root,
       group,
       subcommand,
@@ -103,7 +109,7 @@ function resolveInteractionCommand(interaction) {
   // /musicquiz start while Discord caches are refreshing.
   if (subcommand) {
     const legacyComposite = routes.find(
-      (route) => route.source === root && route.sub === subcommand
+      (route) => route.source === root && route.sub === subcommand,
     );
     if (legacyComposite) {
       return {
@@ -164,7 +170,9 @@ function resolveLegacyCommandName(commandName) {
 
 function makeSubcommandFromFlat(route, flatDefinition) {
   const nested = Array.isArray(flatDefinition.options)
-    ? flatDefinition.options.find((option) => option?.type === 1 && option.name === route.sub)
+    ? flatDefinition.options.find(
+        (option) => option?.type === 1 && option.name === route.sub,
+      )
     : null;
 
   if (nested) {
@@ -176,7 +184,7 @@ function makeSubcommandFromFlat(route, flatDefinition) {
   }
 
   const options = (flatDefinition.options || []).filter(
-    (option) => option?.type !== 1 && option?.type !== 2
+    (option) => option?.type !== 1 && option?.type !== 2,
   );
 
   return {
@@ -188,7 +196,9 @@ function makeSubcommandFromFlat(route, flatDefinition) {
 }
 
 function groupFlatCommandDefinitions(flatDefinitions) {
-  const sourceByName = new Map(flatDefinitions.map((definition) => [definition.name, definition]));
+  const sourceByName = new Map(
+    flatDefinitions.map((definition) => [definition.name, definition]),
+  );
   const rootCommands = new Map();
 
   for (const route of routes) {
@@ -197,7 +207,7 @@ function groupFlatCommandDefinitions(flatDefinitions) {
     const sourceDefinition = sourceByName.get(route.source);
     if (!sourceDefinition) {
       throw new Error(
-        `Grouped command route "${route.logical}" mangler source-definition "${route.source}"`
+        `Grouped command route "${route.logical}" mangler source-definition "${route.source}"`,
       );
     }
 
@@ -215,7 +225,7 @@ function groupFlatCommandDefinitions(flatDefinitions) {
 
     if (route.group) {
       let groupDefinition = rootCommand.options.find(
-        (option) => option.type === 2 && option.name === route.group
+        (option) => option.type === 2 && option.name === route.group,
       );
       if (!groupDefinition) {
         groupDefinition = {
@@ -239,13 +249,13 @@ function groupFlatCommandDefinitions(flatDefinitions) {
   for (const command of result) {
     if (command.options.length > 25) {
       throw new Error(
-        `Discord option limit overskredet for /${command.name}: ${command.options.length}/25`
+        `Discord option limit overskredet for /${command.name}: ${command.options.length}/25`,
       );
     }
     for (const option of command.options) {
       if (option.type === 2 && option.options?.length > 25) {
         throw new Error(
-          `Discord subcommand limit overskredet for /${command.name} ${option.name}: ${option.options.length}/25`
+          `Discord subcommand limit overskredet for /${command.name} ${option.name}: ${option.options.length}/25`,
         );
       }
     }
@@ -266,7 +276,7 @@ function getSlashPathForLogical(logicalName) {
   const parts = [route.root];
   if (route.group) parts.push(route.group);
   if (route.sub) parts.push(route.sub);
-  return `/${parts.join(' ')}`;
+  return `/${parts.join(" ")}`;
 }
 
 module.exports = {

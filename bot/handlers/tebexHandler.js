@@ -1,13 +1,13 @@
 /**
  * Tebex Handler for Discord Bot
- * 
+ *
  * Polls the fivem_command_queue for tebex_notification and tebex_role_grant
  * commands queued by the tebex-webhook edge function.
  */
 
-const { EmbedBuilder } = require('discord.js');
-const { createClient } = require('@supabase/supabase-js');
-const { manager } = require('../customBotManager');
+const { EmbedBuilder } = require("discord.js");
+const { createClient } = require("@supabase/supabase-js");
+const { manager } = require("../customBotManager");
 
 let supabase;
 function getSupabase() {
@@ -15,7 +15,9 @@ function getSupabase() {
   const url = process.env.SUPABASE_URL;
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!url || !key) {
-    throw new Error('[TebexHandler] SUPABASE_URL og SUPABASE_SERVICE_ROLE_KEY er påkrævet');
+    throw new Error(
+      "[TebexHandler] SUPABASE_URL og SUPABASE_SERVICE_ROLE_KEY er påkrævet",
+    );
   }
   supabase = createClient(url, key);
   return supabase;
@@ -32,9 +34,14 @@ function setupTebexHandler(client) {
   const startPolling = () => {
     if (tebexPollingStarted) return;
     tebexPollingStarted = true;
-    console.log('[TebexHandler] Starter én global poller for Tebex-kommandoer...');
+    console.log(
+      "[TebexHandler] Starter én global poller for Tebex-kommandoer...",
+    );
     pollTebexQueue().catch(() => {});
-    tebexInterval = setInterval(() => pollTebexQueue().catch(() => {}), POLL_INTERVAL);
+    tebexInterval = setInterval(
+      () => pollTebexQueue().catch(() => {}),
+      POLL_INTERVAL,
+    );
   };
 
   // Only one process-wide poller is needed. It routes each queue item through
@@ -44,7 +51,7 @@ function setupTebexHandler(client) {
     if (client.isReady()) {
       startPolling();
     } else {
-      client.once('clientReady', startPolling);
+      client.once("clientReady", startPolling);
     }
   }
 
@@ -54,11 +61,11 @@ function setupTebexHandler(client) {
 async function pollTebexQueue() {
   try {
     const { data: commands, error } = await getSupabase()
-      .from('fivem_command_queue')
-      .select('*')
-      .in('command_name', ['tebex_notification', 'tebex_role_grant'])
-      .eq('status', 'pending')
-      .order('created_at', { ascending: true })
+      .from("fivem_command_queue")
+      .select("*")
+      .in("command_name", ["tebex_notification", "tebex_role_grant"])
+      .eq("status", "pending")
+      .order("created_at", { ascending: true })
       .limit(10);
 
     if (error || !commands || commands.length === 0) return;
@@ -67,13 +74,13 @@ async function pollTebexQueue() {
       try {
         // Guild filter: resolve guild_id to Discord guild_id and check
         const { data: guildRow } = await getSupabase()
-          .from('guilds')
-          .select('guild_id')
-          .eq('id', cmd.guild_id)
+          .from("guilds")
+          .select("guild_id")
+          .eq("id", cmd.guild_id)
           .maybeSingle();
 
         if (!guildRow) {
-          await markCommand(cmd.id, 'failed', 'Guild not found in database');
+          await markCommand(cmd.id, "failed", "Guild not found in database");
           continue;
         }
 
@@ -87,16 +94,19 @@ async function pollTebexQueue() {
           continue; // Responsible bot doesn't currently have access to this guild
         }
 
-        if (cmd.command_name === 'tebex_notification') {
+        if (cmd.command_name === "tebex_notification") {
           await handleNotification(guild, cmd);
-        } else if (cmd.command_name === 'tebex_role_grant') {
+        } else if (cmd.command_name === "tebex_role_grant") {
           await handleRoleGrant(guild, cmd);
         }
 
-        await markCommand(cmd.id, 'executed', 'success');
+        await markCommand(cmd.id, "executed", "success");
       } catch (err) {
-        console.error(`[TebexHandler] Fejl ved kommando ${cmd.id}:`, err.message);
-        await markCommand(cmd.id, 'failed', err.message);
+        console.error(
+          `[TebexHandler] Fejl ved kommando ${cmd.id}:`,
+          err.message,
+        );
+        await markCommand(cmd.id, "failed", err.message);
       }
     }
   } catch (err) {
@@ -106,9 +116,9 @@ async function pollTebexQueue() {
 
 async function markCommand(id, status, result) {
   await getSupabase()
-    .from('fivem_command_queue')
+    .from("fivem_command_queue")
     .update({ status, executed_at: new Date().toISOString(), result })
-    .eq('id', id);
+    .eq("id", id);
 }
 
 async function handleNotification(guild, cmd) {
@@ -120,18 +130,26 @@ async function handleNotification(guild, cmd) {
 
   const embedData = data.embed;
   const embed = new EmbedBuilder()
-    .setTitle(embedData.title || 'Tebex Notifikation')
+    .setTitle(embedData.title || "Tebex Notifikation")
     .setColor(embedData.color || 0x2ecc71)
-    .setTimestamp(embedData.timestamp ? new Date(embedData.timestamp) : new Date());
+    .setTimestamp(
+      embedData.timestamp ? new Date(embedData.timestamp) : new Date(),
+    );
 
   if (embedData.fields) {
     for (const field of embedData.fields) {
-      embed.addFields({ name: field.name, value: String(field.value || '-'), inline: field.inline ?? true });
+      embed.addFields({
+        name: field.name,
+        value: String(field.value || "-"),
+        inline: field.inline ?? true,
+      });
     }
   }
 
   await channel.send({ embeds: [embed] });
-  console.log(`[TebexHandler] Notifikation sendt til #${channel.name} i ${guild.name}`);
+  console.log(
+    `[TebexHandler] Notifikation sendt til #${channel.name} i ${guild.name}`,
+  );
 }
 
 async function handleRoleGrant(guild, cmd) {
@@ -144,17 +162,23 @@ async function handleRoleGrant(guild, cmd) {
 
     const role = guild.roles.cache.get(data.role_id);
     if (!role) {
-      console.error(`[TebexHandler] Rolle ${data.role_id} ikke fundet i ${guild.name}`);
+      console.error(
+        `[TebexHandler] Rolle ${data.role_id} ikke fundet i ${guild.name}`,
+      );
       return;
     }
 
     if (member.roles.cache.has(role.id)) {
-      console.log(`[TebexHandler] ${member.user.tag} har allerede rollen ${role.name}`);
+      console.log(
+        `[TebexHandler] ${member.user.tag} har allerede rollen ${role.name}`,
+      );
       return;
     }
 
-    await member.roles.add(role, 'Tebex køb - automatisk rolletildeling');
-    console.log(`[TebexHandler] Rolle ${role.name} tildelt til ${member.user.tag} i ${guild.name}`);
+    await member.roles.add(role, "Tebex køb - automatisk rolletildeling");
+    console.log(
+      `[TebexHandler] Rolle ${role.name} tildelt til ${member.user.tag} i ${guild.name}`,
+    );
   } catch (err) {
     console.error(`[TebexHandler] Rolle-tildeling fejl:`, err.message);
     throw err;

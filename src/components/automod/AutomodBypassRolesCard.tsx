@@ -1,34 +1,52 @@
-import { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { ShieldCheck, X, Plus } from 'lucide-react';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useAutomodBypassRoles } from '@/hooks/useAutomodBypass';
-import { useDiscordRoles } from '@/hooks/useDiscordRoles';
+import { useState, useEffect } from "react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { ShieldCheck, X, Plus } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { useAutomodBypassRoles } from "@/hooks/useAutomodBypass";
+import { useDiscordRoles } from "@/hooks/useDiscordRoles";
 
 export function AutomodBypassRolesCard() {
   const { data: bypassRoles, update, isLoading } = useAutomodBypassRoles();
   const { data: discordRoles } = useDiscordRoles();
   const [pending, setPending] = useState<string[]>([]);
-  const [picker, setPicker] = useState<string>('');
+  const [picker, setPicker] = useState<string>("");
 
   useEffect(() => {
     if (bypassRoles) setPending(bypassRoles);
   }, [bypassRoles]);
 
-  const dirty = JSON.stringify([...pending].sort()) !== JSON.stringify([...(bypassRoles ?? [])].sort());
+  const dirty =
+    JSON.stringify([...pending].sort()) !==
+    JSON.stringify([...(bypassRoles ?? [])].sort());
 
   const addRole = (id: string) => {
     if (!id || pending.includes(id)) return;
     setPending([...pending, id]);
-    setPicker('');
+    setPicker("");
   };
 
-  const removeRole = (id: string) => setPending(pending.filter((r) => r !== id));
+  const removeRole = (id: string) =>
+    setPending(pending.filter((r) => r !== id));
 
-  const roleName = (id: string) => discordRoles?.find((r) => r.id === id)?.name ?? id;
-  const availableRoles = (discordRoles ?? []).filter((r) => !pending.includes(r.id) && r.name !== '@everyone');
+  const roleName = (id: string) =>
+    discordRoles?.find((r) => r.id === id)?.name ?? id;
+  const availableRoles = (discordRoles ?? []).filter(
+    (r) => !pending.includes(r.id) && r.name !== "@everyone",
+  );
 
   return (
     <Card className="border-primary/30 bg-primary/5">
@@ -38,17 +56,25 @@ export function AutomodBypassRolesCard() {
           Automod Bypass-roller
         </CardTitle>
         <CardDescription>
-          Brugere med en af disse roller bliver <strong>ignoreret af ALLE automod-systemer</strong> –
-          regler, AI toxicity, raid protection, anti-spam, alt-detection osv. Brug til staff/trusted-roller.
+          Brugere med en af disse roller bliver{" "}
+          <strong>ignoreret af ALLE automod-systemer</strong> – regler, AI
+          toxicity, raid protection, anti-spam, alt-detection osv. Brug til
+          staff/trusted-roller.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="flex flex-wrap gap-2 min-h-[2rem]">
           {pending.length === 0 && (
-            <span className="text-sm text-muted-foreground">Ingen bypass-roller tilføjet.</span>
+            <span className="text-sm text-muted-foreground">
+              Ingen bypass-roller tilføjet.
+            </span>
           )}
           {pending.map((id) => (
-            <Badge key={id} variant="secondary" className="gap-1 pl-2 pr-1 py-1">
+            <Badge
+              key={id}
+              variant="secondary"
+              className="gap-1 pl-2 pr-1 py-1"
+            >
               {roleName(id)}
               <button
                 type="button"
@@ -69,10 +95,14 @@ export function AutomodBypassRolesCard() {
             </SelectTrigger>
             <SelectContent>
               {availableRoles.length === 0 ? (
-                <SelectItem value="__none" disabled>Ingen flere roller</SelectItem>
+                <SelectItem value="__none" disabled>
+                  Ingen flere roller
+                </SelectItem>
               ) : (
                 availableRoles.map((r) => (
-                  <SelectItem key={r.id} value={r.id}>{r.name}</SelectItem>
+                  <SelectItem key={r.id} value={r.id}>
+                    {r.name}
+                  </SelectItem>
                 ))
               )}
             </SelectContent>

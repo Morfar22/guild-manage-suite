@@ -1,12 +1,18 @@
-// @ts-nocheck
 // Migrated from Supabase Edge Function `server-clone` to a TanStack server route.
-import { createFileRoute } from '@tanstack/react-router'
-import { createClient } from '@supabase/supabase-js'
+// @ts-nocheck
+import { createFileRoute } from "@tanstack/react-router";
+import { createClient } from "@supabase/supabase-js";
+import type { Untyped } from "@/types/untyped";
 
-const __env = (k: string) => process.env[k] ?? (k === 'SUPABASE_ANON_KEY' ? process.env['SUPABASE_PUBLISHABLE_KEY'] : undefined)
-let __handler: (req: Request) => Response | Promise<Response>
-const __serve = (fn: any, _opts?: any) => { __handler = fn }
-
+const __env = (k: string) =>
+  process.env[k] ??
+  (k === "SUPABASE_ANON_KEY"
+    ? process.env["SUPABASE_PUBLISHABLE_KEY"]
+    : undefined);
+let __handler: (req: Request) => Response | Promise<Response>;
+const __serve = (fn: Untyped, _opts?: Untyped) => {
+  __handler = fn;
+};
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -20,7 +26,7 @@ interface DiscordChannel {
   type: number;
   parent_id: string | null;
   position: number;
-  permission_overwrites?: any[];
+  permission_overwrites?: Untyped[];
   topic?: string;
   nsfw?: boolean;
   rate_limit_per_user?: number;
@@ -42,11 +48,16 @@ interface DiscordRole {
 interface DiscordMessage {
   id: string;
   channel_id: string;
-  author: { id: string; username: string; avatar: string | null; bot?: boolean };
+  author: {
+    id: string;
+    username: string;
+    avatar: string | null;
+    bot?: boolean;
+  };
   content: string;
   timestamp: string;
-  attachments: any[];
-  embeds: any[];
+  attachments: Untyped[];
+  embeds: Untyped[];
   pinned: boolean;
 }
 
@@ -67,7 +78,7 @@ interface DiscordThread {
   name: string;
   parent_id: string;
   type: number;
-  thread_metadata?: any;
+  thread_metadata?: Untyped;
   message_count?: number;
 }
 
@@ -97,42 +108,45 @@ async function delay(ms: number) {
 async function fetchChannelMessages(
   botToken: string,
   channelId: string,
-  limit: number = 100
+  limit: number = 100,
 ): Promise<DiscordMessage[]> {
   const messages: DiscordMessage[] = [];
   let before: string | undefined;
-  
+
   while (messages.length < limit) {
     const fetchLimit = Math.min(100, limit - messages.length);
     let url = `https://discord.com/api/v10/channels/${channelId}/messages?limit=${fetchLimit}`;
     if (before) url += `&before=${before}`;
-    
+
     await delay(500); // Rate limiting
     const res = await fetch(url, {
       headers: { Authorization: `Bot ${botToken}` },
     });
-    
+
     if (!res.ok) break;
-    
+
     const batch: DiscordMessage[] = await res.json();
     if (batch.length === 0) break;
-    
+
     messages.push(...batch);
     before = batch[batch.length - 1].id;
-    
+
     if (batch.length < fetchLimit) break;
   }
-  
+
   return messages;
 }
 
 // Fetch all bans from a guild
-async function fetchGuildBans(botToken: string, guildId: string): Promise<DiscordBan[]> {
+async function fetchGuildBans(
+  botToken: string,
+  guildId: string,
+): Promise<DiscordBan[]> {
   const res = await fetch(
     `https://discord.com/api/v10/guilds/${guildId}/bans?limit=1000`,
-    { headers: { Authorization: `Bot ${botToken}` } }
+    { headers: { Authorization: `Bot ${botToken}` } },
   );
-  
+
   if (!res.ok) return [];
   return await res.json();
 }
@@ -141,57 +155,62 @@ async function fetchGuildBans(botToken: string, guildId: string): Promise<Discor
 async function fetchGuildMembers(
   botToken: string,
   guildId: string,
-  limit: number = 1000
+  limit: number = 1000,
 ): Promise<DiscordMember[]> {
   const members: DiscordMember[] = [];
   let after: string | undefined;
-  
+
   while (members.length < limit) {
     const fetchLimit = Math.min(1000, limit - members.length);
     let url = `https://discord.com/api/v10/guilds/${guildId}/members?limit=${fetchLimit}`;
     if (after) url += `&after=${after}`;
-    
+
     await delay(500);
     const res = await fetch(url, {
       headers: { Authorization: `Bot ${botToken}` },
     });
-    
+
     if (!res.ok) break;
-    
+
     const batch: DiscordMember[] = await res.json();
     if (batch.length === 0) break;
-    
+
     members.push(...batch);
     after = batch[batch.length - 1].user.id;
-    
+
     if (batch.length < fetchLimit) break;
   }
-  
+
   return members;
 }
 
 // Fetch threads from a guild
-async function fetchGuildThreads(botToken: string, guildId: string): Promise<DiscordThread[]> {
+async function fetchGuildThreads(
+  botToken: string,
+  guildId: string,
+): Promise<DiscordThread[]> {
   const res = await fetch(
     `https://discord.com/api/v10/guilds/${guildId}/threads/active`,
-    { headers: { Authorization: `Bot ${botToken}` } }
+    { headers: { Authorization: `Bot ${botToken}` } },
   );
-  
+
   if (!res.ok) return [];
   const data = await res.json();
   return data.threads || [];
 }
 
 // Fetch guild settings
-async function fetchGuildSettings(botToken: string, guildId: string): Promise<DiscordGuildSettings | null> {
-  const res = await fetch(
-    `https://discord.com/api/v10/guilds/${guildId}`,
-    { headers: { Authorization: `Bot ${botToken}` } }
-  );
-  
+async function fetchGuildSettings(
+  botToken: string,
+  guildId: string,
+): Promise<DiscordGuildSettings | null> {
+  const res = await fetch(`https://discord.com/api/v10/guilds/${guildId}`, {
+    headers: { Authorization: `Bot ${botToken}` },
+  });
+
   if (!res.ok) return null;
   const guild = await res.json();
-  
+
   return {
     name: guild.name,
     icon: guild.icon,
@@ -230,16 +249,17 @@ __serve(async (req) => {
 
     const supabaseAdmin = createClient(
       __env("SUPABASE_URL")!,
-      __env("SUPABASE_SERVICE_ROLE_KEY")!
+      __env("SUPABASE_SERVICE_ROLE_KEY")!,
     );
 
     const supabaseAuthed = createClient(
       __env("SUPABASE_URL")!,
       __env("SUPABASE_ANON_KEY")!,
-      { global: { headers: { Authorization: authHeader } } }
+      { global: { headers: { Authorization: authHeader } } },
     );
 
-    const { data: userData, error: userError } = await supabaseAuthed.auth.getUser(token);
+    const { data: userData, error: userError } =
+      await supabaseAuthed.auth.getUser(token);
     if (userError || !userData?.user?.id) {
       console.error("Auth error:", userError);
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
@@ -250,15 +270,15 @@ __serve(async (req) => {
 
     const userId = userData.user.id;
     console.log(`Authenticated user: ${userId}`);
-    
+
     const body = await req.json();
-    const { 
-      action, 
-      sourceGuildId, 
-      targetGuildId, 
-      templateId, 
-      templateName, 
-      templateDescription, 
+    const {
+      action,
+      sourceGuildId,
+      targetGuildId,
+      templateId,
+      templateName,
+      templateDescription,
       isPublic,
       // Premium options for export
       includeMessages,
@@ -278,10 +298,12 @@ __serve(async (req) => {
         members: false,
         threads: false,
         settings: false,
-      }
+      },
     } = body;
-    
-    console.log(`Action: ${action}, sourceGuildId: ${sourceGuildId}, targetGuildId: ${targetGuildId}`);
+
+    console.log(
+      `Action: ${action}, sourceGuildId: ${sourceGuildId}, targetGuildId: ${targetGuildId}`,
+    );
 
     const botToken = __env("DISCORD_BOT_TOKEN");
     if (!botToken) {
@@ -291,10 +313,13 @@ __serve(async (req) => {
     // ==================== ACTION: EXPORT ====================
     if (action === "export") {
       if (!sourceGuildId) {
-        return new Response(JSON.stringify({ error: "Missing sourceGuildId" }), {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+        return new Response(
+          JSON.stringify({ error: "Missing sourceGuildId" }),
+          {
+            status: 400,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          },
+        );
       }
 
       // Verify user has access
@@ -329,14 +354,14 @@ __serve(async (req) => {
       // Fetch channels
       const channelsRes = await fetch(
         `https://discord.com/api/v10/guilds/${guild.guild_id}/channels`,
-        { headers: { Authorization: `Bot ${botToken}` } }
+        { headers: { Authorization: `Bot ${botToken}` } },
       );
       const channels: DiscordChannel[] = await channelsRes.json();
 
       // Fetch roles
       const rolesRes = await fetch(
         `https://discord.com/api/v10/guilds/${guild.guild_id}/roles`,
-        { headers: { Authorization: `Bot ${botToken}` } }
+        { headers: { Authorization: `Bot ${botToken}` } },
       );
       const roles: DiscordRole[] = await rolesRes.json();
 
@@ -381,31 +406,39 @@ __serve(async (req) => {
         }));
 
       // ===== PREMIUM FEATURES: Fetch additional data =====
-      let messagesData: any[] = [];
-      let bansData: any[] = [];
-      let membersData: any[] = [];
-      let threadsData: any[] = [];
+      const messagesData: Untyped[] = [];
+      let bansData: Untyped[] = [];
+      let membersData: Untyped[] = [];
+      let threadsData: Untyped[] = [];
       let serverSettingsData: DiscordGuildSettings | null = null;
 
       // Fetch messages if requested (PREMIUM)
       if (includeMessages && messageCount > 0) {
         console.log(`Fetching messages (max ${messageCount} per channel)...`);
-        const textChannels = textAndVoiceChannels.filter(c => c.type === 0 || c.type === 5); // text & announcement
+        const textChannels = textAndVoiceChannels.filter(
+          (c) => c.type === 0 || c.type === 5,
+        ); // text & announcement
         for (const channel of textChannels) {
           try {
             const channelMessages = await fetchChannelMessages(
               botToken,
-              (channel as any).original_id || channels.find(c => c.name === channel.name && c.type === channel.type)?.id || '',
-              messageCount
+              (channel as Untyped).original_id ||
+                channels.find(
+                  (c) => c.name === channel.name && c.type === channel.type,
+                )?.id ||
+                "",
+              messageCount,
             );
-            
+
             // Find original channel ID
-            const originalChannel = channels.find(c => c.name === channel.name && c.type === channel.type);
+            const originalChannel = channels.find(
+              (c) => c.name === channel.name && c.type === channel.type,
+            );
             if (originalChannel && channelMessages.length > 0) {
               messagesData.push({
                 channel_id: originalChannel.id,
                 channel_name: channel.name,
-                messages: channelMessages.map(m => ({
+                messages: channelMessages.map((m) => ({
                   author_id: m.author.id,
                   author_name: m.author.username,
                   author_avatar: m.author.avatar,
@@ -429,7 +462,7 @@ __serve(async (req) => {
       if (includeBans) {
         console.log("Fetching bans...");
         const bans = await fetchGuildBans(botToken, guild.guild_id);
-        bansData = bans.map(b => ({
+        bansData = bans.map((b) => ({
           user_id: b.user.id,
           username: b.user.username,
           avatar: b.user.avatar,
@@ -443,8 +476,8 @@ __serve(async (req) => {
         console.log("Fetching members...");
         const members = await fetchGuildMembers(botToken, guild.guild_id);
         membersData = members
-          .filter(m => !m.user.bot) // Skip bots
-          .map(m => ({
+          .filter((m) => !m.user.bot) // Skip bots
+          .map((m) => ({
             user_id: m.user.id,
             username: m.user.username,
             avatar: m.user.avatar,
@@ -459,7 +492,7 @@ __serve(async (req) => {
       if (includeThreads) {
         console.log("Fetching threads...");
         const threads = await fetchGuildThreads(botToken, guild.guild_id);
-        threadsData = threads.map(t => ({
+        threadsData = threads.map((t) => ({
           name: t.name,
           parent_id: t.parent_id,
           type: t.type,
@@ -480,20 +513,24 @@ __serve(async (req) => {
         .from("server_templates")
         .insert({
           name: templateName || `${guild.guild_name} Template`,
-          description: templateDescription || `Template created from ${guild.guild_name}`,
+          description:
+            templateDescription || `Template created from ${guild.guild_name}`,
           guild_id: sourceGuildId,
           created_by: userId,
           is_public: isPublic || false,
           channels: textAndVoiceChannels,
           roles: filteredRoles,
           categories: categories,
-          bot_settings: { 
+          bot_settings: {
             source_discord_guild_id: guild.guild_id,
-            everyone_role_id: everyoneRole?.id || guild.guild_id
+            everyone_role_id: everyoneRole?.id || guild.guild_id,
           },
           // Premium data
           messages: messagesData,
-          message_count: messagesData.reduce((sum, c) => sum + c.messages.length, 0),
+          message_count: messagesData.reduce(
+            (sum, c) => sum + c.messages.length,
+            0,
+          ),
           bans: bansData,
           ban_count: bansData.length,
           members: membersData,
@@ -507,21 +544,25 @@ __serve(async (req) => {
 
       if (insertError) throw insertError;
 
-      console.log(`Created template ${template.id} with ${textAndVoiceChannels.length} channels, ${filteredRoles.length} roles, ${messagesData.reduce((sum, c) => sum + c.messages.length, 0)} messages`);
-
-      return new Response(
-        JSON.stringify({ success: true, template }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      console.log(
+        `Created template ${template.id} with ${textAndVoiceChannels.length} channels, ${filteredRoles.length} roles, ${messagesData.reduce((sum, c) => sum + c.messages.length, 0)} messages`,
       );
+
+      return new Response(JSON.stringify({ success: true, template }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     // ==================== ACTION: CLONE ====================
     if (action === "clone") {
       if (!targetGuildId) {
-        return new Response(JSON.stringify({ error: "Missing targetGuildId" }), {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+        return new Response(
+          JSON.stringify({ error: "Missing targetGuildId" }),
+          {
+            status: 400,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          },
+        );
       }
 
       // Verify user has access to target guild
@@ -533,10 +574,13 @@ __serve(async (req) => {
         .maybeSingle();
 
       if (!targetUserGuild?.has_admin_permission) {
-        return new Response(JSON.stringify({ error: "Forbidden - no access to target guild" }), {
-          status: 403,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+        return new Response(
+          JSON.stringify({ error: "Forbidden - no access to target guild" }),
+          {
+            status: 403,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          },
+        );
       }
 
       // Get target Discord guild_id
@@ -547,20 +591,23 @@ __serve(async (req) => {
         .single();
 
       if (!targetGuild) {
-        return new Response(JSON.stringify({ error: "Target guild not found" }), {
-          status: 404,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+        return new Response(
+          JSON.stringify({ error: "Target guild not found" }),
+          {
+            status: 404,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          },
+        );
       }
 
-      let categories: any[] = [];
-      let channels: any[] = [];
-      let roles: any[] = [];
-      let messages: any[] = [];
-      let bans: any[] = [];
-      let members: any[] = [];
-      let threads: any[] = [];
-      let serverSettings: any = {};
+      let categories: Untyped[] = [];
+      let channels: Untyped[] = [];
+      let roles: Untyped[] = [];
+      let messages: Untyped[] = [];
+      let bans: Untyped[] = [];
+      let members: Untyped[] = [];
+      let threads: Untyped[] = [];
+      let serverSettings: Untyped = {};
 
       // If cloning from template
       if (templateId) {
@@ -578,10 +625,15 @@ __serve(async (req) => {
         }
 
         if (!template.is_public && template.created_by !== userId) {
-          return new Response(JSON.stringify({ error: "Forbidden - cannot access this template" }), {
-            status: 403,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          });
+          return new Response(
+            JSON.stringify({
+              error: "Forbidden - cannot access this template",
+            }),
+            {
+              status: 403,
+              headers: { ...corsHeaders, "Content-Type": "application/json" },
+            },
+          );
         }
 
         categories = template.categories || [];
@@ -603,10 +655,13 @@ __serve(async (req) => {
           .maybeSingle();
 
         if (!sourceUserGuild?.has_admin_permission) {
-          return new Response(JSON.stringify({ error: "Forbidden - no access to source guild" }), {
-            status: 403,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          });
+          return new Response(
+            JSON.stringify({ error: "Forbidden - no access to source guild" }),
+            {
+              status: 403,
+              headers: { ...corsHeaders, "Content-Type": "application/json" },
+            },
+          );
         }
 
         const { data: sourceGuild } = await supabaseAdmin
@@ -616,36 +671,49 @@ __serve(async (req) => {
           .single();
 
         if (!sourceGuild) {
-          return new Response(JSON.stringify({ error: "Source guild not found" }), {
-            status: 404,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          });
+          return new Response(
+            JSON.stringify({ error: "Source guild not found" }),
+            {
+              status: 404,
+              headers: { ...corsHeaders, "Content-Type": "application/json" },
+            },
+          );
         }
 
         // Fetch from Discord
         const channelsRes = await fetch(
           `https://discord.com/api/v10/guilds/${sourceGuild.guild_id}/channels`,
-          { headers: { Authorization: `Bot ${botToken}` } }
+          { headers: { Authorization: `Bot ${botToken}` } },
         );
         const channelsData = await channelsRes.json();
         if (!Array.isArray(channelsData)) {
-          return new Response(JSON.stringify({ error: `Failed to fetch channels from Discord: ${channelsData?.message || 'Unknown error'}` }), {
-            status: 502,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          });
+          return new Response(
+            JSON.stringify({
+              error: `Failed to fetch channels from Discord: ${channelsData?.message || "Unknown error"}`,
+            }),
+            {
+              status: 502,
+              headers: { ...corsHeaders, "Content-Type": "application/json" },
+            },
+          );
         }
         const allChannels: DiscordChannel[] = channelsData;
 
         const rolesRes = await fetch(
           `https://discord.com/api/v10/guilds/${sourceGuild.guild_id}/roles`,
-          { headers: { Authorization: `Bot ${botToken}` } }
+          { headers: { Authorization: `Bot ${botToken}` } },
         );
         const rolesData = await rolesRes.json();
         if (!Array.isArray(rolesData)) {
-          return new Response(JSON.stringify({ error: `Failed to fetch roles from Discord: ${rolesData?.message || 'Unknown error'}` }), {
-            status: 502,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          });
+          return new Response(
+            JSON.stringify({
+              error: `Failed to fetch roles from Discord: ${rolesData?.message || "Unknown error"}`,
+            }),
+            {
+              status: 502,
+              headers: { ...corsHeaders, "Content-Type": "application/json" },
+            },
+          );
         }
         const allRoles: DiscordRole[] = rolesData;
 
@@ -690,27 +758,40 @@ __serve(async (req) => {
 
         // Fetch premium data if options are set
         if (loadOptions.bans) {
-          bans = (await fetchGuildBans(botToken, sourceGuild.guild_id)).map(b => ({
-            user_id: b.user.id,
-            reason: b.reason,
-          }));
+          bans = (await fetchGuildBans(botToken, sourceGuild.guild_id)).map(
+            (b) => ({
+              user_id: b.user.id,
+              reason: b.reason,
+            }),
+          );
         }
         if (loadOptions.members) {
-          const fetchedMembers = await fetchGuildMembers(botToken, sourceGuild.guild_id);
-          members = fetchedMembers.filter(m => !m.user.bot).map(m => ({
-            user_id: m.user.id,
-            nickname: m.nick,
-            roles: m.roles,
-          }));
+          const fetchedMembers = await fetchGuildMembers(
+            botToken,
+            sourceGuild.guild_id,
+          );
+          members = fetchedMembers
+            .filter((m) => !m.user.bot)
+            .map((m) => ({
+              user_id: m.user.id,
+              nickname: m.nick,
+              roles: m.roles,
+            }));
         }
         if (loadOptions.settings) {
-          serverSettings = await fetchGuildSettings(botToken, sourceGuild.guild_id);
+          serverSettings = await fetchGuildSettings(
+            botToken,
+            sourceGuild.guild_id,
+          );
         }
       } else {
-        return new Response(JSON.stringify({ error: "Missing sourceGuildId or templateId" }), {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+        return new Response(
+          JSON.stringify({ error: "Missing sourceGuildId or templateId" }),
+          {
+            status: 400,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          },
+        );
       }
 
       const results = {
@@ -731,23 +812,32 @@ __serve(async (req) => {
         console.log("Fetching existing channels to delete...");
         const existingChannelsRes = await fetch(
           `https://discord.com/api/v10/guilds/${targetGuild.guild_id}/channels`,
-          { headers: { Authorization: `Bot ${botToken}` } }
+          { headers: { Authorization: `Bot ${botToken}` } },
         );
-        const existingChannels: DiscordChannel[] = await existingChannelsRes.json();
-        const nonCategoryChannels = existingChannels.filter(c => c.type !== 4);
-        const categoryChannels = existingChannels.filter(c => c.type === 4);
+        const existingChannels: DiscordChannel[] =
+          await existingChannelsRes.json();
+        const nonCategoryChannels = existingChannels.filter(
+          (c) => c.type !== 4,
+        );
+        const categoryChannels = existingChannels.filter((c) => c.type === 4);
 
-        console.log(`Deleting ${nonCategoryChannels.length + categoryChannels.length} channels...`);
+        console.log(
+          `Deleting ${nonCategoryChannels.length + categoryChannels.length} channels...`,
+        );
 
         for (const channel of [...nonCategoryChannels, ...categoryChannels]) {
           try {
             await delay(300);
-            const res = await fetch(`https://discord.com/api/v10/channels/${channel.id}`, {
-              method: "DELETE",
-              headers: { Authorization: `Bot ${botToken}` },
-            });
+            const res = await fetch(
+              `https://discord.com/api/v10/channels/${channel.id}`,
+              {
+                method: "DELETE",
+                headers: { Authorization: `Bot ${botToken}` },
+              },
+            );
             if (res.ok) results.channelsDeleted++;
-            else results.errors.push(`Failed to delete channel ${channel.name}`);
+            else
+              results.errors.push(`Failed to delete channel ${channel.name}`);
           } catch (e) {
             results.errors.push(`Error deleting channel ${channel.name}`);
           }
@@ -759,10 +849,12 @@ __serve(async (req) => {
         console.log("Fetching existing roles to delete...");
         const existingRolesRes = await fetch(
           `https://discord.com/api/v10/guilds/${targetGuild.guild_id}/roles`,
-          { headers: { Authorization: `Bot ${botToken}` } }
+          { headers: { Authorization: `Bot ${botToken}` } },
         );
         const existingRoles: DiscordRole[] = await existingRolesRes.json();
-        const deletableRoles = existingRoles.filter(r => r.name !== "@everyone" && !r.managed);
+        const deletableRoles = existingRoles.filter(
+          (r) => r.name !== "@everyone" && !r.managed,
+        );
 
         console.log(`Deleting ${deletableRoles.length} roles...`);
 
@@ -771,7 +863,10 @@ __serve(async (req) => {
             await delay(300);
             const res = await fetch(
               `https://discord.com/api/v10/guilds/${targetGuild.guild_id}/roles/${role.id}`,
-              { method: "DELETE", headers: { Authorization: `Bot ${botToken}` } }
+              {
+                method: "DELETE",
+                headers: { Authorization: `Bot ${botToken}` },
+              },
             );
             if (res.ok) results.rolesDeleted++;
             else results.errors.push(`Failed to delete role ${role.name}`);
@@ -782,25 +877,44 @@ __serve(async (req) => {
       }
 
       // ========== STEP 3: UPDATE SERVER SETTINGS (PREMIUM) ==========
-      if (loadOptions.settings && serverSettings && Object.keys(serverSettings).length > 0) {
+      if (
+        loadOptions.settings &&
+        serverSettings &&
+        Object.keys(serverSettings).length > 0
+      ) {
         console.log("Updating server settings...");
         try {
-          const settingsPayload: any = {};
+          const settingsPayload: Untyped = {};
           if (serverSettings.name) settingsPayload.name = serverSettings.name;
-          if (serverSettings.description !== undefined) settingsPayload.description = serverSettings.description;
-          if (serverSettings.verification_level !== undefined) settingsPayload.verification_level = serverSettings.verification_level;
-          if (serverSettings.default_message_notifications !== undefined) settingsPayload.default_message_notifications = serverSettings.default_message_notifications;
-          if (serverSettings.explicit_content_filter !== undefined) settingsPayload.explicit_content_filter = serverSettings.explicit_content_filter;
-          if (serverSettings.afk_timeout !== undefined) settingsPayload.afk_timeout = serverSettings.afk_timeout;
-          if (serverSettings.preferred_locale) settingsPayload.preferred_locale = serverSettings.preferred_locale;
+          if (serverSettings.description !== undefined)
+            settingsPayload.description = serverSettings.description;
+          if (serverSettings.verification_level !== undefined)
+            settingsPayload.verification_level =
+              serverSettings.verification_level;
+          if (serverSettings.default_message_notifications !== undefined)
+            settingsPayload.default_message_notifications =
+              serverSettings.default_message_notifications;
+          if (serverSettings.explicit_content_filter !== undefined)
+            settingsPayload.explicit_content_filter =
+              serverSettings.explicit_content_filter;
+          if (serverSettings.afk_timeout !== undefined)
+            settingsPayload.afk_timeout = serverSettings.afk_timeout;
+          if (serverSettings.preferred_locale)
+            settingsPayload.preferred_locale = serverSettings.preferred_locale;
 
           if (Object.keys(settingsPayload).length > 0) {
             await delay(500);
-            const res = await fetch(`https://discord.com/api/v10/guilds/${targetGuild.guild_id}`, {
-              method: "PATCH",
-              headers: { Authorization: `Bot ${botToken}`, "Content-Type": "application/json" },
-              body: JSON.stringify(settingsPayload),
-            });
+            const res = await fetch(
+              `https://discord.com/api/v10/guilds/${targetGuild.guild_id}`,
+              {
+                method: "PATCH",
+                headers: {
+                  Authorization: `Bot ${botToken}`,
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify(settingsPayload),
+              },
+            );
             if (res.ok) results.settingsUpdated = true;
             else results.errors.push("Failed to update server settings");
           }
@@ -821,12 +935,14 @@ __serve(async (req) => {
           .select("bot_settings")
           .eq("id", templateId)
           .single();
-        
+
         if (templateData?.bot_settings?.source_discord_guild_id) {
-          roleIdMap[templateData.bot_settings.source_discord_guild_id] = targetGuild.guild_id;
+          roleIdMap[templateData.bot_settings.source_discord_guild_id] =
+            targetGuild.guild_id;
         }
         if (templateData?.bot_settings?.everyone_role_id) {
-          roleIdMap[templateData.bot_settings.everyone_role_id] = targetGuild.guild_id;
+          roleIdMap[templateData.bot_settings.everyone_role_id] =
+            targetGuild.guild_id;
         }
       }
 
@@ -836,7 +952,7 @@ __serve(async (req) => {
           .select("guild_id")
           .eq("id", sourceGuildId)
           .single();
-        
+
         if (srcGuildData?.guild_id) {
           roleIdMap[srcGuildData.guild_id] = targetGuild.guild_id;
         }
@@ -851,7 +967,10 @@ __serve(async (req) => {
               `https://discord.com/api/v10/guilds/${targetGuild.guild_id}/roles`,
               {
                 method: "POST",
-                headers: { Authorization: `Bot ${botToken}`, "Content-Type": "application/json" },
+                headers: {
+                  Authorization: `Bot ${botToken}`,
+                  "Content-Type": "application/json",
+                },
                 body: JSON.stringify({
                   name: role.name,
                   color: role.color || 0,
@@ -859,7 +978,7 @@ __serve(async (req) => {
                   mentionable: role.mentionable,
                   hoist: role.hoist,
                 }),
-              }
+              },
             );
             if (res.ok) {
               const newRole = await res.json();
@@ -875,13 +994,19 @@ __serve(async (req) => {
       }
 
       // Helper function to map permission overwrites
-      const mapPermissionOverwrites = (overwrites: any[]): any[] => {
+      const mapPermissionOverwrites = (overwrites: Untyped[]): Untyped[] => {
         if (!overwrites || !Array.isArray(overwrites)) return [];
         return overwrites
           .map((ow) => {
             if (ow.type === 0) {
               const newRoleId = roleIdMap[ow.id];
-              if (newRoleId) return { id: newRoleId, type: 0, allow: ow.allow, deny: ow.deny };
+              if (newRoleId)
+                return {
+                  id: newRoleId,
+                  type: 0,
+                  allow: ow.allow,
+                  deny: ow.deny,
+                };
               return null;
             }
             return ow;
@@ -895,17 +1020,23 @@ __serve(async (req) => {
         for (const category of categories) {
           try {
             await delay(500);
-            const mappedPerms = mapPermissionOverwrites(category.permission_overwrites);
-            const payload: any = { name: category.name, type: 4 };
-            if (mappedPerms.length > 0) payload.permission_overwrites = mappedPerms;
+            const mappedPerms = mapPermissionOverwrites(
+              category.permission_overwrites,
+            );
+            const payload: Untyped = { name: category.name, type: 4 };
+            if (mappedPerms.length > 0)
+              payload.permission_overwrites = mappedPerms;
 
             const res = await fetch(
               `https://discord.com/api/v10/guilds/${targetGuild.guild_id}/channels`,
               {
                 method: "POST",
-                headers: { Authorization: `Bot ${botToken}`, "Content-Type": "application/json" },
+                headers: {
+                  Authorization: `Bot ${botToken}`,
+                  "Content-Type": "application/json",
+                },
                 body: JSON.stringify(payload),
-              }
+              },
             );
             if (res.ok) {
               const newCategory = await res.json();
@@ -927,30 +1058,38 @@ __serve(async (req) => {
         for (const channel of channels) {
           try {
             await delay(500);
-            const mappedPerms = mapPermissionOverwrites(channel.permission_overwrites);
-            const payload: any = { name: channel.name, type: channel.type };
-            
+            const mappedPerms = mapPermissionOverwrites(
+              channel.permission_overwrites,
+            );
+            const payload: Untyped = { name: channel.name, type: channel.type };
+
             if (channel.parent_id && categoryIdMap[channel.parent_id]) {
               payload.parent_id = categoryIdMap[channel.parent_id];
             }
             if (channel.topic) payload.topic = channel.topic;
             if (channel.nsfw) payload.nsfw = channel.nsfw;
-            if (channel.rate_limit_per_user) payload.rate_limit_per_user = channel.rate_limit_per_user;
+            if (channel.rate_limit_per_user)
+              payload.rate_limit_per_user = channel.rate_limit_per_user;
             if (channel.bitrate) payload.bitrate = channel.bitrate;
             if (channel.user_limit) payload.user_limit = channel.user_limit;
-            if (mappedPerms.length > 0) payload.permission_overwrites = mappedPerms;
+            if (mappedPerms.length > 0)
+              payload.permission_overwrites = mappedPerms;
 
             const res = await fetch(
               `https://discord.com/api/v10/guilds/${targetGuild.guild_id}/channels`,
               {
                 method: "POST",
-                headers: { Authorization: `Bot ${botToken}`, "Content-Type": "application/json" },
+                headers: {
+                  Authorization: `Bot ${botToken}`,
+                  "Content-Type": "application/json",
+                },
                 body: JSON.stringify(payload),
-              }
+              },
             );
             if (res.ok) {
               const newChannel = await res.json();
-              if (channel.original_id) newChannelIdMap[channel.original_id] = newChannel.id;
+              if (channel.original_id)
+                newChannelIdMap[channel.original_id] = newChannel.id;
               results.channelsCreated++;
             } else {
               results.errors.push(`Failed to create channel ${channel.name}`);
@@ -975,9 +1114,12 @@ __serve(async (req) => {
               `https://discord.com/api/v10/channels/${newChannelId}/webhooks`,
               {
                 method: "POST",
-                headers: { Authorization: `Bot ${botToken}`, "Content-Type": "application/json" },
+                headers: {
+                  Authorization: `Bot ${botToken}`,
+                  "Content-Type": "application/json",
+                },
                 body: JSON.stringify({ name: "Message Restore" }),
-              }
+              },
             );
 
             if (webhookRes.ok) {
@@ -997,7 +1139,7 @@ __serve(async (req) => {
                     body: JSON.stringify({
                       content: msg.content || undefined,
                       username: msg.author_name,
-                      avatar_url: msg.author_avatar 
+                      avatar_url: msg.author_avatar
                         ? `https://cdn.discordapp.com/avatars/${msg.author_id}/${msg.author_avatar}.png`
                         : undefined,
                       embeds: msg.embeds?.length > 0 ? msg.embeds : undefined,
@@ -1010,10 +1152,13 @@ __serve(async (req) => {
               }
 
               // Delete webhook after use
-              await fetch(`https://discord.com/api/v10/webhooks/${webhook.id}`, {
-                method: "DELETE",
-                headers: { Authorization: `Bot ${botToken}` },
-              });
+              await fetch(
+                `https://discord.com/api/v10/webhooks/${webhook.id}`,
+                {
+                  method: "DELETE",
+                  headers: { Authorization: `Bot ${botToken}` },
+                },
+              );
             }
           } catch (e) {
             results.errors.push(`Error restoring messages for channel`);
@@ -1032,9 +1177,14 @@ __serve(async (req) => {
               `https://discord.com/api/v10/guilds/${targetGuild.guild_id}/bans/${ban.user_id}`,
               {
                 method: "PUT",
-                headers: { Authorization: `Bot ${botToken}`, "Content-Type": "application/json" },
-                body: JSON.stringify({ reason: ban.reason || "Restored from backup" }),
-              }
+                headers: {
+                  Authorization: `Bot ${botToken}`,
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                  reason: ban.reason || "Restored from backup",
+                }),
+              },
             );
             if (res.ok) results.bansCreated++;
           } catch (e) {
@@ -1049,7 +1199,7 @@ __serve(async (req) => {
         console.log(`Updating ${members.length} members...`);
         for (const member of members) {
           try {
-            const payload: any = {};
+            const payload: Untyped = {};
             if (member.nickname) payload.nick = member.nickname;
             if (member.roles && member.roles.length > 0) {
               // Map old role IDs to new ones
@@ -1065,9 +1215,12 @@ __serve(async (req) => {
                 `https://discord.com/api/v10/guilds/${targetGuild.guild_id}/members/${member.user_id}`,
                 {
                   method: "PATCH",
-                  headers: { Authorization: `Bot ${botToken}`, "Content-Type": "application/json" },
+                  headers: {
+                    Authorization: `Bot ${botToken}`,
+                    "Content-Type": "application/json",
+                  },
                   body: JSON.stringify(payload),
-                }
+                },
               );
               if (res.ok) results.membersUpdated++;
             }
@@ -1080,19 +1233,21 @@ __serve(async (req) => {
 
       console.log(`Clone completed with premium features`);
 
-      return new Response(
-        JSON.stringify({ success: true, results }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return new Response(JSON.stringify({ success: true, results }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     // ==================== ACTION: CLONE-STREAM ====================
     if (action === "clone-stream") {
       if (!targetGuildId) {
-        return new Response(JSON.stringify({ error: "Missing targetGuildId" }), {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+        return new Response(
+          JSON.stringify({ error: "Missing targetGuildId" }),
+          {
+            status: 400,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          },
+        );
       }
 
       // Verify access
@@ -1117,21 +1272,26 @@ __serve(async (req) => {
         .single();
 
       if (!targetGuild) {
-        return new Response(JSON.stringify({ error: "Target guild not found" }), {
-          status: 404,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+        return new Response(
+          JSON.stringify({ error: "Target guild not found" }),
+          {
+            status: 404,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          },
+        );
       }
 
       // Set up SSE stream
       const encoder = new TextEncoder();
       const stream = new ReadableStream({
         async start(controller) {
-          const send = (type: string, payload: any) => {
+          const send = (type: string, payload: Untyped) => {
             if (type === "error") {
               console.error("clone-stream error:", payload);
             }
-            controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type, payload })}\n\n`));
+            controller.enqueue(
+              encoder.encode(`data: ${JSON.stringify({ type, payload })}\n\n`),
+            );
           };
 
           const results = {
@@ -1147,13 +1307,13 @@ __serve(async (req) => {
           };
 
           try {
-            let categories: any[] = [];
-            let channels: any[] = [];
-            let roles: any[] = [];
-            let messages: any[] = [];
-            let bans: any[] = [];
-            let members: any[] = [];
-            let serverSettings: any = {};
+            let categories: Untyped[] = [];
+            let channels: Untyped[] = [];
+            let roles: Untyped[] = [];
+            let messages: Untyped[] = [];
+            let bans: Untyped[] = [];
+            let members: Untyped[] = [];
+            let serverSettings: Untyped = {};
 
             // Load data from template or source guild
             if (templateId) {
@@ -1210,11 +1370,13 @@ __serve(async (req) => {
 
               const channelsRes = await fetch(
                 `https://discord.com/api/v10/guilds/${sourceGuild.guild_id}/channels`,
-                { headers: { Authorization: `Bot ${botToken}` } }
+                { headers: { Authorization: `Bot ${botToken}` } },
               );
               const channelsData = await channelsRes.json();
               if (!Array.isArray(channelsData)) {
-                send("error", { error: `Failed to fetch channels: ${channelsData?.message || 'Unknown error'}` });
+                send("error", {
+                  error: `Failed to fetch channels: ${channelsData?.message || "Unknown error"}`,
+                });
                 controller.close();
                 return;
               }
@@ -1222,45 +1384,84 @@ __serve(async (req) => {
 
               const rolesRes = await fetch(
                 `https://discord.com/api/v10/guilds/${sourceGuild.guild_id}/roles`,
-                { headers: { Authorization: `Bot ${botToken}` } }
+                { headers: { Authorization: `Bot ${botToken}` } },
               );
               const rolesData = await rolesRes.json();
               if (!Array.isArray(rolesData)) {
-                send("error", { error: `Failed to fetch roles: ${rolesData?.message || 'Unknown error'}` });
+                send("error", {
+                  error: `Failed to fetch roles: ${rolesData?.message || "Unknown error"}`,
+                });
                 controller.close();
                 return;
               }
               const allRoles: DiscordRole[] = rolesData;
 
-              categories = allChannels.filter(c => c.type === 4).sort((a, b) => a.position - b.position).map(c => ({
-                name: c.name, position: c.position, original_id: c.id, permission_overwrites: c.permission_overwrites || [],
-              }));
+              categories = allChannels
+                .filter((c) => c.type === 4)
+                .sort((a, b) => a.position - b.position)
+                .map((c) => ({
+                  name: c.name,
+                  position: c.position,
+                  original_id: c.id,
+                  permission_overwrites: c.permission_overwrites || [],
+                }));
 
-              channels = allChannels.filter(c => c.type !== 4).sort((a, b) => a.position - b.position).map(c => ({
-                name: c.name, type: c.type, parent_id: c.parent_id, position: c.position,
-                topic: c.topic, nsfw: c.nsfw, rate_limit_per_user: c.rate_limit_per_user,
-                bitrate: c.bitrate, user_limit: c.user_limit, permission_overwrites: c.permission_overwrites || [],
-                original_id: c.id,
-              }));
+              channels = allChannels
+                .filter((c) => c.type !== 4)
+                .sort((a, b) => a.position - b.position)
+                .map((c) => ({
+                  name: c.name,
+                  type: c.type,
+                  parent_id: c.parent_id,
+                  position: c.position,
+                  topic: c.topic,
+                  nsfw: c.nsfw,
+                  rate_limit_per_user: c.rate_limit_per_user,
+                  bitrate: c.bitrate,
+                  user_limit: c.user_limit,
+                  permission_overwrites: c.permission_overwrites || [],
+                  original_id: c.id,
+                }));
 
-              roles = allRoles.filter(r => r.name !== "@everyone" && !r.managed).sort((a, b) => b.position - a.position).map(r => ({
-                name: r.name, color: r.color, permissions: r.permissions, mentionable: r.mentionable, hoist: r.hoist, original_id: r.id,
-              }));
+              roles = allRoles
+                .filter((r) => r.name !== "@everyone" && !r.managed)
+                .sort((a, b) => b.position - a.position)
+                .map((r) => ({
+                  name: r.name,
+                  color: r.color,
+                  permissions: r.permissions,
+                  mentionable: r.mentionable,
+                  hoist: r.hoist,
+                  original_id: r.id,
+                }));
 
               // Fetch premium data if options are set
               if (loadOptions.bans) {
-                bans = (await fetchGuildBans(botToken, sourceGuild.guild_id)).map(b => ({
-                  user_id: b.user.id, reason: b.reason,
+                bans = (
+                  await fetchGuildBans(botToken, sourceGuild.guild_id)
+                ).map((b) => ({
+                  user_id: b.user.id,
+                  reason: b.reason,
                 }));
               }
               if (loadOptions.members) {
-                const fetchedMembers = await fetchGuildMembers(botToken, sourceGuild.guild_id);
-                members = fetchedMembers.filter(m => !m.user.bot).map(m => ({
-                  user_id: m.user.id, nickname: m.nick, roles: m.roles,
-                }));
+                const fetchedMembers = await fetchGuildMembers(
+                  botToken,
+                  sourceGuild.guild_id,
+                );
+                members = fetchedMembers
+                  .filter((m) => !m.user.bot)
+                  .map((m) => ({
+                    user_id: m.user.id,
+                    nickname: m.nick,
+                    roles: m.roles,
+                  }));
               }
               if (loadOptions.settings) {
-                serverSettings = await fetchGuildSettings(botToken, sourceGuild.guild_id);
+                serverSettings = await fetchGuildSettings(
+                  botToken,
+                  sourceGuild.guild_id,
+                );
               }
             } else {
               send("error", { error: "Missing sourceGuildId or templateId" });
@@ -1271,52 +1472,83 @@ __serve(async (req) => {
             // Fetch existing channels and roles
             const existingChannelsRes = await fetch(
               `https://discord.com/api/v10/guilds/${targetGuild.guild_id}/channels`,
-              { headers: { Authorization: `Bot ${botToken}` } }
+              { headers: { Authorization: `Bot ${botToken}` } },
             );
             const existingChannelsData = await existingChannelsRes.json();
             if (!Array.isArray(existingChannelsData)) {
-              console.error("Failed to fetch target channels:", existingChannelsData);
-              send("error", { error: `Failed to fetch target channels: ${existingChannelsData?.message || 'Unknown error'}` });
+              console.error(
+                "Failed to fetch target channels:",
+                existingChannelsData,
+              );
+              send("error", {
+                error: `Failed to fetch target channels: ${existingChannelsData?.message || "Unknown error"}`,
+              });
               controller.close();
               return;
             }
             const existingChannels: DiscordChannel[] = existingChannelsData;
-            const nonCategoryChannels = existingChannels.filter(c => c.type !== 4);
-            const categoryChannels = existingChannels.filter(c => c.type === 4);
+            const nonCategoryChannels = existingChannels.filter(
+              (c) => c.type !== 4,
+            );
+            const categoryChannels = existingChannels.filter(
+              (c) => c.type === 4,
+            );
 
             const existingRolesRes = await fetch(
               `https://discord.com/api/v10/guilds/${targetGuild.guild_id}/roles`,
-              { headers: { Authorization: `Bot ${botToken}` } }
+              { headers: { Authorization: `Bot ${botToken}` } },
             );
             const existingRolesData = await existingRolesRes.json();
             if (!Array.isArray(existingRolesData)) {
               console.error("Failed to fetch target roles:", existingRolesData);
-              send("error", { error: `Failed to fetch target roles: ${existingRolesData?.message || 'Unknown error'}` });
+              send("error", {
+                error: `Failed to fetch target roles: ${existingRolesData?.message || "Unknown error"}`,
+              });
               controller.close();
               return;
             }
             const existingRoles: DiscordRole[] = existingRolesData;
-            const deletableRoles = existingRoles.filter(r => r.name !== "@everyone" && !r.managed);
+            const deletableRoles = existingRoles.filter(
+              (r) => r.name !== "@everyone" && !r.managed,
+            );
 
-            const totalChannelsToDelete = loadOptions.deleteChannels ? nonCategoryChannels.length + categoryChannels.length : 0;
-            const totalRolesToDelete = loadOptions.deleteRoles ? deletableRoles.length : 0;
-            const totalToCreate = (loadOptions.roles ? roles.length : 0) + 
-                                  (loadOptions.channels ? categories.length + channels.length : 0);
-            const totalPremium = (loadOptions.messages ? messages.reduce((sum, c) => sum + c.messages?.length || 0, 0) : 0) +
-                                 (loadOptions.bans ? bans.length : 0) +
-                                 (loadOptions.members ? members.length : 0);
+            const totalChannelsToDelete = loadOptions.deleteChannels
+              ? nonCategoryChannels.length + categoryChannels.length
+              : 0;
+            const totalRolesToDelete = loadOptions.deleteRoles
+              ? deletableRoles.length
+              : 0;
+            const totalToCreate =
+              (loadOptions.roles ? roles.length : 0) +
+              (loadOptions.channels ? categories.length + channels.length : 0);
+            const totalPremium =
+              (loadOptions.messages
+                ? messages.reduce((sum, c) => sum + c.messages?.length || 0, 0)
+                : 0) +
+              (loadOptions.bans ? bans.length : 0) +
+              (loadOptions.members ? members.length : 0);
 
             // STEP 1: Delete channels
             if (loadOptions.deleteChannels) {
               let deletedChannels = 0;
-              for (const channel of [...nonCategoryChannels, ...categoryChannels]) {
+              for (const channel of [
+                ...nonCategoryChannels,
+                ...categoryChannels,
+              ]) {
                 try {
                   await delay(300);
-                  const res = await fetch(`https://discord.com/api/v10/channels/${channel.id}`, {
-                    method: "DELETE", headers: { Authorization: `Bot ${botToken}` },
-                  });
+                  const res = await fetch(
+                    `https://discord.com/api/v10/channels/${channel.id}`,
+                    {
+                      method: "DELETE",
+                      headers: { Authorization: `Bot ${botToken}` },
+                    },
+                  );
                   if (res.ok) results.channelsDeleted++;
-                  else results.errors.push(`Failed to delete channel ${channel.name}`);
+                  else
+                    results.errors.push(
+                      `Failed to delete channel ${channel.name}`,
+                    );
                 } catch (e) {
                   results.errors.push(`Error deleting channel ${channel.name}`);
                 }
@@ -1337,11 +1569,16 @@ __serve(async (req) => {
               for (const role of deletableRoles) {
                 try {
                   await delay(300);
-                  const res = await fetch(`https://discord.com/api/v10/guilds/${targetGuild.guild_id}/roles/${role.id}`, {
-                    method: "DELETE", headers: { Authorization: `Bot ${botToken}` },
-                  });
+                  const res = await fetch(
+                    `https://discord.com/api/v10/guilds/${targetGuild.guild_id}/roles/${role.id}`,
+                    {
+                      method: "DELETE",
+                      headers: { Authorization: `Bot ${botToken}` },
+                    },
+                  );
                   if (res.ok) results.rolesDeleted++;
-                  else results.errors.push(`Failed to delete role ${role.name}`);
+                  else
+                    results.errors.push(`Failed to delete role ${role.name}`);
                 } catch (e) {
                   results.errors.push(`Error deleting role ${role.name}`);
                 }
@@ -1366,12 +1603,14 @@ __serve(async (req) => {
                 .select("bot_settings")
                 .eq("id", templateId)
                 .single();
-              
+
               if (templateData?.bot_settings?.source_discord_guild_id) {
-                roleIdMap[templateData.bot_settings.source_discord_guild_id] = targetGuild.guild_id;
+                roleIdMap[templateData.bot_settings.source_discord_guild_id] =
+                  targetGuild.guild_id;
               }
               if (templateData?.bot_settings?.everyone_role_id) {
-                roleIdMap[templateData.bot_settings.everyone_role_id] = targetGuild.guild_id;
+                roleIdMap[templateData.bot_settings.everyone_role_id] =
+                  targetGuild.guild_id;
               }
             }
 
@@ -1381,7 +1620,7 @@ __serve(async (req) => {
                 .select("guild_id")
                 .eq("id", sourceGuildId)
                 .single();
-              
+
               if (srcGuildData?.guild_id) {
                 roleIdMap[srcGuildData.guild_id] = targetGuild.guild_id;
               }
@@ -1393,14 +1632,27 @@ __serve(async (req) => {
               for (const role of roles) {
                 try {
                   await delay(500);
-                  const res = await fetch(`https://discord.com/api/v10/guilds/${targetGuild.guild_id}/roles`, {
-                    method: "POST",
-                    headers: { Authorization: `Bot ${botToken}`, "Content-Type": "application/json" },
-                    body: JSON.stringify({ name: role.name, color: role.color || 0, permissions: role.permissions, mentionable: role.mentionable, hoist: role.hoist }),
-                  });
+                  const res = await fetch(
+                    `https://discord.com/api/v10/guilds/${targetGuild.guild_id}/roles`,
+                    {
+                      method: "POST",
+                      headers: {
+                        Authorization: `Bot ${botToken}`,
+                        "Content-Type": "application/json",
+                      },
+                      body: JSON.stringify({
+                        name: role.name,
+                        color: role.color || 0,
+                        permissions: role.permissions,
+                        mentionable: role.mentionable,
+                        hoist: role.hoist,
+                      }),
+                    },
+                  );
                   if (res.ok) {
                     const newRole = await res.json();
-                    if (role.original_id) roleIdMap[role.original_id] = newRole.id;
+                    if (role.original_id)
+                      roleIdMap[role.original_id] = newRole.id;
                     results.rolesCreated++;
                   } else {
                     results.errors.push(`Failed to create role ${role.name}`);
@@ -1420,16 +1672,26 @@ __serve(async (req) => {
             }
 
             // Permission mapping helper
-            const mapPermissionOverwrites = (overwrites: any[]): any[] => {
+            const mapPermissionOverwrites = (
+              overwrites: Untyped[],
+            ): Untyped[] => {
               if (!overwrites || !Array.isArray(overwrites)) return [];
-              return overwrites.map(ow => {
-                if (ow.type === 0) {
-                  const newRoleId = roleIdMap[ow.id];
-                  if (newRoleId) return { id: newRoleId, type: 0, allow: ow.allow, deny: ow.deny };
-                  return null;
-                }
-                return ow;
-              }).filter(Boolean);
+              return overwrites
+                .map((ow) => {
+                  if (ow.type === 0) {
+                    const newRoleId = roleIdMap[ow.id];
+                    if (newRoleId)
+                      return {
+                        id: newRoleId,
+                        type: 0,
+                        allow: ow.allow,
+                        deny: ow.deny,
+                      };
+                    return null;
+                  }
+                  return ow;
+                })
+                .filter(Boolean);
             };
 
             // STEP 4: Create categories
@@ -1438,24 +1700,37 @@ __serve(async (req) => {
               for (const category of categories) {
                 try {
                   await delay(500);
-                  const mappedPerms = mapPermissionOverwrites(category.permission_overwrites);
-                  const payload: any = { name: category.name, type: 4 };
-                  if (mappedPerms.length > 0) payload.permission_overwrites = mappedPerms;
+                  const mappedPerms = mapPermissionOverwrites(
+                    category.permission_overwrites,
+                  );
+                  const payload: Untyped = { name: category.name, type: 4 };
+                  if (mappedPerms.length > 0)
+                    payload.permission_overwrites = mappedPerms;
 
-                  const res = await fetch(`https://discord.com/api/v10/guilds/${targetGuild.guild_id}/channels`, {
-                    method: "POST",
-                    headers: { Authorization: `Bot ${botToken}`, "Content-Type": "application/json" },
-                    body: JSON.stringify(payload),
-                  });
+                  const res = await fetch(
+                    `https://discord.com/api/v10/guilds/${targetGuild.guild_id}/channels`,
+                    {
+                      method: "POST",
+                      headers: {
+                        Authorization: `Bot ${botToken}`,
+                        "Content-Type": "application/json",
+                      },
+                      body: JSON.stringify(payload),
+                    },
+                  );
                   if (res.ok) {
                     const newCategory = await res.json();
                     categoryIdMap[category.original_id] = newCategory.id;
                     results.categoriesCreated++;
                   } else {
-                    results.errors.push(`Failed to create category ${category.name}`);
+                    results.errors.push(
+                      `Failed to create category ${category.name}`,
+                    );
                   }
                 } catch (e) {
-                  results.errors.push(`Error creating category ${category.name}`);
+                  results.errors.push(
+                    `Error creating category ${category.name}`,
+                  );
                 }
                 createdItems++;
                 send("progress", {
@@ -1474,27 +1749,45 @@ __serve(async (req) => {
               for (const channel of channels) {
                 try {
                   await delay(500);
-                  const mappedPerms = mapPermissionOverwrites(channel.permission_overwrites);
-                  const payload: any = { name: channel.name, type: channel.type };
-                  if (channel.parent_id && categoryIdMap[channel.parent_id]) payload.parent_id = categoryIdMap[channel.parent_id];
+                  const mappedPerms = mapPermissionOverwrites(
+                    channel.permission_overwrites,
+                  );
+                  const payload: Untyped = {
+                    name: channel.name,
+                    type: channel.type,
+                  };
+                  if (channel.parent_id && categoryIdMap[channel.parent_id])
+                    payload.parent_id = categoryIdMap[channel.parent_id];
                   if (channel.topic) payload.topic = channel.topic;
                   if (channel.nsfw) payload.nsfw = channel.nsfw;
-                  if (channel.rate_limit_per_user) payload.rate_limit_per_user = channel.rate_limit_per_user;
+                  if (channel.rate_limit_per_user)
+                    payload.rate_limit_per_user = channel.rate_limit_per_user;
                   if (channel.bitrate) payload.bitrate = channel.bitrate;
-                  if (channel.user_limit) payload.user_limit = channel.user_limit;
-                  if (mappedPerms.length > 0) payload.permission_overwrites = mappedPerms;
+                  if (channel.user_limit)
+                    payload.user_limit = channel.user_limit;
+                  if (mappedPerms.length > 0)
+                    payload.permission_overwrites = mappedPerms;
 
-                  const res = await fetch(`https://discord.com/api/v10/guilds/${targetGuild.guild_id}/channels`, {
-                    method: "POST",
-                    headers: { Authorization: `Bot ${botToken}`, "Content-Type": "application/json" },
-                    body: JSON.stringify(payload),
-                  });
+                  const res = await fetch(
+                    `https://discord.com/api/v10/guilds/${targetGuild.guild_id}/channels`,
+                    {
+                      method: "POST",
+                      headers: {
+                        Authorization: `Bot ${botToken}`,
+                        "Content-Type": "application/json",
+                      },
+                      body: JSON.stringify(payload),
+                    },
+                  );
                   if (res.ok) {
                     const newChannel = await res.json();
-                    if (channel.original_id) newChannelIdMap[channel.original_id] = newChannel.id;
+                    if (channel.original_id)
+                      newChannelIdMap[channel.original_id] = newChannel.id;
                     results.channelsCreated++;
                   } else {
-                    results.errors.push(`Failed to create channel ${channel.name}`);
+                    results.errors.push(
+                      `Failed to create channel ${channel.name}`,
+                    );
                   }
                 } catch (e) {
                   results.errors.push(`Error creating channel ${channel.name}`);
@@ -1513,8 +1806,11 @@ __serve(async (req) => {
             // STEP 6: Premium features - Messages
             if (loadOptions.messages && messages.length > 0) {
               let messageProgress = 0;
-              const totalMessages = messages.reduce((sum, c) => sum + (c.messages?.length || 0), 0);
-              
+              const totalMessages = messages.reduce(
+                (sum, c) => sum + (c.messages?.length || 0),
+                0,
+              );
+
               send("progress", {
                 phase: "creating_messages",
                 current: 0,
@@ -1533,18 +1829,27 @@ __serve(async (req) => {
                     `https://discord.com/api/v10/channels/${newChannelId}/webhooks`,
                     {
                       method: "POST",
-                      headers: { Authorization: `Bot ${botToken}`, "Content-Type": "application/json" },
+                      headers: {
+                        Authorization: `Bot ${botToken}`,
+                        "Content-Type": "application/json",
+                      },
                       body: JSON.stringify({ name: "Message Restore" }),
-                    }
+                    },
                   );
 
                   if (webhookRes.ok) {
                     const webhook = await webhookRes.json();
                     const webhookUrl = `https://discord.com/api/v10/webhooks/${webhook.id}/${webhook.token}`;
 
-                    const sortedMessages = [...(channelData.messages || [])].reverse();
+                    const sortedMessages = [
+                      ...(channelData.messages || []),
+                    ].reverse();
                     for (const msg of sortedMessages) {
-                      if (!msg.content && (!msg.embeds || msg.embeds.length === 0)) continue;
+                      if (
+                        !msg.content &&
+                        (!msg.embeds || msg.embeds.length === 0)
+                      )
+                        continue;
 
                       try {
                         await delay(1000);
@@ -1554,10 +1859,11 @@ __serve(async (req) => {
                           body: JSON.stringify({
                             content: msg.content || undefined,
                             username: msg.author_name,
-                            avatar_url: msg.author_avatar 
+                            avatar_url: msg.author_avatar
                               ? `https://cdn.discordapp.com/avatars/${msg.author_id}/${msg.author_avatar}.png`
                               : undefined,
-                            embeds: msg.embeds?.length > 0 ? msg.embeds : undefined,
+                            embeds:
+                              msg.embeds?.length > 0 ? msg.embeds : undefined,
                           }),
                         });
                         if (msgRes.ok) results.messagesCreated++;
@@ -1574,10 +1880,13 @@ __serve(async (req) => {
                       });
                     }
 
-                    await fetch(`https://discord.com/api/v10/webhooks/${webhook.id}`, {
-                      method: "DELETE",
-                      headers: { Authorization: `Bot ${botToken}` },
-                    });
+                    await fetch(
+                      `https://discord.com/api/v10/webhooks/${webhook.id}`,
+                      {
+                        method: "DELETE",
+                        headers: { Authorization: `Bot ${botToken}` },
+                      },
+                    );
                   }
                 } catch (e) {
                   results.errors.push(`Error restoring messages`);
@@ -1595,9 +1904,14 @@ __serve(async (req) => {
                     `https://discord.com/api/v10/guilds/${targetGuild.guild_id}/bans/${ban.user_id}`,
                     {
                       method: "PUT",
-                      headers: { Authorization: `Bot ${botToken}`, "Content-Type": "application/json" },
-                      body: JSON.stringify({ reason: ban.reason || "Restored from backup" }),
-                    }
+                      headers: {
+                        Authorization: `Bot ${botToken}`,
+                        "Content-Type": "application/json",
+                      },
+                      body: JSON.stringify({
+                        reason: ban.reason || "Restored from backup",
+                      }),
+                    },
                   );
                   if (res.ok) results.bansCreated++;
                 } catch (e) {
@@ -1619,10 +1933,12 @@ __serve(async (req) => {
               let memberProgress = 0;
               for (const member of members) {
                 try {
-                  const payload: any = {};
+                  const payload: Untyped = {};
                   if (member.nickname) payload.nick = member.nickname;
                   if (member.roles && member.roles.length > 0) {
-                    const mappedRoles = member.roles.map((roleId: string) => roleIdMap[roleId]).filter(Boolean);
+                    const mappedRoles = member.roles
+                      .map((roleId: string) => roleIdMap[roleId])
+                      .filter(Boolean);
                     if (mappedRoles.length > 0) payload.roles = mappedRoles;
                   }
 
@@ -1632,9 +1948,12 @@ __serve(async (req) => {
                       `https://discord.com/api/v10/guilds/${targetGuild.guild_id}/members/${member.user_id}`,
                       {
                         method: "PATCH",
-                        headers: { Authorization: `Bot ${botToken}`, "Content-Type": "application/json" },
+                        headers: {
+                          Authorization: `Bot ${botToken}`,
+                          "Content-Type": "application/json",
+                        },
                         body: JSON.stringify(payload),
-                      }
+                      },
                     );
                     if (res.ok) results.membersUpdated++;
                   }
@@ -1668,7 +1987,7 @@ __serve(async (req) => {
           ...corsHeaders,
           "Content-Type": "text/event-stream",
           "Cache-Control": "no-cache",
-          "Connection": "keep-alive",
+          Connection: "keep-alive",
         },
       });
     }
@@ -1681,10 +2000,9 @@ __serve(async (req) => {
         .or(`created_by.eq.${userId},is_public.eq.true`)
         .order("created_at", { ascending: false });
 
-      return new Response(
-        JSON.stringify({ templates: templates || [] }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return new Response(JSON.stringify({ templates: templates || [] }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     // ==================== ACTION: DELETE-TEMPLATE ====================
@@ -1704,10 +2022,9 @@ __serve(async (req) => {
 
       if (error) throw error;
 
-      return new Response(
-        JSON.stringify({ success: true }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return new Response(JSON.stringify({ success: true }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     return new Response(JSON.stringify({ error: "Invalid action" }), {
@@ -1724,10 +2041,9 @@ __serve(async (req) => {
   }
 });
 
+const __call = ({ request }: { request: Request }) => __handler(request);
 
-const __call = ({ request }: { request: Request }) => __handler(request)
-
-export const Route = createFileRoute('/api/public/server-clone')({
+export const Route = createFileRoute("/api/public/server-clone")({
   server: {
     handlers: {
       GET: __call,
@@ -1738,4 +2054,4 @@ export const Route = createFileRoute('/api/public/server-clone')({
       OPTIONS: __call,
     },
   },
-})
+});

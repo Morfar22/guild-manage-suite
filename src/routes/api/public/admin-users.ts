@@ -1,16 +1,23 @@
-// @ts-nocheck
 // Migrated from Supabase Edge Function `admin-users` to a TanStack server route.
-import { createFileRoute } from '@tanstack/react-router'
-import { createClient } from '@supabase/supabase-js'
+// @ts-nocheck
+import { createFileRoute } from "@tanstack/react-router";
+import { createClient } from "@supabase/supabase-js";
+import type { Untyped } from "@/types/untyped";
 
-const __env = (k: string) => process.env[k] ?? (k === 'SUPABASE_ANON_KEY' ? process.env['SUPABASE_PUBLISHABLE_KEY'] : undefined)
-let __handler: (req: Request) => Response | Promise<Response>
-const __serve = (fn: any, _opts?: any) => { __handler = fn }
-
+const __env = (k: string) =>
+  process.env[k] ??
+  (k === "SUPABASE_ANON_KEY"
+    ? process.env["SUPABASE_PUBLISHABLE_KEY"]
+    : undefined);
+let __handler: (req: Request) => Response | Promise<Response>;
+const __serve = (fn: Untyped, _opts?: Untyped) => {
+  __handler = fn;
+};
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type",
 };
 
 __serve(async (req) => {
@@ -38,7 +45,8 @@ __serve(async (req) => {
     });
 
     const token = authHeader.replace("Bearer ", "");
-    const { data: claimsData, error: claimsError } = await userClient.auth.getClaims(token);
+    const { data: claimsData, error: claimsError } =
+      await userClient.auth.getClaims(token);
 
     if (claimsError || !claimsData?.claims) {
       console.error("Auth error:", claimsError);
@@ -63,17 +71,23 @@ __serve(async (req) => {
 
     if (roleError || !roleData) {
       console.log("User is not admin:", userId);
-      return new Response(JSON.stringify({ error: "Forbidden - Admin access required" }), {
-        status: 403,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return new Response(
+        JSON.stringify({ error: "Forbidden - Admin access required" }),
+        {
+          status: 403,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
     }
 
     const { action } = await req.json();
 
     if (action === "list") {
       // Get all users using admin API
-      const { data: { users }, error: usersError } = await adminClient.auth.admin.listUsers();
+      const {
+        data: { users },
+        error: usersError,
+      } = await adminClient.auth.admin.listUsers();
 
       if (usersError) {
         console.error("Error listing users:", usersError);
@@ -83,7 +97,7 @@ __serve(async (req) => {
         });
       }
 
-      const simplifiedUsers = users.map(u => ({
+      const simplifiedUsers = users.map((u) => ({
         id: u.id,
         email: u.email || "No email",
         created_at: u.created_at,
@@ -108,10 +122,9 @@ __serve(async (req) => {
   }
 });
 
+const __call = ({ request }: { request: Request }) => __handler(request);
 
-const __call = ({ request }: { request: Request }) => __handler(request)
-
-export const Route = createFileRoute('/api/public/admin-users')({
+export const Route = createFileRoute("/api/public/admin-users")({
   server: {
     handlers: {
       GET: __call,
@@ -122,4 +135,4 @@ export const Route = createFileRoute('/api/public/admin-users')({
       OPTIONS: __call,
     },
   },
-})
+});

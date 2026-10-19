@@ -1,13 +1,25 @@
-// @ts-nocheck
 // Migrated from Supabase Edge Function `discord-oauth` to a TanStack server route.
-import { createFileRoute } from '@tanstack/react-router'
-import { createClient } from '@supabase/supabase-js'
-import { DISCORD_REDIRECT_URI, createOAuthState, validOAuthState, clearOAuthStateCookie, findAuthUserByEmail } from '@/lib/server/discord-oauth-security'
+// @ts-nocheck
+import { createFileRoute } from "@tanstack/react-router";
+import { createClient } from "@supabase/supabase-js";
+import type { Untyped } from "@/types/untyped";
+import {
+  DISCORD_REDIRECT_URI,
+  createOAuthState,
+  validOAuthState,
+  clearOAuthStateCookie,
+  findAuthUserByEmail,
+} from "@/lib/server/discord-oauth-security";
 
-const __env = (k: string) => process.env[k] ?? (k === 'SUPABASE_ANON_KEY' ? process.env['SUPABASE_PUBLISHABLE_KEY'] : undefined)
-let __handler: (req: Request) => Response | Promise<Response>
-const __serve = (fn: any, _opts?: any) => { __handler = fn }
-
+const __env = (k: string) =>
+  process.env[k] ??
+  (k === "SUPABASE_ANON_KEY"
+    ? process.env["SUPABASE_PUBLISHABLE_KEY"]
+    : undefined);
+let __handler: (req: Request) => Response | Promise<Response>;
+const __serve = (fn: Untyped, _opts?: Untyped) => {
+  __handler = fn;
+};
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -37,9 +49,10 @@ __serve(async (req) => {
     return new Response("ok", { headers: corsHeaders });
   }
 
-  if (req.method !== 'POST') return Response.json({ error: 'Method not allowed' }, { status: 405 });
-  if (req.headers.get('origin') !== new URL(DISCORD_REDIRECT_URI).origin) {
-    return Response.json({ error: 'Invalid login origin' }, { status: 403 });
+  if (req.method !== "POST")
+    return Response.json({ error: "Method not allowed" }, { status: 405 });
+  if (req.headers.get("origin") !== new URL(DISCORD_REDIRECT_URI).origin) {
+    return Response.json({ error: "Invalid login origin" }, { status: 403 });
   }
   const url = new URL(req.url);
   const action = url.searchParams.get("action");
@@ -53,7 +66,10 @@ __serve(async (req) => {
     console.error("Discord credentials not configured");
     return new Response(
       JSON.stringify({ error: "Discord OAuth not configured" }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      },
     );
   }
 
@@ -61,9 +77,13 @@ __serve(async (req) => {
     // Action: Get authorization URL
     if (action === "authorize") {
       const { redirectUri } = await req.json();
-      if (redirectUri !== DISCORD_REDIRECT_URI) return Response.json({ error: 'Invalid redirect URI' }, { status: 400 });
+      if (redirectUri !== DISCORD_REDIRECT_URI)
+        return Response.json(
+          { error: "Invalid redirect URI" },
+          { status: 400 },
+        );
       const oauth = createOAuthState();
-      
+
       const params = new URLSearchParams({
         client_id: DISCORD_CLIENT_ID,
         redirect_uri: redirectUri,
@@ -73,49 +93,71 @@ __serve(async (req) => {
       });
 
       const authUrl = `https://discord.com/api/oauth2/authorize?${params}`;
-      
+
       console.log("Generated Discord auth URL");
-      return new Response(
-        JSON.stringify({ url: authUrl }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json", "Set-Cookie": oauth.cookie, "Cache-Control": "no-store" } }
-      );
+      return new Response(JSON.stringify({ url: authUrl }), {
+        headers: {
+          ...corsHeaders,
+          "Content-Type": "application/json",
+          "Set-Cookie": oauth.cookie,
+          "Cache-Control": "no-store",
+        },
+      });
     }
 
     // Action: Exchange code for tokens and fetch user data
     if (action === "callback") {
       const { code, redirectUri, state } = await req.json();
-      if (redirectUri !== DISCORD_REDIRECT_URI || !validOAuthState(req, state)) {
-        return Response.json({ error: 'Loginforsøget er udløbet eller ugyldigt. Start Discord-login igen.' }, { status: 403 });
+      if (
+        redirectUri !== DISCORD_REDIRECT_URI ||
+        !validOAuthState(req, state)
+      ) {
+        return Response.json(
+          {
+            error:
+              "Loginforsøget er udløbet eller ugyldigt. Start Discord-login igen.",
+          },
+          { status: 403 },
+        );
       }
 
       if (!code) {
         return new Response(
           JSON.stringify({ error: "No authorization code provided" }),
-          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          {
+            status: 400,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          },
         );
       }
 
       console.log("Exchanging code for token...");
 
       // Exchange code for access token
-      const tokenResponse = await fetch("https://discord.com/api/oauth2/token", {
-        method: "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        body: new URLSearchParams({
-          client_id: DISCORD_CLIENT_ID,
-          client_secret: DISCORD_CLIENT_SECRET,
-          grant_type: "authorization_code",
-          code,
-          redirect_uri: redirectUri,
-        }),
-      });
+      const tokenResponse = await fetch(
+        "https://discord.com/api/oauth2/token",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/x-www-form-urlencoded" },
+          body: new URLSearchParams({
+            client_id: DISCORD_CLIENT_ID,
+            client_secret: DISCORD_CLIENT_SECRET,
+            grant_type: "authorization_code",
+            code,
+            redirect_uri: redirectUri,
+          }),
+        },
+      );
 
       if (!tokenResponse.ok) {
         const error = await tokenResponse.text();
         console.error("Token exchange failed:", error);
         return new Response(
           JSON.stringify({ error: "Failed to exchange authorization code" }),
-          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          {
+            status: 400,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          },
         );
       }
 
@@ -133,26 +175,38 @@ __serve(async (req) => {
         console.error("Failed to fetch Discord user");
         return new Response(
           JSON.stringify({ error: "Failed to fetch Discord user" }),
-          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          {
+            status: 400,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          },
         );
       }
 
       const discordUser: DiscordUser = await userResponse.json();
       if (discordUser.email && !discordUser.verified) {
-        return Response.json({ error: 'Bekræft din e-mail hos Discord før du logger ind.' }, { status: 403 });
+        return Response.json(
+          { error: "Bekræft din e-mail hos Discord før du logger ind." },
+          { status: 403 },
+        );
       }
       console.log("Discord user fetched:", discordUser.username);
 
       // Fetch user's guilds
-      const guildsResponse = await fetch("https://discord.com/api/users/@me/guilds", {
-        headers: { Authorization: `Bearer ${accessToken}` },
-      });
+      const guildsResponse = await fetch(
+        "https://discord.com/api/users/@me/guilds",
+        {
+          headers: { Authorization: `Bearer ${accessToken}` },
+        },
+      );
 
       if (!guildsResponse.ok) {
         console.error("Failed to fetch Discord guilds");
         return new Response(
           JSON.stringify({ error: "Failed to fetch Discord guilds" }),
-          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          {
+            status: 400,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          },
         );
       }
 
@@ -175,10 +229,10 @@ __serve(async (req) => {
 
       // Check if user exists or create new user
       const email = discordUser.email || `${discordUser.id}@discord.user`;
-      
+
       // Try to sign in or create user
       let userId: string;
-      
+
       const existingUser = await findAuthUserByEmail(supabase, email);
 
       if (existingUser) {
@@ -186,21 +240,25 @@ __serve(async (req) => {
         console.log("Existing user found:", userId);
       } else {
         // Create new user
-        const { data: newUser, error: createError } = await supabase.auth.admin.createUser({
-          email,
-          email_confirm: true,
-          user_metadata: {
-            discord_id: discordUser.id,
-            discord_username: discordUser.username,
-            avatar: discordUser.avatar,
-          },
-        });
+        const { data: newUser, error: createError } =
+          await supabase.auth.admin.createUser({
+            email,
+            email_confirm: true,
+            user_metadata: {
+              discord_id: discordUser.id,
+              discord_username: discordUser.username,
+              avatar: discordUser.avatar,
+            },
+          });
 
         if (createError) {
           console.error("Failed to create user:", createError);
           return new Response(
             JSON.stringify({ error: "Failed to create user account" }),
-            { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+            {
+              status: 500,
+              headers: { ...corsHeaders, "Content-Type": "application/json" },
+            },
           );
         }
 
@@ -218,13 +276,13 @@ __serve(async (req) => {
 
       if (pendingAdmin) {
         console.log("Found pending admin email, promoting user to admin role");
-        
+
         // Add admin role
         const { error: roleError } = await supabase
           .from("user_roles")
           .upsert(
             { user_id: userId, role: "admin" },
-            { onConflict: "user_id,role" }
+            { onConflict: "user_id,role" },
           );
 
         if (!roleError) {
@@ -233,7 +291,7 @@ __serve(async (req) => {
             .from("pending_admin_emails")
             .update({ processed: true })
             .eq("id", pendingAdmin.id);
-          
+
           console.log("User promoted to admin successfully");
         } else {
           console.error("Failed to assign admin role:", roleError);
@@ -245,8 +303,13 @@ __serve(async (req) => {
       const { data: currentGuildRows } = await supabase
         .from("guilds")
         .select("id, guild_id, owner_id")
-        .in("guild_id", adminGuildDiscordIds.length > 0 ? adminGuildDiscordIds : ["__none__"]);
-      const keepInternalIds = new Set((currentGuildRows || []).map((g) => g.id));
+        .in(
+          "guild_id",
+          adminGuildDiscordIds.length > 0 ? adminGuildDiscordIds : ["__none__"],
+        );
+      const keepInternalIds = new Set(
+        (currentGuildRows || []).map((g) => g.id),
+      );
 
       const { data: existingLinks } = await supabase
         .from("user_guilds")
@@ -275,10 +338,13 @@ __serve(async (req) => {
               guild_id: guild.id,
               guild_name: guild.name,
               guild_icon: guild.icon,
-              owner_id: guild.owner ? discordUser.id :
-                (currentGuildRows || []).find(row => row.guild_id === guild.id)?.owner_id || "unknown",
+              owner_id: guild.owner
+                ? discordUser.id
+                : (currentGuildRows || []).find(
+                    (row) => row.guild_id === guild.id,
+                  )?.owner_id || "unknown",
             })),
-            { onConflict: "guild_id" }
+            { onConflict: "guild_id" },
           )
           .select("id, guild_id");
 
@@ -289,7 +355,9 @@ __serve(async (req) => {
         }
       }
 
-      const internalIdByDiscordId = new Map(guildRows.map((g) => [g.guild_id, g.id]));
+      const internalIdByDiscordId = new Map(
+        guildRows.map((g) => [g.guild_id, g.id]),
+      );
 
       // 2) Link user to all guilds in ONE call.
       const linkRows = adminGuilds
@@ -311,7 +379,9 @@ __serve(async (req) => {
       }
 
       // 3) Initialize default modules ONLY for guilds that didn't exist before, in ONE call.
-      const existingDiscordIds = new Set((currentGuildRows || []).map((g) => g.guild_id));
+      const existingDiscordIds = new Set(
+        (currentGuildRows || []).map((g) => g.guild_id),
+      );
       const modules = ["moderation", "music", "leveling", "utility", "fun"];
       const moduleRows = adminGuilds
         .filter((guild) => !existingDiscordIds.has(guild.id))
@@ -334,16 +404,22 @@ __serve(async (req) => {
       }
 
       // Generate a magic link for the user to sign in
-      const { data: sessionData, error: sessionError } = await supabase.auth.admin.generateLink({
-        type: "magiclink",
-        email,
-      });
+      const { data: sessionData, error: sessionError } =
+        await supabase.auth.admin.generateLink({
+          type: "magiclink",
+          email,
+        });
 
       if (sessionError) {
         console.error("Failed to generate session:", sessionError);
         return new Response(
-          JSON.stringify({ error: `Failed to create session: ${sessionError.message}` }),
-          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          JSON.stringify({
+            error: `Failed to create session: ${sessionError.message}`,
+          }),
+          {
+            status: 500,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          },
         );
       }
 
@@ -362,34 +438,33 @@ __serve(async (req) => {
           guilds: adminGuilds.length,
           token_hash: sessionData.properties?.hashed_token,
         }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
 
-    return new Response(
-      JSON.stringify({ error: "Invalid action" }),
-      { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+    return new Response(JSON.stringify({ error: "Invalid action" }), {
+      status: 400,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   } catch (error) {
     console.error("Discord OAuth error:", error);
-    return new Response(
-      JSON.stringify({ error: "Internal server error" }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+    return new Response(JSON.stringify({ error: "Internal server error" }), {
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   }
 });
 
-
 const __call = async ({ request }: { request: Request }) => {
   const response = await __handler(request);
-  response.headers.set('Cache-Control', 'no-store');
-  if (new URL(request.url).searchParams.get('action') === 'callback') {
-    response.headers.set('Set-Cookie', clearOAuthStateCookie());
+  response.headers.set("Cache-Control", "no-store");
+  if (new URL(request.url).searchParams.get("action") === "callback") {
+    response.headers.set("Set-Cookie", clearOAuthStateCookie());
   }
   return response;
-}
+};
 
-export const Route = createFileRoute('/api/public/discord-oauth')({
+export const Route = createFileRoute("/api/public/discord-oauth")({
   server: {
     handlers: {
       GET: __call,
@@ -400,4 +475,4 @@ export const Route = createFileRoute('/api/public/discord-oauth')({
       OPTIONS: __call,
     },
   },
-})
+});

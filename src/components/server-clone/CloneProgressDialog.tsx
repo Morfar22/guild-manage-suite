@@ -1,11 +1,27 @@
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Progress } from '@/components/ui/progress';
-import { Badge } from '@/components/ui/badge';
-import { CheckCircle2, Loader2, Trash2, Plus, AlertCircle } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Progress } from "@/components/ui/progress";
+import { Badge } from "@/components/ui/badge";
+import { CheckCircle2, Loader2, Trash2, Plus, AlertCircle } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 export interface CloneProgress {
-  phase: 'preparing' | 'deleting_channels' | 'deleting_roles' | 'creating_roles' | 'creating_categories' | 'creating_channels' | 'creating_messages' | 'creating_bans' | 'updating_members' | 'complete' | 'error';
+  phase:
+    | "preparing"
+    | "deleting_channels"
+    | "deleting_roles"
+    | "creating_roles"
+    | "creating_categories"
+    | "creating_channels"
+    | "creating_messages"
+    | "creating_bans"
+    | "updating_members"
+    | "complete"
+    | "error";
   current: number;
   total: number;
   currentItem?: string;
@@ -28,21 +44,21 @@ interface CloneProgressDialogProps {
   targetGuildName: string;
 }
 
-const phaseLabels: Record<CloneProgress['phase'], string> = {
-  preparing: 'Forbereder...',
-  deleting_channels: 'Sletter kanaler',
-  deleting_roles: 'Sletter roller',
-  creating_roles: 'Opretter roller',
-  creating_categories: 'Opretter kategorier',
-  creating_channels: 'Opretter kanaler',
-  creating_messages: 'Gendanner beskeder',
-  creating_bans: 'Kopierer bans',
-  updating_members: 'Opdaterer medlemmer',
-  complete: 'Færdig!',
-  error: 'Fejl',
+const phaseLabels: Record<CloneProgress["phase"], string> = {
+  preparing: "Forbereder...",
+  deleting_channels: "Sletter kanaler",
+  deleting_roles: "Sletter roller",
+  creating_roles: "Opretter roller",
+  creating_categories: "Opretter kategorier",
+  creating_channels: "Opretter kanaler",
+  creating_messages: "Gendanner beskeder",
+  creating_bans: "Kopierer bans",
+  updating_members: "Opdaterer medlemmer",
+  complete: "Færdig!",
+  error: "Fejl",
 };
 
-const phaseIcons: Record<CloneProgress['phase'], React.ReactNode> = {
+const phaseIcons: Record<CloneProgress["phase"], React.ReactNode> = {
   preparing: <Loader2 className="h-4 w-4 animate-spin" />,
   deleting_channels: <Trash2 className="h-4 w-4 text-destructive" />,
   deleting_roles: <Trash2 className="h-4 w-4 text-destructive" />,
@@ -56,17 +72,25 @@ const phaseIcons: Record<CloneProgress['phase'], React.ReactNode> = {
   error: <AlertCircle className="h-4 w-4 text-destructive" />,
 };
 
-export function CloneProgressDialog({ open, progress, targetGuildName }: CloneProgressDialogProps) {
-  const percentage = progress && progress.total > 0 
-    ? Math.round((progress.current / progress.total) * 100) 
-    : 0;
+export function CloneProgressDialog({
+  open,
+  progress,
+  targetGuildName,
+}: CloneProgressDialogProps) {
+  const percentage =
+    progress && progress.total > 0
+      ? Math.round((progress.current / progress.total) * 100)
+      : 0;
 
-  const isComplete = progress?.phase === 'complete';
-  const isError = progress?.phase === 'error';
+  const isComplete = progress?.phase === "complete";
+  const isError = progress?.phase === "error";
 
   return (
     <Dialog open={open}>
-      <DialogContent className="sm:max-w-md" onPointerDownOutside={(e) => e.preventDefault()}>
+      <DialogContent
+        className="sm:max-w-md"
+        onPointerDownOutside={(e) => e.preventDefault()}
+      >
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             {progress && phaseIcons[progress.phase]}
@@ -78,10 +102,14 @@ export function CloneProgressDialog({ open, progress, targetGuildName }: ClonePr
           {/* Current Phase */}
           <div className="flex items-center justify-between">
             <span className="text-sm font-medium">
-              {progress ? phaseLabels[progress.phase] : 'Starter...'}
+              {progress ? phaseLabels[progress.phase] : "Starter..."}
             </span>
-            <Badge variant={isComplete ? 'default' : isError ? 'destructive' : 'secondary'}>
-              {isComplete ? 'Færdig' : isError ? 'Fejl' : `${percentage}%`}
+            <Badge
+              variant={
+                isComplete ? "default" : isError ? "destructive" : "secondary"
+              }
+            >
+              {isComplete ? "Færdig" : isError ? "Fejl" : `${percentage}%`}
             </Badge>
           </div>
 
@@ -153,7 +181,9 @@ export function CloneProgressDialog({ open, progress, targetGuildName }: ClonePr
               </p>
               <ul className="text-xs text-muted-foreground space-y-1">
                 {progress.results.errors.slice(0, 5).map((error, i) => (
-                  <li key={i} className="truncate">• {error}</li>
+                  <li key={i} className="truncate">
+                    • {error}
+                  </li>
                 ))}
                 {progress.results.errors.length > 5 && (
                   <li className="text-muted-foreground">
@@ -169,15 +199,15 @@ export function CloneProgressDialog({ open, progress, targetGuildName }: ClonePr
   );
 }
 
-function StatCard({ 
-  label, 
-  value, 
+function StatCard({
+  label,
+  value,
   variant,
-  className 
-}: { 
-  label: string; 
-  value: number; 
-  variant: 'destructive' | 'success' | 'info' | 'warning';
+  className,
+}: {
+  label: string;
+  value: number;
+  variant: "destructive" | "success" | "info" | "warning";
   className?: string;
 }) {
   const variantClasses = {
@@ -188,15 +218,19 @@ function StatCard({
   };
 
   return (
-    <div className={cn(
-      "rounded-lg border p-2 text-center",
-      variantClasses[variant].split(' ').slice(0, 2).join(' '),
-      className
-    )}>
-      <p className={cn(
-        "text-lg font-bold",
-        variantClasses[variant].split(' ')[2]
-      )}>
+    <div
+      className={cn(
+        "rounded-lg border p-2 text-center",
+        variantClasses[variant].split(" ").slice(0, 2).join(" "),
+        className,
+      )}
+    >
+      <p
+        className={cn(
+          "text-lg font-bold",
+          variantClasses[variant].split(" ")[2],
+        )}
+      >
         {value}
       </p>
       <p className="text-xs text-muted-foreground">{label}</p>

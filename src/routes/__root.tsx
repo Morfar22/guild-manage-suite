@@ -1,4 +1,9 @@
-import { createRootRouteWithContext, Outlet, HeadContent, Scripts } from "@tanstack/react-router";
+import {
+  createRootRouteWithContext,
+  Outlet,
+  HeadContent,
+  Scripts,
+} from "@tanstack/react-router";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { HelmetProvider } from "react-helmet-async";
 import { Toaster } from "@/components/ui/toaster";
@@ -12,83 +17,119 @@ import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { reportLovableError } from "@/lib/lovable-error-reporting";
 import appCss from "@/styles.css?url";
 
-export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
-  component: RootComponent,
-  errorComponent: ErrorFallback,
-  head: () => ({
-    meta: [
-      { title: "GuildOS Bot - Discord management samlet ét sted" },
-      { charSet: "UTF-8" },
-      { name: "viewport", content: "width=device-width, initial-scale=1.0" },
-      { name: "description", content: "GuildOS samler moderation, tickets, AI, automation, analytics, FiveM og creator-integrationer i ét Discord dashboard." },
-      { name: "author", content: "GuildOS Bot" },
-      { name: "keywords", content: "Discord bot, moderation, tickets, AI chat, leveling, FiveM, dashboard" },
-      { name: "theme-color", content: "#5865F2" },
-      { property: "og:type", content: "website" },
-      { property: "og:url", content: "https://bot.nethost-solutions.dk/" },
-      { property: "og:title", content: "GuildOS Bot - Dit Discord-team får et kontrolrum" },
-      { property: "og:description", content: "Moderation, tickets, AI, FiveM, analytics og automation samlet i én Discord-platform." },
-      { property: "og:image", content: "https://bot.nethost-solutions.dk/og/guildos-card.svg" },
-      { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:title", content: "GuildOS Bot - Discord management samlet ét sted" },
-      { name: "twitter:description", content: "Alt-i-én Discord bot med 49+ moduler: moderation, tickets, AI, leveling, FiveM og mere." },
-      { name: "twitter:image", content: "https://bot.nethost-solutions.dk/og/guildos-card.svg" },
-    ],
-    links: [
-      { rel: "stylesheet", href: appCss },
-      { rel: "preconnect", href: "https://fonts.googleapis.com" },
-      { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
-      {
-        rel: "stylesheet",
-        href: "https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&display=swap",
-      },
-      { rel: "icon", type: "image/x-icon", href: "/favicon.ico" },
-    ],
-    scripts: [
-      {
-        type: "application/ld+json",
-        children: JSON.stringify({
-          "@context": "https://schema.org",
-          "@type": "Organization",
-          name: "GuildOS Bot",
-          url: "https://bot.nethost-solutions.dk/",
-          logo: "https://bot.nethost-solutions.dk/favicon.ico",
-        }),
-      },
-      {
-        type: "application/ld+json",
-        children: JSON.stringify({
-          "@context": "https://schema.org",
-          "@type": "WebSite",
-          name: "GuildOS Bot",
-          url: "https://bot.nethost-solutions.dk/",
-          potentialAction: {
-            "@type": "SearchAction",
-            target: "https://bot.nethost-solutions.dk/docs?q={search_term_string}",
-            "query-input": "required name=search_term_string",
-          },
-        }),
-      },
-      {
-        type: "application/ld+json",
-        children: JSON.stringify({
-          "@context": "https://schema.org",
-          "@type": "SoftwareApplication",
-          name: "GuildOS Bot",
-          applicationCategory: "Discord Bot",
-          operatingSystem: "Web, Discord",
-          description: "Discord management platform med moderation, tickets, AI, automation, analytics, FiveM og creator-integrationer.",
-          url: "https://bot.nethost-solutions.dk/",
-          offers: {
-            "@type": "Offer",
-            price: "0",
-            priceCurrency: "DKK",
-          },
-        }),
-      },
-    ],
-  }),
-});
+export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
+  {
+    component: RootComponent,
+    errorComponent: ErrorFallback,
+    head: () => ({
+      meta: [
+        { title: "GuildOS Bot - Discord management samlet ét sted" },
+        { charSet: "UTF-8" },
+        { name: "viewport", content: "width=device-width, initial-scale=1.0" },
+        {
+          name: "description",
+          content:
+            "GuildOS samler moderation, tickets, AI, automation, analytics, FiveM og creator-integrationer i ét Discord dashboard.",
+        },
+        { name: "author", content: "GuildOS Bot" },
+        {
+          name: "keywords",
+          content:
+            "Discord bot, moderation, tickets, AI chat, leveling, FiveM, dashboard",
+        },
+        { name: "theme-color", content: "#5865F2" },
+        { property: "og:type", content: "website" },
+        { property: "og:url", content: "https://bot.nethost-solutions.dk/" },
+        {
+          property: "og:title",
+          content: "GuildOS Bot - Dit Discord-team får et kontrolrum",
+        },
+        {
+          property: "og:description",
+          content:
+            "Moderation, tickets, AI, FiveM, analytics og automation samlet i én Discord-platform.",
+        },
+        {
+          property: "og:image",
+          content: "https://bot.nethost-solutions.dk/og/guildos-card.svg",
+        },
+        { name: "twitter:card", content: "summary_large_image" },
+        {
+          name: "twitter:title",
+          content: "GuildOS Bot - Discord management samlet ét sted",
+        },
+        {
+          name: "twitter:description",
+          content:
+            "Alt-i-én Discord bot med 49+ moduler: moderation, tickets, AI, leveling, FiveM og mere.",
+        },
+        {
+          name: "twitter:image",
+          content: "https://bot.nethost-solutions.dk/og/guildos-card.svg",
+        },
+      ],
+      links: [
+        { rel: "stylesheet", href: appCss },
+        { rel: "preconnect", href: "https://fonts.googleapis.com" },
+        {
+          rel: "preconnect",
+          href: "https://fonts.gstatic.com",
+          crossOrigin: "anonymous",
+        },
+        {
+          rel: "stylesheet",
+          href: "https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&display=swap",
+        },
+        { rel: "icon", type: "image/x-icon", href: "/favicon.ico" },
+      ],
+      scripts: [
+        {
+          type: "application/ld+json",
+          children: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "Organization",
+            name: "GuildOS Bot",
+            url: "https://bot.nethost-solutions.dk/",
+            logo: "https://bot.nethost-solutions.dk/favicon.ico",
+          }),
+        },
+        {
+          type: "application/ld+json",
+          children: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "WebSite",
+            name: "GuildOS Bot",
+            url: "https://bot.nethost-solutions.dk/",
+            potentialAction: {
+              "@type": "SearchAction",
+              target:
+                "https://bot.nethost-solutions.dk/docs?q={search_term_string}",
+              "query-input": "required name=search_term_string",
+            },
+          }),
+        },
+        {
+          type: "application/ld+json",
+          children: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "SoftwareApplication",
+            name: "GuildOS Bot",
+            applicationCategory: "Discord Bot",
+            operatingSystem: "Web, Discord",
+            description:
+              "Discord management platform med moderation, tickets, AI, automation, analytics, FiveM og creator-integrationer.",
+            url: "https://bot.nethost-solutions.dk/",
+            offers: {
+              "@type": "Offer",
+              price: "0",
+              priceCurrency: "DKK",
+            },
+          }),
+        },
+      ],
+    }),
+  },
+);
 
 function RootDocument({ children }: { children: React.ReactNode }) {
   return (
@@ -133,16 +174,16 @@ function RootComponent() {
   );
 }
 
-
-
 function ErrorFallback({ error }: { error: unknown }) {
-  const displayError = error instanceof Error ? error : new Error(String(error));
+  const displayError =
+    error instanceof Error ? error : new Error(String(error));
   reportLovableError(error, { route: "/" });
   return (
     <div className="flex min-h-screen flex-col items-center justify-center p-6 text-center">
       <h1 className="mb-2 text-2xl font-bold">Siden kunne ikke indlæses</h1>
       <p className="text-muted-foreground">
-        Noget gik galt under indlæsningen. Prøv at genindlæse siden eller gå tilbage til forsiden.
+        Noget gik galt under indlæsningen. Prøv at genindlæse siden eller gå
+        tilbage til forsiden.
       </p>
       <div className="mt-6 flex gap-4">
         <button

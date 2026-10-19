@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react';
-import { TwitchStreamer } from '@/hooks/useTwitchStreamers';
+import { useState, useEffect } from "react";
+import { TwitchStreamer } from "@/hooks/useTwitchStreamers";
+import type { Untyped } from "@/types/untyped";
 import {
   Dialog,
   DialogContent,
@@ -7,24 +8,36 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
-import { Textarea } from '@/components/ui/textarea';
-import { Loader2, X, Plus, Filter, Clock, Gamepad2, Eye, MessageSquare, Palette } from 'lucide-react';
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Loader2,
+  X,
+  Plus,
+  Filter,
+  Clock,
+  Gamepad2,
+  Eye,
+  MessageSquare,
+  Palette,
+} from "lucide-react";
 
 interface StreamerFiltersDialogProps {
-  streamer: (TwitchStreamer & {
-    min_viewers?: number;
-    allowed_games?: string[];
-    blocked_games?: string[];
-    custom_live_message?: string;
-    custom_embed_color?: string;
-    notification_cooldown_minutes?: number;
-  }) | null;
+  streamer:
+    | (TwitchStreamer & {
+        min_viewers?: number;
+        allowed_games?: string[];
+        blocked_games?: string[];
+        custom_live_message?: string;
+        custom_embed_color?: string;
+        notification_cooldown_minutes?: number;
+      })
+    | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSave: (updates: Partial<TwitchStreamer>) => Promise<boolean>;
@@ -41,34 +54,40 @@ export function StreamerFiltersDialog({
   const [minViewers, setMinViewers] = useState(0);
   const [allowedGames, setAllowedGames] = useState<string[]>([]);
   const [blockedGames, setBlockedGames] = useState<string[]>([]);
-  const [customMessage, setCustomMessage] = useState('');
-  const [customColor, setCustomColor] = useState('#9146FF');
+  const [customMessage, setCustomMessage] = useState("");
+  const [customColor, setCustomColor] = useState("#9146FF");
   const [cooldownMinutes, setCooldownMinutes] = useState(0);
-  const [newAllowedGame, setNewAllowedGame] = useState('');
-  const [newBlockedGame, setNewBlockedGame] = useState('');
+  const [newAllowedGame, setNewAllowedGame] = useState("");
+  const [newBlockedGame, setNewBlockedGame] = useState("");
 
   useEffect(() => {
     if (streamer) {
       setMinViewers(streamer.min_viewers || 0);
       setAllowedGames(streamer.allowed_games || []);
       setBlockedGames(streamer.blocked_games || []);
-      setCustomMessage(streamer.custom_live_message || '');
-      setCustomColor(streamer.custom_embed_color || '#9146FF');
+      setCustomMessage(streamer.custom_live_message || "");
+      setCustomColor(streamer.custom_embed_color || "#9146FF");
       setCooldownMinutes(streamer.notification_cooldown_minutes || 0);
     }
   }, [streamer]);
 
   const handleAddAllowedGame = () => {
-    if (newAllowedGame.trim() && !allowedGames.includes(newAllowedGame.trim())) {
+    if (
+      newAllowedGame.trim() &&
+      !allowedGames.includes(newAllowedGame.trim())
+    ) {
       setAllowedGames([...allowedGames, newAllowedGame.trim()]);
-      setNewAllowedGame('');
+      setNewAllowedGame("");
     }
   };
 
   const handleAddBlockedGame = () => {
-    if (newBlockedGame.trim() && !blockedGames.includes(newBlockedGame.trim())) {
+    if (
+      newBlockedGame.trim() &&
+      !blockedGames.includes(newBlockedGame.trim())
+    ) {
       setBlockedGames([...blockedGames, newBlockedGame.trim()]);
-      setNewBlockedGame('');
+      setNewBlockedGame("");
     }
   };
 
@@ -80,7 +99,7 @@ export function StreamerFiltersDialog({
       custom_live_message: customMessage || null,
       custom_embed_color: customColor || null,
       notification_cooldown_minutes: cooldownMinutes,
-    } as any);
+    } as Untyped);
     if (success) {
       onOpenChange(false);
     }
@@ -133,9 +152,13 @@ export function StreamerFiltersDialog({
                 placeholder="Tilføj spil..."
                 value={newAllowedGame}
                 onChange={(e) => setNewAllowedGame(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleAddAllowedGame()}
+                onKeyDown={(e) => e.key === "Enter" && handleAddAllowedGame()}
               />
-              <Button size="icon" variant="outline" onClick={handleAddAllowedGame}>
+              <Button
+                size="icon"
+                variant="outline"
+                onClick={handleAddAllowedGame}
+              >
                 <Plus className="h-4 w-4" />
               </Button>
             </div>
@@ -144,7 +167,11 @@ export function StreamerFiltersDialog({
                 {allowedGames.map((game) => (
                   <Badge key={game} variant="secondary" className="gap-1">
                     {game}
-                    <button onClick={() => setAllowedGames(allowedGames.filter(g => g !== game))}>
+                    <button
+                      onClick={() =>
+                        setAllowedGames(allowedGames.filter((g) => g !== game))
+                      }
+                    >
                       <X className="h-3 w-3" />
                     </button>
                   </Badge>
@@ -167,9 +194,13 @@ export function StreamerFiltersDialog({
                 placeholder="Bloker spil..."
                 value={newBlockedGame}
                 onChange={(e) => setNewBlockedGame(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleAddBlockedGame()}
+                onKeyDown={(e) => e.key === "Enter" && handleAddBlockedGame()}
               />
-              <Button size="icon" variant="outline" onClick={handleAddBlockedGame}>
+              <Button
+                size="icon"
+                variant="outline"
+                onClick={handleAddBlockedGame}
+              >
                 <Plus className="h-4 w-4" />
               </Button>
             </div>
@@ -178,7 +209,11 @@ export function StreamerFiltersDialog({
                 {blockedGames.map((game) => (
                   <Badge key={game} variant="destructive" className="gap-1">
                     {game}
-                    <button onClick={() => setBlockedGames(blockedGames.filter(g => g !== game))}>
+                    <button
+                      onClick={() =>
+                        setBlockedGames(blockedGames.filter((g) => g !== game))
+                      }
+                    >
                       <X className="h-3 w-3" />
                     </button>
                   </Badge>
@@ -199,7 +234,9 @@ export function StreamerFiltersDialog({
               type="number"
               min={0}
               value={cooldownMinutes}
-              onChange={(e) => setCooldownMinutes(parseInt(e.target.value) || 0)}
+              onChange={(e) =>
+                setCooldownMinutes(parseInt(e.target.value) || 0)
+              }
               placeholder="0 = ingen cooldown"
             />
             <p className="text-xs text-muted-foreground">

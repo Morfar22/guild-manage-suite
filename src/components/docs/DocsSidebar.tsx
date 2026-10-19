@@ -1,8 +1,9 @@
-import { Link, useLocation } from '@tanstack/react-router';
-import { useLanguage } from '@/contexts/LanguageContext';
-import { docCategories } from '@/docs';
-import * as Icons from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { Link, useLocation } from "@tanstack/react-router";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { docCategories } from "@/docs";
+import * as Icons from "lucide-react";
+import { cn } from "@/lib/utils";
+import type { Untyped } from "@/types/untyped";
 
 interface DocsSidebarProps {
   onNavigate?: () => void;
@@ -15,7 +16,7 @@ export function DocsSidebar({ onNavigate }: DocsSidebarProps) {
   return (
     <nav className="flex flex-col gap-6 p-4 text-sm">
       {docCategories.map((cat) => {
-        const Icon = (Icons as any)[cat.icon] ?? Icons.Folder;
+        const Icon = (Icons as Untyped)[cat.icon] ?? Icons.Folder;
         return (
           <div key={cat.slug}>
             <div className="mb-2 flex items-center gap-2 px-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
@@ -32,8 +33,9 @@ export function DocsSidebar({ onNavigate }: DocsSidebarProps) {
                       to={to}
                       onClick={onNavigate}
                       className={cn(
-                        'block rounded-md px-3 py-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground',
-                        active && 'bg-primary/10 font-medium text-primary hover:bg-primary/15 hover:text-primary'
+                        "block rounded-md px-3 py-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground",
+                        active &&
+                          "bg-primary/10 font-medium text-primary hover:bg-primary/15 hover:text-primary",
                       )}
                     >
                       {page.title[language]}

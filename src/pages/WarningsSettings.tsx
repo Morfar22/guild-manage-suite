@@ -1,11 +1,17 @@
-import { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Switch } from '@/components/ui/switch';
-import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useState, useEffect } from "react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Table,
   TableBody,
@@ -13,44 +19,69 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table';
+} from "@/components/ui/table";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
+} from "@/components/ui/select";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '@/components/ui/dialog';
-import { Loader2, AlertTriangle, Save, Plus, Trash2, Users, FileText } from 'lucide-react';
-import { useWarningSettings, WarningThreshold } from '@/hooks/useWarningSettings';
-import { useModerationTemplates, TemplateStep } from '@/hooks/useModerationTemplates';
+} from "@/components/ui/dialog";
+import {
+  Loader2,
+  AlertTriangle,
+  Save,
+  Plus,
+  Trash2,
+  Users,
+  FileText,
+} from "lucide-react";
+import {
+  useWarningSettings,
+  WarningThreshold,
+} from "@/hooks/useWarningSettings";
+import {
+  useModerationTemplates,
+  TemplateStep,
+} from "@/hooks/useModerationTemplates";
 
 export default function WarningsSettings() {
-  const { settings, warningsByUser, isLoading, updateSettings, deactivateWarning } = useWarningSettings();
-  const { templates, isLoading: templatesLoading, createTemplate, deleteTemplate } = useModerationTemplates();
+  const {
+    settings,
+    warningsByUser,
+    isLoading,
+    updateSettings,
+    deactivateWarning,
+  } = useWarningSettings();
+  const {
+    templates,
+    isLoading: templatesLoading,
+    createTemplate,
+    deleteTemplate,
+  } = useModerationTemplates();
 
   const [enabled, setEnabled] = useState(true);
   const [pointsPerWarn, setPointsPerWarn] = useState(1);
   const [decayDays, setDecayDays] = useState<number | null>(30);
   const [thresholds, setThresholds] = useState<WarningThreshold[]>([
-    { points: 3, action: 'mute', duration_hours: 1 },
-    { points: 5, action: 'mute', duration_hours: 24 },
-    { points: 10, action: 'kick' },
-    { points: 15, action: 'ban' },
+    { points: 3, action: "mute", duration_hours: 1 },
+    { points: 5, action: "mute", duration_hours: 24 },
+    { points: 10, action: "kick" },
+    { points: 15, action: "ban" },
   ]);
 
   // Template dialog state
   const [templateOpen, setTemplateOpen] = useState(false);
-  const [templateName, setTemplateName] = useState('');
+  const [templateName, setTemplateName] = useState("");
   const [templateSteps, setTemplateSteps] = useState<TemplateStep[]>([
-    { points_threshold: 3, action: 'mute', duration_hours: 1 },
+    { points_threshold: 3, action: "mute", duration_hours: 1 },
   ]);
 
   useEffect(() => {
@@ -73,31 +104,43 @@ export default function WarningsSettings() {
 
   const addThreshold = () => {
     const maxPoints = Math.max(...thresholds.map((t) => t.points), 0);
-    setThresholds([...thresholds, { points: maxPoints + 5, action: 'mute', duration_hours: 1 }]);
+    setThresholds([
+      ...thresholds,
+      { points: maxPoints + 5, action: "mute", duration_hours: 1 },
+    ]);
   };
 
   const removeThreshold = (index: number) => {
     setThresholds(thresholds.filter((_, i) => i !== index));
   };
 
-  const updateThreshold = (index: number, updates: Partial<WarningThreshold>) => {
+  const updateThreshold = (
+    index: number,
+    updates: Partial<WarningThreshold>,
+  ) => {
     setThresholds(
-      thresholds.map((t, i) => (i === index ? { ...t, ...updates } : t))
+      thresholds.map((t, i) => (i === index ? { ...t, ...updates } : t)),
     );
   };
 
   const addTemplateStep = () => {
     const maxPts = Math.max(...templateSteps.map((s) => s.points_threshold), 0);
-    setTemplateSteps([...templateSteps, { points_threshold: maxPts + 5, action: 'mute', duration_hours: 1 }]);
+    setTemplateSteps([
+      ...templateSteps,
+      { points_threshold: maxPts + 5, action: "mute", duration_hours: 1 },
+    ]);
   };
 
   const removeTemplateStep = (index: number) => {
     setTemplateSteps(templateSteps.filter((_, i) => i !== index));
   };
 
-  const updateTemplateStep = (index: number, updates: Partial<TemplateStep>) => {
+  const updateTemplateStep = (
+    index: number,
+    updates: Partial<TemplateStep>,
+  ) => {
     setTemplateSteps(
-      templateSteps.map((s, i) => (i === index ? { ...s, ...updates } : s))
+      templateSteps.map((s, i) => (i === index ? { ...s, ...updates } : s)),
     );
   };
 
@@ -108,10 +151,12 @@ export default function WarningsSettings() {
       {
         onSuccess: () => {
           setTemplateOpen(false);
-          setTemplateName('');
-          setTemplateSteps([{ points_threshold: 3, action: 'mute', duration_hours: 1 }]);
+          setTemplateName("");
+          setTemplateSteps([
+            { points_threshold: 3, action: "mute", duration_hours: 1 },
+          ]);
         },
-      }
+      },
     );
   };
 
@@ -135,8 +180,12 @@ export default function WarningsSettings() {
       <Tabs defaultValue="settings" className="space-y-6">
         <TabsList>
           <TabsTrigger value="settings">Indstillinger</TabsTrigger>
-          <TabsTrigger value="users">Brugere ({warningsByUser.length})</TabsTrigger>
-          <TabsTrigger value="templates">Templates ({templates.length})</TabsTrigger>
+          <TabsTrigger value="users">
+            Brugere ({warningsByUser.length})
+          </TabsTrigger>
+          <TabsTrigger value="templates">
+            Templates ({templates.length})
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="settings">
@@ -168,7 +217,9 @@ export default function WarningsSettings() {
                       min={1}
                       max={10}
                       value={pointsPerWarn}
-                      onChange={(e) => setPointsPerWarn(parseInt(e.target.value) || 1)}
+                      onChange={(e) =>
+                        setPointsPerWarn(parseInt(e.target.value) || 1)
+                      }
                     />
                   </div>
                   <div className="space-y-2">
@@ -177,16 +228,22 @@ export default function WarningsSettings() {
                       type="number"
                       min={1}
                       max={365}
-                      value={decayDays ?? ''}
+                      value={decayDays ?? ""}
                       onChange={(e) =>
-                        setDecayDays(e.target.value ? parseInt(e.target.value) : null)
+                        setDecayDays(
+                          e.target.value ? parseInt(e.target.value) : null,
+                        )
                       }
                       placeholder="Aldrig"
                     />
                   </div>
                 </div>
 
-                <Button onClick={handleSave} disabled={updateSettings.isPending} className="w-full">
+                <Button
+                  onClick={handleSave}
+                  disabled={updateSettings.isPending}
+                  className="w-full"
+                >
                   {updateSettings.isPending ? (
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   ) : (
@@ -202,7 +259,8 @@ export default function WarningsSettings() {
               <CardHeader>
                 <CardTitle>Straf Thresholds</CardTitle>
                 <CardDescription>
-                  Definer hvilke straffe der udløses ved specifikke point-niveauer
+                  Definer hvilke straffe der udløses ved specifikke
+                  point-niveauer
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -218,15 +276,21 @@ export default function WarningsSettings() {
                         min={1}
                         value={threshold.points}
                         onChange={(e) =>
-                          updateThreshold(index, { points: parseInt(e.target.value) || 1 })
+                          updateThreshold(index, {
+                            points: parseInt(e.target.value) || 1,
+                          })
                         }
                         className="w-20"
                       />
-                      <span className="text-sm text-muted-foreground">points →</span>
+                      <span className="text-sm text-muted-foreground">
+                        points →
+                      </span>
                       <Select
                         value={threshold.action}
                         onValueChange={(value) =>
-                          updateThreshold(index, { action: value as 'mute' | 'kick' | 'ban' })
+                          updateThreshold(index, {
+                            action: value as "mute" | "kick" | "ban",
+                          })
                         }
                       >
                         <SelectTrigger className="w-28">
@@ -238,7 +302,7 @@ export default function WarningsSettings() {
                           <SelectItem value="ban">Ban</SelectItem>
                         </SelectContent>
                       </Select>
-                      {threshold.action === 'mute' && (
+                      {threshold.action === "mute" && (
                         <>
                           <Input
                             type="number"
@@ -251,7 +315,9 @@ export default function WarningsSettings() {
                             }
                             className="w-16"
                           />
-                          <span className="text-sm text-muted-foreground">timer</span>
+                          <span className="text-sm text-muted-foreground">
+                            timer
+                          </span>
                         </>
                       )}
                       <Button
@@ -265,7 +331,11 @@ export default function WarningsSettings() {
                     </div>
                   ))}
 
-                <Button variant="outline" onClick={addThreshold} className="w-full">
+                <Button
+                  variant="outline"
+                  onClick={addThreshold}
+                  className="w-full"
+                >
                   <Plus className="mr-2 h-4 w-4" />
                   Tilføj Threshold
                 </Button>
@@ -312,10 +382,10 @@ export default function WarningsSettings() {
                             <Badge
                               variant={
                                 user.total_points >= 10
-                                  ? 'destructive'
+                                  ? "destructive"
                                   : user.total_points >= 5
-                                  ? 'default'
-                                  : 'secondary'
+                                    ? "default"
+                                    : "secondary"
                               }
                             >
                               {user.total_points} points
@@ -323,7 +393,9 @@ export default function WarningsSettings() {
                           </TableCell>
                           <TableCell>{user.warnings.length}</TableCell>
                           <TableCell className="text-muted-foreground">
-                            {user.warnings[0]?.reason?.substring(0, 30) ?? 'Ingen grund'}...
+                            {user.warnings[0]?.reason?.substring(0, 30) ??
+                              "Ingen grund"}
+                            ...
                           </TableCell>
                         </TableRow>
                       ))}
@@ -367,7 +439,10 @@ export default function WarningsSettings() {
                     <div className="space-y-3">
                       <Label>Trin</Label>
                       {templateSteps.map((step, index) => (
-                        <div key={index} className="flex items-center gap-2 rounded-lg border p-3">
+                        <div
+                          key={index}
+                          className="flex items-center gap-2 rounded-lg border p-3"
+                        >
                           <Input
                             type="number"
                             min={1}
@@ -380,11 +455,15 @@ export default function WarningsSettings() {
                             className="w-20"
                             placeholder="Points"
                           />
-                          <span className="text-xs text-muted-foreground">pts →</span>
+                          <span className="text-xs text-muted-foreground">
+                            pts →
+                          </span>
                           <Select
                             value={step.action}
                             onValueChange={(v) =>
-                              updateTemplateStep(index, { action: v as 'mute' | 'kick' | 'ban' })
+                              updateTemplateStep(index, {
+                                action: v as "mute" | "kick" | "ban",
+                              })
                             }
                           >
                             <SelectTrigger className="w-24">
@@ -396,7 +475,7 @@ export default function WarningsSettings() {
                               <SelectItem value="ban">Ban</SelectItem>
                             </SelectContent>
                           </Select>
-                          {step.action === 'mute' && (
+                          {step.action === "mute" && (
                             <>
                               <Input
                                 type="number"
@@ -404,12 +483,15 @@ export default function WarningsSettings() {
                                 value={step.duration_hours ?? 1}
                                 onChange={(e) =>
                                   updateTemplateStep(index, {
-                                    duration_hours: parseInt(e.target.value) || 1,
+                                    duration_hours:
+                                      parseInt(e.target.value) || 1,
                                   })
                                 }
                                 className="w-16"
                               />
-                              <span className="text-xs text-muted-foreground">t</span>
+                              <span className="text-xs text-muted-foreground">
+                                t
+                              </span>
                             </>
                           )}
                           <Button
@@ -422,7 +504,11 @@ export default function WarningsSettings() {
                           </Button>
                         </div>
                       ))}
-                      <Button variant="outline" size="sm" onClick={addTemplateStep}>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={addTemplateStep}
+                      >
                         <Plus className="mr-2 h-3 w-3" />
                         Tilføj Trin
                       </Button>
@@ -453,7 +539,9 @@ export default function WarningsSettings() {
               <Card>
                 <CardContent className="flex flex-col items-center justify-center py-12 text-center">
                   <FileText className="h-12 w-12 text-muted-foreground/30" />
-                  <p className="mt-4 text-muted-foreground">Ingen templates oprettet endnu</p>
+                  <p className="mt-4 text-muted-foreground">
+                    Ingen templates oprettet endnu
+                  </p>
                 </CardContent>
               </Card>
             ) : (
@@ -462,7 +550,9 @@ export default function WarningsSettings() {
                   <Card key={template.id}>
                     <CardHeader className="pb-3">
                       <div className="flex items-center justify-between">
-                        <CardTitle className="text-base">{template.name}</CardTitle>
+                        <CardTitle className="text-base">
+                          {template.name}
+                        </CardTitle>
                         <Button
                           variant="ghost"
                           size="icon"
@@ -471,29 +561,38 @@ export default function WarningsSettings() {
                           <Trash2 className="h-4 w-4 text-destructive" />
                         </Button>
                       </div>
-                      <CardDescription>{template.steps.length} trin</CardDescription>
+                      <CardDescription>
+                        {template.steps.length} trin
+                      </CardDescription>
                     </CardHeader>
                     <CardContent>
                       <div className="space-y-2">
                         {template.steps
-                          .sort((a, b) => a.points_threshold - b.points_threshold)
+                          .sort(
+                            (a, b) => a.points_threshold - b.points_threshold,
+                          )
                           .map((step, i) => (
-                            <div key={i} className="flex items-center gap-2 text-sm">
-                              <Badge variant="outline">{step.points_threshold} pts</Badge>
+                            <div
+                              key={i}
+                              className="flex items-center gap-2 text-sm"
+                            >
+                              <Badge variant="outline">
+                                {step.points_threshold} pts
+                              </Badge>
                               <span className="text-muted-foreground">→</span>
                               <Badge
                                 variant={
-                                  step.action === 'ban'
-                                    ? 'destructive'
-                                    : step.action === 'kick'
-                                    ? 'default'
-                                    : 'secondary'
+                                  step.action === "ban"
+                                    ? "destructive"
+                                    : step.action === "kick"
+                                      ? "default"
+                                      : "secondary"
                                 }
                               >
                                 {step.action}
-                                {step.action === 'mute' && step.duration_hours
+                                {step.action === "mute" && step.duration_hours
                                   ? ` (${step.duration_hours}t)`
-                                  : ''}
+                                  : ""}
                               </Badge>
                             </div>
                           ))}

@@ -1,6 +1,6 @@
-import { useEffect, useState, useCallback } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useGuild } from '@/contexts/GuildContext';
+import { useEffect, useState, useCallback } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { useGuild } from "@/contexts/GuildContext";
 
 interface BotStatus {
   id: string;
@@ -24,13 +24,13 @@ export function useBotStatus() {
     if (!selectedGuild) return;
 
     const { data, error: fetchError } = await supabase
-      .from('bot_status')
-      .select('*')
-      .eq('guild_id', selectedGuild.id)
+      .from("bot_status")
+      .select("*")
+      .eq("guild_id", selectedGuild.id)
       .maybeSingle();
 
     if (fetchError) {
-      console.error('Error fetching bot status:', fetchError);
+      console.error("Error fetching bot status:", fetchError);
       setError(fetchError.message);
     } else {
       setStatus(data);
@@ -58,21 +58,21 @@ export function useBotStatus() {
     const channel = supabase
       .channel(`bot_status_${selectedGuild.id}_${crypto.randomUUID()}`)
       .on(
-        'postgres_changes',
+        "postgres_changes",
         {
-          event: '*',
-          schema: 'public',
-          table: 'bot_status',
+          event: "*",
+          schema: "public",
+          table: "bot_status",
           filter: `guild_id=eq.${selectedGuild.id}`,
         },
         (payload) => {
-          console.log('Bot status update:', payload);
-          if (payload.eventType === 'DELETE') {
+          console.log("Bot status update:", payload);
+          if (payload.eventType === "DELETE") {
             setStatus(null);
           } else {
             setStatus(payload.new as BotStatus);
           }
-        }
+        },
       )
       .subscribe();
 
@@ -83,9 +83,10 @@ export function useBotStatus() {
   }, [selectedGuild, fetchStatus]);
 
   // Check if bot is considered online (heartbeat within last 2 minutes)
-  const isOnline = status?.is_online && status?.last_heartbeat
-    ? new Date(status.last_heartbeat).getTime() > Date.now() - 120000
-    : false;
+  const isOnline =
+    status?.is_online && status?.last_heartbeat
+      ? new Date(status.last_heartbeat).getTime() > Date.now() - 120000
+      : false;
 
   return {
     status,

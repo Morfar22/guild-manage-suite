@@ -2,7 +2,8 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
 interface DiscordChannel {
@@ -12,7 +13,6 @@ interface DiscordChannel {
   parent_id: string | null;
   position: number;
 }
-
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -29,14 +29,15 @@ Deno.serve(async (req) => {
     }
 
     const token = authHeader.replace("Bearer ", "");
-    
+
     const supabaseAuthed = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_ANON_KEY")!,
-      { global: { headers: { Authorization: authHeader } } }
+      { global: { headers: { Authorization: authHeader } } },
     );
 
-    const { data: claimsData, error: claimsError } = await supabaseAuthed.auth.getClaims(token);
+    const { data: claimsData, error: claimsError } =
+      await supabaseAuthed.auth.getClaims(token);
     if (claimsError || !claimsData?.claims?.sub) {
       console.error("getClaims failed", claimsError);
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
@@ -49,7 +50,7 @@ Deno.serve(async (req) => {
 
     const supabaseAdmin = createClient(
       Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
 
     const url = new URL(req.url);
@@ -63,7 +64,10 @@ Deno.serve(async (req) => {
     }
 
     // Check if user is a global admin/staff (bypass guild access check)
-    const { data: isGlobalAdmin } = await supabaseAdmin.rpc("has_admin_or_staff_role", { _user_id: userId });
+    const { data: isGlobalAdmin } = await supabaseAdmin.rpc(
+      "has_admin_or_staff_role",
+      { _user_id: userId },
+    );
 
     if (!isGlobalAdmin) {
       // Verify user has access to this guild
@@ -109,8 +113,14 @@ Deno.serve(async (req) => {
     let botToken: string | null = null;
 
     // Use custom bot token if available and active, otherwise fall back to global bot
-    if (customBotSettings?.bot_token_encrypted && customBotSettings.is_custom_bot) {
-      botToken = simpleDecrypt(customBotSettings.bot_token_encrypted, encryptionKey);
+    if (
+      customBotSettings?.bot_token_encrypted &&
+      customBotSettings.is_custom_bot
+    ) {
+      botToken = simpleDecrypt(
+        customBotSettings.bot_token_encrypted,
+        encryptionKey,
+      );
       console.log(`Using custom bot token for guild ${guild.guild_id}`);
     } else {
       botToken = Deno.env.get("DISCORD_BOT_TOKEN") || null;
@@ -118,10 +128,13 @@ Deno.serve(async (req) => {
     }
 
     if (!botToken) {
-      return new Response(JSON.stringify({ error: "No bot token available for this guild" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return new Response(
+        JSON.stringify({ error: "No bot token available for this guild" }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
     }
 
     // Fetch channels from Discord API
@@ -131,32 +144,39 @@ Deno.serve(async (req) => {
         headers: {
           Authorization: `Bot ${botToken}`,
         },
-      }
+      },
     );
 
     if (!discordResponse.ok) {
       const errorText = await discordResponse.text();
       console.error("Discord API error:", discordResponse.status, errorText);
-      
+
       // Provide more helpful error message
       if (discordResponse.status === 404) {
-        return new Response(JSON.stringify({ 
-          error: "Bot is not a member of this Discord server. Please invite the bot first.",
-          details: "Unknown Guild (404)"
-        }), {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+        return new Response(
+          JSON.stringify({
+            error:
+              "Bot is not a member of this Discord server. Please invite the bot first.",
+            details: "Unknown Guild (404)",
+          }),
+          {
+            status: 400,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          },
+        );
       }
-      
-      return new Response(JSON.stringify({ error: "Failed to fetch channels from Discord" }), {
-        status: discordResponse.status,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+
+      return new Response(
+        JSON.stringify({ error: "Failed to fetch channels from Discord" }),
+        {
+          status: discordResponse.status,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
     }
 
     const allChannels: DiscordChannel[] = await discordResponse.json();
-    
+
     // Channel types: 0 = text, 2 = voice, 4 = category, 5 = announcement, 13 = stage, 15 = forum
     // Return text channels, voice channels, and categories
     const textChannels = allChannels
@@ -191,17 +211,23 @@ Deno.serve(async (req) => {
     // Combine text and voice channels for backwards compatibility
     const channels = [...textChannels, ...voiceChannels];
 
-    console.log(`Fetched ${textChannels.length} text channels, ${voiceChannels.length} voice channels and ${categories.length} categories for guild ${guild.guild_id}`);
-
-    return new Response(
-      JSON.stringify({ channels, categories }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    console.log(
+      `Fetched ${textChannels.length} text channels, ${voiceChannels.length} voice channels and ${categories.length} categories for guild ${guild.guild_id}`,
     );
+
+    return new Response(JSON.stringify({ channels, categories }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   } catch (error) {
     console.error("Error:", error);
     return new Response(
-      JSON.stringify({ error: error instanceof Error ? error.message : "Unknown error" }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      JSON.stringify({
+        error: error instanceof Error ? error.message : "Unknown error",
+      }),
+      {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      },
     );
   }
 });

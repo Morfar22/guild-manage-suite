@@ -1,6 +1,6 @@
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
-import { useGuild } from '@/contexts/GuildContext';
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { useGuild } from "@/contexts/GuildContext";
 
 export interface AfkStatus {
   id: string;
@@ -15,15 +15,15 @@ export function useAfkStatus() {
   const { selectedGuild } = useGuild();
 
   const afkQuery = useQuery({
-    queryKey: ['afk-status', selectedGuild?.id],
+    queryKey: ["afk-status", selectedGuild?.id],
     queryFn: async () => {
       if (!selectedGuild?.id) return [];
 
       const { data, error } = await supabase
-        .from('afk_status')
-        .select('*')
-        .eq('guild_id', selectedGuild.id)
-        .order('set_at', { ascending: false });
+        .from("afk_status")
+        .select("*")
+        .eq("guild_id", selectedGuild.id)
+        .order("set_at", { ascending: false });
 
       if (error) throw error;
       return data as AfkStatus[];

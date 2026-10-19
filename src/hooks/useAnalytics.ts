@@ -1,6 +1,6 @@
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
-import { useGuild } from '@/contexts/GuildContext';
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { useGuild } from "@/contexts/GuildContext";
 
 export interface DailyStats {
   id: string;
@@ -32,7 +32,7 @@ export function useAnalytics(days: number = 7) {
   const { selectedGuild } = useGuild();
 
   const statsQuery = useQuery({
-    queryKey: ['analytics-stats', selectedGuild?.id, days],
+    queryKey: ["analytics-stats", selectedGuild?.id, days],
     queryFn: async () => {
       if (!selectedGuild?.id) return [];
 
@@ -40,11 +40,11 @@ export function useAnalytics(days: number = 7) {
       startDate.setDate(startDate.getDate() - days);
 
       const { data, error } = await supabase
-        .from('analytics_daily_stats')
-        .select('*')
-        .eq('guild_id', selectedGuild.id)
-        .gte('date', startDate.toISOString().split('T')[0])
-        .order('date', { ascending: true });
+        .from("analytics_daily_stats")
+        .select("*")
+        .eq("guild_id", selectedGuild.id)
+        .gte("date", startDate.toISOString().split("T")[0])
+        .order("date", { ascending: true });
 
       if (error) throw error;
       return data as DailyStats[];
@@ -73,7 +73,7 @@ export function useAnalytics(days: number = 7) {
       mod_actions: 0,
       avg_daily_messages: 0,
       avg_active_users: 0,
-    }
+    },
   ) ?? {
     total_messages: 0,
     total_commands: 0,
@@ -88,21 +88,26 @@ export function useAnalytics(days: number = 7) {
   const dataLength = statsQuery.data?.length || 1;
   summary.avg_daily_messages = Math.round(summary.total_messages / dataLength);
   summary.avg_active_users = Math.round(
-    (statsQuery.data?.reduce((sum, d) => sum + d.active_users, 0) ?? 0) / dataLength
+    (statsQuery.data?.reduce((sum, d) => sum + d.active_users, 0) ?? 0) /
+      dataLength,
   );
 
   // Format data for charts
-  const chartData = statsQuery.data?.map((day) => ({
-    date: new Date(day.date).toLocaleDateString('da-DK', { weekday: 'short', day: 'numeric' }),
-    fullDate: day.date,
-    messages: day.messages,
-    commands: day.commands_used,
-    xp: day.xp_gained,
-    members_joined: day.members_joined,
-    members_left: day.members_left,
-    active_users: day.active_users,
-    mod_actions: day.mod_actions,
-  })) ?? [];
+  const chartData =
+    statsQuery.data?.map((day) => ({
+      date: new Date(day.date).toLocaleDateString("da-DK", {
+        weekday: "short",
+        day: "numeric",
+      }),
+      fullDate: day.date,
+      messages: day.messages,
+      commands: day.commands_used,
+      xp: day.xp_gained,
+      members_joined: day.members_joined,
+      members_left: day.members_left,
+      active_users: day.active_users,
+      mod_actions: day.mod_actions,
+    })) ?? [];
 
   return {
     stats: statsQuery.data ?? [],

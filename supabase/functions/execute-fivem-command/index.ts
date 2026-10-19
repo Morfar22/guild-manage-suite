@@ -3,7 +3,8 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type",
 };
 
 serve(async (req) => {
@@ -28,7 +29,10 @@ serve(async (req) => {
     }
 
     const token = authHeader.replace("Bearer ", "");
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser(token);
 
     if (authError || !user) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
@@ -40,10 +44,13 @@ serve(async (req) => {
     const { guild_id, command, data } = await req.json();
 
     if (!guild_id || !command) {
-      return new Response(JSON.stringify({ error: "guild_id and command are required" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return new Response(
+        JSON.stringify({ error: "guild_id and command are required" }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
     }
 
     // Verify user has admin permission for this guild
@@ -55,10 +62,13 @@ serve(async (req) => {
       .single();
 
     if (permError || !userGuild?.has_admin_permission) {
-      return new Response(JSON.stringify({ error: "No permission for this guild" }), {
-        status: 403,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return new Response(
+        JSON.stringify({ error: "No permission for this guild" }),
+        {
+          status: 403,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
     }
 
     // Get guild info
@@ -97,10 +107,13 @@ serve(async (req) => {
 
     if (queueError || !queuedRow?.id) {
       console.error("Error queuing command:", queueError);
-      return new Response(JSON.stringify({ error: "Failed to queue command" }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return new Response(
+        JSON.stringify({ error: "Failed to queue command" }),
+        {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
     }
 
     // Also log the action for history
@@ -112,7 +125,9 @@ serve(async (req) => {
       moderator_discord_id: moderatorDiscordId,
       moderator_name: moderatorName,
       reason: data.reason || null,
-      duration_seconds: data.duration ? parseDuration(String(data.duration)) : null,
+      duration_seconds: data.duration
+        ? parseDuration(String(data.duration))
+        : null,
       metadata: data,
     });
 
@@ -127,43 +142,48 @@ serve(async (req) => {
     if (discordBotToken && settings?.log_channel_id) {
       const logChannel = settings.log_channel_id;
       const actionColors: Record<string, number> = {
-        kick: 0xFFA500,
-        ban: 0xFF0000,
-        kill: 0xFF4444,
-        revive: 0x00FF00,
-        announcement: 0x5865F2,
-        weather: 0x00BFFF,
-        time: 0x00BFFF,
+        kick: 0xffa500,
+        ban: 0xff0000,
+        kill: 0xff4444,
+        revive: 0x00ff00,
+        announcement: 0x5865f2,
+        weather: 0x00bfff,
+        time: 0x00bfff,
       };
 
       if (["kick", "ban", "kill", "revive"].includes(command)) {
-        await fetch(`https://discord.com/api/v10/channels/${logChannel}/messages`, {
-          method: "POST",
-          headers: {
-            Authorization: `Bot ${discordBotToken}`,
-            "Content-Type": "application/json",
+        await fetch(
+          `https://discord.com/api/v10/channels/${logChannel}/messages`,
+          {
+            method: "POST",
+            headers: {
+              Authorization: `Bot ${discordBotToken}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              embeds: [
+                {
+                  title: `🎮 FiveM ${command.charAt(0).toUpperCase() + command.slice(1)} (Queued)`,
+                  description: `**Target:** ${data.targetName || data.targetDiscordId || "Player #" + data.targetPlayerId}\n**Moderator:** ${moderatorName}${data.reason ? "\n**Reason:** " + data.reason : ""}\n\n*Awaiting execution on FiveM server...*`,
+                  color: actionColors[command] || 0x5865f2,
+                  timestamp: new Date().toISOString(),
+                },
+              ],
+            }),
           },
-          body: JSON.stringify({
-            embeds: [{
-              title: `🎮 FiveM ${command.charAt(0).toUpperCase() + command.slice(1)} (Queued)`,
-              description: `**Target:** ${data.targetName || data.targetDiscordId || 'Player #' + data.targetPlayerId}\n**Moderator:** ${moderatorName}${data.reason ? '\n**Reason:** ' + data.reason : ''}\n\n*Awaiting execution on FiveM server...*`,
-              color: actionColors[command] || 0x5865F2,
-              timestamp: new Date().toISOString(),
-            }],
-          }),
-        });
+        );
       }
     }
 
     return new Response(
-      JSON.stringify({ 
-        success: true, 
+      JSON.stringify({
+        success: true,
         command,
         commandId: queuedRow.id,
         message: `Command '${command}' queued for execution`,
-        status: "queued"
+        status: "queued",
       }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      { headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   } catch (error) {
     console.error("Error:", error);
@@ -177,10 +197,10 @@ serve(async (req) => {
 function parseDuration(duration: string): number {
   const match = duration.match(/^(\d+)([smhdw])$/);
   if (!match) return 0;
-  
+
   const value = parseInt(match[1], 10);
   const unit = match[2];
-  
+
   const multipliers: Record<string, number> = {
     s: 1,
     m: 60,
@@ -188,6 +208,6 @@ function parseDuration(duration: string): number {
     d: 86400,
     w: 604800,
   };
-  
+
   return value * (multipliers[unit] || 0);
 }

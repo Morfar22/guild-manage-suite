@@ -1,12 +1,22 @@
-import { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
-import { Skeleton } from '@/components/ui/skeleton';
-import { ChannelSelect } from '@/components/ui/channel-select';
-import { useTicketSettings, useUpsertTicketSettings, useSendTicketPanel } from '@/hooks/useTicketSettings';
-import { useToast } from '@/hooks/use-toast';
-import { Send, Settings2, CheckCircle2, FileText } from 'lucide-react';
+import { useState, useEffect } from "react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { Skeleton } from "@/components/ui/skeleton";
+import { ChannelSelect } from "@/components/ui/channel-select";
+import {
+  useTicketSettings,
+  useUpsertTicketSettings,
+  useSendTicketPanel,
+} from "@/hooks/useTicketSettings";
+import { useToast } from "@/hooks/use-toast";
+import { Send, Settings2, CheckCircle2, FileText } from "lucide-react";
 
 export default function PanelSettingsCard() {
   const { data: settings, isLoading } = useTicketSettings();
@@ -14,27 +24,27 @@ export default function PanelSettingsCard() {
   const sendPanel = useSendTicketPanel();
   const { toast } = useToast();
 
-  const [panelChannelId, setPanelChannelId] = useState('');
-  const [threadCategoryId, setThreadCategoryId] = useState('');
-  const [transcriptChannelId, setTranscriptChannelId] = useState('');
+  const [panelChannelId, setPanelChannelId] = useState("");
+  const [threadCategoryId, setThreadCategoryId] = useState("");
+  const [transcriptChannelId, setTranscriptChannelId] = useState("");
   const [hasChanges, setHasChanges] = useState(false);
 
   useEffect(() => {
     if (settings) {
-      setPanelChannelId(settings.panel_channel_id || '');
-      setThreadCategoryId(settings.thread_category_id || '');
-      setTranscriptChannelId(settings.transcript_channel_id || '');
+      setPanelChannelId(settings.panel_channel_id || "");
+      setThreadCategoryId(settings.thread_category_id || "");
+      setTranscriptChannelId(settings.transcript_channel_id || "");
     }
   }, [settings]);
 
   useEffect(() => {
-    const originalPanel = settings?.panel_channel_id || '';
-    const originalThread = settings?.thread_category_id || '';
-    const originalTranscript = settings?.transcript_channel_id || '';
+    const originalPanel = settings?.panel_channel_id || "";
+    const originalThread = settings?.thread_category_id || "";
+    const originalTranscript = settings?.transcript_channel_id || "";
     setHasChanges(
-      panelChannelId !== originalPanel || 
-      threadCategoryId !== originalThread ||
-      transcriptChannelId !== originalTranscript
+      panelChannelId !== originalPanel ||
+        threadCategoryId !== originalThread ||
+        transcriptChannelId !== originalTranscript,
     );
   }, [panelChannelId, threadCategoryId, transcriptChannelId, settings]);
 
@@ -45,23 +55,41 @@ export default function PanelSettingsCard() {
         thread_category_id: threadCategoryId || null,
         transcript_channel_id: transcriptChannelId || null,
       });
-      toast({ title: 'Settings saved', description: 'Panel configuration has been updated' });
+      toast({
+        title: "Settings saved",
+        description: "Panel configuration has been updated",
+      });
     } catch {
-      toast({ title: 'Error', description: 'Could not save settings', variant: 'destructive' });
+      toast({
+        title: "Error",
+        description: "Could not save settings",
+        variant: "destructive",
+      });
     }
   };
 
   const handleSendPanel = async () => {
     if (!panelChannelId) {
-      toast({ title: 'Missing channel', description: 'Please select a panel channel first', variant: 'destructive' });
+      toast({
+        title: "Missing channel",
+        description: "Please select a panel channel first",
+        variant: "destructive",
+      });
       return;
     }
 
     try {
       await sendPanel.mutateAsync();
-      toast({ title: 'Panel sent', description: 'The ticket panel has been sent to the channel' });
+      toast({
+        title: "Panel sent",
+        description: "The ticket panel has been sent to the channel",
+      });
     } catch {
-      toast({ title: 'Error', description: 'Could not send panel. Check if the bot is online.', variant: 'destructive' });
+      toast({
+        title: "Error",
+        description: "Could not send panel. Check if the bot is online.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -93,9 +121,7 @@ export default function PanelSettingsCard() {
       <CardContent className="space-y-6">
         <div className="grid gap-4 md:grid-cols-2">
           <div className="space-y-2">
-            <Label className="flex items-center gap-2">
-              Panel Channel
-            </Label>
+            <Label className="flex items-center gap-2">Panel Channel</Label>
             <ChannelSelect
               value={panelChannelId}
               onValueChange={setPanelChannelId}
@@ -107,9 +133,7 @@ export default function PanelSettingsCard() {
           </div>
 
           <div className="space-y-2">
-            <Label className="flex items-center gap-2">
-              Thread Category
-            </Label>
+            <Label className="flex items-center gap-2">Thread Category</Label>
             <ChannelSelect
               value={threadCategoryId}
               onValueChange={setThreadCategoryId}
@@ -133,7 +157,8 @@ export default function PanelSettingsCard() {
             placeholder="Select transcript channel (optional)"
           />
           <p className="text-xs text-muted-foreground">
-            The channel where ticket transcripts are sent when tickets are closed
+            The channel where ticket transcripts are sent when tickets are
+            closed
           </p>
         </div>
 
@@ -148,9 +173,9 @@ export default function PanelSettingsCard() {
           <Button
             onClick={handleSave}
             disabled={!hasChanges || upsertSettings.isPending}
-            variant={hasChanges ? 'default' : 'secondary'}
+            variant={hasChanges ? "default" : "secondary"}
           >
-            {upsertSettings.isPending ? 'Saving...' : 'Save Settings'}
+            {upsertSettings.isPending ? "Saving..." : "Save Settings"}
           </Button>
 
           <Button
@@ -160,7 +185,11 @@ export default function PanelSettingsCard() {
             className="gap-2"
           >
             <Send className="h-4 w-4" />
-            {sendPanel.isPending ? 'Sending...' : settings?.panel_message_id ? 'Update Panel' : 'Send Panel'}
+            {sendPanel.isPending
+              ? "Sending..."
+              : settings?.panel_message_id
+                ? "Update Panel"
+                : "Send Panel"}
           </Button>
         </div>
       </CardContent>

@@ -1,3 +1,4 @@
+import { requireGuildAdmin } from "../_shared/api-auth.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
@@ -23,7 +24,10 @@ serve(async (req) => {
     }
 
     const token = authHeader.replace("Bearer ", "");
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser(token);
     if (authError || !user) {
       return jsonResponse({ error: "Unauthorized" }, 401);
     }
@@ -32,6 +36,15 @@ serve(async (req) => {
     const guildId = url.searchParams.get("guild_id");
     if (!guildId) {
       return jsonResponse({ error: "guild_id required" }, 400);
+    }
+
+    // Authz: only admins of this guild may read or change its Tebex config
+    // (the handler uses the service-role client, so RLS does not apply).
+    try {
+      await requireGuildAdmin(supabase, user.id, guildId);
+    } catch (res) {
+      if (res instanceof Response) return res;
+      throw res;
     }
 
     if (req.method === "GET") {
@@ -56,31 +69,53 @@ function jsonResponse(data: unknown, status = 200) {
   });
 }
 
-async function handleGet(supabase: ReturnType<typeof createClient>, url: URL, guildId: string) {
+async function handleGet(
+  supabase: ReturnType<typeof createClient>,
+  url: URL,
+  guildId: string,
+) {
   const action = url.searchParams.get("action");
 
   if (action === "settings") {
     const { data, error } = await supabase
       .from("tebex_settings")
-      .select("id, guild_id, enabled, notification_channel_id, created_at, updated_at")
+      .select(
+        "id, guild_id, enabled, notification_channel_id, webhook_secret, created_at, updated_at",
+      )
       .eq("guild_id", guildId)
       .maybeSingle();
     if (error) throw error;
-    return jsonResponse({ settings: data });
+    // Never return the secret itself; only whether one is set.
+    const { webhook_secret, ...rest } = (data || {}) as Record<string, unknown>;
+    return jsonResponse({
+      settings: data
+        ? { ...rest, has_webhook_secret: Boolean(webhook_secret) }
+        : null,
+    });
   }
 
   if (action === "lookup_payment") {
     const txnId = url.searchParams.get("txn_id");
     if (!txnId) return jsonResponse({ error: "txn_id required" }, 400);
     const secret = await getTebexSecret(supabase, guildId);
-    if (!secret) return jsonResponse({ error: "Tebex er ikke konfigureret for denne server" }, 400);
+    if (!secret)
+      return jsonResponse(
+        { error: "Tebex er ikke konfigureret for denne server" },
+        400,
+      );
 
-    const tebexRes = await fetch(`https://plugin.tebex.io/payments/${encodeURIComponent(txnId)}`, {
-      headers: { "X-Tebex-Secret": secret },
-    });
+    const tebexRes = await fetch(
+      `https://plugin.tebex.io/payments/${encodeURIComponent(txnId)}`,
+      {
+        headers: { "X-Tebex-Secret": secret },
+      },
+    );
     if (!tebexRes.ok) {
       const errText = await tebexRes.text();
-      return jsonResponse({ error: `Tebex API fejl: ${tebexRes.status}`, details: errText }, tebexRes.status);
+      return jsonResponse(
+        { error: `Tebex API fejl: ${tebexRes.status}`, details: errText },
+        tebexRes.status,
+      );
     }
     return jsonResponse({ payment: await tebexRes.json() });
   }
@@ -89,43 +124,66 @@ async function handleGet(supabase: ReturnType<typeof createClient>, url: URL, gu
     const playerId = url.searchParams.get("player_id");
     if (!playerId) return jsonResponse({ error: "player_id required" }, 400);
     const secret = await getTebexSecret(supabase, guildId);
-    if (!secret) return jsonResponse({ error: "Tebex er ikke konfigureret for denne server" }, 400);
+    if (!secret)
+      return jsonResponse(
+        { error: "Tebex er ikke konfigureret for denne server" },
+        400,
+      );
 
-    const tebexRes = await fetch(`https://plugin.tebex.io/user/${encodeURIComponent(playerId)}`, {
-      headers: { "X-Tebex-Secret": secret },
-    });
+    const tebexRes = await fetch(
+      `https://plugin.tebex.io/user/${encodeURIComponent(playerId)}`,
+      {
+        headers: { "X-Tebex-Secret": secret },
+      },
+    );
     if (!tebexRes.ok) {
       const errText = await tebexRes.text();
-      return jsonResponse({ error: `Tebex API fejl: ${tebexRes.status}`, details: errText }, tebexRes.status);
+      return jsonResponse(
+        { error: `Tebex API fejl: ${tebexRes.status}`, details: errText },
+        tebexRes.status,
+      );
     }
     const player = await tebexRes.json();
 
-    const pkgRes = await fetch(`https://plugin.tebex.io/player/${encodeURIComponent(playerId)}/packages`, {
-      headers: { "X-Tebex-Secret": secret },
-    });
+    const pkgRes = await fetch(
+      `https://plugin.tebex.io/player/${encodeURIComponent(playerId)}/packages`,
+      {
+        headers: { "X-Tebex-Secret": secret },
+      },
+    );
     const packages = pkgRes.ok ? await pkgRes.json() : [];
     return jsonResponse({ player, packages });
   }
 
   if (action === "recent_payments") {
     const secret = await getTebexSecret(supabase, guildId);
-    if (!secret) return jsonResponse({ error: "Tebex er ikke konfigureret" }, 400);
+    if (!secret)
+      return jsonResponse({ error: "Tebex er ikke konfigureret" }, 400);
 
     const tebexRes = await fetch("https://plugin.tebex.io/payments?limit=25", {
       headers: { "X-Tebex-Secret": secret },
     });
-    if (!tebexRes.ok) return jsonResponse({ error: `Tebex API fejl: ${tebexRes.status}` }, tebexRes.status);
+    if (!tebexRes.ok)
+      return jsonResponse(
+        { error: `Tebex API fejl: ${tebexRes.status}` },
+        tebexRes.status,
+      );
     return jsonResponse({ payments: await tebexRes.json() });
   }
 
   if (action === "packages") {
     const secret = await getTebexSecret(supabase, guildId);
-    if (!secret) return jsonResponse({ error: "Tebex er ikke konfigureret" }, 400);
+    if (!secret)
+      return jsonResponse({ error: "Tebex er ikke konfigureret" }, 400);
 
     const tebexRes = await fetch("https://plugin.tebex.io/listing", {
       headers: { "X-Tebex-Secret": secret },
     });
-    if (!tebexRes.ok) return jsonResponse({ error: `Tebex API fejl: ${tebexRes.status}` }, tebexRes.status);
+    if (!tebexRes.ok)
+      return jsonResponse(
+        { error: `Tebex API fejl: ${tebexRes.status}` },
+        tebexRes.status,
+      );
     return jsonResponse({ listing: await tebexRes.json() });
   }
 
@@ -142,36 +200,50 @@ async function handleGet(supabase: ReturnType<typeof createClient>, url: URL, gu
 
     // Calculate stats
     const totalRevenue = (purchases || [])
-      .filter(p => p.event_type === "payment.completed")
+      .filter((p) => p.event_type === "payment.completed")
       .reduce((sum, p) => sum + Number(p.amount || 0), 0);
 
     const refunds = (purchases || [])
-      .filter(p => p.event_type === "payment.refunded" || p.event_type === "payment.chargeback")
+      .filter(
+        (p) =>
+          p.event_type === "payment.refunded" ||
+          p.event_type === "payment.chargeback",
+      )
       .reduce((sum, p) => sum + Number(p.amount || 0), 0);
 
-    const totalOrders = (purchases || []).filter(p => p.event_type === "payment.completed").length;
+    const totalOrders = (purchases || []).filter(
+      (p) => p.event_type === "payment.completed",
+    ).length;
 
     // Daily revenue for chart (last 30 days)
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-    
+
     const dailyRevenue: Record<string, number> = {};
     (purchases || [])
-      .filter(p => p.event_type === "payment.completed" && new Date(p.created_at) >= thirtyDaysAgo)
-      .forEach(p => {
+      .filter(
+        (p) =>
+          p.event_type === "payment.completed" &&
+          new Date(p.created_at) >= thirtyDaysAgo,
+      )
+      .forEach((p) => {
         const day = new Date(p.created_at).toISOString().split("T")[0];
         dailyRevenue[day] = (dailyRevenue[day] || 0) + Number(p.amount || 0);
       });
 
     // Top packages
-    const packageCounts: Record<string, { name: string; count: number; revenue: number }> = {};
+    const packageCounts: Record<
+      string,
+      { name: string; count: number; revenue: number }
+    > = {};
     (purchases || [])
-      .filter(p => p.event_type === "payment.completed")
-      .forEach(p => {
+      .filter((p) => p.event_type === "payment.completed")
+      .forEach((p) => {
         const pkgs = (p.packages as Array<Record<string, unknown>>) || [];
-        pkgs.forEach(pkg => {
+        pkgs.forEach((pkg) => {
           const name = String(pkg.name || "Ukendt");
-          if (!packageCounts[name]) packageCounts[name] = { name, count: 0, revenue: 0 };
+          if (!packageCounts[name])
+            packageCounts[name] = { name, count: 0, revenue: 0 };
           packageCounts[name].count += 1;
           packageCounts[name].revenue += Number(p.amount || 0);
         });
@@ -218,16 +290,24 @@ async function handleGet(supabase: ReturnType<typeof createClient>, url: URL, gu
   return jsonResponse({ error: "Unknown action" }, 400);
 }
 
-async function handlePost(supabase: ReturnType<typeof createClient>, req: Request, guildId: string) {
+async function handlePost(
+  supabase: ReturnType<typeof createClient>,
+  req: Request,
+  guildId: string,
+) {
   const body = await req.json();
   const { action } = body;
 
   if (action === "save_settings") {
-    const { enabled, tebex_secret, notification_channel_id } = body;
+    const { enabled, tebex_secret, webhook_secret, notification_channel_id } =
+      body;
 
     const updateData: Record<string, unknown> = { enabled };
     if (tebex_secret !== undefined && tebex_secret !== "") {
       updateData.tebex_secret_encrypted = tebex_secret;
+    }
+    if (typeof webhook_secret === "string" && webhook_secret.trim() !== "") {
+      updateData.webhook_secret = webhook_secret.trim();
     }
     if (notification_channel_id !== undefined) {
       updateData.notification_channel_id = notification_channel_id;
@@ -240,10 +320,15 @@ async function handlePost(supabase: ReturnType<typeof createClient>, req: Reques
       .maybeSingle();
 
     if (existing) {
-      const { error } = await supabase.from("tebex_settings").update(updateData).eq("guild_id", guildId);
+      const { error } = await supabase
+        .from("tebex_settings")
+        .update(updateData)
+        .eq("guild_id", guildId);
       if (error) throw error;
     } else {
-      const { error } = await supabase.from("tebex_settings").insert({ guild_id: guildId, ...updateData });
+      const { error } = await supabase
+        .from("tebex_settings")
+        .insert({ guild_id: guildId, ...updateData });
       if (error) throw error;
     }
 
@@ -251,8 +336,13 @@ async function handlePost(supabase: ReturnType<typeof createClient>, req: Reques
   }
 
   if (action === "save_role_mapping") {
-    const { tebex_package_id, tebex_package_name, discord_role_id, discord_role_name } = body;
-    
+    const {
+      tebex_package_id,
+      tebex_package_name,
+      discord_role_id,
+      discord_role_name,
+    } = body;
+
     const { error } = await supabase.from("tebex_role_mappings").upsert(
       {
         guild_id: guildId,
@@ -261,7 +351,7 @@ async function handlePost(supabase: ReturnType<typeof createClient>, req: Reques
         discord_role_id,
         discord_role_name,
       },
-      { onConflict: "guild_id,tebex_package_id" }
+      { onConflict: "guild_id,tebex_package_id" },
     );
     if (error) throw error;
     return jsonResponse({ success: true });
@@ -281,13 +371,17 @@ async function handlePost(supabase: ReturnType<typeof createClient>, req: Reques
   return jsonResponse({ error: "Unknown action" }, 400);
 }
 
-async function getTebexSecret(supabase: ReturnType<typeof createClient>, guildId: string): Promise<string | null> {
+async function getTebexSecret(
+  supabase: ReturnType<typeof createClient>,
+  guildId: string,
+): Promise<string | null> {
   const { data, error } = await supabase
     .from("tebex_settings")
     .select("tebex_secret_encrypted, enabled")
     .eq("guild_id", guildId)
     .maybeSingle();
 
-  if (error || !data || !data.enabled || !data.tebex_secret_encrypted) return null;
+  if (error || !data || !data.enabled || !data.tebex_secret_encrypted)
+    return null;
   return data.tebex_secret_encrypted;
 }

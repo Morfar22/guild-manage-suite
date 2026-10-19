@@ -1,13 +1,13 @@
 /**
  * Discord Bot - Main Entry Point
- * 
+ *
  * Uses CustomBotManager to handle multiple bot instances:
  * - Default bot for all guilds
  * - Custom bots per guild (with unique tokens)
- * 
+ *
  * All handlers are registered via manager.registerHandler()
  * and applied to ALL bot instances automatically.
- * 
+ *
  * Required environment variables:
  * - DISCORD_TOKEN / DEFAULT_BOT_TOKEN
  * - BOT_SECRET_KEY
@@ -16,121 +16,167 @@
  * - APP_API_BASE
  */
 
-require('dotenv').config({ path: require('path').join(__dirname, '.env'), override: true });
+require("dotenv").config({
+  path: require("path").join(__dirname, ".env"),
+  override: true,
+});
 
 // Normalize APP_API_BASE BEFORE requiring handlers (they capture it at module load).
 // Roadmap: automod/other handlers failed when APP_API_BASE had a trailing slash or was empty.
-process.env.APP_API_BASE = (process.env.APP_API_BASE || 'https://bot.nethost-solutions.dk').replace(/\/$/, '');
+process.env.APP_API_BASE = (
+  process.env.APP_API_BASE || "https://bot.nethost-solutions.dk"
+).replace(/\/$/, "");
 if (!/^https?:\/\//i.test(process.env.APP_API_BASE)) {
-  console.error('[Bot] FATAL: APP_API_BASE skal være en absolut http(s)-URL');
+  console.error("[Bot] FATAL: APP_API_BASE skal være en absolut http(s)-URL");
   process.exit(1);
 }
 
-require('./utils/consoleLogger').installGlobalConsoleLogger();
+require("./utils/consoleLogger").installGlobalConsoleLogger();
+const { adjustBalance, transferWallet } = require("./utils/economyAtomic");
 
-const { Events, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, PermissionFlagsBits, ChannelType } = require('discord.js');
-const { randomUUID } = require('node:crypto');
-const { createClient } = require('@supabase/supabase-js');
+const {
+  Events,
+  EmbedBuilder,
+  ActionRowBuilder,
+  ButtonBuilder,
+  ButtonStyle,
+  PermissionFlagsBits,
+  ChannelType,
+} = require("discord.js");
+const { randomUUID } = require("node:crypto");
+const { createClient } = require("@supabase/supabase-js");
 
 // Import manager
-const { manager } = require('./customBotManager');
-const { resolveInteractionCommand, routeConfig, getSlashPathForLogical } = require('./commandRouting');
-const { getFiveMDefinition, getFiveMPermission, permissionAtLeast, queueCommandName } = require('./fivem/commands');
+const { manager } = require("./customBotManager");
+const {
+  resolveInteractionCommand,
+  routeConfig,
+  getSlashPathForLogical,
+} = require("./commandRouting");
+const {
+  getFiveMDefinition,
+  getFiveMPermission,
+  permissionAtLeast,
+  queueCommandName,
+} = require("./fivem/commands");
 
 // Import handlers
-const { setupTicketHandler } = require('./handlers/ticketHandler');
-const { setupWelcomeHandler } = require('./handlers/welcomeHandler');
-const { setupInviteTracker } = require('./inviteTracker');
-const { registerLogHandlers } = require('./handlers/logHandler');
-const { setupReactionRoleHandler } = require('./handlers/reactionRoleHandler');
-const { startTwitchChecker } = require('./handlers/twitchHandler');
-const { startTikTokChecker } = require('./handlers/tiktokHandler');
-const { startYouTubeChecker } = require('./handlers/youtubeHandler');
-const jtcHandler = require('./handlers/jtcHandler');
-const jtcButtonHandler = require('./handlers/jtcButtonHandler');
-const { setupAIChatHandler } = require('./handlers/aiChatHandler');
-const { initXPHandler } = require('./handlers/xpHandler');
-const { setupApplicationHandler } = require('./handlers/applicationHandler');
+const { setupTicketHandler } = require("./handlers/ticketHandler");
+const { setupWelcomeHandler } = require("./handlers/welcomeHandler");
+const { setupInviteTracker } = require("./inviteTracker");
+const { registerLogHandlers } = require("./handlers/logHandler");
+const { setupReactionRoleHandler } = require("./handlers/reactionRoleHandler");
+const { startTwitchChecker } = require("./handlers/twitchHandler");
+const { startTikTokChecker } = require("./handlers/tiktokHandler");
+const { startYouTubeChecker } = require("./handlers/youtubeHandler");
+const jtcHandler = require("./handlers/jtcHandler");
+const jtcButtonHandler = require("./handlers/jtcButtonHandler");
+const { setupAIChatHandler } = require("./handlers/aiChatHandler");
+const { initXPHandler } = require("./handlers/xpHandler");
+const { setupApplicationHandler } = require("./handlers/applicationHandler");
 const APP_API_BASE = process.env.APP_API_BASE;
 
 // NEW: Import new feature handlers
-const { setupStarboardHandler } = require('./handlers/starboardHandler');
-const { WarningHandler } = require('./handlers/warningHandler');
-const { AnalyticsHandler } = require('./handlers/analyticsHandler');
-const { setupSchedulerHandler } = require('./schedulerHandler');
-const { setupModmailHandler } = require('./handlers/modmailHandler');
-const { setupTebexHandler } = require('./handlers/tebexHandler');
-const { setupSuggestionHandler } = require('./handlers/suggestionHandler');
-const { setupVerificationHandler } = require('./handlers/verificationHandler');
-const { setupStatsHandler } = require('./handlers/statsHandler');
-const { setupGlobalBanHandler } = require('./handlers/globalBanHandler');
-const { setupScheduledActionHandler } = require('./handlers/scheduledActionHandler');
-const { setupAfkHandler } = require('./handlers/afkHandler');
-const { setupPollHandler } = require('./handlers/pollHandler');
-const { setupAutoResponderHandler } = require('./handlers/autoResponderHandler');
-const { setupCustomCommandHandler } = require('./handlers/customCommandHandler');
-const { startHeartbeat, sendOfflineStatus, countMessage } = require('./handlers/heartbeatHandler');
-const { botLog, flushLogs } = require('./consoleLogger');
-const { setupReminderHandler } = require('./handlers/reminderHandler');
-const { setupAutoReportHandler } = require('./handlers/autoReportHandler');
-const { setupAIAutomodHandler } = require('./handlers/aiAutomodHandler');
-const { setupAutomodRuleHandler } = require('./handlers/automodRuleHandler');
-const { setupNotificationHandler } = require('./handlers/notificationHandler');
-const { setupWebhookDispatcher } = require('./handlers/webhookDispatcher');
-const { setupRaidProtectionHandler } = require('./handlers/raidProtectionHandler');
-const { setupQuarantineHandler } = require('./handlers/quarantineHandler');
-const { setupSlowmodeScheduler } = require('./slowmodeScheduler');
-const { setupAltDetectionHandler } = require('./handlers/altDetectionHandler');
-const { setupHoneypotHandler } = require('./handlers/honeypotHandler');
-const { setupCountingHandler } = require('./handlers/countingHandler');
-const { setupConfessionHandler } = require('./handlers/confessionHandler');
-const { setupBirthdayHandler } = require('./handlers/birthdayHandler');
-const { setupMusicQuizHandler } = require('./handlers/musicQuizHandler');
-const { setupCurrencyShopHandler } = require('./handlers/currencyShopHandler');
-const { createExtraHandlers, setupSnipeTracker } = require('./handlers/extraCommands');
-const { createAdminHandlers } = require('./handlers/adminCommands');
-const { createGameHandlers } = require('./handlers/gameCommands');
-const { createAdvancedModerationHandlers, setupModerationScheduler } = require('./handlers/advancedModeration');
-const { setupPlatformV3Handler } = require('./handlers/platformV3Handler');
-const { createAppealHandlers } = require('./handlers/appealHandler');
+const { setupStarboardHandler } = require("./handlers/starboardHandler");
+const { WarningHandler } = require("./handlers/warningHandler");
+const { AnalyticsHandler } = require("./handlers/analyticsHandler");
+const { setupSchedulerHandler } = require("./schedulerHandler");
+const { setupModmailHandler } = require("./handlers/modmailHandler");
+const { setupTebexHandler } = require("./handlers/tebexHandler");
+const { setupSuggestionHandler } = require("./handlers/suggestionHandler");
+const { setupVerificationHandler } = require("./handlers/verificationHandler");
+const { setupStatsHandler } = require("./handlers/statsHandler");
+const { setupGlobalBanHandler } = require("./handlers/globalBanHandler");
+const {
+  setupScheduledActionHandler,
+} = require("./handlers/scheduledActionHandler");
+const { setupAfkHandler } = require("./handlers/afkHandler");
+const { setupPollHandler } = require("./handlers/pollHandler");
+const {
+  setupAutoResponderHandler,
+} = require("./handlers/autoResponderHandler");
+const {
+  setupCustomCommandHandler,
+} = require("./handlers/customCommandHandler");
+const {
+  startHeartbeat,
+  sendOfflineStatus,
+  countMessage,
+} = require("./handlers/heartbeatHandler");
+const { botLog, flushLogs } = require("./consoleLogger");
+const { setupReminderHandler } = require("./handlers/reminderHandler");
+const { setupAutoReportHandler } = require("./handlers/autoReportHandler");
+const { setupAIAutomodHandler } = require("./handlers/aiAutomodHandler");
+const { setupAutomodRuleHandler } = require("./handlers/automodRuleHandler");
+const { setupNotificationHandler } = require("./handlers/notificationHandler");
+const { setupWebhookDispatcher } = require("./handlers/webhookDispatcher");
+const {
+  setupRaidProtectionHandler,
+} = require("./handlers/raidProtectionHandler");
+const { setupQuarantineHandler } = require("./handlers/quarantineHandler");
+const { setupSlowmodeScheduler } = require("./slowmodeScheduler");
+const { setupAltDetectionHandler } = require("./handlers/altDetectionHandler");
+const { setupHoneypotHandler } = require("./handlers/honeypotHandler");
+const { setupCountingHandler } = require("./handlers/countingHandler");
+const { setupConfessionHandler } = require("./handlers/confessionHandler");
+const { setupBirthdayHandler } = require("./handlers/birthdayHandler");
+const { setupMusicQuizHandler } = require("./handlers/musicQuizHandler");
+const { setupCurrencyShopHandler } = require("./handlers/currencyShopHandler");
+const {
+  createExtraHandlers,
+  setupSnipeTracker,
+} = require("./handlers/extraCommands");
+const { createAdminHandlers } = require("./handlers/adminCommands");
+const { createGameHandlers } = require("./handlers/gameCommands");
+const {
+  createAdvancedModerationHandlers,
+  setupModerationScheduler,
+} = require("./handlers/advancedModeration");
+const { setupPlatformV3Handler } = require("./handlers/platformV3Handler");
+const { createAppealHandlers } = require("./handlers/appealHandler");
 
-const { setupPrefixHandler } = require('./handlers/prefixHandler');
+const { setupPrefixHandler } = require("./handlers/prefixHandler");
 // Optional: Music system (comment out if not using)
 let initMusic, musicCommands, getKazagumo;
 try {
-  const music = require('./music');
+  const music = require("./music");
   initMusic = music.initMusic;
   musicCommands = music.commands;
   getKazagumo = music.getKazagumo;
-  console.log('[Bot] Music module loaded');
+  console.log("[Bot] Music module loaded");
 } catch (e) {
-  console.log('[Bot] Music module not available');
+  console.log("[Bot] Music module not available");
 }
 
 // ==================== CONFIGURATION ====================
 
-const SUPABASE_URL = (process.env.SUPABASE_URL || '').replace(/\/$/, '');
+const SUPABASE_URL = (process.env.SUPABASE_URL || "").replace(/\/$/, "");
 const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY;
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const BOT_SECRET_KEY = process.env.BOT_SECRET_KEY;
 
 const DISCOVERY_EXCLUDED_COMMANDS = new Set([
-  'crime',
-  'slots',
-  'gamble',
-  'roulette',
-  'blackjack',
+  "crime",
+  "slots",
+  "gamble",
+  "roulette",
+  "blackjack",
 ]);
 
 function requireRuntimeSecrets() {
   const missing = [];
-  if (!SUPABASE_URL) missing.push('SUPABASE_URL');
-  if (!SUPABASE_SERVICE_ROLE_KEY) missing.push('SUPABASE_SERVICE_ROLE_KEY');
-  if (!BOT_SECRET_KEY) missing.push('BOT_SECRET_KEY');
-  if (!APP_API_BASE || !/^https?:\/\//i.test(APP_API_BASE)) missing.push('APP_API_BASE');
+  if (!SUPABASE_URL) missing.push("SUPABASE_URL");
+  if (!SUPABASE_SERVICE_ROLE_KEY) missing.push("SUPABASE_SERVICE_ROLE_KEY");
+  if (!BOT_SECRET_KEY) missing.push("BOT_SECRET_KEY");
+  if (!APP_API_BASE || !/^https?:\/\//i.test(APP_API_BASE))
+    missing.push("APP_API_BASE");
   if (missing.length) {
-    console.error(`[Bot] FATAL: mangler påkrævede env-variabler: ${missing.join(', ')}`);
-    console.error('[Bot] Botten kræver service-role + BOT_SECRET_KEY og må ikke falde tilbage til anon-nøglen.');
+    console.error(
+      `[Bot] FATAL: mangler påkrævede env-variabler: ${missing.join(", ")}`,
+    );
+    console.error(
+      "[Bot] Botten kræver service-role + BOT_SECRET_KEY og må ikke falde tilbage til anon-nøglen.",
+    );
     process.exit(1);
   }
 }
@@ -145,16 +191,23 @@ const handlerInstances = new Map();
 
 // ==================== HELPER FUNCTIONS ====================
 
-async function logModerationAction(guildId, action, moderator, target, reason, duration = null) {
+async function logModerationAction(
+  guildId,
+  action,
+  moderator,
+  target,
+  reason,
+  duration = null,
+) {
   try {
     const { data: guild } = await supabase
-      .from('guilds')
-      .select('id')
-      .eq('guild_id', guildId)
+      .from("guilds")
+      .select("id")
+      .eq("guild_id", guildId)
       .single();
 
     if (guild) {
-      await supabase.from('moderation_logs').insert({
+      await supabase.from("moderation_logs").insert({
         guild_id: guild.id,
         action_type: action,
         moderator_id: moderator.id,
@@ -162,11 +215,11 @@ async function logModerationAction(guildId, action, moderator, target, reason, d
         target_id: target.id,
         target_name: target.tag || target.user?.tag,
         reason: reason,
-        duration_seconds: duration
+        duration_seconds: duration,
       });
     }
   } catch (error) {
-    console.error('Failed to log moderation action:', error);
+    console.error("Failed to log moderation action:", error);
   }
 }
 
@@ -175,8 +228,12 @@ const commandCooldowns = new Map();
 const commandGuildIdCache = new Map();
 const commandExecutionQueue = [];
 let commandExecutionFlushInProgress = false;
-const COMMAND_SETTINGS_CACHE_TTL = Number(process.env.COMMAND_SETTINGS_CACHE_TTL || 10000);
-const COMMAND_ANALYTICS_FLUSH_MS = Number(process.env.COMMAND_ANALYTICS_FLUSH_MS || 5000);
+const COMMAND_SETTINGS_CACHE_TTL = Number(
+  process.env.COMMAND_SETTINGS_CACHE_TTL || 10000,
+);
+const COMMAND_ANALYTICS_FLUSH_MS = Number(
+  process.env.COMMAND_ANALYTICS_FLUSH_MS || 5000,
+);
 
 async function getGuildCommandSettings(guildId) {
   const cached = commandSettingsCache.get(guildId);
@@ -186,23 +243,28 @@ async function getGuildCommandSettings(guildId) {
 
   try {
     const { data: guild, error: guildError } = await supabase
-      .from('guilds')
-      .select('id')
-      .eq('guild_id', guildId)
+      .from("guilds")
+      .select("id")
+      .eq("guild_id", guildId)
       .maybeSingle();
 
     if (guildError || !guild) {
       const empty = new Map();
-      commandSettingsCache.set(guildId, { fetchedAt: Date.now(), commands: empty });
+      commandSettingsCache.set(guildId, {
+        fetchedAt: Date.now(),
+        commands: empty,
+      });
       return empty;
     }
 
     commandGuildIdCache.set(guildId, guild.id);
 
     const { data: rows, error: commandError } = await supabase
-      .from('guild_commands')
-      .select('command_name, enabled, cooldown_seconds, allowed_role_ids, allowed_channel_ids')
-      .eq('guild_id', guild.id);
+      .from("guild_commands")
+      .select(
+        "command_name, enabled, cooldown_seconds, allowed_role_ids, allowed_channel_ids",
+      )
+      .eq("guild_id", guild.id);
 
     if (commandError) throw commandError;
 
@@ -211,15 +273,22 @@ async function getGuildCommandSettings(guildId) {
       commands.set(row.command_name, {
         enabled: row.enabled !== false,
         cooldown_seconds: Math.max(0, Number(row.cooldown_seconds) || 0),
-        allowed_role_ids: Array.isArray(row.allowed_role_ids) ? row.allowed_role_ids : [],
-        allowed_channel_ids: Array.isArray(row.allowed_channel_ids) ? row.allowed_channel_ids : [],
+        allowed_role_ids: Array.isArray(row.allowed_role_ids)
+          ? row.allowed_role_ids
+          : [],
+        allowed_channel_ids: Array.isArray(row.allowed_channel_ids)
+          ? row.allowed_channel_ids
+          : [],
       });
     }
 
     commandSettingsCache.set(guildId, { fetchedAt: Date.now(), commands });
     return commands;
   } catch (error) {
-    console.warn(`[Commands] Kunne ikke hente command-indstillinger for guild ${guildId}:`, error?.message || error);
+    console.warn(
+      `[Commands] Kunne ikke hente command-indstillinger for guild ${guildId}:`,
+      error?.message || error,
+    );
     return cached?.commands || new Map();
   }
 }
@@ -240,25 +309,38 @@ async function checkCommandAccess({
   if (!settings) return { allowed: true };
 
   if (!settings.enabled) {
-    return { allowed: false, reason: 'disabled', message: '❌ Denne command er deaktiveret.' };
+    return {
+      allowed: false,
+      reason: "disabled",
+      message: "❌ Denne command er deaktiveret.",
+    };
   }
 
   if (!isAdmin && settings.allowed_role_ids.length > 0) {
-    const hasRole = roleIds.some((roleId) => settings.allowed_role_ids.includes(roleId));
+    const hasRole = roleIds.some((roleId) =>
+      settings.allowed_role_ids.includes(roleId),
+    );
     if (!hasRole) {
       return {
         allowed: false,
-        reason: 'role',
-        message: '🚫 Du har ikke en rolle, der har adgang til denne command.',
+        reason: "role",
+        message: "🚫 Du har ikke en rolle, der har adgang til denne command.",
       };
     }
   }
 
-  if (!isAdmin && settings.allowed_channel_ids.length > 0 && !settings.allowed_channel_ids.includes(channelId)) {
-    const mentions = settings.allowed_channel_ids.slice(0, 5).map((id) => `<#${id}>`).join(', ');
+  if (
+    !isAdmin &&
+    settings.allowed_channel_ids.length > 0 &&
+    !settings.allowed_channel_ids.includes(channelId)
+  ) {
+    const mentions = settings.allowed_channel_ids
+      .slice(0, 5)
+      .map((id) => `<#${id}>`)
+      .join(", ");
     return {
       allowed: false,
-      reason: 'channel',
+      reason: "channel",
       message: `🚫 Denne command må kun bruges i: ${mentions}`,
     };
   }
@@ -272,7 +354,7 @@ async function checkCommandAccess({
       const retryAfter = Math.max(1, Math.ceil((expiresAt - now) / 1000));
       return {
         allowed: false,
-        reason: 'cooldown',
+        reason: "cooldown",
         retryAfter,
         message: `⏳ Du kan bruge **/${commandName}** igen om ${retryAfter} sek.`,
       };
@@ -291,13 +373,14 @@ async function isCommandEnabled(guildId, commandName) {
 
 async function getInternalGuildIdForCommandAnalytics(discordGuildId) {
   if (!discordGuildId) return null;
-  if (commandGuildIdCache.has(discordGuildId)) return commandGuildIdCache.get(discordGuildId);
+  if (commandGuildIdCache.has(discordGuildId))
+    return commandGuildIdCache.get(discordGuildId);
 
   try {
     const { data, error } = await supabase
-      .from('guilds')
-      .select('id')
-      .eq('guild_id', discordGuildId)
+      .from("guilds")
+      .select("id")
+      .eq("guild_id", discordGuildId)
       .maybeSingle();
 
     if (error || !data?.id) return null;
@@ -309,11 +392,12 @@ async function getInternalGuildIdForCommandAnalytics(discordGuildId) {
 }
 
 function getCommandErrorMessage(error) {
-  const message = error?.message || String(error || 'Ukendt fejl');
+  const message = error?.message || String(error || "Ukendt fejl");
   const code = error?.code ? String(error.code) : null;
-  const name = error?.name && error.name !== 'Error' ? String(error.name) : null;
-  const prefix = [name, code].filter(Boolean).join('/');
-  return `${prefix ? `[${prefix}] ` : ''}${message}`.slice(0, 1000);
+  const name =
+    error?.name && error.name !== "Error" ? String(error.name) : null;
+  const prefix = [name, code].filter(Boolean).join("/");
+  return `${prefix ? `[${prefix}] ` : ""}${message}`.slice(0, 1000);
 }
 
 async function queueCommandExecution({
@@ -321,25 +405,31 @@ async function queueCommandExecution({
   commandName,
   userId = null,
   channelId = null,
-  source = 'slash',
+  source = "slash",
   status,
   latencyMs = 0,
   blockedReason = null,
   error = null,
 }) {
   try {
-    const internalGuildId = await getInternalGuildIdForCommandAnalytics(guildId);
+    const internalGuildId =
+      await getInternalGuildIdForCommandAnalytics(guildId);
     if (!internalGuildId) return;
 
     commandExecutionQueue.push({
       guild_id: internalGuildId,
-      command_name: String(commandName || 'unknown').slice(0, 100),
+      command_name: String(commandName || "unknown").slice(0, 100),
       user_id: userId || null,
       channel_id: channelId || null,
-      source: source === 'prefix' ? 'prefix' : 'slash',
+      source: source === "prefix" ? "prefix" : "slash",
       status,
-      latency_ms: Math.max(0, Math.min(3600000, Math.round(Number(latencyMs) || 0))),
-      blocked_reason: blockedReason ? String(blockedReason).slice(0, 100) : null,
+      latency_ms: Math.max(
+        0,
+        Math.min(3600000, Math.round(Number(latencyMs) || 0)),
+      ),
+      blocked_reason: blockedReason
+        ? String(blockedReason).slice(0, 100)
+        : null,
       error_message: error ? getCommandErrorMessage(error) : null,
     });
 
@@ -347,20 +437,29 @@ async function queueCommandExecution({
       void flushCommandExecutionEvents();
     }
   } catch (error) {
-    console.warn('[Commands] Kunne ikke queue command analytics:', error?.message || error);
+    console.warn(
+      "[Commands] Kunne ikke queue command analytics:",
+      error?.message || error,
+    );
   }
 }
 
 async function flushCommandExecutionEvents() {
-  if (commandExecutionFlushInProgress || commandExecutionQueue.length === 0) return;
+  if (commandExecutionFlushInProgress || commandExecutionQueue.length === 0)
+    return;
   commandExecutionFlushInProgress = true;
 
   const batch = commandExecutionQueue.splice(0, 100);
   try {
-    const { error } = await supabase.from('command_execution_events').insert(batch);
+    const { error } = await supabase
+      .from("command_execution_events")
+      .insert(batch);
     if (error) throw error;
   } catch (error) {
-    console.warn('[Commands] Command analytics flush fejlede:', error?.message || error);
+    console.warn(
+      "[Commands] Command analytics flush fejlede:",
+      error?.message || error,
+    );
     if (commandExecutionQueue.length < 1000) {
       commandExecutionQueue.unshift(...batch);
     }
@@ -376,18 +475,18 @@ const commandExecutionFlushInterval = setInterval(() => {
 async function isModuleEnabled(guildId, moduleType) {
   try {
     const { data: guild } = await supabase
-      .from('guilds')
-      .select('id')
-      .eq('guild_id', guildId)
+      .from("guilds")
+      .select("id")
+      .eq("guild_id", guildId)
       .single();
 
     if (!guild) return true;
 
     const { data: module } = await supabase
-      .from('guild_modules')
-      .select('enabled')
-      .eq('guild_id', guild.id)
-      .eq('module_type', moduleType)
+      .from("guild_modules")
+      .select("enabled")
+      .eq("guild_id", guild.id)
+      .eq("module_type", moduleType)
       .single();
 
     return module ? module.enabled : true;
@@ -397,35 +496,41 @@ async function isModuleEnabled(guildId, moduleType) {
 }
 
 async function getFiveMAccessLevel(internalGuildId, interaction) {
-  if (!interaction.guild || !interaction.member) return 'user';
+  if (!interaction.guild || !interaction.member) return "user";
 
-  if (interaction.guild.ownerId === interaction.user.id || interaction.member.permissions.has(PermissionFlagsBits.Administrator)) {
-    return 'god';
+  if (
+    interaction.guild.ownerId === interaction.user.id ||
+    interaction.member.permissions.has(PermissionFlagsBits.Administrator)
+  ) {
+    return "god";
   }
 
   const roleIds = [...interaction.member.roles.cache.keys()];
-  let level = 'user';
+  let level = "user";
 
   const { data: settings } = await supabase
-    .from('fivem_settings')
-    .select('staff_role_ids, mod_role_ids, admin_role_ids, god_role_ids')
-    .eq('guild_id', internalGuildId)
+    .from("fivem_settings")
+    .select("staff_role_ids, mod_role_ids, admin_role_ids, god_role_ids")
+    .eq("guild_id", internalGuildId)
     .maybeSingle();
 
-  const hasAny = (ids) => Array.isArray(ids) && ids.some((id) => roleIds.includes(id));
-  if (hasAny(settings?.staff_role_ids) || hasAny(settings?.mod_role_ids)) level = 'mod';
-  if (hasAny(settings?.admin_role_ids)) level = 'admin';
-  if (hasAny(settings?.god_role_ids)) level = 'god';
+  const hasAny = (ids) =>
+    Array.isArray(ids) && ids.some((id) => roleIds.includes(id));
+  if (hasAny(settings?.staff_role_ids) || hasAny(settings?.mod_role_ids))
+    level = "mod";
+  if (hasAny(settings?.admin_role_ids)) level = "admin";
+  if (hasAny(settings?.god_role_ids)) level = "god";
 
   if (roleIds.length > 0) {
     const { data: mappedRoles } = await supabase
-      .from('fivem_role_permissions')
-      .select('permission_level')
-      .eq('guild_id', internalGuildId)
-      .in('discord_role_id', roleIds);
+      .from("fivem_role_permissions")
+      .select("permission_level")
+      .eq("guild_id", internalGuildId)
+      .in("discord_role_id", roleIds);
 
     for (const role of mappedRoles || []) {
-      if (permissionAtLeast(role.permission_level, level)) level = role.permission_level;
+      if (permissionAtLeast(role.permission_level, level))
+        level = role.permission_level;
     }
   }
 
@@ -435,21 +540,25 @@ async function getFiveMAccessLevel(internalGuildId, interaction) {
 async function getFiveMRuntime(internalGuildId) {
   const [{ data: settings }, { data: status }] = await Promise.all([
     supabase
-      .from('fivem_settings')
-      .select('enabled, server_name')
-      .eq('guild_id', internalGuildId)
+      .from("fivem_settings")
+      .select("enabled, server_name")
+      .eq("guild_id", internalGuildId)
       .maybeSingle(),
     supabase
-      .from('fivem_server_status')
-      .select('server_id, is_online, player_count, max_players, uptime_seconds, server_name, last_heartbeat, updated_at, metadata')
-      .eq('guild_id', internalGuildId)
-      .order('updated_at', { ascending: false })
+      .from("fivem_server_status")
+      .select(
+        "server_id, is_online, player_count, max_players, uptime_seconds, server_name, last_heartbeat, updated_at, metadata",
+      )
+      .eq("guild_id", internalGuildId)
+      .order("updated_at", { ascending: false })
       .limit(1)
       .maybeSingle(),
   ]);
 
-  const heartbeatAt = status?.last_heartbeat ? new Date(status.last_heartbeat).getTime() : 0;
-  const fresh = heartbeatAt > 0 && (Date.now() - heartbeatAt) < 90_000;
+  const heartbeatAt = status?.last_heartbeat
+    ? new Date(status.last_heartbeat).getTime()
+    : 0;
+  const fresh = heartbeatAt > 0 && Date.now() - heartbeatAt < 90_000;
 
   return {
     enabled: Boolean(settings?.enabled),
@@ -468,10 +577,10 @@ function formatDuration(seconds) {
 
 async function callGiveawayHandler(payload) {
   const response = await fetch(`${APP_API_BASE}/api/public/giveaway-handler`, {
-    method: 'POST',
+    method: "POST",
     headers: {
-      'Content-Type': 'application/json',
-      'x-bot-secret': BOT_SECRET_KEY,
+      "Content-Type": "application/json",
+      "x-bot-secret": BOT_SECRET_KEY,
     },
     body: JSON.stringify(payload),
   });
@@ -480,7 +589,9 @@ async function callGiveawayHandler(payload) {
   const data = raw ? JSON.parse(raw) : {};
 
   if (!response.ok || data?.error) {
-    throw new Error(data?.error || `Giveaway handler fejl (${response.status})`);
+    throw new Error(
+      data?.error || `Giveaway handler fejl (${response.status})`,
+    );
   }
 
   return data;
@@ -495,81 +606,102 @@ function startGiveawayAutoEnd(shouldHandleGuild) {
   async function checkExpiredGiveaways() {
     try {
       const { data: expired } = await supabase
-        .from('giveaways')
-        .select('id, guild_id, guilds!inner(guild_id)')
-        .eq('ended', false)
-        .eq('paused', false)
-        .lte('ends_at', new Date().toISOString())
+        .from("giveaways")
+        .select("id, guild_id, guilds!inner(guild_id)")
+        .eq("ended", false)
+        .eq("paused", false)
+        .lte("ends_at", new Date().toISOString())
         .limit(20);
 
       if (!expired || expired.length === 0) return;
 
       for (const giveaway of expired) {
         const guildDiscordId = giveaway.guilds?.guild_id;
-        if (guildDiscordId && shouldHandleGuild && !shouldHandleGuild(guildDiscordId)) continue;
+        if (
+          guildDiscordId &&
+          shouldHandleGuild &&
+          !shouldHandleGuild(guildDiscordId)
+        )
+          continue;
 
         try {
           const result = await callGiveawayHandler({
-            action: 'end',
+            action: "end",
             guildId: giveaway.guild_id,
             giveawayId: giveaway.id,
           });
-          console.log(`[Giveaway] Auto-ended giveaway ${giveaway.id} — ${result?.winners?.length || 0} winners`);
+          console.log(
+            `[Giveaway] Auto-ended giveaway ${giveaway.id} — ${result?.winners?.length || 0} winners`,
+          );
         } catch (err) {
-          console.error(`[Giveaway] Auto-end failed for ${giveaway.id}:`, err.message);
+          console.error(
+            `[Giveaway] Auto-end failed for ${giveaway.id}:`,
+            err.message,
+          );
         }
       }
     } catch (err) {
-      console.error('[Giveaway] Auto-end check error:', err.message);
+      console.error("[Giveaway] Auto-end check error:", err.message);
     }
   }
 
   giveawayCheckInterval = setInterval(checkExpiredGiveaways, 30_000); // Check every 30s
   setTimeout(checkExpiredGiveaways, 5_000); // Initial check after 5s
-  console.log('[Giveaway] Auto-end checker started');
+  console.log("[Giveaway] Auto-end checker started");
 }
 
-async function handleGiveawayButton(interaction, shouldHandleGuild, isCustomBotInstance = false) {
+async function handleGiveawayButton(
+  interaction,
+  shouldHandleGuild,
+  isCustomBotInstance = false,
+) {
   if (!interaction.isButton()) return false;
-  if (!interaction.customId?.startsWith('giveaway_enter_')) return false;
+  if (!interaction.customId?.startsWith("giveaway_enter_")) return false;
   if (!interaction.guild) return false;
   if (!isCustomBotInstance) return false;
-  if (shouldHandleGuild && !shouldHandleGuild(interaction.guild.id)) return false;
+  if (shouldHandleGuild && !shouldHandleGuild(interaction.guild.id))
+    return false;
 
-  const giveawayId = interaction.customId.replace('giveaway_enter_', '');
+  const giveawayId = interaction.customId.replace("giveaway_enter_", "");
 
   try {
     await interaction.deferReply({ flags: 64 });
 
-    const { data: guild } = await supabase.from('guilds').select('id').eq('guild_id', interaction.guild.id).single();
+    const { data: guild } = await supabase
+      .from("guilds")
+      .select("id")
+      .eq("guild_id", interaction.guild.id)
+      .single();
     if (!guild) {
-      await interaction.editReply('❌ Server ikke fundet.');
+      await interaction.editReply("❌ Server ikke fundet.");
       return true;
     }
 
     const { data: giveaway } = await supabase
-      .from('giveaways')
-      .select('id, required_role_id, entries')
-      .eq('id', giveawayId)
-      .eq('guild_id', guild.id)
+      .from("giveaways")
+      .select("id, required_role_id, entries")
+      .eq("id", giveawayId)
+      .eq("guild_id", guild.id)
       .maybeSingle();
 
     if (!giveaway) {
-      await interaction.editReply('❌ Giveaway ikke fundet.');
+      await interaction.editReply("❌ Giveaway ikke fundet.");
       return true;
     }
 
     if (giveaway.required_role_id) {
       const member = await interaction.guild.members.fetch(interaction.user.id);
       if (!member.roles.cache.has(giveaway.required_role_id)) {
-        await interaction.editReply(`❌ Du skal have rollen <@&${giveaway.required_role_id}> for at deltage.`);
+        await interaction.editReply(
+          `❌ Du skal have rollen <@&${giveaway.required_role_id}> for at deltage.`,
+        );
         return true;
       }
     }
 
     const entries = Array.isArray(giveaway.entries) ? giveaway.entries : [];
     const alreadyEntered = entries.includes(interaction.user.id);
-    const action = alreadyEntered ? 'leave' : 'enter';
+    const action = alreadyEntered ? "leave" : "enter";
     const result = await callGiveawayHandler({
       action,
       guildId: guild.id,
@@ -579,18 +711,20 @@ async function handleGiveawayButton(interaction, shouldHandleGuild, isCustomBotI
     });
 
     await interaction.editReply(
-      action === 'enter'
+      action === "enter"
         ? `✅ Du deltager nu i giveawayen! (${result.entriesCount ?? entries.length + 1} deltagere)`
-        : `✅ Du er fjernet fra giveawayen. (${result.entriesCount ?? Math.max(entries.length - 1, 0)} deltagere)`
+        : `✅ Du er fjernet fra giveawayen. (${result.entriesCount ?? Math.max(entries.length - 1, 0)} deltagere)`,
     );
   } catch (error) {
-    console.error('[Bot] Giveaway button fejl:', error);
-    const message = error.message || 'Der skete en fejl ved giveaway-knappen.';
+    console.error("[Bot] Giveaway button fejl:", error);
+    const message = error.message || "Der skete en fejl ved giveaway-knappen.";
 
     if (interaction.deferred || interaction.replied) {
       await interaction.editReply(`❌ ${message}`).catch(() => {});
     } else {
-      await interaction.reply({ content: `❌ ${message}`, flags: 64 }).catch(() => {});
+      await interaction
+        .reply({ content: `❌ ${message}`, flags: 64 })
+        .catch(() => {});
     }
   }
 
@@ -605,167 +739,271 @@ function createSlashHandlers(client) {
 
     ban: async (interaction) => {
       if (!interaction.member.permissions.has(PermissionFlagsBits.BanMembers)) {
-        return interaction.reply({ content: '❌ Du har ikke tilladelse til at banne.', flags: 64 });
+        return interaction.reply({
+          content: "❌ Du har ikke tilladelse til at banne.",
+          flags: 64,
+        });
       }
 
-      const user = interaction.options.getUser('user');
-      const reason = interaction.options.getString('reason') || 'Ingen årsag angivet';
-      const deleteMessages = interaction.options.getInteger('delete_messages') || 0;
+      const user = interaction.options.getUser("user");
+      const reason =
+        interaction.options.getString("reason") || "Ingen årsag angivet";
+      const deleteMessages =
+        interaction.options.getInteger("delete_messages") || 0;
 
       try {
-        await interaction.guild.members.ban(user, { reason, deleteMessageSeconds: deleteMessages * 86400 });
-        await logModerationAction(interaction.guild.id, 'ban', interaction.user, user, reason);
-        
+        await interaction.guild.members.ban(user, {
+          reason,
+          deleteMessageSeconds: deleteMessages * 86400,
+        });
+        await logModerationAction(
+          interaction.guild.id,
+          "ban",
+          interaction.user,
+          user,
+          reason,
+        );
+
         const embed = new EmbedBuilder()
-          .setColor('#FF0000')
-          .setTitle('🔨 Bruger Banned')
+          .setColor("#FF0000")
+          .setTitle("🔨 Bruger Banned")
           .addFields(
-            { name: 'Bruger', value: `${user.tag} (${user.id})`, inline: true },
-            { name: 'Moderator', value: interaction.user.tag, inline: true },
-            { name: 'Årsag', value: reason }
+            { name: "Bruger", value: `${user.tag} (${user.id})`, inline: true },
+            { name: "Moderator", value: interaction.user.tag, inline: true },
+            { name: "Årsag", value: reason },
           )
           .setTimestamp();
 
         await interaction.reply({ embeds: [embed] });
       } catch (error) {
-        await interaction.reply({ content: '❌ Kunne ikke banne brugeren.', flags: 64 });
+        await interaction.reply({
+          content: "❌ Kunne ikke banne brugeren.",
+          flags: 64,
+        });
       }
     },
 
     unban: async (interaction) => {
       if (!interaction.member.permissions.has(PermissionFlagsBits.BanMembers)) {
-        return interaction.reply({ content: '❌ Du har ikke tilladelse til at unban.', flags: 64 });
+        return interaction.reply({
+          content: "❌ Du har ikke tilladelse til at unban.",
+          flags: 64,
+        });
       }
 
-      const userId = interaction.options.getString('user_id');
-      const reason = interaction.options.getString('reason') || 'Ingen årsag angivet';
+      const userId = interaction.options.getString("user_id");
+      const reason =
+        interaction.options.getString("reason") || "Ingen årsag angivet";
 
       try {
         await interaction.guild.members.unban(userId, reason);
-        await logModerationAction(interaction.guild.id, 'unban', interaction.user, { id: userId, tag: userId }, reason);
+        await logModerationAction(
+          interaction.guild.id,
+          "unban",
+          interaction.user,
+          { id: userId, tag: userId },
+          reason,
+        );
         await interaction.reply(`✅ Bruger \`${userId}\` er blevet unbanned.`);
       } catch (error) {
-        await interaction.reply({ content: '❌ Kunne ikke unban brugeren. Tjek om ID er korrekt.', flags: 64 });
+        await interaction.reply({
+          content: "❌ Kunne ikke unban brugeren. Tjek om ID er korrekt.",
+          flags: 64,
+        });
       }
     },
 
     kick: async (interaction) => {
-      if (!interaction.member.permissions.has(PermissionFlagsBits.KickMembers)) {
-        return interaction.reply({ content: '❌ Du har ikke tilladelse til at kicke.', flags: 64 });
+      if (
+        !interaction.member.permissions.has(PermissionFlagsBits.KickMembers)
+      ) {
+        return interaction.reply({
+          content: "❌ Du har ikke tilladelse til at kicke.",
+          flags: 64,
+        });
       }
 
-      const user = interaction.options.getUser('user');
-      const reason = interaction.options.getString('reason') || 'Ingen årsag angivet';
+      const user = interaction.options.getUser("user");
+      const reason =
+        interaction.options.getString("reason") || "Ingen årsag angivet";
 
       try {
         const member = await interaction.guild.members.fetch(user.id);
         await member.kick(reason);
-        await logModerationAction(interaction.guild.id, 'kick', interaction.user, user, reason);
+        await logModerationAction(
+          interaction.guild.id,
+          "kick",
+          interaction.user,
+          user,
+          reason,
+        );
 
         const embed = new EmbedBuilder()
-          .setColor('#FFA500')
-          .setTitle('👢 Bruger Kicked')
+          .setColor("#FFA500")
+          .setTitle("👢 Bruger Kicked")
           .addFields(
-            { name: 'Bruger', value: `${user.tag} (${user.id})`, inline: true },
-            { name: 'Moderator', value: interaction.user.tag, inline: true },
-            { name: 'Årsag', value: reason }
+            { name: "Bruger", value: `${user.tag} (${user.id})`, inline: true },
+            { name: "Moderator", value: interaction.user.tag, inline: true },
+            { name: "Årsag", value: reason },
           )
           .setTimestamp();
 
         await interaction.reply({ embeds: [embed] });
       } catch (error) {
-        await interaction.reply({ content: '❌ Kunne ikke kicke brugeren.', flags: 64 });
+        await interaction.reply({
+          content: "❌ Kunne ikke kicke brugeren.",
+          flags: 64,
+        });
       }
     },
 
     mute: async (interaction) => {
-      if (!interaction.member.permissions.has(PermissionFlagsBits.ModerateMembers)) {
-        return interaction.reply({ content: '❌ Du har ikke tilladelse til at mute.', flags: 64 });
+      if (
+        !interaction.member.permissions.has(PermissionFlagsBits.ModerateMembers)
+      ) {
+        return interaction.reply({
+          content: "❌ Du har ikke tilladelse til at mute.",
+          flags: 64,
+        });
       }
 
-      const user = interaction.options.getUser('user');
-      const duration = interaction.options.getInteger('duration') || 10;
-      const reason = interaction.options.getString('reason') || 'Ingen årsag angivet';
+      const user = interaction.options.getUser("user");
+      const duration = interaction.options.getInteger("duration") || 10;
+      const reason =
+        interaction.options.getString("reason") || "Ingen årsag angivet";
 
       try {
         const member = await interaction.guild.members.fetch(user.id);
         await member.timeout(duration * 60 * 1000, reason);
-        await logModerationAction(interaction.guild.id, 'mute', interaction.user, user, reason, duration * 60);
+        await logModerationAction(
+          interaction.guild.id,
+          "mute",
+          interaction.user,
+          user,
+          reason,
+          duration * 60,
+        );
 
         const embed = new EmbedBuilder()
-          .setColor('#FFFF00')
-          .setTitle('🔇 Bruger Muted')
+          .setColor("#FFFF00")
+          .setTitle("🔇 Bruger Muted")
           .addFields(
-            { name: 'Bruger', value: `${user.tag}`, inline: true },
-            { name: 'Varighed', value: `${duration} minutter`, inline: true },
-            { name: 'Moderator', value: interaction.user.tag, inline: true },
-            { name: 'Årsag', value: reason }
+            { name: "Bruger", value: `${user.tag}`, inline: true },
+            { name: "Varighed", value: `${duration} minutter`, inline: true },
+            { name: "Moderator", value: interaction.user.tag, inline: true },
+            { name: "Årsag", value: reason },
           )
           .setTimestamp();
 
         await interaction.reply({ embeds: [embed] });
       } catch (error) {
-        await interaction.reply({ content: '❌ Kunne ikke mute brugeren.', flags: 64 });
+        await interaction.reply({
+          content: "❌ Kunne ikke mute brugeren.",
+          flags: 64,
+        });
       }
     },
 
     unmute: async (interaction) => {
-      if (!interaction.member.permissions.has(PermissionFlagsBits.ModerateMembers)) {
-        return interaction.reply({ content: '❌ Du har ikke tilladelse til at unmute.', flags: 64 });
+      if (
+        !interaction.member.permissions.has(PermissionFlagsBits.ModerateMembers)
+      ) {
+        return interaction.reply({
+          content: "❌ Du har ikke tilladelse til at unmute.",
+          flags: 64,
+        });
       }
 
-      const user = interaction.options.getUser('user');
+      const user = interaction.options.getUser("user");
 
       try {
         const member = await interaction.guild.members.fetch(user.id);
         await member.timeout(null);
-        await logModerationAction(interaction.guild.id, 'unmute', interaction.user, user, 'Unmuted');
+        await logModerationAction(
+          interaction.guild.id,
+          "unmute",
+          interaction.user,
+          user,
+          "Unmuted",
+        );
         await interaction.reply(`✅ **${user.tag}** er blevet unmuted.`);
       } catch (error) {
-        await interaction.reply({ content: '❌ Kunne ikke unmute brugeren.', flags: 64 });
+        await interaction.reply({
+          content: "❌ Kunne ikke unmute brugeren.",
+          flags: 64,
+        });
       }
     },
 
     warn: async (interaction) => {
-      if (!interaction.member.permissions.has(PermissionFlagsBits.ModerateMembers)) {
-        return interaction.reply({ content: '❌ Du har ikke tilladelse til at advare.', flags: 64 });
+      if (
+        !interaction.member.permissions.has(PermissionFlagsBits.ModerateMembers)
+      ) {
+        return interaction.reply({
+          content: "❌ Du har ikke tilladelse til at advare.",
+          flags: 64,
+        });
       }
 
-      const user = interaction.options.getUser('user');
-      const reason = interaction.options.getString('reason');
+      const user = interaction.options.getUser("user");
+      const reason = interaction.options.getString("reason");
 
       // Use WarningHandler if available for points-based system
-      const warnHandler = handlerInstances.get(`warning_${client._clientLabel || 'default'}`);
+      const warnHandler = handlerInstances.get(
+        `warning_${client._clientLabel || "default"}`,
+      );
       if (warnHandler) {
         const result = await warnHandler.addWarning(interaction, user, reason);
         if (!result.success) {
-          return interaction.reply({ content: `❌ ${result.message}`, flags: 64 });
+          return interaction.reply({
+            content: `❌ ${result.message}`,
+            flags: 64,
+          });
         }
 
-        const embed = warnHandler.createWarningEmbed(user, { points: result.points, reason }, result.totalPoints, result.punishment);
-        embed.addFields({ name: 'Moderator', value: interaction.user.tag, inline: true });
+        const embed = warnHandler.createWarningEmbed(
+          user,
+          { points: result.points, reason },
+          result.totalPoints,
+          result.punishment,
+        );
+        embed.addFields({
+          name: "Moderator",
+          value: interaction.user.tag,
+          inline: true,
+        });
 
         try {
-          await user.send(`⚠️ Du har modtaget en advarsel i **${interaction.guild.name}**\nÅrsag: ${reason}\nPoints: ${result.totalPoints}`);
+          await user.send(
+            `⚠️ Du har modtaget en advarsel i **${interaction.guild.name}**\nÅrsag: ${reason}\nPoints: ${result.totalPoints}`,
+          );
         } catch {}
 
         await interaction.reply({ embeds: [embed] });
       } else {
         // Fallback to simple logging
-        await logModerationAction(interaction.guild.id, 'warn', interaction.user, user, reason);
+        await logModerationAction(
+          interaction.guild.id,
+          "warn",
+          interaction.user,
+          user,
+          reason,
+        );
 
         const embed = new EmbedBuilder()
-          .setColor('#FFFF00')
-          .setTitle('⚠️ Advarsel')
+          .setColor("#FFFF00")
+          .setTitle("⚠️ Advarsel")
           .addFields(
-            { name: 'Bruger', value: `${user.tag}`, inline: true },
-            { name: 'Moderator', value: interaction.user.tag, inline: true },
-            { name: 'Årsag', value: reason }
+            { name: "Bruger", value: `${user.tag}`, inline: true },
+            { name: "Moderator", value: interaction.user.tag, inline: true },
+            { name: "Årsag", value: reason },
           )
           .setTimestamp();
 
         try {
-          await user.send(`⚠️ Du har modtaget en advarsel i **${interaction.guild.name}**\nÅrsag: ${reason}`);
+          await user.send(
+            `⚠️ Du har modtaget en advarsel i **${interaction.guild.name}**\nÅrsag: ${reason}`,
+          );
         } catch {}
 
         await interaction.reply({ embeds: [embed] });
@@ -773,24 +1011,28 @@ function createSlashHandlers(client) {
     },
 
     warnings: async (interaction) => {
-      const user = interaction.options.getUser('user');
+      const user = interaction.options.getUser("user");
 
       try {
         const { data: guild } = await supabase
-          .from('guilds')
-          .select('id')
-          .eq('guild_id', interaction.guild.id)
+          .from("guilds")
+          .select("id")
+          .eq("guild_id", interaction.guild.id)
           .single();
 
-        if (!guild) return interaction.reply({ content: '❌ Server ikke fundet i database.', flags: 64 });
+        if (!guild)
+          return interaction.reply({
+            content: "❌ Server ikke fundet i database.",
+            flags: 64,
+          });
 
         const { data: warnings } = await supabase
-          .from('moderation_logs')
-          .select('*')
-          .eq('guild_id', guild.id)
-          .eq('target_id', user.id)
-          .eq('action_type', 'warn')
-          .order('created_at', { ascending: false })
+          .from("moderation_logs")
+          .select("*")
+          .eq("guild_id", guild.id)
+          .eq("target_id", user.id)
+          .eq("action_type", "warn")
+          .order("created_at", { ascending: false })
           .limit(10);
 
         if (!warnings || warnings.length === 0) {
@@ -798,203 +1040,336 @@ function createSlashHandlers(client) {
         }
 
         const embed = new EmbedBuilder()
-          .setColor('#FFFF00')
+          .setColor("#FFFF00")
           .setTitle(`⚠️ Advarsler for ${user.tag}`)
-          .setDescription(warnings.map((w, i) => 
-            `**${i + 1}.** ${w.reason}\n└ Af: ${w.moderator_name} • ${new Date(w.created_at).toLocaleDateString('da-DK')}`
-          ).join('\n\n'))
+          .setDescription(
+            warnings
+              .map(
+                (w, i) =>
+                  `**${i + 1}.** ${w.reason}\n└ Af: ${w.moderator_name} • ${new Date(w.created_at).toLocaleDateString("da-DK")}`,
+              )
+              .join("\n\n"),
+          )
           .setFooter({ text: `Total: ${warnings.length} advarsler` });
 
         await interaction.reply({ embeds: [embed] });
       } catch (error) {
-        await interaction.reply({ content: '❌ Kunne ikke hente advarsler.', flags: 64 });
+        await interaction.reply({
+          content: "❌ Kunne ikke hente advarsler.",
+          flags: 64,
+        });
       }
     },
 
     clear: async (interaction) => {
-      if (!interaction.member.permissions.has(PermissionFlagsBits.ManageMessages)) {
-        return interaction.reply({ content: '❌ Du har ikke tilladelse til at slette beskeder.', flags: 64 });
+      if (
+        !interaction.member.permissions.has(PermissionFlagsBits.ManageMessages)
+      ) {
+        return interaction.reply({
+          content: "❌ Du har ikke tilladelse til at slette beskeder.",
+          flags: 64,
+        });
       }
 
-      const amount = interaction.options.getInteger('amount');
-      const user = interaction.options.getUser('user');
+      const amount = interaction.options.getInteger("amount");
+      const user = interaction.options.getUser("user");
 
       if (amount < 1 || amount > 100) {
-        return interaction.reply({ content: '❌ Antal skal være mellem 1 og 100.', flags: 64 });
+        return interaction.reply({
+          content: "❌ Antal skal være mellem 1 og 100.",
+          flags: 64,
+        });
       }
 
       await interaction.deferReply({ flags: 64 });
 
       try {
-        let messages = await interaction.channel.messages.fetch({ limit: amount });
-        
+        let messages = await interaction.channel.messages.fetch({
+          limit: amount,
+        });
+
         if (user) {
-          messages = messages.filter(m => m.author.id === user.id);
+          messages = messages.filter((m) => m.author.id === user.id);
         }
 
         const deleted = await interaction.channel.bulkDelete(messages, true);
         await interaction.editReply(`✅ Slettede ${deleted.size} beskeder.`);
       } catch (error) {
-        await interaction.editReply('❌ Kunne ikke slette beskeder. De er muligvis for gamle.');
+        await interaction.editReply(
+          "❌ Kunne ikke slette beskeder. De er muligvis for gamle.",
+        );
       }
     },
 
     slowmode: async (interaction) => {
-      if (!interaction.member.permissions.has(PermissionFlagsBits.ManageChannels)) {
-        return interaction.reply({ content: '❌ Du har ikke tilladelse til at ændre slowmode.', flags: 64 });
+      if (
+        !interaction.member.permissions.has(PermissionFlagsBits.ManageChannels)
+      ) {
+        return interaction.reply({
+          content: "❌ Du har ikke tilladelse til at ændre slowmode.",
+          flags: 64,
+        });
       }
 
-      const seconds = interaction.options.getInteger('seconds');
+      const seconds = interaction.options.getInteger("seconds");
 
       try {
         await interaction.channel.setRateLimitPerUser(seconds);
         if (seconds === 0) {
-          await interaction.reply('✅ Slowmode deaktiveret.');
+          await interaction.reply("✅ Slowmode deaktiveret.");
         } else {
           await interaction.reply(`✅ Slowmode sat til ${seconds} sekunder.`);
         }
       } catch (error) {
-        await interaction.reply({ content: '❌ Kunne ikke ændre slowmode.', flags: 64 });
+        await interaction.reply({
+          content: "❌ Kunne ikke ændre slowmode.",
+          flags: 64,
+        });
       }
     },
 
     lock: async (interaction) => {
-      if (!interaction.member.permissions.has(PermissionFlagsBits.ManageChannels)) {
-        return interaction.reply({ content: '❌ Du har ikke tilladelse til at låse kanaler.', flags: 64 });
+      if (
+        !interaction.member.permissions.has(PermissionFlagsBits.ManageChannels)
+      ) {
+        return interaction.reply({
+          content: "❌ Du har ikke tilladelse til at låse kanaler.",
+          flags: 64,
+        });
       }
 
-      const channel = interaction.options.getChannel('channel') || interaction.channel;
+      const channel =
+        interaction.options.getChannel("channel") || interaction.channel;
 
       try {
-        await channel.permissionOverwrites.edit(interaction.guild.roles.everyone, {
-          SendMessages: false
-        });
+        await channel.permissionOverwrites.edit(
+          interaction.guild.roles.everyone,
+          {
+            SendMessages: false,
+          },
+        );
         await interaction.reply(`🔒 ${channel} er nu låst.`);
       } catch (error) {
-        await interaction.reply({ content: '❌ Kunne ikke låse kanalen.', flags: 64 });
+        await interaction.reply({
+          content: "❌ Kunne ikke låse kanalen.",
+          flags: 64,
+        });
       }
     },
 
     unlock: async (interaction) => {
-      if (!interaction.member.permissions.has(PermissionFlagsBits.ManageChannels)) {
-        return interaction.reply({ content: '❌ Du har ikke tilladelse til at låse kanaler op.', flags: 64 });
+      if (
+        !interaction.member.permissions.has(PermissionFlagsBits.ManageChannels)
+      ) {
+        return interaction.reply({
+          content: "❌ Du har ikke tilladelse til at låse kanaler op.",
+          flags: 64,
+        });
       }
 
-      const channel = interaction.options.getChannel('channel') || interaction.channel;
+      const channel =
+        interaction.options.getChannel("channel") || interaction.channel;
 
       try {
-        await channel.permissionOverwrites.edit(interaction.guild.roles.everyone, {
-          SendMessages: null
-        });
+        await channel.permissionOverwrites.edit(
+          interaction.guild.roles.everyone,
+          {
+            SendMessages: null,
+          },
+        );
         await interaction.reply(`🔓 ${channel} er nu låst op.`);
       } catch (error) {
-        await interaction.reply({ content: '❌ Kunne ikke låse kanalen op.', flags: 64 });
+        await interaction.reply({
+          content: "❌ Kunne ikke låse kanalen op.",
+          flags: 64,
+        });
       }
     },
 
     softban: async (interaction) => {
       if (!interaction.member.permissions.has(PermissionFlagsBits.BanMembers)) {
-        return interaction.reply({ content: '❌ Du har ikke tilladelse til at softban.', flags: 64 });
+        return interaction.reply({
+          content: "❌ Du har ikke tilladelse til at softban.",
+          flags: 64,
+        });
       }
 
-      const user = interaction.options.getUser('user');
-      const reason = interaction.options.getString('reason') || 'Softban';
+      const user = interaction.options.getUser("user");
+      const reason = interaction.options.getString("reason") || "Softban";
 
       try {
-        await interaction.guild.members.ban(user, { reason, deleteMessageSeconds: 7 * 86400 });
-        await interaction.guild.members.unban(user, 'Softban complete');
-        await logModerationAction(interaction.guild.id, 'kick', interaction.user, user, `Softban: ${reason}`);
-        await interaction.reply(`✅ **${user.tag}** er blevet softbanned (beskeder slettet).`);
+        await interaction.guild.members.ban(user, {
+          reason,
+          deleteMessageSeconds: 7 * 86400,
+        });
+        await interaction.guild.members.unban(user, "Softban complete");
+        await logModerationAction(
+          interaction.guild.id,
+          "kick",
+          interaction.user,
+          user,
+          `Softban: ${reason}`,
+        );
+        await interaction.reply(
+          `✅ **${user.tag}** er blevet softbanned (beskeder slettet).`,
+        );
       } catch (error) {
-        await interaction.reply({ content: '❌ Kunne ikke softban brugeren.', flags: 64 });
+        await interaction.reply({
+          content: "❌ Kunne ikke softban brugeren.",
+          flags: 64,
+        });
       }
     },
 
     // ==================== MUSIC ====================
 
     play: async (interaction) => {
-      if (!musicCommands) return interaction.reply({ content: '❌ Musik er ikke aktiveret.', flags: 64 });
-      const query = interaction.options.getString('query');
-      await handleMusicCommand(interaction, 'play', [query]);
+      if (!musicCommands)
+        return interaction.reply({
+          content: "❌ Musik er ikke aktiveret.",
+          flags: 64,
+        });
+      const query = interaction.options.getString("query");
+      await handleMusicCommand(interaction, "play", [query]);
     },
 
     skip: async (interaction) => {
-      if (!musicCommands) return interaction.reply({ content: '❌ Musik er ikke aktiveret.', flags: 64 });
-      await handleMusicCommand(interaction, 'skip', []);
+      if (!musicCommands)
+        return interaction.reply({
+          content: "❌ Musik er ikke aktiveret.",
+          flags: 64,
+        });
+      await handleMusicCommand(interaction, "skip", []);
     },
 
     stop: async (interaction) => {
-      if (!musicCommands) return interaction.reply({ content: '❌ Musik er ikke aktiveret.', flags: 64 });
-      await handleMusicCommand(interaction, 'stop', []);
+      if (!musicCommands)
+        return interaction.reply({
+          content: "❌ Musik er ikke aktiveret.",
+          flags: 64,
+        });
+      await handleMusicCommand(interaction, "stop", []);
     },
 
     pause: async (interaction) => {
-      if (!musicCommands) return interaction.reply({ content: '❌ Musik er ikke aktiveret.', flags: 64 });
-      await handleMusicCommand(interaction, 'pause', []);
+      if (!musicCommands)
+        return interaction.reply({
+          content: "❌ Musik er ikke aktiveret.",
+          flags: 64,
+        });
+      await handleMusicCommand(interaction, "pause", []);
     },
 
     resume: async (interaction) => {
-      if (!musicCommands) return interaction.reply({ content: '❌ Musik er ikke aktiveret.', flags: 64 });
-      await handleMusicCommand(interaction, 'resume', []);
+      if (!musicCommands)
+        return interaction.reply({
+          content: "❌ Musik er ikke aktiveret.",
+          flags: 64,
+        });
+      await handleMusicCommand(interaction, "resume", []);
     },
 
     queue: async (interaction) => {
-      if (!musicCommands) return interaction.reply({ content: '❌ Musik er ikke aktiveret.', flags: 64 });
-      await handleMusicCommand(interaction, 'queue', []);
+      if (!musicCommands)
+        return interaction.reply({
+          content: "❌ Musik er ikke aktiveret.",
+          flags: 64,
+        });
+      await handleMusicCommand(interaction, "queue", []);
     },
 
     nowplaying: async (interaction) => {
-      if (!musicCommands) return interaction.reply({ content: '❌ Musik er ikke aktiveret.', flags: 64 });
-      await handleMusicCommand(interaction, 'nowplaying', []);
+      if (!musicCommands)
+        return interaction.reply({
+          content: "❌ Musik er ikke aktiveret.",
+          flags: 64,
+        });
+      await handleMusicCommand(interaction, "nowplaying", []);
     },
 
     shuffle: async (interaction) => {
-      if (!musicCommands) return interaction.reply({ content: '❌ Musik er ikke aktiveret.', flags: 64 });
-      await handleMusicCommand(interaction, 'shuffle', []);
+      if (!musicCommands)
+        return interaction.reply({
+          content: "❌ Musik er ikke aktiveret.",
+          flags: 64,
+        });
+      await handleMusicCommand(interaction, "shuffle", []);
     },
 
     volume: async (interaction) => {
-      if (!musicCommands) return interaction.reply({ content: '❌ Musik er ikke aktiveret.', flags: 64 });
-      const level = interaction.options.getInteger('level');
-      await handleMusicCommand(interaction, 'volume', [level.toString()]);
+      if (!musicCommands)
+        return interaction.reply({
+          content: "❌ Musik er ikke aktiveret.",
+          flags: 64,
+        });
+      const level = interaction.options.getInteger("level");
+      await handleMusicCommand(interaction, "volume", [level.toString()]);
     },
 
     loop: async (interaction) => {
-      if (!musicCommands) return interaction.reply({ content: '❌ Musik er ikke aktiveret.', flags: 64 });
-      const mode = interaction.options.getString('mode');
-      await handleMusicCommand(interaction, 'loop', [mode]);
+      if (!musicCommands)
+        return interaction.reply({
+          content: "❌ Musik er ikke aktiveret.",
+          flags: 64,
+        });
+      const mode = interaction.options.getString("mode");
+      await handleMusicCommand(interaction, "loop", [mode]);
     },
 
     remove: async (interaction) => {
-      if (!musicCommands) return interaction.reply({ content: '❌ Musik er ikke aktiveret.', flags: 64 });
-      const position = interaction.options.getInteger('position');
-      await handleMusicCommand(interaction, 'remove', [position.toString()]);
+      if (!musicCommands)
+        return interaction.reply({
+          content: "❌ Musik er ikke aktiveret.",
+          flags: 64,
+        });
+      const position = interaction.options.getInteger("position");
+      await handleMusicCommand(interaction, "remove", [position.toString()]);
     },
 
     move: async (interaction) => {
-      if (!musicCommands) return interaction.reply({ content: '❌ Musik er ikke aktiveret.', flags: 64 });
-      const from = interaction.options.getInteger('from');
-      const to = interaction.options.getInteger('to');
-      await handleMusicCommand(interaction, 'move', [from.toString(), to.toString()]);
+      if (!musicCommands)
+        return interaction.reply({
+          content: "❌ Musik er ikke aktiveret.",
+          flags: 64,
+        });
+      const from = interaction.options.getInteger("from");
+      const to = interaction.options.getInteger("to");
+      await handleMusicCommand(interaction, "move", [
+        from.toString(),
+        to.toString(),
+      ]);
     },
 
     jump: async (interaction) => {
-      if (!musicCommands) return interaction.reply({ content: '❌ Musik er ikke aktiveret.', flags: 64 });
-      const position = interaction.options.getInteger('position');
-      await handleMusicCommand(interaction, 'jump', [position.toString()]);
+      if (!musicCommands)
+        return interaction.reply({
+          content: "❌ Musik er ikke aktiveret.",
+          flags: 64,
+        });
+      const position = interaction.options.getInteger("position");
+      await handleMusicCommand(interaction, "jump", [position.toString()]);
     },
 
     // ==================== LEVELING ====================
 
     rank: async (interaction) => {
       await interaction.deferReply();
-      const user = interaction.options.getUser('user') || interaction.user;
+      const user = interaction.options.getUser("user") || interaction.user;
 
       try {
-        const { data: guild } = await supabase.from('guilds').select('id').eq('guild_id', interaction.guild.id).single();
-        if (!guild) return interaction.editReply('❌ Server ikke fundet.');
+        const { data: guild } = await supabase
+          .from("guilds")
+          .select("id")
+          .eq("guild_id", interaction.guild.id)
+          .single();
+        if (!guild) return interaction.editReply("❌ Server ikke fundet.");
 
-        const { data: userData } = await supabase.from('user_levels').select('xp, level, total_messages').eq('guild_id', guild.id).eq('user_id', user.id).maybeSingle();
+        const { data: userData } = await supabase
+          .from("user_levels")
+          .select("xp, level, total_messages")
+          .eq("guild_id", guild.id)
+          .eq("user_id", user.id)
+          .maybeSingle();
 
         const level = userData?.level || 0;
         const xp = userData?.xp || 0;
@@ -1002,75 +1377,90 @@ function createSlashHandlers(client) {
         const messages = userData?.total_messages || 0;
 
         // Get rank position
-        const { count } = await supabase.from('user_levels').select('*', { count: 'exact', head: true }).eq('guild_id', guild.id).gt('xp', xp);
+        const { count } = await supabase
+          .from("user_levels")
+          .select("*", { count: "exact", head: true })
+          .eq("guild_id", guild.id)
+          .gt("xp", xp);
         const rank = (count || 0) + 1;
 
         const embed = new EmbedBuilder()
-          .setColor('#00FF00')
+          .setColor("#00FF00")
           .setTitle(`📊 Rank - ${user.tag}`)
           .addFields(
-            { name: 'Level', value: `${level}`, inline: true },
-            { name: 'XP', value: `${xp} / ${xpNeeded}`, inline: true },
-            { name: 'Rank', value: `#${rank}`, inline: true },
-            { name: 'Beskeder', value: `${messages}`, inline: true },
+            { name: "Level", value: `${level}`, inline: true },
+            { name: "XP", value: `${xp} / ${xpNeeded}`, inline: true },
+            { name: "Rank", value: `#${rank}`, inline: true },
+            { name: "Beskeder", value: `${messages}`, inline: true },
           )
           .setThumbnail(user.displayAvatarURL());
 
         await interaction.editReply({ embeds: [embed] });
       } catch (error) {
-        console.error('[Bot] Rank fejl:', error);
-        await interaction.editReply('❌ Kunne ikke hente rank data.');
+        console.error("[Bot] Rank fejl:", error);
+        await interaction.editReply("❌ Kunne ikke hente rank data.");
       }
     },
 
     leaderboard: async (interaction) => {
       await interaction.deferReply();
       try {
-        const { data: guild } = await supabase.from('guilds').select('id').eq('guild_id', interaction.guild.id).single();
-        if (!guild) return interaction.editReply('❌ Server ikke fundet.');
+        const { data: guild } = await supabase
+          .from("guilds")
+          .select("id")
+          .eq("guild_id", interaction.guild.id)
+          .single();
+        if (!guild) return interaction.editReply("❌ Server ikke fundet.");
 
-        const { data: topUsers } = await supabase.from('user_levels').select('user_id, discord_username, xp, level, total_messages').eq('guild_id', guild.id).order('xp', { ascending: false }).limit(10);
+        const { data: topUsers } = await supabase
+          .from("user_levels")
+          .select("user_id, discord_username, xp, level, total_messages")
+          .eq("guild_id", guild.id)
+          .order("xp", { ascending: false })
+          .limit(10);
 
         if (!topUsers || topUsers.length === 0) {
-          return interaction.editReply('📊 Ingen leveling data endnu.');
+          return interaction.editReply("📊 Ingen leveling data endnu.");
         }
 
-        const medals = ['🥇', '🥈', '🥉'];
-        const description = topUsers.map((u, i) => {
-          const medal = medals[i] || `**${i + 1}.**`;
-          return `${medal} ${u.discord_username || 'Ukendt'} — Level ${u.level} (${u.xp} XP)`;
-        }).join('\n');
+        const medals = ["🥇", "🥈", "🥉"];
+        const description = topUsers
+          .map((u, i) => {
+            const medal = medals[i] || `**${i + 1}.**`;
+            return `${medal} ${u.discord_username || "Ukendt"} — Level ${u.level} (${u.xp} XP)`;
+          })
+          .join("\n");
 
         const embed = new EmbedBuilder()
-          .setColor('#FFD700')
-          .setTitle('🏆 XP Leaderboard')
+          .setColor("#FFD700")
+          .setTitle("🏆 XP Leaderboard")
           .setDescription(description)
           .setFooter({ text: interaction.guild.name });
 
         await interaction.editReply({ embeds: [embed] });
       } catch (error) {
-        console.error('[Bot] Leaderboard fejl:', error);
-        await interaction.editReply('❌ Kunne ikke hente leaderboard.');
+        console.error("[Bot] Leaderboard fejl:", error);
+        await interaction.editReply("❌ Kunne ikke hente leaderboard.");
       }
     },
 
     // ==================== UTILITY ====================
 
     help: async (interaction) => {
-      const category = interaction.options.getString('category');
+      const category = interaction.options.getString("category");
 
       const categoryMeta = {
-        moderation: { emoji: '🛡️', label: 'Moderation' },
-        music: { emoji: '🎵', label: 'Musik' },
-        leveling: { emoji: '📈', label: 'Leveling' },
-        utility: { emoji: '🔧', label: 'Utility' },
-        fun: { emoji: '🎮', label: 'Fun' },
-        economy: { emoji: '💰', label: 'Economy' },
-        tickets: { emoji: '🎫', label: 'Tickets' },
-        giveaway: { emoji: '🎉', label: 'Giveaway' },
-        tebex: { emoji: '🛒', label: 'Tebex' },
-        admin: { emoji: '⚙️', label: 'Admin' },
-        reactionroles: { emoji: '🎭', label: 'Reaction Roles' },
+        moderation: { emoji: "🛡️", label: "Moderation" },
+        music: { emoji: "🎵", label: "Musik" },
+        leveling: { emoji: "📈", label: "Leveling" },
+        utility: { emoji: "🔧", label: "Utility" },
+        fun: { emoji: "🎮", label: "Fun" },
+        economy: { emoji: "💰", label: "Economy" },
+        tickets: { emoji: "🎫", label: "Tickets" },
+        giveaway: { emoji: "🎉", label: "Giveaway" },
+        tebex: { emoji: "🛒", label: "Tebex" },
+        admin: { emoji: "⚙️", label: "Admin" },
+        reactionroles: { emoji: "🎭", label: "Reaction Roles" },
       };
 
       const categories = {};
@@ -1087,26 +1477,28 @@ function createSlashHandlers(client) {
         const cat = categories[category];
         const lines = cat.commands
           .map((logical) => `\`${getSlashPathForLogical(logical)}\``)
-          .join('\n');
+          .join("\n");
 
         const embed = new EmbedBuilder()
-          .setColor('#5865F2')
+          .setColor("#5865F2")
           .setTitle(`${cat.emoji} ${cat.label}`)
-          .setDescription(lines || 'Ingen commands i denne kategori.');
+          .setDescription(lines || "Ingen commands i denne kategori.");
 
         return interaction.reply({ embeds: [embed] });
       }
 
       const embed = new EmbedBuilder()
-        .setColor('#5865F2')
-        .setTitle('📚 Bot Commands')
-        .setDescription('Brug `/utility info help` og vælg en kategori for at se de konkrete commands.')
+        .setColor("#5865F2")
+        .setTitle("📚 Bot Commands")
+        .setDescription(
+          "Brug `/utility info help` og vælg en kategori for at se de konkrete commands.",
+        )
         .addFields(
           Object.entries(categories).map(([name, data]) => ({
             name: `${data.emoji} ${data.label}`,
             value: `${data.commands.length} commands`,
-            inline: true
-          }))
+            inline: true,
+          })),
         );
 
       await interaction.reply({ embeds: [embed] });
@@ -1118,15 +1510,18 @@ function createSlashHandlers(client) {
     },
 
     ping: async (interaction) => {
-      const sent = await interaction.reply({ content: '🏓 Pinging...', fetchReply: true });
+      const sent = await interaction.reply({
+        content: "🏓 Pinging...",
+        fetchReply: true,
+      });
       const roundtrip = sent.createdTimestamp - interaction.createdTimestamp;
 
       const embed = new EmbedBuilder()
-        .setColor('#00FF00')
-        .setTitle('🏓 Pong!')
+        .setColor("#00FF00")
+        .setTitle("🏓 Pong!")
         .addFields(
-          { name: 'Roundtrip', value: `${roundtrip}ms`, inline: true },
-          { name: 'WebSocket', value: `${client.ws.ping}ms`, inline: true }
+          { name: "Roundtrip", value: `${roundtrip}ms`, inline: true },
+          { name: "WebSocket", value: `${client.ws.ping}ms`, inline: true },
         );
 
       await interaction.editReply({ content: null, embeds: [embed] });
@@ -1135,17 +1530,41 @@ function createSlashHandlers(client) {
     serverinfo: async (interaction) => {
       const guild = interaction.guild;
       const embed = new EmbedBuilder()
-        .setColor('#5865F2')
+        .setColor("#5865F2")
         .setTitle(guild.name)
         .setThumbnail(guild.iconURL({ size: 256 }))
         .addFields(
-          { name: '👑 Ejer', value: `<@${guild.ownerId}>`, inline: true },
-          { name: '👥 Medlemmer', value: guild.memberCount.toString(), inline: true },
-          { name: '💬 Kanaler', value: guild.channels.cache.size.toString(), inline: true },
-          { name: '😀 Emojis', value: guild.emojis.cache.size.toString(), inline: true },
-          { name: '🎭 Roller', value: guild.roles.cache.size.toString(), inline: true },
-          { name: '🚀 Boosts', value: guild.premiumSubscriptionCount?.toString() || '0', inline: true },
-          { name: '📅 Oprettet', value: guild.createdAt.toLocaleDateString('da-DK'), inline: true }
+          { name: "👑 Ejer", value: `<@${guild.ownerId}>`, inline: true },
+          {
+            name: "👥 Medlemmer",
+            value: guild.memberCount.toString(),
+            inline: true,
+          },
+          {
+            name: "💬 Kanaler",
+            value: guild.channels.cache.size.toString(),
+            inline: true,
+          },
+          {
+            name: "😀 Emojis",
+            value: guild.emojis.cache.size.toString(),
+            inline: true,
+          },
+          {
+            name: "🎭 Roller",
+            value: guild.roles.cache.size.toString(),
+            inline: true,
+          },
+          {
+            name: "🚀 Boosts",
+            value: guild.premiumSubscriptionCount?.toString() || "0",
+            inline: true,
+          },
+          {
+            name: "📅 Oprettet",
+            value: guild.createdAt.toLocaleDateString("da-DK"),
+            inline: true,
+          },
         )
         .setFooter({ text: `ID: ${guild.id}` });
 
@@ -1153,22 +1572,36 @@ function createSlashHandlers(client) {
     },
 
     userinfo: async (interaction) => {
-      const user = interaction.options.getUser('user') || interaction.user;
-      const member = await interaction.guild.members.fetch(user.id).catch(() => null);
+      const user = interaction.options.getUser("user") || interaction.user;
+      const member = await interaction.guild.members
+        .fetch(user.id)
+        .catch(() => null);
 
       const embed = new EmbedBuilder()
-        .setColor(member?.displayHexColor || '#5865F2')
+        .setColor(member?.displayHexColor || "#5865F2")
         .setTitle(user.tag)
         .setThumbnail(user.displayAvatarURL({ size: 256 }))
         .addFields(
-          { name: '🆔 ID', value: user.id, inline: true },
-          { name: '📅 Oprettet', value: user.createdAt.toLocaleDateString('da-DK'), inline: true }
+          { name: "🆔 ID", value: user.id, inline: true },
+          {
+            name: "📅 Oprettet",
+            value: user.createdAt.toLocaleDateString("da-DK"),
+            inline: true,
+          },
         );
 
       if (member) {
         embed.addFields(
-          { name: '📥 Joined', value: member.joinedAt.toLocaleDateString('da-DK'), inline: true },
-          { name: '🎭 Roller', value: member.roles.cache.size.toString(), inline: true }
+          {
+            name: "📥 Joined",
+            value: member.joinedAt.toLocaleDateString("da-DK"),
+            inline: true,
+          },
+          {
+            name: "🎭 Roller",
+            value: member.roles.cache.size.toString(),
+            inline: true,
+          },
         );
       }
 
@@ -1176,10 +1609,10 @@ function createSlashHandlers(client) {
     },
 
     avatar: async (interaction) => {
-      const user = interaction.options.getUser('user') || interaction.user;
+      const user = interaction.options.getUser("user") || interaction.user;
 
       const embed = new EmbedBuilder()
-        .setColor('#5865F2')
+        .setColor("#5865F2")
         .setTitle(`${user.tag}'s Avatar`)
         .setImage(user.displayAvatarURL({ size: 1024 }));
 
@@ -1187,58 +1620,77 @@ function createSlashHandlers(client) {
     },
 
     poll: async (interaction) => {
-      const question = interaction.options.getString('question')?.trim();
-      const options = (interaction.options.getString('options') || '')
-        .split('|')
+      const question = interaction.options.getString("question")?.trim();
+      const options = (interaction.options.getString("options") || "")
+        .split("|")
         .map((option) => option.trim())
         .filter(Boolean);
 
       if (!question) {
-        return interaction.reply({ content: '❌ Du skal skrive et spørgsmål.', flags: 64 });
-      }
-
-      if (options.length < 2 || options.length > 10) {
         return interaction.reply({
-          content: '❌ Angiv 2-10 muligheder separeret med |, f.eks. Ja | Nej | Måske.',
+          content: "❌ Du skal skrive et spørgsmål.",
           flags: 64,
         });
       }
 
-      const uniqueOptions = new Set(options.map((option) => option.toLocaleLowerCase('da-DK')));
+      if (options.length < 2 || options.length > 10) {
+        return interaction.reply({
+          content:
+            "❌ Angiv 2-10 muligheder separeret med |, f.eks. Ja | Nej | Måske.",
+          flags: 64,
+        });
+      }
+
+      const uniqueOptions = new Set(
+        options.map((option) => option.toLocaleLowerCase("da-DK")),
+      );
       if (uniqueOptions.size !== options.length) {
-        return interaction.reply({ content: '❌ Valgmulighederne skal være forskellige.', flags: 64 });
+        return interaction.reply({
+          content: "❌ Valgmulighederne skal være forskellige.",
+          flags: 64,
+        });
       }
 
       const discordGuildId = interaction.guild?.id;
       const channelId = interaction.channelId || interaction.channel?.id;
 
       if (!discordGuildId || !channelId) {
-        return interaction.reply({ content: '❌ Polls kan kun oprettes i en serverkanal.', flags: 64 });
+        return interaction.reply({
+          content: "❌ Polls kan kun oprettes i en serverkanal.",
+          flags: 64,
+        });
       }
 
       const { data: guildRow, error: guildError } = await supabase
-        .from('guilds')
-        .select('id')
-        .eq('guild_id', discordGuildId)
+        .from("guilds")
+        .select("id")
+        .eq("guild_id", discordGuildId)
         .maybeSingle();
 
       if (guildError) throw guildError;
       if (!guildRow) {
         return interaction.reply({
-          content: '❌ Serveren er ikke synkroniseret med GuildOS endnu.',
+          content: "❌ Serveren er ikke synkroniseret med GuildOS endnu.",
           flags: 64,
         });
       }
 
       const pollId = randomUUID();
       const deliveryClaim = `pending:command:${pollId}`;
-      const pollOptions = options.map((label) => ({ label, votes: 0, voters: [] }));
+      const pollOptions = options.map((label) => ({
+        label,
+        votes: 0,
+        voters: [],
+      }));
       const pollVotes = {
         allow_multiple: false,
-        created_by_name: interaction.user?.tag || interaction.user?.username || 'Discord bruger',
+        created_by_name:
+          interaction.user?.tag ||
+          interaction.user?.username ||
+          "Discord bruger",
       };
 
-      const { error: insertError } = await supabase.from('polls').insert({
+      const { error: insertError } = await supabase.from("polls").insert({
         id: pollId,
         guild_id: guildRow.id,
         channel_id: channelId,
@@ -1246,18 +1698,22 @@ function createSlashHandlers(client) {
         question,
         options: pollOptions,
         votes: pollVotes,
-        created_by: `discord:${interaction.user?.id || 'unknown'}`,
+        created_by: `discord:${interaction.user?.id || "unknown"}`,
         ended: false,
       });
 
       if (insertError) throw insertError;
 
       const embed = new EmbedBuilder()
-        .setColor('#5865F2')
+        .setColor("#5865F2")
         .setTitle(`📊 ${question}`)
-        .setDescription(options.map((option, index) => `**${index + 1}.** ${option}`).join('\n'))
+        .setDescription(
+          options
+            .map((option, index) => `**${index + 1}.** ${option}`)
+            .join("\n"),
+        )
         .setAuthor({ name: `Oprettet af ${pollVotes.created_by_name}` })
-        .setFooter({ text: 'Ingen tidsfrist' })
+        .setFooter({ text: "Ingen tidsfrist" })
         .setTimestamp();
 
       const rows = [];
@@ -1268,7 +1724,7 @@ function createSlashHandlers(client) {
             new ButtonBuilder()
               .setCustomId(`poll_vote_${pollId}_${i + offset}`)
               .setLabel(option.slice(0, 80))
-              .setStyle(ButtonStyle.Primary)
+              .setStyle(ButtonStyle.Primary),
           );
         });
         rows.push(row);
@@ -1282,39 +1738,46 @@ function createSlashHandlers(client) {
         });
 
         const messageId = message?.id || interaction._lastReply?.id;
-        if (!messageId) throw new Error('Poll-beskeden mangler Discord message ID');
+        if (!messageId)
+          throw new Error("Poll-beskeden mangler Discord message ID");
 
         const { error: messageIdError } = await supabase
-          .from('polls')
+          .from("polls")
           .update({ message_id: messageId })
-          .eq('id', pollId)
-          .eq('message_id', deliveryClaim);
+          .eq("id", pollId)
+          .eq("message_id", deliveryClaim);
 
         if (messageIdError) {
-          console.error('[Poll] Kunne ikke gemme message_id:', messageIdError.message);
+          console.error(
+            "[Poll] Kunne ikke gemme message_id:",
+            messageIdError.message,
+          );
         }
 
         console.log(
-          `[Poll] ✅ Command poll "${question}" oprettet i guild ${discordGuildId}, channel ${channelId}, message ${messageId}`
+          `[Poll] ✅ Command poll "${question}" oprettet i guild ${discordGuildId}, channel ${channelId}, message ${messageId}`,
         );
       } catch (error) {
         await supabase
-          .from('polls')
+          .from("polls")
           .delete()
-          .eq('id', pollId)
-          .eq('message_id', deliveryClaim)
+          .eq("id", pollId)
+          .eq("message_id", deliveryClaim)
           .catch(() => {});
         throw error;
       }
     },
 
     remind: async (interaction) => {
-      const time = interaction.options.getString('time');
-      const message = interaction.options.getString('message');
+      const time = interaction.options.getString("time");
+      const message = interaction.options.getString("message");
 
       const match = time.match(/^(\d+)(s|m|h|d)$/);
       if (!match) {
-        return interaction.reply({ content: '❌ Ugyldigt tidsformat. Brug f.eks. 10m, 1h, 1d', flags: 64 });
+        return interaction.reply({
+          content: "❌ Ugyldigt tidsformat. Brug f.eks. 10m, 1h, 1d",
+          flags: 64,
+        });
       }
 
       const amount = parseInt(match[1], 10);
@@ -1323,21 +1786,27 @@ function createSlashHandlers(client) {
       const ms = amount * multipliers[unit];
 
       if (ms > 7 * 86400000) {
-        return interaction.reply({ content: '❌ Max reminder tid er 7 dage.', flags: 64 });
+        return interaction.reply({
+          content: "❌ Max reminder tid er 7 dage.",
+          flags: 64,
+        });
       }
 
       const { data: guildRow, error: guildError } = await supabase
-        .from('guilds')
-        .select('id')
-        .eq('guild_id', interaction.guild.id)
+        .from("guilds")
+        .select("id")
+        .eq("guild_id", interaction.guild.id)
         .maybeSingle();
 
       if (guildError || !guildRow?.id) {
-        return interaction.reply({ content: '❌ Serveren er ikke registreret i dashboardet.', flags: 64 });
+        return interaction.reply({
+          content: "❌ Serveren er ikke registreret i dashboardet.",
+          flags: 64,
+        });
       }
 
       const remindAt = new Date(Date.now() + ms).toISOString();
-      const { error: insertError } = await supabase.from('reminders').insert({
+      const { error: insertError } = await supabase.from("reminders").insert({
         guild_id: guildRow.id,
         channel_id: interaction.channelId,
         target_channel_id: interaction.channelId,
@@ -1349,13 +1818,16 @@ function createSlashHandlers(client) {
         created_by_id: interaction.user.id,
         created_by_name: interaction.user.tag,
         created_by_user_id: null,
-        repeat_interval: 'none',
+        repeat_interval: "none",
         is_recurring: false,
       });
 
       if (insertError) {
-        console.error('[Remind] Persist failed:', insertError.message);
-        return interaction.reply({ content: '❌ Kunne ikke gemme påmindelsen. Prøv igen.', flags: 64 });
+        console.error("[Remind] Persist failed:", insertError.message);
+        return interaction.reply({
+          content: "❌ Kunne ikke gemme påmindelsen. Prøv igen.",
+          flags: 64,
+        });
       }
 
       await interaction.reply({
@@ -1366,57 +1838,67 @@ function createSlashHandlers(client) {
 
     // ==================== FUN ====================
 
-    '8ball': async (interaction) => {
-      const question = interaction.options.getString('question');
+    "8ball": async (interaction) => {
+      const question = interaction.options.getString("question");
       const responses = [
-        'Ja, helt sikkert!', 'Uden tvivl.', 'Ja.', 'Sandsynligvis.',
-        'Måske...', 'Spørg igen senere.', 'Kan ikke svare nu.',
-        'Nej.', 'Tvivlsomt.', 'Mit svar er nej.', 'Udsigterne er dårlige.'
+        "Ja, helt sikkert!",
+        "Uden tvivl.",
+        "Ja.",
+        "Sandsynligvis.",
+        "Måske...",
+        "Spørg igen senere.",
+        "Kan ikke svare nu.",
+        "Nej.",
+        "Tvivlsomt.",
+        "Mit svar er nej.",
+        "Udsigterne er dårlige.",
       ];
       const answer = responses[Math.floor(Math.random() * responses.length)];
 
       const embed = new EmbedBuilder()
-        .setColor('#800080')
-        .setTitle('🎱 Magic 8-Ball')
+        .setColor("#800080")
+        .setTitle("🎱 Magic 8-Ball")
         .addFields(
-          { name: 'Spørgsmål', value: question },
-          { name: 'Svar', value: answer }
+          { name: "Spørgsmål", value: question },
+          { name: "Svar", value: answer },
         );
 
       await interaction.reply({ embeds: [embed] });
     },
 
     coinflip: async (interaction) => {
-      const result = Math.random() < 0.5 ? 'Plat' : 'Krone';
+      const result = Math.random() < 0.5 ? "Plat" : "Krone";
       await interaction.reply(`🪙 Mønten landede på: **${result}**!`);
     },
 
     dice: async (interaction) => {
-      const sides = interaction.options.getInteger('sides') || 6;
+      const sides = interaction.options.getInteger("sides") || 6;
       const result = Math.floor(Math.random() * sides) + 1;
       await interaction.reply(`🎲 Du rullede en **${result}** (d${sides})`);
     },
 
     rps: async (interaction) => {
-      const choices = ['sten', 'saks', 'papir'];
-      const emojis = { sten: '🪨', saks: '✂️', papir: '📄' };
-      const userChoice = interaction.options.getString('choice');
+      const choices = ["sten", "saks", "papir"];
+      const emojis = { sten: "🪨", saks: "✂️", papir: "📄" };
+      const userChoice = interaction.options.getString("choice");
       const botChoice = choices[Math.floor(Math.random() * choices.length)];
 
       let result;
       if (userChoice === botChoice) {
         result = "Uafgjort! 🤝";
       } else if (
-        (userChoice === 'sten' && botChoice === 'saks') ||
-        (userChoice === 'saks' && botChoice === 'papir') ||
-        (userChoice === 'papir' && botChoice === 'sten')
+        (userChoice === "sten" && botChoice === "saks") ||
+        (userChoice === "saks" && botChoice === "papir") ||
+        (userChoice === "papir" && botChoice === "sten")
       ) {
         result = "Du vandt! 🎉";
       } else {
         result = "Du tabte! 😢";
       }
 
-      await interaction.reply(`${emojis[userChoice]} vs ${emojis[botChoice]}\n${result}`);
+      await interaction.reply(
+        `${emojis[userChoice]} vs ${emojis[botChoice]}\n${result}`,
+      );
     },
 
     joke: async (interaction) => {
@@ -1425,25 +1907,34 @@ function createSlashHandlers(client) {
         "Hvad kalder man en kat der spiser en citron? En sur kat!",
         "Hvorfor gik tomatten rød? Fordi den så salatdressingen!",
         "Hvad siger en nul til en otte? Flot bælte!",
-        "Hvorfor tog cirklen på ferie? Den havde brug for at slappe af!"
+        "Hvorfor tog cirklen på ferie? Den havde brug for at slappe af!",
       ];
       const joke = jokes[Math.floor(Math.random() * jokes.length)];
       await interaction.reply(`😂 ${joke}`);
     },
 
     ship: async (interaction) => {
-      const user1 = interaction.options.getUser('user1');
-      const user2 = interaction.options.getUser('user2');
+      const user1 = interaction.options.getUser("user1");
+      const user2 = interaction.options.getUser("user2");
       const percentage = Math.floor(Math.random() * 101);
 
       let emoji, message;
-      if (percentage < 20) { emoji = '💔'; message = 'Ikke et godt match...'; }
-      else if (percentage < 50) { emoji = '💛'; message = 'Der er potentiale!'; }
-      else if (percentage < 80) { emoji = '💖'; message = 'Godt match!'; }
-      else { emoji = '💘'; message = 'PERFEKT MATCH!'; }
+      if (percentage < 20) {
+        emoji = "💔";
+        message = "Ikke et godt match...";
+      } else if (percentage < 50) {
+        emoji = "💛";
+        message = "Der er potentiale!";
+      } else if (percentage < 80) {
+        emoji = "💖";
+        message = "Godt match!";
+      } else {
+        emoji = "💘";
+        message = "PERFEKT MATCH!";
+      }
 
       const embed = new EmbedBuilder()
-        .setColor('#FF69B4')
+        .setColor("#FF69B4")
         .setTitle(`${emoji} Ship: ${user1.username} + ${user2.username}`)
         .setDescription(`**${percentage}%** kompatibel\n${message}`)
         .setThumbnail(user1.displayAvatarURL())
@@ -1453,102 +1944,170 @@ function createSlashHandlers(client) {
     },
 
     rate: async (interaction) => {
-      const thing = interaction.options.getString('thing');
+      const thing = interaction.options.getString("thing");
       const rating = Math.floor(Math.random() * 11);
-      const stars = '⭐'.repeat(Math.ceil(rating / 2)) + '☆'.repeat(5 - Math.ceil(rating / 2));
+      const stars =
+        "⭐".repeat(Math.ceil(rating / 2)) +
+        "☆".repeat(5 - Math.ceil(rating / 2));
 
-      await interaction.reply(`📊 Jeg giver **${thing}** en ${rating}/10\n${stars}`);
+      await interaction.reply(
+        `📊 Jeg giver **${thing}** en ${rating}/10\n${stars}`,
+      );
     },
 
     meme: async (interaction) => {
-      if (!interaction.deferred && !interaction.replied) await interaction.deferReply();
+      if (!interaction.deferred && !interaction.replied)
+        await interaction.deferReply();
 
       try {
-        const response = await fetch('https://meme-api.com/gimme');
+        const response = await fetch("https://meme-api.com/gimme");
         const data = await response.json();
 
         const embed = new EmbedBuilder()
-          .setColor('#FF4500')
+          .setColor("#FF4500")
           .setTitle(data.title)
           .setImage(data.url)
           .setFooter({ text: `👍 ${data.ups} | r/${data.subreddit}` });
 
         await interaction.editReply({ embeds: [embed] });
       } catch {
-        await interaction.editReply('❌ Kunne ikke hente meme.');
+        await interaction.editReply("❌ Kunne ikke hente meme.");
       }
     },
 
     // ==================== TEBEX ====================
 
-    'tebex-verify': async (interaction) => {
-      const txnId = interaction.options.getString('transaction_id');
+    "tebex-verify": async (interaction) => {
+      const txnId = interaction.options.getString("transaction_id");
       if (!txnId) {
-        return interaction.reply({ content: '❌ Du skal angive et transaktions-ID.', flags: 64 });
+        return interaction.reply({
+          content: "❌ Du skal angive et transaktions-ID.",
+          flags: 64,
+        });
       }
 
       await interaction.deferReply({ flags: 64 });
 
       try {
         const { data: guild } = await supabase
-          .from('guilds')
-          .select('id')
-          .eq('guild_id', interaction.guild.id)
+          .from("guilds")
+          .select("id")
+          .eq("guild_id", interaction.guild.id)
           .single();
 
-        if (!guild) return interaction.editReply('❌ Serveren er ikke registreret.');
+        if (!guild)
+          return interaction.editReply("❌ Serveren er ikke registreret.");
 
         const { data: tebexSettings } = await supabase
-          .from('tebex_settings')
-          .select('enabled, tebex_secret_encrypted')
-          .eq('guild_id', guild.id)
+          .from("tebex_settings")
+          .select("enabled, tebex_secret_encrypted")
+          .eq("guild_id", guild.id)
           .maybeSingle();
 
-        if (!tebexSettings || !tebexSettings.enabled || !tebexSettings.tebex_secret_encrypted) {
-          return interaction.editReply('❌ Tebex er ikke konfigureret for denne server.');
+        if (
+          !tebexSettings ||
+          !tebexSettings.enabled ||
+          !tebexSettings.tebex_secret_encrypted
+        ) {
+          return interaction.editReply(
+            "❌ Tebex er ikke konfigureret for denne server.",
+          );
         }
 
-        const tebexRes = await fetch(`https://plugin.tebex.io/payments/${encodeURIComponent(txnId)}`, {
-          headers: { 'X-Tebex-Secret': tebexSettings.tebex_secret_encrypted },
-        });
+        const tebexRes = await fetch(
+          `https://plugin.tebex.io/payments/${encodeURIComponent(txnId)}`,
+          {
+            headers: { "X-Tebex-Secret": tebexSettings.tebex_secret_encrypted },
+          },
+        );
 
         if (!tebexRes.ok) {
-          if (tebexRes.status === 404) return interaction.editReply('❌ Transaktions-ID blev ikke fundet.');
-          return interaction.editReply(`❌ Tebex API fejl (${tebexRes.status}).`);
+          if (tebexRes.status === 404)
+            return interaction.editReply(
+              "❌ Transaktions-ID blev ikke fundet.",
+            );
+          return interaction.editReply(
+            `❌ Tebex API fejl (${tebexRes.status}).`,
+          );
         }
 
         const payment = await tebexRes.json();
         const player = payment.player || {};
         const packages = payment.packages || [];
-        const packageNames = packages.map(p => p.name || `#${p.id}`).join(', ') || 'Ingen pakker';
+        const packageNames =
+          packages.map((p) => p.name || `#${p.id}`).join(", ") ||
+          "Ingen pakker";
 
-        const tebexPlayerName = player.name || player.username || 'Ukendt';
-        const playerIdentifiers = [player.name, player.username, player.uuid, player.id].filter(Boolean).map(v => String(v).toLowerCase());
-        const discordIdentifiers = [interaction.user.id, interaction.user.username.toLowerCase(), interaction.user.tag?.toLowerCase()].filter(Boolean);
-        const isMatch = discordIdentifiers.some(did => playerIdentifiers.some(pid => pid.includes(did) || did.includes(pid)));
+        const tebexPlayerName = player.name || player.username || "Ukendt";
+        const playerIdentifiers = [
+          player.name,
+          player.username,
+          player.uuid,
+          player.id,
+        ]
+          .filter(Boolean)
+          .map((v) => String(v).toLowerCase());
+        const discordIdentifiers = [
+          interaction.user.id,
+          interaction.user.username.toLowerCase(),
+          interaction.user.tag?.toLowerCase(),
+        ].filter(Boolean);
+        const isMatch = discordIdentifiers.some((did) =>
+          playerIdentifiers.some(
+            (pid) => pid.includes(did) || did.includes(pid),
+          ),
+        );
 
         const embed = new EmbedBuilder()
-          .setColor(isMatch ? '#00FF00' : '#FF9900')
-          .setTitle(isMatch ? '✅ Tebex Verificeret' : '⚠️ Tebex Verifikation')
+          .setColor(isMatch ? "#00FF00" : "#FF9900")
+          .setTitle(isMatch ? "✅ Tebex Verificeret" : "⚠️ Tebex Verifikation")
           .addFields(
-            { name: '🧾 Transaktions-ID', value: `\`${payment.txn_id || payment.id || txnId}\``, inline: true },
-            { name: '💰 Beløb', value: `${payment.amount || '?'} ${payment.currency || ''}`, inline: true },
-            { name: '📦 Status', value: `${payment.status || 'Ukendt'}`, inline: true },
-            { name: '👤 Tebex Spiller', value: tebexPlayerName, inline: true },
-            { name: '🎮 Discord Bruger', value: `${interaction.user.tag}`, inline: true },
-            { name: '🔗 Match', value: isMatch ? '✅ Matcher!' : '⚠️ Kan ikke bekræfte automatisk', inline: true },
-            { name: '📦 Pakker', value: packageNames },
+            {
+              name: "🧾 Transaktions-ID",
+              value: `\`${payment.txn_id || payment.id || txnId}\``,
+              inline: true,
+            },
+            {
+              name: "💰 Beløb",
+              value: `${payment.amount || "?"} ${payment.currency || ""}`,
+              inline: true,
+            },
+            {
+              name: "📦 Status",
+              value: `${payment.status || "Ukendt"}`,
+              inline: true,
+            },
+            { name: "👤 Tebex Spiller", value: tebexPlayerName, inline: true },
+            {
+              name: "🎮 Discord Bruger",
+              value: `${interaction.user.tag}`,
+              inline: true,
+            },
+            {
+              name: "🔗 Match",
+              value: isMatch
+                ? "✅ Matcher!"
+                : "⚠️ Kan ikke bekræfte automatisk",
+              inline: true,
+            },
+            { name: "📦 Pakker", value: packageNames },
           )
           .setTimestamp();
 
         if (payment.date) {
-          embed.addFields({ name: '📅 Købsdato', value: new Date(payment.date).toLocaleString('da-DK'), inline: true });
+          embed.addFields({
+            name: "📅 Købsdato",
+            value: new Date(payment.date).toLocaleString("da-DK"),
+            inline: true,
+          });
         }
 
         await interaction.editReply({ embeds: [embed] });
       } catch (error) {
-        console.error('[Bot] Tebex verify fejl:', error);
-        await interaction.editReply('❌ Der skete en fejl under verificeringen.');
+        console.error("[Bot] Tebex verify fejl:", error);
+        await interaction.editReply(
+          "❌ Der skete en fejl under verificeringen.",
+        );
       }
     },
 
@@ -1557,294 +2116,553 @@ function createSlashHandlers(client) {
     daily: async (interaction) => {
       await interaction.deferReply();
       try {
-        const { data: guild } = await supabase.from('guilds').select('id').eq('guild_id', interaction.guild.id).single();
-        if (!guild) return interaction.editReply('❌ Server ikke fundet.');
+        const { data: guild } = await supabase
+          .from("guilds")
+          .select("id")
+          .eq("guild_id", interaction.guild.id)
+          .single();
+        if (!guild) return interaction.editReply("❌ Server ikke fundet.");
 
-        const { data: settings } = await supabase.from('economy_settings').select('*').eq('guild_id', guild.id).maybeSingle();
+        const { data: settings } = await supabase
+          .from("economy_settings")
+          .select("*")
+          .eq("guild_id", guild.id)
+          .maybeSingle();
         const dailyAmount = settings?.daily_amount || 100;
         const cooldownHours = settings?.daily_cooldown_hours || 24;
-        const currencyName = settings?.currency_name || 'coins';
-        const currencySymbol = settings?.currency_symbol || '🪙';
+        const currencyName = settings?.currency_name || "coins";
+        const currencySymbol = settings?.currency_symbol || "🪙";
 
         // Get or create account
-        let { data: account } = await supabase.from('economy_accounts').select('*').eq('guild_id', guild.id).eq('user_id', interaction.user.id).maybeSingle();
+        let { data: account } = await supabase
+          .from("economy_accounts")
+          .select("*")
+          .eq("guild_id", guild.id)
+          .eq("user_id", interaction.user.id)
+          .maybeSingle();
 
         if (!account) {
-          const { data: newAccount } = await supabase.from('economy_accounts').insert({
-            guild_id: guild.id,
-            user_id: interaction.user.id,
-            discord_username: interaction.user.tag,
-            wallet: settings?.starting_balance || 0,
-          }).select().single();
+          const { data: newAccount } = await supabase
+            .from("economy_accounts")
+            .insert({
+              guild_id: guild.id,
+              user_id: interaction.user.id,
+              discord_username: interaction.user.tag,
+              wallet: settings?.starting_balance || 0,
+            })
+            .select()
+            .single();
           account = newAccount;
         }
 
         // Check cooldown
         if (account.last_daily_at) {
           const lastDaily = new Date(account.last_daily_at);
-          const nextDaily = new Date(lastDaily.getTime() + cooldownHours * 3600000);
+          const nextDaily = new Date(
+            lastDaily.getTime() + cooldownHours * 3600000,
+          );
           if (new Date() < nextDaily) {
             const remaining = nextDaily - new Date();
             const hours = Math.floor(remaining / 3600000);
             const minutes = Math.floor((remaining % 3600000) / 60000);
-            return interaction.editReply(`⏰ Du kan hente din daglige belønning igen om **${hours}t ${minutes}m**.`);
+            return interaction.editReply(
+              `⏰ Du kan hente din daglige belønning igen om **${hours}t ${minutes}m**.`,
+            );
           }
         }
 
-        await supabase.from('economy_accounts').update({
-          wallet: (account.wallet || 0) + dailyAmount,
-          total_earned: (account.total_earned || 0) + dailyAmount,
-          last_daily_at: new Date().toISOString(),
-          discord_username: interaction.user.tag,
-        }).eq('id', account.id);
+        await supabase
+          .from("economy_accounts")
+          .update({
+            wallet: (account.wallet || 0) + dailyAmount,
+            total_earned: (account.total_earned || 0) + dailyAmount,
+            last_daily_at: new Date().toISOString(),
+            discord_username: interaction.user.tag,
+          })
+          .eq("id", account.id);
 
-        await supabase.from('economy_transactions').insert({
+        await supabase.from("economy_transactions").insert({
           guild_id: guild.id,
           to_user_id: interaction.user.id,
           amount: dailyAmount,
-          transaction_type: 'daily',
-          description: 'Daglig belønning',
+          transaction_type: "daily",
+          description: "Daglig belønning",
         });
 
         const embed = new EmbedBuilder()
-          .setColor('#00FF00')
+          .setColor("#00FF00")
           .setTitle(`${currencySymbol} Daglig Belønning`)
           .setDescription(`Du har modtaget **${dailyAmount} ${currencyName}**!`)
-          .addFields({ name: 'Ny Balance', value: `${currencySymbol} ${(account.wallet || 0) + dailyAmount}`, inline: true });
+          .addFields({
+            name: "Ny Balance",
+            value: `${currencySymbol} ${(account.wallet || 0) + dailyAmount}`,
+            inline: true,
+          });
 
         await interaction.editReply({ embeds: [embed] });
       } catch (error) {
-        console.error('[Bot] Daily fejl:', error);
-        await interaction.editReply('❌ Kunne ikke hente daglig belønning.');
+        console.error("[Bot] Daily fejl:", error);
+        await interaction.editReply("❌ Kunne ikke hente daglig belønning.");
       }
     },
 
     work: async (interaction) => {
       await interaction.deferReply();
       try {
-        const { data: guild } = await supabase.from('guilds').select('id').eq('guild_id', interaction.guild.id).single();
-        if (!guild) return interaction.editReply('❌ Server ikke fundet.');
+        const { data: guild } = await supabase
+          .from("guilds")
+          .select("id")
+          .eq("guild_id", interaction.guild.id)
+          .single();
+        if (!guild) return interaction.editReply("❌ Server ikke fundet.");
 
-        const { data: settings } = await supabase.from('economy_settings').select('*').eq('guild_id', guild.id).maybeSingle();
+        const { data: settings } = await supabase
+          .from("economy_settings")
+          .select("*")
+          .eq("guild_id", guild.id)
+          .maybeSingle();
         const workMin = settings?.work_min || 10;
         const workMax = settings?.work_max || 50;
         const cooldownMinutes = settings?.work_cooldown_minutes || 30;
-        const currencyName = settings?.currency_name || 'coins';
-        const currencySymbol = settings?.currency_symbol || '🪙';
+        const currencyName = settings?.currency_name || "coins";
+        const currencySymbol = settings?.currency_symbol || "🪙";
 
-        let { data: account } = await supabase.from('economy_accounts').select('*').eq('guild_id', guild.id).eq('user_id', interaction.user.id).maybeSingle();
+        let { data: account } = await supabase
+          .from("economy_accounts")
+          .select("*")
+          .eq("guild_id", guild.id)
+          .eq("user_id", interaction.user.id)
+          .maybeSingle();
 
         if (!account) {
-          const { data: newAccount } = await supabase.from('economy_accounts').insert({
-            guild_id: guild.id, user_id: interaction.user.id, discord_username: interaction.user.tag, wallet: settings?.starting_balance || 0,
-          }).select().single();
+          const { data: newAccount } = await supabase
+            .from("economy_accounts")
+            .insert({
+              guild_id: guild.id,
+              user_id: interaction.user.id,
+              discord_username: interaction.user.tag,
+              wallet: settings?.starting_balance || 0,
+            })
+            .select()
+            .single();
           account = newAccount;
         }
 
         if (account.last_work_at) {
           const lastWork = new Date(account.last_work_at);
-          const nextWork = new Date(lastWork.getTime() + cooldownMinutes * 60000);
+          const nextWork = new Date(
+            lastWork.getTime() + cooldownMinutes * 60000,
+          );
           if (new Date() < nextWork) {
             const remaining = nextWork - new Date();
             const minutes = Math.floor(remaining / 60000);
             const seconds = Math.floor((remaining % 60000) / 1000);
-            return interaction.editReply(`⏰ Du kan arbejde igen om **${minutes}m ${seconds}s**.`);
+            return interaction.editReply(
+              `⏰ Du kan arbejde igen om **${minutes}m ${seconds}s**.`,
+            );
           }
         }
 
-        const earned = Math.floor(Math.random() * (workMax - workMin + 1)) + workMin;
-        const jobs = ['programmør', 'kok', 'lærer', 'læge', 'gartner', 'mekaniker', 'kunstner', 'musiker', 'pilot', 'arkitekt'];
+        const earned =
+          Math.floor(Math.random() * (workMax - workMin + 1)) + workMin;
+        const jobs = [
+          "programmør",
+          "kok",
+          "lærer",
+          "læge",
+          "gartner",
+          "mekaniker",
+          "kunstner",
+          "musiker",
+          "pilot",
+          "arkitekt",
+        ];
         const job = jobs[Math.floor(Math.random() * jobs.length)];
 
-        await supabase.from('economy_accounts').update({
-          wallet: (account.wallet || 0) + earned,
-          total_earned: (account.total_earned || 0) + earned,
-          last_work_at: new Date().toISOString(),
-          discord_username: interaction.user.tag,
-        }).eq('id', account.id);
+        await supabase
+          .from("economy_accounts")
+          .update({
+            wallet: (account.wallet || 0) + earned,
+            total_earned: (account.total_earned || 0) + earned,
+            last_work_at: new Date().toISOString(),
+            discord_username: interaction.user.tag,
+          })
+          .eq("id", account.id);
 
-        await supabase.from('economy_transactions').insert({
-          guild_id: guild.id, to_user_id: interaction.user.id, amount: earned, transaction_type: 'work', description: `Arbejdede som ${job}`,
+        await supabase.from("economy_transactions").insert({
+          guild_id: guild.id,
+          to_user_id: interaction.user.id,
+          amount: earned,
+          transaction_type: "work",
+          description: `Arbejdede som ${job}`,
         });
 
-        await interaction.editReply(`💼 Du arbejdede som **${job}** og tjente **${currencySymbol} ${earned} ${currencyName}**!`);
+        await interaction.editReply(
+          `💼 Du arbejdede som **${job}** og tjente **${currencySymbol} ${earned} ${currencyName}**!`,
+        );
       } catch (error) {
-        console.error('[Bot] Work fejl:', error);
-        await interaction.editReply('❌ Kunne ikke udføre arbejde.');
+        console.error("[Bot] Work fejl:", error);
+        await interaction.editReply("❌ Kunne ikke udføre arbejde.");
       }
     },
 
     balance: async (interaction) => {
       await interaction.deferReply();
       try {
-        const user = interaction.options.getUser('user') || interaction.user;
-        const { data: guild } = await supabase.from('guilds').select('id').eq('guild_id', interaction.guild.id).single();
-        if (!guild) return interaction.editReply('❌ Server ikke fundet.');
+        const user = interaction.options.getUser("user") || interaction.user;
+        const { data: guild } = await supabase
+          .from("guilds")
+          .select("id")
+          .eq("guild_id", interaction.guild.id)
+          .single();
+        if (!guild) return interaction.editReply("❌ Server ikke fundet.");
 
-        const { data: settings } = await supabase.from('economy_settings').select('currency_name, currency_symbol').eq('guild_id', guild.id).maybeSingle();
-        const currencyName = settings?.currency_name || 'coins';
-        const currencySymbol = settings?.currency_symbol || '🪙';
+        const { data: settings } = await supabase
+          .from("economy_settings")
+          .select("currency_name, currency_symbol")
+          .eq("guild_id", guild.id)
+          .maybeSingle();
+        const currencyName = settings?.currency_name || "coins";
+        const currencySymbol = settings?.currency_symbol || "🪙";
 
-        const { data: account } = await supabase.from('economy_accounts').select('wallet, bank, total_earned').eq('guild_id', guild.id).eq('user_id', user.id).maybeSingle();
+        const { data: account } = await supabase
+          .from("economy_accounts")
+          .select("wallet, bank, total_earned")
+          .eq("guild_id", guild.id)
+          .eq("user_id", user.id)
+          .maybeSingle();
 
         const wallet = account?.wallet || 0;
         const bank = account?.bank || 0;
 
         const embed = new EmbedBuilder()
-          .setColor('#5865F2')
+          .setColor("#5865F2")
           .setTitle(`${currencySymbol} Balance - ${user.tag}`)
           .addFields(
-            { name: '💰 Wallet', value: `${currencySymbol} ${wallet}`, inline: true },
-            { name: '🏦 Bank', value: `${currencySymbol} ${bank}`, inline: true },
-            { name: '📊 Total', value: `${currencySymbol} ${wallet + bank}`, inline: true },
+            {
+              name: "💰 Wallet",
+              value: `${currencySymbol} ${wallet}`,
+              inline: true,
+            },
+            {
+              name: "🏦 Bank",
+              value: `${currencySymbol} ${bank}`,
+              inline: true,
+            },
+            {
+              name: "📊 Total",
+              value: `${currencySymbol} ${wallet + bank}`,
+              inline: true,
+            },
           )
           .setThumbnail(user.displayAvatarURL());
 
         await interaction.editReply({ embeds: [embed] });
       } catch (error) {
-        console.error('[Bot] Balance fejl:', error);
-        await interaction.editReply('❌ Kunne ikke hente balance.');
+        console.error("[Bot] Balance fejl:", error);
+        await interaction.editReply("❌ Kunne ikke hente balance.");
       }
     },
 
     pay: async (interaction) => {
       await interaction.deferReply();
       try {
-        const target = interaction.options.getUser('user');
-        const amount = interaction.options.getInteger('amount');
-        if (target.id === interaction.user.id) return interaction.editReply('❌ Du kan ikke betale dig selv.');
-        if (amount <= 0) return interaction.editReply('❌ Beløbet skal være positivt.');
+        const target = interaction.options.getUser("user");
+        const amount = interaction.options.getInteger("amount");
+        if (target.id === interaction.user.id)
+          return interaction.editReply("❌ Du kan ikke betale dig selv.");
+        if (amount <= 0)
+          return interaction.editReply("❌ Beløbet skal være positivt.");
 
-        const { data: guild } = await supabase.from('guilds').select('id').eq('guild_id', interaction.guild.id).single();
-        if (!guild) return interaction.editReply('❌ Server ikke fundet.');
+        const { data: guild } = await supabase
+          .from("guilds")
+          .select("id")
+          .eq("guild_id", interaction.guild.id)
+          .single();
+        if (!guild) return interaction.editReply("❌ Server ikke fundet.");
 
-        const { data: senderAccount } = await supabase.from('economy_accounts').select('*').eq('guild_id', guild.id).eq('user_id', interaction.user.id).maybeSingle();
-        if (!senderAccount || (senderAccount.wallet || 0) < amount) return interaction.editReply('❌ Du har ikke nok penge i din wallet.');
+        const { data: senderAccount } = await supabase
+          .from("economy_accounts")
+          .select("*")
+          .eq("guild_id", guild.id)
+          .eq("user_id", interaction.user.id)
+          .maybeSingle();
+        if (!senderAccount || (senderAccount.wallet || 0) < amount)
+          return interaction.editReply(
+            "❌ Du har ikke nok penge i din wallet.",
+          );
 
-        let { data: receiverAccount } = await supabase.from('economy_accounts').select('*').eq('guild_id', guild.id).eq('user_id', target.id).maybeSingle();
+        let { data: receiverAccount } = await supabase
+          .from("economy_accounts")
+          .select("*")
+          .eq("guild_id", guild.id)
+          .eq("user_id", target.id)
+          .maybeSingle();
         if (!receiverAccount) {
-          const { data: newAccount } = await supabase.from('economy_accounts').insert({ guild_id: guild.id, user_id: target.id, discord_username: target.tag, wallet: 0 }).select().single();
+          const { data: newAccount } = await supabase
+            .from("economy_accounts")
+            .insert({
+              guild_id: guild.id,
+              user_id: target.id,
+              discord_username: target.tag,
+              wallet: 0,
+            })
+            .select()
+            .single();
           receiverAccount = newAccount;
         }
 
-        await supabase.from('economy_accounts').update({ wallet: senderAccount.wallet - amount }).eq('id', senderAccount.id);
-        await supabase.from('economy_accounts').update({ wallet: (receiverAccount.wallet || 0) + amount }).eq('id', receiverAccount.id);
-        await supabase.from('economy_transactions').insert({ guild_id: guild.id, to_user_id: target.id, from_user_id: interaction.user.id, amount, transaction_type: 'transfer', description: `Betaling fra ${interaction.user.tag}` });
+        if (!receiverAccount)
+          return interaction.editReply(
+            "❌ Kunne ikke oprette modtagerens konto.",
+          );
 
-        await interaction.editReply(`✅ Du betalte **${amount}** til **${target.tag}**.`);
+        const transfer = await transferWallet(
+          supabase,
+          senderAccount.id,
+          receiverAccount.id,
+          amount,
+        );
+        if (!transfer.ok)
+          return interaction.editReply(
+            transfer.reason === "insufficient"
+              ? "❌ Du har ikke nok penge i din wallet."
+              : "❌ Betalingen kunne ikke gennemføres. Prøv igen.",
+          );
+        await supabase.from("economy_transactions").insert({
+          guild_id: guild.id,
+          to_user_id: target.id,
+          from_user_id: interaction.user.id,
+          amount,
+          transaction_type: "transfer",
+          description: `Betaling fra ${interaction.user.tag}`,
+        });
+
+        await interaction.editReply(
+          `✅ Du betalte **${amount}** til **${target.tag}**.`,
+        );
       } catch (error) {
-        console.error('[Bot] Pay fejl:', error);
-        await interaction.editReply('❌ Kunne ikke gennemføre betalingen.');
+        console.error("[Bot] Pay fejl:", error);
+        await interaction.editReply("❌ Kunne ikke gennemføre betalingen.");
       }
     },
 
     deposit: async (interaction) => {
       await interaction.deferReply();
       try {
-        const amount = interaction.options.getInteger('amount');
-        if (amount <= 0) return interaction.editReply('❌ Beløbet skal være positivt.');
+        const amount = interaction.options.getInteger("amount");
+        if (amount <= 0)
+          return interaction.editReply("❌ Beløbet skal være positivt.");
 
-        const { data: guild } = await supabase.from('guilds').select('id').eq('guild_id', interaction.guild.id).single();
-        if (!guild) return interaction.editReply('❌ Server ikke fundet.');
+        const { data: guild } = await supabase
+          .from("guilds")
+          .select("id")
+          .eq("guild_id", interaction.guild.id)
+          .single();
+        if (!guild) return interaction.editReply("❌ Server ikke fundet.");
 
-        const { data: account } = await supabase.from('economy_accounts').select('*').eq('guild_id', guild.id).eq('user_id', interaction.user.id).maybeSingle();
-        if (!account || (account.wallet || 0) < amount) return interaction.editReply('❌ Du har ikke nok penge i din wallet.');
+        const { data: account } = await supabase
+          .from("economy_accounts")
+          .select("*")
+          .eq("guild_id", guild.id)
+          .eq("user_id", interaction.user.id)
+          .maybeSingle();
+        if (!account || (account.wallet || 0) < amount)
+          return interaction.editReply(
+            "❌ Du har ikke nok penge i din wallet.",
+          );
 
-        await supabase.from('economy_accounts').update({ wallet: account.wallet - amount, bank: (account.bank || 0) + amount }).eq('id', account.id);
+        const result = await adjustBalance(supabase, account.id, {
+          wallet: -amount,
+          bank: amount,
+        });
+        if (!result.ok)
+          return interaction.editReply(
+            result.reason === "insufficient"
+              ? "❌ Du har ikke nok penge i din wallet."
+              : "❌ Kunne ikke indsætte penge. Prøv igen.",
+          );
         await interaction.editReply(`🏦 Du indsatte **${amount}** i banken.`);
       } catch (error) {
-        await interaction.editReply('❌ Kunne ikke indsætte penge.');
+        await interaction.editReply("❌ Kunne ikke indsætte penge.");
       }
     },
 
     withdraw: async (interaction) => {
       await interaction.deferReply();
       try {
-        const amount = interaction.options.getInteger('amount');
-        if (amount <= 0) return interaction.editReply('❌ Beløbet skal være positivt.');
+        const amount = interaction.options.getInteger("amount");
+        if (amount <= 0)
+          return interaction.editReply("❌ Beløbet skal være positivt.");
 
-        const { data: guild } = await supabase.from('guilds').select('id').eq('guild_id', interaction.guild.id).single();
-        if (!guild) return interaction.editReply('❌ Server ikke fundet.');
+        const { data: guild } = await supabase
+          .from("guilds")
+          .select("id")
+          .eq("guild_id", interaction.guild.id)
+          .single();
+        if (!guild) return interaction.editReply("❌ Server ikke fundet.");
 
-        const { data: account } = await supabase.from('economy_accounts').select('*').eq('guild_id', guild.id).eq('user_id', interaction.user.id).maybeSingle();
-        if (!account || (account.bank || 0) < amount) return interaction.editReply('❌ Du har ikke nok penge i banken.');
+        const { data: account } = await supabase
+          .from("economy_accounts")
+          .select("*")
+          .eq("guild_id", guild.id)
+          .eq("user_id", interaction.user.id)
+          .maybeSingle();
+        if (!account || (account.bank || 0) < amount)
+          return interaction.editReply("❌ Du har ikke nok penge i banken.");
 
-        await supabase.from('economy_accounts').update({ wallet: (account.wallet || 0) + amount, bank: account.bank - amount }).eq('id', account.id);
+        const result = await adjustBalance(supabase, account.id, {
+          wallet: amount,
+          bank: -amount,
+        });
+        if (!result.ok)
+          return interaction.editReply(
+            result.reason === "insufficient"
+              ? "❌ Du har ikke nok penge i banken."
+              : "❌ Kunne ikke hæve penge. Prøv igen.",
+          );
         await interaction.editReply(`💰 Du hævede **${amount}** fra banken.`);
       } catch (error) {
-        await interaction.editReply('❌ Kunne ikke hæve penge.');
+        await interaction.editReply("❌ Kunne ikke hæve penge.");
       }
     },
 
     rob: async (interaction) => {
       await interaction.deferReply();
       try {
-        const target = interaction.options.getUser('user');
-        if (target.id === interaction.user.id) return interaction.editReply('❌ Du kan ikke røve dig selv.');
+        const target = interaction.options.getUser("user");
+        if (target.id === interaction.user.id)
+          return interaction.editReply("❌ Du kan ikke røve dig selv.");
 
-        const { data: guild } = await supabase.from('guilds').select('id').eq('guild_id', interaction.guild.id).single();
-        if (!guild) return interaction.editReply('❌ Server ikke fundet.');
+        const { data: guild } = await supabase
+          .from("guilds")
+          .select("id")
+          .eq("guild_id", interaction.guild.id)
+          .single();
+        if (!guild) return interaction.editReply("❌ Server ikke fundet.");
 
-        const { data: targetAccount } = await supabase.from('economy_accounts').select('*').eq('guild_id', guild.id).eq('user_id', target.id).maybeSingle();
-        if (!targetAccount || (targetAccount.wallet || 0) < 10) return interaction.editReply('❌ Denne bruger har ikke nok penge at røve.');
+        const { data: targetAccount } = await supabase
+          .from("economy_accounts")
+          .select("*")
+          .eq("guild_id", guild.id)
+          .eq("user_id", target.id)
+          .maybeSingle();
+        if (!targetAccount || (targetAccount.wallet || 0) < 10)
+          return interaction.editReply(
+            "❌ Denne bruger har ikke nok penge at røve.",
+          );
 
-        let { data: robberAccount } = await supabase.from('economy_accounts').select('*').eq('guild_id', guild.id).eq('user_id', interaction.user.id).maybeSingle();
+        let { data: robberAccount } = await supabase
+          .from("economy_accounts")
+          .select("*")
+          .eq("guild_id", guild.id)
+          .eq("user_id", interaction.user.id)
+          .maybeSingle();
         if (!robberAccount) {
-          const { data: newAccount } = await supabase.from('economy_accounts').insert({ guild_id: guild.id, user_id: interaction.user.id, discord_username: interaction.user.tag, wallet: 0 }).select().single();
+          const { data: newAccount } = await supabase
+            .from("economy_accounts")
+            .insert({
+              guild_id: guild.id,
+              user_id: interaction.user.id,
+              discord_username: interaction.user.tag,
+              wallet: 0,
+            })
+            .select()
+            .single();
           robberAccount = newAccount;
         }
 
         const success = Math.random() < 0.4; // 40% chance
         if (success) {
-          const stolen = Math.floor(Math.random() * Math.min(targetAccount.wallet, 200)) + 1;
-          await supabase.from('economy_accounts').update({ wallet: targetAccount.wallet - stolen }).eq('id', targetAccount.id);
-          await supabase.from('economy_accounts').update({ wallet: (robberAccount.wallet || 0) + stolen }).eq('id', robberAccount.id);
-          await supabase.from('economy_transactions').insert({ guild_id: guild.id, to_user_id: interaction.user.id, from_user_id: target.id, amount: stolen, transaction_type: 'rob', description: `Røvede ${target.tag}` });
-          await interaction.editReply(`🦹 Du røvede **${stolen}** fra **${target.tag}**!`);
+          const stolen =
+            Math.floor(Math.random() * Math.min(targetAccount.wallet, 200)) + 1;
+          if (!robberAccount)
+            return interaction.editReply("❌ Kunne ikke oprette din konto.");
+          const transfer = await transferWallet(
+            supabase,
+            targetAccount.id,
+            robberAccount.id,
+            stolen,
+          );
+          if (!transfer.ok)
+            return interaction.editReply(
+              "❌ Røveriet mislykkedes, offeret har ikke længere pengene.",
+            );
+          await supabase.from("economy_transactions").insert({
+            guild_id: guild.id,
+            to_user_id: interaction.user.id,
+            from_user_id: target.id,
+            amount: stolen,
+            transaction_type: "rob",
+            description: `Røvede ${target.tag}`,
+          });
+          await interaction.editReply(
+            `🦹 Du røvede **${stolen}** fra **${target.tag}**!`,
+          );
         } else {
           const fine = Math.floor(Math.random() * 50) + 10;
           const actualFine = Math.min(fine, robberAccount.wallet || 0);
-          if (actualFine > 0) {
-            await supabase.from('economy_accounts').update({ wallet: (robberAccount.wallet || 0) - actualFine }).eq('id', robberAccount.id);
+          if (actualFine > 0 && robberAccount) {
+            await adjustBalance(supabase, robberAccount.id, {
+              wallet: -actualFine,
+            });
           }
-          await interaction.editReply(`👮 Du blev fanget! Du mistede **${actualFine}** i bøde.`);
+          await interaction.editReply(
+            `👮 Du blev fanget! Du mistede **${actualFine}** i bøde.`,
+          );
         }
       } catch (error) {
-        console.error('[Bot] Rob fejl:', error);
-        await interaction.editReply('❌ Kunne ikke udføre røveriet.');
+        console.error("[Bot] Rob fejl:", error);
+        await interaction.editReply("❌ Kunne ikke udføre røveriet.");
       }
     },
 
     richest: async (interaction) => {
       await interaction.deferReply();
       try {
-        const { data: guild } = await supabase.from('guilds').select('id').eq('guild_id', interaction.guild.id).single();
-        if (!guild) return interaction.editReply('❌ Server ikke fundet.');
+        const { data: guild } = await supabase
+          .from("guilds")
+          .select("id")
+          .eq("guild_id", interaction.guild.id)
+          .single();
+        if (!guild) return interaction.editReply("❌ Server ikke fundet.");
 
-        const { data: settings } = await supabase.from('economy_settings').select('currency_symbol').eq('guild_id', guild.id).maybeSingle();
-        const currencySymbol = settings?.currency_symbol || '🪙';
+        const { data: settings } = await supabase
+          .from("economy_settings")
+          .select("currency_symbol")
+          .eq("guild_id", guild.id)
+          .maybeSingle();
+        const currencySymbol = settings?.currency_symbol || "🪙";
 
-        const { data: accounts } = await supabase.from('economy_accounts').select('user_id, discord_username, wallet, bank').eq('guild_id', guild.id).order('total_earned', { ascending: false }).limit(10);
+        const { data: accounts } = await supabase
+          .from("economy_accounts")
+          .select("user_id, discord_username, wallet, bank")
+          .eq("guild_id", guild.id)
+          .order("total_earned", { ascending: false })
+          .limit(10);
 
-        if (!accounts || accounts.length === 0) return interaction.editReply('📊 Ingen økonomi data endnu.');
+        if (!accounts || accounts.length === 0)
+          return interaction.editReply("📊 Ingen økonomi data endnu.");
 
-        const medals = ['🥇', '🥈', '🥉'];
-        const description = accounts.map((a, i) => {
-          const medal = medals[i] || `**${i + 1}.**`;
-          const total = (a.wallet || 0) + (a.bank || 0);
-          return `${medal} ${a.discord_username || 'Ukendt'} — ${currencySymbol} ${total}`;
-        }).join('\n');
+        const medals = ["🥇", "🥈", "🥉"];
+        const description = accounts
+          .map((a, i) => {
+            const medal = medals[i] || `**${i + 1}.**`;
+            const total = (a.wallet || 0) + (a.bank || 0);
+            return `${medal} ${a.discord_username || "Ukendt"} — ${currencySymbol} ${total}`;
+          })
+          .join("\n");
 
         const embed = new EmbedBuilder()
-          .setColor('#FFD700')
-          .setTitle('💰 Rigeste Brugere')
+          .setColor("#FFD700")
+          .setTitle("💰 Rigeste Brugere")
           .setDescription(description)
           .setFooter({ text: interaction.guild.name });
 
         await interaction.editReply({ embeds: [embed] });
       } catch (error) {
-        console.error('[Bot] Richest fejl:', error);
-        await interaction.editReply('❌ Kunne ikke hente leaderboard.');
+        console.error("[Bot] Richest fejl:", error);
+        await interaction.editReply("❌ Kunne ikke hente leaderboard.");
       }
     },
 
@@ -1855,21 +2673,33 @@ function createSlashHandlers(client) {
       await interaction.deferReply();
 
       try {
-        const { data: guild } = await supabase.from('guilds').select('id').eq('guild_id', interaction.guild.id).single();
-        if (!guild) return interaction.editReply('❌ Server ikke fundet.');
+        const { data: guild } = await supabase
+          .from("guilds")
+          .select("id")
+          .eq("guild_id", interaction.guild.id)
+          .single();
+        if (!guild) return interaction.editReply("❌ Server ikke fundet.");
 
-        if (subcommand === 'start') {
-          if (!interaction.member.permissions.has(PermissionFlagsBits.ManageGuild)) {
-            return interaction.editReply('❌ Du har ikke tilladelse til at starte giveaways.');
+        if (subcommand === "start") {
+          if (
+            !interaction.member.permissions.has(PermissionFlagsBits.ManageGuild)
+          ) {
+            return interaction.editReply(
+              "❌ Du har ikke tilladelse til at starte giveaways.",
+            );
           }
 
-          const prize = interaction.options.getString('prize');
-          const durationStr = interaction.options.getString('duration');
-          const winnersCount = interaction.options.getInteger('winners') || 1;
-          const description = interaction.options.getString('description') || '';
+          const prize = interaction.options.getString("prize");
+          const durationStr = interaction.options.getString("duration");
+          const winnersCount = interaction.options.getInteger("winners") || 1;
+          const description =
+            interaction.options.getString("description") || "";
 
           const match = durationStr.match(/^(\d+)(m|h|d)$/);
-          if (!match) return interaction.editReply('❌ Ugyldigt tidsformat. Brug f.eks. 1h, 1d.');
+          if (!match)
+            return interaction.editReply(
+              "❌ Ugyldigt tidsformat. Brug f.eks. 1h, 1d.",
+            );
 
           const amount = parseInt(match[1], 10);
           const unit = match[2];
@@ -1878,7 +2708,7 @@ function createSlashHandlers(client) {
           const endsAt = new Date(Date.now() + durationMs);
 
           await callGiveawayHandler({
-            action: 'create',
+            action: "create",
             giveawayData: {
               guild_id: guild.id,
               channel_id: interaction.channel.id,
@@ -1891,54 +2721,66 @@ function createSlashHandlers(client) {
             },
           });
 
-          await interaction.editReply(`✅ Giveaway startet! Slutter <t:${Math.floor(endsAt.getTime() / 1000)}:R>`);
-        } else if (subcommand === 'end') {
-          const messageId = interaction.options.getString('message_id');
+          await interaction.editReply(
+            `✅ Giveaway startet! Slutter <t:${Math.floor(endsAt.getTime() / 1000)}:R>`,
+          );
+        } else if (subcommand === "end") {
+          const messageId = interaction.options.getString("message_id");
           const { data: giveaway } = await supabase
-            .from('giveaways')
-            .select('id, prize')
-            .eq('guild_id', guild.id)
-            .eq('message_id', messageId)
-            .eq('ended', false)
+            .from("giveaways")
+            .select("id, prize")
+            .eq("guild_id", guild.id)
+            .eq("message_id", messageId)
+            .eq("ended", false)
             .maybeSingle();
 
-          if (!giveaway) return interaction.editReply('❌ Giveaway ikke fundet.');
+          if (!giveaway)
+            return interaction.editReply("❌ Giveaway ikke fundet.");
 
           const result = await callGiveawayHandler({
-            action: 'end',
+            action: "end",
             guildId: guild.id,
             giveawayId: giveaway.id,
           });
 
           if (result?.winners?.length > 0) {
-            const winnerMentions = result.winners.map((winnerId) => `<@${winnerId}>`).join(', ');
-            await interaction.editReply(`🎉 Vindere af **${giveaway.prize}**: ${winnerMentions}`);
+            const winnerMentions = result.winners
+              .map((winnerId) => `<@${winnerId}>`)
+              .join(", ");
+            await interaction.editReply(
+              `🎉 Vindere af **${giveaway.prize}**: ${winnerMentions}`,
+            );
           } else {
-            await interaction.editReply('❌ Ingen deltagere i giveawayen.');
+            await interaction.editReply("❌ Ingen deltagere i giveawayen.");
           }
-        } else if (subcommand === 'reroll') {
-          const messageId = interaction.options.getString('message_id');
+        } else if (subcommand === "reroll") {
+          const messageId = interaction.options.getString("message_id");
           const { data: giveaway } = await supabase
-            .from('giveaways')
-            .select('id, prize')
-            .eq('guild_id', guild.id)
-            .eq('message_id', messageId)
-            .eq('ended', true)
+            .from("giveaways")
+            .select("id, prize")
+            .eq("guild_id", guild.id)
+            .eq("message_id", messageId)
+            .eq("ended", true)
             .maybeSingle();
 
-          if (!giveaway) return interaction.editReply('❌ Afsluttet giveaway ikke fundet.');
+          if (!giveaway)
+            return interaction.editReply("❌ Afsluttet giveaway ikke fundet.");
 
           const result = await callGiveawayHandler({
-            action: 'reroll',
+            action: "reroll",
             guildId: guild.id,
             giveawayId: giveaway.id,
           });
 
-          await interaction.editReply(`🎉 Ny vinder af **${giveaway.prize}**: <@${result.newWinner}>`);
+          await interaction.editReply(
+            `🎉 Ny vinder af **${giveaway.prize}**: <@${result.newWinner}>`,
+          );
         }
       } catch (error) {
-        console.error('[Bot] Giveaway fejl:', error);
-        await interaction.editReply(`❌ ${error.message || 'Der skete en fejl.'}`);
+        console.error("[Bot] Giveaway fejl:", error);
+        await interaction.editReply(
+          `❌ ${error.message || "Der skete en fejl."}`,
+        );
       }
     },
 
@@ -1947,31 +2789,48 @@ function createSlashHandlers(client) {
     suggest: async (interaction) => {
       await interaction.deferReply({ flags: 64 });
       try {
-        const suggestion = interaction.options.getString('suggestion');
-        const { data: guild } = await supabase.from('guilds').select('id').eq('guild_id', interaction.guild.id).single();
-        if (!guild) return interaction.editReply('❌ Server ikke fundet.');
+        const suggestion = interaction.options.getString("suggestion");
+        const { data: guild } = await supabase
+          .from("guilds")
+          .select("id")
+          .eq("guild_id", interaction.guild.id)
+          .single();
+        if (!guild) return interaction.editReply("❌ Server ikke fundet.");
 
-        const { data: settings } = await supabase.from('suggestion_settings').select('channel_id, enabled').eq('guild_id', guild.id).maybeSingle();
-        if (!settings || !settings.enabled || !settings.channel_id) return interaction.editReply('❌ Forslag er ikke konfigureret for denne server.');
+        const { data: settings } = await supabase
+          .from("suggestion_settings")
+          .select("channel_id, enabled")
+          .eq("guild_id", guild.id)
+          .maybeSingle();
+        if (!settings || !settings.enabled || !settings.channel_id)
+          return interaction.editReply(
+            "❌ Forslag er ikke konfigureret for denne server.",
+          );
 
-        const channel = await interaction.guild.channels.fetch(settings.channel_id).catch(() => null);
-        if (!channel) return interaction.editReply('❌ Forslagskanalen blev ikke fundet.');
+        const channel = await interaction.guild.channels
+          .fetch(settings.channel_id)
+          .catch(() => null);
+        if (!channel)
+          return interaction.editReply("❌ Forslagskanalen blev ikke fundet.");
 
         const embed = new EmbedBuilder()
-          .setColor('#5865F2')
-          .setTitle('💡 Nyt Forslag')
+          .setColor("#5865F2")
+          .setTitle("💡 Nyt Forslag")
           .setDescription(suggestion)
-          .setFooter({ text: `Foreslået af ${interaction.user.tag}`, iconURL: interaction.user.displayAvatarURL() })
+          .setFooter({
+            text: `Foreslået af ${interaction.user.tag}`,
+            iconURL: interaction.user.displayAvatarURL(),
+          })
           .setTimestamp();
 
         const msg = await channel.send({ embeds: [embed] });
-        await msg.react('👍');
-        await msg.react('👎');
+        await msg.react("👍");
+        await msg.react("👎");
 
-        await interaction.editReply('✅ Dit forslag er blevet sendt!');
+        await interaction.editReply("✅ Dit forslag er blevet sendt!");
       } catch (error) {
-        console.error('[Bot] Suggest fejl:', error);
-        await interaction.editReply('❌ Kunne ikke sende forslaget.');
+        console.error("[Bot] Suggest fejl:", error);
+        await interaction.editReply("❌ Kunne ikke sende forslaget.");
       }
     },
 
@@ -1979,136 +2838,220 @@ function createSlashHandlers(client) {
 
     afk: async (interaction) => {
       try {
-        const message = interaction.options.getString('message') || 'AFK';
-        const { data: guild } = await supabase.from('guilds').select('id').eq('guild_id', interaction.guild.id).single();
-        if (!guild) return interaction.reply({ content: '❌ Server ikke fundet.', flags: 64 });
+        const message = interaction.options.getString("message") || "AFK";
+        const { data: guild } = await supabase
+          .from("guilds")
+          .select("id")
+          .eq("guild_id", interaction.guild.id)
+          .single();
+        if (!guild)
+          return interaction.reply({
+            content: "❌ Server ikke fundet.",
+            flags: 64,
+          });
 
-        await supabase.from('afk_status').upsert({
-          guild_id: guild.id,
-          user_discord_id: interaction.user.id,
-          user_name: interaction.user.tag,
-          message,
-          set_at: new Date().toISOString(),
-        }, { onConflict: 'guild_id,user_discord_id' });
+        await supabase.from("afk_status").upsert(
+          {
+            guild_id: guild.id,
+            user_discord_id: interaction.user.id,
+            user_name: interaction.user.tag,
+            message,
+            set_at: new Date().toISOString(),
+          },
+          { onConflict: "guild_id,user_discord_id" },
+        );
 
         await interaction.reply(`💤 Du er nu AFK: **${message}**`);
       } catch (error) {
-        console.error('[Bot] AFK fejl:', error);
-        await interaction.reply({ content: '❌ Kunne ikke sætte AFK status.', flags: 64 });
+        console.error("[Bot] AFK fejl:", error);
+        await interaction.reply({
+          content: "❌ Kunne ikke sætte AFK status.",
+          flags: 64,
+        });
       }
     },
 
     // ==================== MODERATION EXTRA ====================
 
     clearwarns: async (interaction) => {
-      if (!interaction.member.permissions.has(PermissionFlagsBits.ModerateMembers)) {
-        return interaction.reply({ content: '❌ Du har ikke tilladelse.', flags: 64 });
+      if (
+        !interaction.member.permissions.has(PermissionFlagsBits.ModerateMembers)
+      ) {
+        return interaction.reply({
+          content: "❌ Du har ikke tilladelse.",
+          flags: 64,
+        });
       }
 
-      const user = interaction.options.getUser('user');
+      const user = interaction.options.getUser("user");
       await interaction.deferReply();
 
       try {
-        const { data: guild } = await supabase.from('guilds').select('id').eq('guild_id', interaction.guild.id).single();
-        if (!guild) return interaction.editReply('❌ Server ikke fundet.');
+        const { data: guild } = await supabase
+          .from("guilds")
+          .select("id")
+          .eq("guild_id", interaction.guild.id)
+          .single();
+        if (!guild) return interaction.editReply("❌ Server ikke fundet.");
 
-        await supabase.from('moderation_logs').delete().eq('guild_id', guild.id).eq('target_id', user.id).eq('action_type', 'warn');
+        await supabase
+          .from("moderation_logs")
+          .delete()
+          .eq("guild_id", guild.id)
+          .eq("target_id", user.id)
+          .eq("action_type", "warn");
 
         // Also clear warnings in the warning_handler system
-        const warnHandler = handlerInstances.get(`warning_${client._clientLabel || 'default'}`);
+        const warnHandler = handlerInstances.get(
+          `warning_${client._clientLabel || "default"}`,
+        );
         if (warnHandler) {
-          await warnHandler.clearWarnings(guild.id, user.id, interaction.user.id);
+          await warnHandler.clearWarnings(
+            guild.id,
+            user.id,
+            interaction.user.id,
+          );
         }
 
-        await interaction.editReply(`✅ Alle advarsler for **${user.tag}** er blevet slettet.`);
+        await interaction.editReply(
+          `✅ Alle advarsler for **${user.tag}** er blevet slettet.`,
+        );
       } catch (error) {
-        console.error('[Bot] Clearwarns fejl:', error);
-        await interaction.editReply('❌ Kunne ikke slette advarsler.');
+        console.error("[Bot] Clearwarns fejl:", error);
+        await interaction.editReply("❌ Kunne ikke slette advarsler.");
       }
     },
 
     timeout: async (interaction) => {
-      if (!interaction.member.permissions.has(PermissionFlagsBits.ModerateMembers)) {
-        return interaction.reply({ content: '❌ Du har ikke tilladelse.', flags: 64 });
+      if (
+        !interaction.member.permissions.has(PermissionFlagsBits.ModerateMembers)
+      ) {
+        return interaction.reply({
+          content: "❌ Du har ikke tilladelse.",
+          flags: 64,
+        });
       }
 
-      const user = interaction.options.getUser('user');
-      const duration = interaction.options.getInteger('duration') || 10;
-      const reason = interaction.options.getString('reason') || 'Ingen årsag';
+      const user = interaction.options.getUser("user");
+      const duration = interaction.options.getInteger("duration") || 10;
+      const reason = interaction.options.getString("reason") || "Ingen årsag";
 
       try {
         const member = await interaction.guild.members.fetch(user.id);
         await member.timeout(duration * 60 * 1000, reason);
-        await logModerationAction(interaction.guild.id, 'timeout', interaction.user, user, reason, duration * 60);
+        await logModerationAction(
+          interaction.guild.id,
+          "timeout",
+          interaction.user,
+          user,
+          reason,
+          duration * 60,
+        );
 
-        await interaction.reply(`⏰ **${user.tag}** har fået timeout i **${duration} minutter**.\nÅrsag: ${reason}`);
+        await interaction.reply(
+          `⏰ **${user.tag}** har fået timeout i **${duration} minutter**.\nÅrsag: ${reason}`,
+        );
       } catch (error) {
-        await interaction.reply({ content: '❌ Kunne ikke give timeout.', flags: 64 });
+        await interaction.reply({
+          content: "❌ Kunne ikke give timeout.",
+          flags: 64,
+        });
       }
     },
 
     untimeout: async (interaction) => {
-      if (!interaction.member.permissions.has(PermissionFlagsBits.ModerateMembers)) {
-        return interaction.reply({ content: '❌ Du har ikke tilladelse.', flags: 64 });
+      if (
+        !interaction.member.permissions.has(PermissionFlagsBits.ModerateMembers)
+      ) {
+        return interaction.reply({
+          content: "❌ Du har ikke tilladelse.",
+          flags: 64,
+        });
       }
 
-      const user = interaction.options.getUser('user');
+      const user = interaction.options.getUser("user");
 
       try {
         const member = await interaction.guild.members.fetch(user.id);
         await member.timeout(null);
-        await logModerationAction(interaction.guild.id, 'untimeout', interaction.user, user, 'Timeout fjernet');
+        await logModerationAction(
+          interaction.guild.id,
+          "untimeout",
+          interaction.user,
+          user,
+          "Timeout fjernet",
+        );
         await interaction.reply(`✅ Timeout fjernet for **${user.tag}**.`);
       } catch (error) {
-        await interaction.reply({ content: '❌ Kunne ikke fjerne timeout.', flags: 64 });
+        await interaction.reply({
+          content: "❌ Kunne ikke fjerne timeout.",
+          flags: 64,
+        });
       }
     },
 
     // ==================== GLOBAL BAN REPORT ====================
 
-    'globalban-report': async (interaction) => {
+    "globalban-report": async (interaction) => {
       await interaction.deferReply({ flags: 64 });
       try {
-        const targetUser = interaction.options.getUser('user');
-        const reason = interaction.options.getString('reason');
-        const severity = interaction.options.getString('severity') || 'other';
-        const evidence = interaction.options.getString('evidence') || null;
+        const targetUser = interaction.options.getUser("user");
+        const reason = interaction.options.getString("reason");
+        const severity = interaction.options.getString("severity") || "other";
+        const evidence = interaction.options.getString("evidence") || null;
 
         if (targetUser.id === interaction.user.id) {
-          return interaction.editReply('❌ Du kan ikke rapportere dig selv.');
+          return interaction.editReply("❌ Du kan ikke rapportere dig selv.");
         }
         if (targetUser.bot) {
-          return interaction.editReply('❌ Du kan ikke rapportere en bot.');
+          return interaction.editReply("❌ Du kan ikke rapportere en bot.");
         }
 
-        const evidenceUrls = evidence ? evidence.split(/[\s,]+/).filter(Boolean) : [];
+        const evidenceUrls = evidence
+          ? evidence.split(/[\s,]+/).filter(Boolean)
+          : [];
 
-        const { data, error } = await supabase.from('global_ban_reports').insert({
-          reporter_discord_id: interaction.user.id,
-          reporter_discord_name: interaction.user.tag,
-          target_discord_id: targetUser.id,
-          target_discord_name: targetUser.tag,
-          reason,
-          severity,
-          evidence_urls: evidenceUrls,
-        }).select().single();
+        const { data, error } = await supabase
+          .from("global_ban_reports")
+          .insert({
+            reporter_discord_id: interaction.user.id,
+            reporter_discord_name: interaction.user.tag,
+            target_discord_id: targetUser.id,
+            target_discord_name: targetUser.tag,
+            reason,
+            severity,
+            evidence_urls: evidenceUrls,
+          })
+          .select()
+          .single();
 
         if (error) {
-          console.error('[Bot] GlobalBan report DB error:', error);
+          console.error("[Bot] GlobalBan report DB error:", error);
           throw error;
         }
 
-        console.log(`[Bot] GlobalBan report created: ${data.id} by ${interaction.user.tag}`);
-        await interaction.editReply('✅ Din rapport er blevet indsendt og vil blive gennemgået af en administrator. Tak!');
+        console.log(
+          `[Bot] GlobalBan report created: ${data.id} by ${interaction.user.tag}`,
+        );
+        await interaction.editReply(
+          "✅ Din rapport er blevet indsendt og vil blive gennemgået af en administrator. Tak!",
+        );
       } catch (error) {
-        console.error('[Bot] GlobalBan report fejl:', error);
-        await interaction.editReply('❌ Kunne ikke indsende rapporten. Prøv igen senere.');
+        console.error("[Bot] GlobalBan report fejl:", error);
+        await interaction.editReply(
+          "❌ Kunne ikke indsende rapporten. Prøv igen senere.",
+        );
       }
     },
 
     nuke: async (interaction) => {
-      if (!interaction.member.permissions.has(PermissionFlagsBits.ManageChannels)) {
-        return interaction.reply({ content: '❌ Du har ikke tilladelse.', flags: 64 });
+      if (
+        !interaction.member.permissions.has(PermissionFlagsBits.ManageChannels)
+      ) {
+        return interaction.reply({
+          content: "❌ Du har ikke tilladelse.",
+          flags: 64,
+        });
       }
 
       try {
@@ -2116,22 +3059,30 @@ function createSlashHandlers(client) {
         const position = channel.position;
         const newChannel = await channel.clone();
         await newChannel.setPosition(position);
-        await channel.delete('Nuke command');
-        await newChannel.send('💥 Kanal nuked!');
+        await channel.delete("Nuke command");
+        await newChannel.send("💥 Kanal nuked!");
       } catch (error) {
-        await interaction.reply({ content: '❌ Kunne ikke nuke kanalen.', flags: 64 });
+        await interaction.reply({
+          content: "❌ Kunne ikke nuke kanalen.",
+          flags: 64,
+        });
       }
     },
 
     // ==================== TEST ALL COMMANDS ====================
     testall: async (interaction) => {
-      if (!interaction.member.permissions.has(PermissionFlagsBits.Administrator)) {
-        return interaction.reply({ content: '❌ Kun administratorer kan bruge denne kommando.', flags: 64 });
+      if (
+        !interaction.member.permissions.has(PermissionFlagsBits.Administrator)
+      ) {
+        return interaction.reply({
+          content: "❌ Kun administratorer kan bruge denne kommando.",
+          flags: 64,
+        });
       }
 
       await interaction.deferReply({ flags: 64 });
 
-      const verbose = interaction.options.getBoolean('verbose') ?? false;
+      const verbose = interaction.options.getBoolean("verbose") ?? false;
       const guildId = interaction.guild.id;
 
       // 1. Collect all registered slash handler names
@@ -2141,16 +3092,16 @@ function createSlashHandlers(client) {
       let commandStates = {};
       try {
         const { data: guild } = await supabase
-          .from('guilds')
-          .select('id')
-          .eq('guild_id', guildId)
+          .from("guilds")
+          .select("id")
+          .eq("guild_id", guildId)
           .single();
 
         if (guild) {
           const { data: commands } = await supabase
-            .from('guild_commands')
-            .select('command_name, enabled')
-            .eq('guild_id', guild.id);
+            .from("guild_commands")
+            .select("command_name, enabled")
+            .eq("guild_id", guild.id);
 
           if (commands) {
             for (const cmd of commands) {
@@ -2159,23 +3110,23 @@ function createSlashHandlers(client) {
           }
         }
       } catch (e) {
-        console.error('[testall] DB error:', e);
+        console.error("[testall] DB error:", e);
       }
 
       // 3. Check which modules are enabled
       let moduleStates = {};
       try {
         const { data: guild } = await supabase
-          .from('guilds')
-          .select('id')
-          .eq('guild_id', guildId)
+          .from("guilds")
+          .select("id")
+          .eq("guild_id", guildId)
           .single();
 
         if (guild) {
           const { data: modules } = await supabase
-            .from('guild_modules')
-            .select('module_type, enabled')
-            .eq('guild_id', guild.id);
+            .from("guild_modules")
+            .select("module_type, enabled")
+            .eq("guild_id", guild.id);
 
           if (modules) {
             for (const mod of modules) {
@@ -2184,11 +3135,13 @@ function createSlashHandlers(client) {
           }
         }
       } catch (e) {
-        console.error('[testall] Module DB error:', e);
+        console.error("[testall] Module DB error:", e);
       }
 
       // 4. Check handler instances
-      const handlerKeys = [...handlerInstances.keys()].filter(k => k.includes(client._clientLabel || 'default'));
+      const handlerKeys = [...handlerInstances.keys()].filter((k) =>
+        k.includes(client._clientLabel || "default"),
+      );
 
       // 5. Build results
       const results = {
@@ -2215,8 +3168,8 @@ function createSlashHandlers(client) {
       let registeredCommands = [];
       try {
         const appCommands = await interaction.guild.commands.fetch();
-        registeredCommands = appCommands.map(c => c.name);
-        
+        registeredCommands = appCommands.map((c) => c.name);
+
         // Also check global commands
         const globalCommands = await client.application.commands.fetch();
         for (const [, cmd] of globalCommands) {
@@ -2225,39 +3178,58 @@ function createSlashHandlers(client) {
           }
         }
       } catch (e) {
-        console.error('[testall] Could not fetch registered commands:', e);
+        console.error("[testall] Could not fetch registered commands:", e);
       }
 
       // Find commands registered in Discord but no handler locally
-      const orphanedCommands = registeredCommands.filter(name => !allHandlerNames.includes(name) && name !== 'testall');
+      const orphanedCommands = registeredCommands.filter(
+        (name) => !allHandlerNames.includes(name) && name !== "testall",
+      );
       // Find handlers that have no matching Discord registration
-      const unregisteredHandlers = allHandlerNames.filter(name => !registeredCommands.includes(name));
+      const unregisteredHandlers = allHandlerNames.filter(
+        (name) => !registeredCommands.includes(name),
+      );
 
       // 7. Build embed
       const totalCommands = allHandlerNames.length;
-      const passRate = Math.round((results.passed.length / totalCommands) * 100);
+      const passRate = Math.round(
+        (results.passed.length / totalCommands) * 100,
+      );
 
-      const statusEmoji = passRate === 100 ? '🟢' : passRate >= 75 ? '🟡' : '🔴';
+      const statusEmoji =
+        passRate === 100 ? "🟢" : passRate >= 75 ? "🟡" : "🔴";
 
       const embed = new EmbedBuilder()
-        .setColor(passRate === 100 ? '#00FF00' : passRate >= 75 ? '#FFAA00' : '#FF0000')
+        .setColor(
+          passRate === 100 ? "#00FF00" : passRate >= 75 ? "#FFAA00" : "#FF0000",
+        )
         .setTitle(`${statusEmoji} Bot Command Test — ${passRate}% OK`)
-        .setDescription(`Testet **${totalCommands}** kommandoer for **${interaction.guild.name}**`)
+        .setDescription(
+          `Testet **${totalCommands}** kommandoer for **${interaction.guild.name}**`,
+        )
         .addFields(
-          { 
-            name: `✅ Aktive (${results.passed.length})`, 
-            value: verbose ? (results.passed.join(', ') || 'Ingen') : `${results.passed.length} kommandoer klar`, 
-            inline: false 
+          {
+            name: `✅ Aktive (${results.passed.length})`,
+            value: verbose
+              ? results.passed.join(", ") || "Ingen"
+              : `${results.passed.length} kommandoer klar`,
+            inline: false,
           },
-          { 
-            name: `⏸️ Deaktiverede (${results.disabled.length})`, 
-            value: results.disabled.length > 0 ? results.disabled.join(', ') : 'Ingen', 
-            inline: false 
+          {
+            name: `⏸️ Deaktiverede (${results.disabled.length})`,
+            value:
+              results.disabled.length > 0
+                ? results.disabled.join(", ")
+                : "Ingen",
+            inline: false,
           },
           {
             name: `⚠️ Mangler handler (${results.noHandler.length})`,
-            value: results.noHandler.length > 0 ? results.noHandler.join(', ') : 'Ingen',
-            inline: false
+            value:
+              results.noHandler.length > 0
+                ? results.noHandler.join(", ")
+                : "Ingen",
+            inline: false,
           },
         )
         .setTimestamp()
@@ -2266,7 +3238,7 @@ function createSlashHandlers(client) {
       if (orphanedCommands.length > 0) {
         embed.addFields({
           name: `🔗 Registreret i Discord men ingen handler (${orphanedCommands.length})`,
-          value: orphanedCommands.join(', '),
+          value: orphanedCommands.join(", "),
           inline: false,
         });
       }
@@ -2274,7 +3246,7 @@ function createSlashHandlers(client) {
       if (unregisteredHandlers.length > 0) {
         embed.addFields({
           name: `📝 Handler findes men ikke registreret i Discord (${unregisteredHandlers.length})`,
-          value: unregisteredHandlers.join(', '),
+          value: unregisteredHandlers.join(", "),
           inline: false,
         });
       }
@@ -2282,20 +3254,20 @@ function createSlashHandlers(client) {
       // Module status
       const moduleNames = Object.keys(moduleStates);
       if (moduleNames.length > 0) {
-        const moduleLines = moduleNames.map(m => {
+        const moduleLines = moduleNames.map((m) => {
           const enabled = moduleStates[m];
-          return `${enabled ? '✅' : '❌'} ${m}`;
+          return `${enabled ? "✅" : "❌"} ${m}`;
         });
         embed.addFields({
-          name: '📦 Modul Status',
-          value: moduleLines.join('\n') || 'Ingen moduler',
+          name: "📦 Modul Status",
+          value: moduleLines.join("\n") || "Ingen moduler",
           inline: false,
         });
       }
 
       // Heartbeat/uptime info
       embed.addFields({
-        name: '🏓 Bot Info',
+        name: "🏓 Bot Info",
         value: `Ping: ${client.ws.ping}ms\nGuilds: ${client.guilds.cache.size}\nUptime: ${formatDuration(Math.floor(client.uptime / 1000))}`,
         inline: false,
       });
@@ -2308,20 +3280,25 @@ function createSlashHandlers(client) {
       await interaction.deferReply({ flags: 64 });
 
       try {
-        if (!interaction.guild) return interaction.editReply('❌ Denne kommando kan kun bruges på en Discord-server.');
+        if (!interaction.guild)
+          return interaction.editReply(
+            "❌ Denne kommando kan kun bruges på en Discord-server.",
+          );
 
         const guildDiscordId = interaction.guild.id;
         const userId = interaction.user.id;
         const userName = interaction.user.username;
 
         const { data: guild, error: guildError } = await supabase
-          .from('guilds')
-          .select('id')
-          .eq('guild_id', guildDiscordId)
+          .from("guilds")
+          .select("id")
+          .eq("guild_id", guildDiscordId)
           .single();
 
         if (guildError || !guild) {
-          return interaction.editReply('❌ Serveren er ikke sat op i dashboardet endnu.');
+          return interaction.editReply(
+            "❌ Serveren er ikke sat op i dashboardet endnu.",
+          );
         }
 
         const internalGuildId = guild.id;
@@ -2329,34 +3306,40 @@ function createSlashHandlers(client) {
         const subcommand = interaction.options.getSubcommand(false);
 
         if (!group || !subcommand) {
-          return interaction.editReply('❌ Ugyldigt FiveM-command format.');
+          return interaction.editReply("❌ Ugyldigt FiveM-command format.");
         }
 
         const definition = getFiveMDefinition(group, subcommand);
         if (!definition) {
-          return interaction.editReply('❌ Denne FiveM-command findes ikke i den aktive command-schema.');
+          return interaction.editReply(
+            "❌ Denne FiveM-command findes ikke i den aktive command-schema.",
+          );
         }
 
         const runtime = await getFiveMRuntime(internalGuildId);
-        const serverId = runtime.status?.server_id || 'main';
-        const permissionMode = runtime.status?.metadata?.permissionMode || 'legacy';
+        const serverId = runtime.status?.server_id || "main";
+        const permissionMode =
+          runtime.status?.metadata?.permissionMode || "legacy";
 
         // Nordisk RP uses the FXServer ACE tree as the authority. The bridge
         // evaluates identifier.discord:<id> server-side, including inherited
         // nrp_* principals. Other GuildOS servers keep the legacy role levels.
-        if (permissionMode !== 'nrp_ace') {
+        if (permissionMode !== "nrp_ace") {
           const requiredLevel = getFiveMPermission(group, subcommand);
-          const actualLevel = await getFiveMAccessLevel(internalGuildId, interaction);
+          const actualLevel = await getFiveMAccessLevel(
+            internalGuildId,
+            interaction,
+          );
           if (!permissionAtLeast(actualLevel, requiredLevel)) {
             return interaction.editReply(
               `🔒 Du mangler FiveM-rettighed. Kræver **${requiredLevel}**, du har **${actualLevel}**.\n` +
-              'En serveradministrator kan tildele roller under **FiveM → Permissions**.'
+                "En serveradministrator kan tildele roller under **FiveM → Permissions**.",
             );
           }
         }
         if (!runtime.enabled) {
           return interaction.editReply(
-            '⚙️ FiveM-integrationen er ikke aktiveret endnu. Åbn **Dashboard → FiveM → Opsætning** og gennemfør guiden.'
+            "⚙️ FiveM-integrationen er ikke aktiveret endnu. Åbn **Dashboard → FiveM → Opsætning** og gennemfør guiden.",
           );
         }
 
@@ -2376,65 +3359,86 @@ function createSlashHandlers(client) {
           commandData.targetPlayerId = Number(commandData.id);
           delete commandData.id;
         }
-        if (!commandData.reason && commandData.message) commandData.reason = commandData.message;
+        if (!commandData.reason && commandData.message)
+          commandData.reason = commandData.message;
 
         const cmdLabel = `/fivem ${group} ${subcommand}`;
 
         // Read-only status commands use the synchronized tables directly.
-        if (group === 'server' && subcommand === 'players') {
+        if (group === "server" && subcommand === "players") {
           const { data: players, error: playersErr } = await supabase
-            .from('fivem_online_players')
-            .select('player_id, character_name, discord_username, ping')
-            .eq('guild_id', internalGuildId)
-            .eq('server_id', serverId)
-            .order('player_id', { ascending: true });
+            .from("fivem_online_players")
+            .select("player_id, character_name, discord_username, ping")
+            .eq("guild_id", internalGuildId)
+            .eq("server_id", serverId)
+            .order("player_id", { ascending: true });
 
-          if (playersErr) return interaction.editReply(`❌ Kunne ikke hente spillerlisten: ${playersErr.message}`);
+          if (playersErr)
+            return interaction.editReply(
+              `❌ Kunne ikke hente spillerlisten: ${playersErr.message}`,
+            );
 
           const lines = (players || []).map((player) => {
-            const name = player.character_name || player.discord_username || `Player #${player.player_id}`;
-            return `[${player.player_id}] ${name}${player.ping !== null ? ` (${player.ping}ms)` : ''}`;
+            const name =
+              player.character_name ||
+              player.discord_username ||
+              `Player #${player.player_id}`;
+            return `[${player.player_id}] ${name}${player.ping !== null ? ` (${player.ping}ms)` : ""}`;
           });
 
-          if (!lines.length) return interaction.editReply('👥 **Spillere online: 0**');
-          let body = lines.join('\n');
-          if (body.length > 1800) body = body.slice(0, 1800) + '\n…';
-          return interaction.editReply(`👥 **Spillere online: ${lines.length}**\n\`\`\`\n${body}\n\`\`\``);
-        }
-
-        if (group === 'server' && subcommand === 'count') {
-          const { count, error } = await supabase
-            .from('fivem_online_players')
-            .select('id', { count: 'exact', head: true })
-            .eq('guild_id', internalGuildId)
-            .eq('server_id', serverId);
-          if (error) return interaction.editReply(`❌ Kunne ikke hente spillerantal: ${error.message}`);
-          return interaction.editReply(`👥 **${count || 0}** spiller(e) online.`);
-        }
-
-        if (group === 'server' && subcommand === 'info') {
-          const status = runtime.status;
-          if (!status) return interaction.editReply('🔴 Ingen heartbeat modtaget fra FiveM-bridgen endnu.');
+          if (!lines.length)
+            return interaction.editReply("👥 **Spillere online: 0**");
+          let body = lines.join("\n");
+          if (body.length > 1800) body = body.slice(0, 1800) + "\n…";
           return interaction.editReply(
-            `**${status.server_name || runtime.settings?.server_name || 'FiveM Server'}**\n` +
-            `Status: ${runtime.online ? '🟢 Online' : '🔴 Offline / heartbeat mangler'}\n` +
-            `Spillere: ${status.player_count || 0}/${status.max_players || 0}\n` +
-            `Uptime: ${formatDuration(status.uptime_seconds || 0)}`
+            `👥 **Spillere online: ${lines.length}**\n\`\`\`\n${body}\n\`\`\``,
+          );
+        }
+
+        if (group === "server" && subcommand === "count") {
+          const { count, error } = await supabase
+            .from("fivem_online_players")
+            .select("id", { count: "exact", head: true })
+            .eq("guild_id", internalGuildId)
+            .eq("server_id", serverId);
+          if (error)
+            return interaction.editReply(
+              `❌ Kunne ikke hente spillerantal: ${error.message}`,
+            );
+          return interaction.editReply(
+            `👥 **${count || 0}** spiller(e) online.`,
+          );
+        }
+
+        if (group === "server" && subcommand === "info") {
+          const status = runtime.status;
+          if (!status)
+            return interaction.editReply(
+              "🔴 Ingen heartbeat modtaget fra FiveM-bridgen endnu.",
+            );
+          return interaction.editReply(
+            `**${status.server_name || runtime.settings?.server_name || "FiveM Server"}**\n` +
+              `Status: ${runtime.online ? "🟢 Online" : "🔴 Offline / heartbeat mangler"}\n` +
+              `Spillere: ${status.player_count || 0}/${status.max_players || 0}\n` +
+              `Uptime: ${formatDuration(status.uptime_seconds || 0)}`,
           );
         }
 
         if (!runtime.online) {
           return interaction.editReply(
-            '🔌 **FiveM Bridge er offline.** Kommandoen blev ikke lagt i kø.\n' +
-            'Tjek **Dashboard → FiveM → Opsætning**, resource-status og server.cfg.'
+            "🔌 **FiveM Bridge er offline.** Kommandoen blev ikke lagt i kø.\n" +
+              "Tjek **Dashboard → FiveM → Opsætning**, resource-status og server.cfg.",
           );
         }
 
         const effectiveCommand = queueCommandName(group, subcommand);
-        console.log(`[FiveM] ${cmdLabel} -> ${effectiveCommand}`, JSON.stringify(commandData));
+        console.log(
+          `[FiveM] ${cmdLabel} -> ${effectiveCommand}`,
+          JSON.stringify(commandData),
+        );
 
         const { data: queuedRow, error: queueError } = await supabase
-          .from('fivem_command_queue')
+          .from("fivem_command_queue")
           .insert({
             guild_id: internalGuildId,
             server_id: serverId,
@@ -2445,17 +3449,19 @@ function createSlashHandlers(client) {
             target_name: commandData.targetName || null,
             moderator_discord_id: userId,
             moderator_name: userName,
-            status: 'pending',
+            status: "pending",
           })
-          .select('id')
+          .select("id")
           .single();
 
         if (queueError || !queuedRow?.id) {
-          console.error('[FiveM] Queue error:', queueError);
-          return interaction.editReply(`❌ Kunne ikke lægge kommandoen i kø: ${queueError?.message || 'ukendt fejl'}`);
+          console.error("[FiveM] Queue error:", queueError);
+          return interaction.editReply(
+            `❌ Kunne ikke lægge kommandoen i kø: ${queueError?.message || "ukendt fejl"}`,
+          );
         }
 
-        await supabase.from('fivem_action_logs').insert({
+        await supabase.from("fivem_action_logs").insert({
           guild_id: internalGuildId,
           action_type: effectiveCommand,
           target_discord_id: commandData.targetDiscordId || null,
@@ -2463,19 +3469,19 @@ function createSlashHandlers(client) {
           moderator_discord_id: userId,
           moderator_name: userName,
           reason: commandData.reason || null,
-          metadata: { source: 'discord', ...commandData },
+          metadata: { source: "discord", ...commandData },
         });
 
         let resultRow = null;
         for (let i = 0; i < 30; i++) {
           await new Promise((resolve) => setTimeout(resolve, 500));
           const { data: row } = await supabase
-            .from('fivem_command_queue')
-            .select('status, result')
-            .eq('id', queuedRow.id)
+            .from("fivem_command_queue")
+            .select("status, result")
+            .eq("id", queuedRow.id)
             .single();
 
-          if (row && row.status !== 'pending' && row.status !== 'processing') {
+          if (row && row.status !== "pending" && row.status !== "processing") {
             resultRow = row;
             break;
           }
@@ -2483,24 +3489,31 @@ function createSlashHandlers(client) {
 
         if (!resultRow) {
           return interaction.editReply(
-            `⏳ ${cmdLabel} er sendt til serveren, men svaret tager længere end forventet. Se resultatet i FiveM-loggen på dashboardet.`
+            `⏳ ${cmdLabel} er sendt til serveren, men svaret tager længere end forventet. Se resultatet i FiveM-loggen på dashboardet.`,
           );
         }
 
-        if (resultRow.status === 'failed') {
-          return interaction.editReply(`❌ ${cmdLabel} fejlede:\n\`\`\`\n${resultRow.result || 'Ukendt fejl'}\n\`\`\``);
+        if (resultRow.status === "failed") {
+          return interaction.editReply(
+            `❌ ${cmdLabel} fejlede:\n\`\`\`\n${resultRow.result || "Ukendt fejl"}\n\`\`\``,
+          );
         }
 
-        const rawResult = String(resultRow.result || '').trim();
+        const rawResult = String(resultRow.result || "").trim();
         let message = `✅ ${cmdLabel} udført.`;
         if (rawResult) {
-          const safeResult = rawResult.length > 1700 ? rawResult.slice(0, 1700) + '…' : rawResult;
+          const safeResult =
+            rawResult.length > 1700
+              ? rawResult.slice(0, 1700) + "…"
+              : rawResult;
           message += `\n\`\`\`\n${safeResult}\n\`\`\``;
         }
         return interaction.editReply(message);
       } catch (error) {
-        console.error('[FiveM] Command error:', error);
-        return interaction.editReply('❌ Der opstod en intern fejl i FiveM-integrationen.').catch(() => {});
+        console.error("[FiveM] Command error:", error);
+        return interaction
+          .editReply("❌ Der opstod en intern fejl i FiveM-integrationen.")
+          .catch(() => {});
       }
     },
   };
@@ -2508,12 +3521,13 @@ function createSlashHandlers(client) {
 
 // Music command adapter
 async function handleMusicCommand(interaction, command, args) {
-  if (!interaction.deferred && !interaction.replied) await interaction.deferReply();
+  if (!interaction.deferred && !interaction.replied)
+    await interaction.deferReply();
 
   if (musicCommands && musicCommands[command]) {
     await musicCommands[command](interaction);
   } else {
-    await interaction.editReply('❌ Musik kommando ikke tilgængelig.');
+    await interaction.editReply("❌ Musik kommando ikke tilgængelig.");
   }
 }
 
@@ -2523,7 +3537,7 @@ async function handleMusicCommand(interaction, command, args) {
  * Helper to determine if a bot instance should handle events for a specific guild.
  * - Custom bot (guildId set): only handles events for its own Discord guild ID
  * - Default bot (guildId null): only handles events for guilds WITHOUT an active custom bot
- * 
+ *
  * This prevents duplicate processing when both default + custom bots are in the same guild.
  */
 function hasCustomBotForDiscordGuild(discordGuildId) {
@@ -2533,9 +3547,9 @@ function hasCustomBotForDiscordGuild(discordGuildId) {
 
   for (const [, bot] of manager.bots) {
     if (
-      bot?.client?.isReady?.()
-      && bot?.config?.discord_guild_id === discordGuildId
-      && bot.client.guilds.cache.has(discordGuildId)
+      bot?.client?.isReady?.() &&
+      bot?.config?.discord_guild_id === discordGuildId &&
+      bot.client.guilds.cache.has(discordGuildId)
     ) {
       return true;
     }
@@ -2544,27 +3558,37 @@ function hasCustomBotForDiscordGuild(discordGuildId) {
   return false;
 }
 
-function createGuildFilter(client, internalGuildId, assignedDiscordGuildId = null) {
+function createGuildFilter(
+  client,
+  internalGuildId,
+  assignedDiscordGuildId = null,
+) {
   return (eventGuildId) => {
     if (!eventGuildId) return false;
-    
+
     // Custom bot: only handle the Discord guild explicitly tied to its DB config.
     // If the API has not supplied the mapping yet, only allow a safe single-guild
     // fallback. Never let a multi-guild custom token process every guild it can see.
     if (internalGuildId) {
       if (assignedDiscordGuildId) {
-        return eventGuildId === assignedDiscordGuildId
-          && Boolean(client?.guilds?.cache?.has(eventGuildId));
+        return (
+          eventGuildId === assignedDiscordGuildId &&
+          Boolean(client?.guilds?.cache?.has(eventGuildId))
+        );
       }
 
-      return client?.guilds?.cache?.size === 1
-        && Boolean(client.guilds.cache.has(eventGuildId));
+      return (
+        client?.guilds?.cache?.size === 1 &&
+        Boolean(client.guilds.cache.has(eventGuildId))
+      );
     }
-    
+
     // Default bot: only handle guilds it is actually in and that DON'T have
     // an explicitly assigned custom bot.
-    return Boolean(client?.guilds?.cache?.has(eventGuildId))
-      && !hasCustomBotForDiscordGuild(eventGuildId);
+    return (
+      Boolean(client?.guilds?.cache?.has(eventGuildId)) &&
+      !hasCustomBotForDiscordGuild(eventGuildId)
+    );
   };
 }
 
@@ -2573,9 +3597,13 @@ function createGuildFilter(client, internalGuildId, assignedDiscordGuildId = nul
  * This is called for EVERY bot instance (default + custom bots)
  */
 manager.registerHandler((client, guildId, assignedDiscordGuildId) => {
-  const clientLabel = guildId ? `custom:${guildId}` : 'default';
-  const shouldHandleGuild = createGuildFilter(client, guildId, assignedDiscordGuildId);
-  
+  const clientLabel = guildId ? `custom:${guildId}` : "default";
+  const shouldHandleGuild = createGuildFilter(
+    client,
+    guildId,
+    assignedDiscordGuildId,
+  );
+
   console.log(`[Bot] Registrerer handlers for ${clientLabel}...`);
 
   // Initialize music for every Discord client.
@@ -2592,14 +3620,21 @@ manager.registerHandler((client, guildId, assignedDiscordGuildId) => {
 
   // Setup feature handlers with guild filtering
   try {
-    setupTicketHandler(client, { shouldHandleGuild, checkCommandAccess, queueCommandExecution });
+    setupTicketHandler(client, {
+      shouldHandleGuild,
+      checkCommandAccess,
+      queueCommandExecution,
+    });
     console.log(`[Bot] ✅ Ticket handler for ${clientLabel}`);
   } catch (e) {
     console.error(`[Bot] ❌ Ticket handler fejl:`, e.message);
   }
 
   try {
-    const welcomeHandler = setupWelcomeHandler(client, { shouldHandleGuild, supabase });
+    const welcomeHandler = setupWelcomeHandler(client, {
+      shouldHandleGuild,
+      supabase,
+    });
     handlerInstances.set(`welcome_${clientLabel}`, welcomeHandler);
     console.log(`[Bot] ✅ Welcome handler for ${clientLabel}`);
   } catch (e) {
@@ -2635,16 +3670,18 @@ manager.registerHandler((client, guildId, assignedDiscordGuildId) => {
   }
 
   try {
-    const honeypot = setupHoneypotHandler(client, supabase, { shouldHandleGuild });
+    const honeypot = setupHoneypotHandler(client, supabase, {
+      shouldHandleGuild,
+    });
     // Post/refresh warning message in all enabled honeypot channels on startup
-    client.guilds.cache.forEach(g => {
-      if (!shouldHandleGuild || shouldHandleGuild(g.id)) honeypot.ensureWarningMessage(g.id).catch(() => {});
+    client.guilds.cache.forEach((g) => {
+      if (!shouldHandleGuild || shouldHandleGuild(g.id))
+        honeypot.ensureWarningMessage(g.id).catch(() => {});
     });
     console.log(`[Bot] ✅ Honeypot handler for ${clientLabel}`);
   } catch (e) {
     console.error(`[Bot] ❌ Honeypot handler fejl:`, e.message);
   }
-
 
   try {
     initXPHandler(client, SUPABASE_URL, BOT_SECRET_KEY, { shouldHandleGuild });
@@ -2658,7 +3695,7 @@ manager.registerHandler((client, guildId, assignedDiscordGuildId) => {
     registerLogHandlers(client, {
       supabaseUrl: SUPABASE_URL,
       botSecretKey: BOT_SECRET_KEY,
-      shouldLogGuild: shouldHandleGuild
+      shouldLogGuild: shouldHandleGuild,
     });
     console.log(`[Bot] ✅ Log handlers for ${clientLabel}`);
   } catch (e) {
@@ -2672,7 +3709,7 @@ manager.registerHandler((client, guildId, assignedDiscordGuildId) => {
       SUPABASE_URL,
       SUPABASE_SERVICE_ROLE_KEY,
       BOT_SECRET_KEY,
-      { shouldHandleGuild }
+      { shouldHandleGuild },
     );
     console.log(`[Bot] ✅ JTC handler for ${clientLabel}`);
   } catch (e) {
@@ -2681,12 +3718,9 @@ manager.registerHandler((client, guildId, assignedDiscordGuildId) => {
 
   // JTC button/modal handler (control panel interactions)
   try {
-    jtcButtonHandler.init(
-      client,
-      SUPABASE_URL,
-      SUPABASE_SERVICE_ROLE_KEY,
-      { shouldHandleGuild }
-    );
+    jtcButtonHandler.init(client, SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
+      shouldHandleGuild,
+    });
     console.log(`[Bot] ✅ JTC button handler for ${clientLabel}`);
   } catch (e) {
     console.error(`[Bot] ❌ JTC button handler fejl:`, e.message);
@@ -2727,7 +3761,9 @@ manager.registerHandler((client, guildId, assignedDiscordGuildId) => {
   // Warning Handler - points-based warning system
   let warningHandler = null;
   try {
-    warningHandler = new WarningHandler(client, supabase, { shouldHandleGuild });
+    warningHandler = new WarningHandler(client, supabase, {
+      shouldHandleGuild,
+    });
     handlerInstances.set(`warning_${clientLabel}`, warningHandler);
     console.log(`[Bot] ✅ Warning handler for ${clientLabel}`);
   } catch (e) {
@@ -2736,8 +3772,12 @@ manager.registerHandler((client, guildId, assignedDiscordGuildId) => {
 
   // Analytics Handler - tracks activity for dashboard
   try {
-    const analyticsHandler = new AnalyticsHandler(client, supabase, { shouldHandleGuild });
-    analyticsHandler.init().catch(err => console.error(`[Bot] Analytics init error:`, err));
+    const analyticsHandler = new AnalyticsHandler(client, supabase, {
+      shouldHandleGuild,
+    });
+    analyticsHandler
+      .init()
+      .catch((err) => console.error(`[Bot] Analytics init error:`, err));
     handlerInstances.set(`analytics_${clientLabel}`, analyticsHandler);
     console.log(`[Bot] ✅ Analytics handler for ${clientLabel}`);
   } catch (e) {
@@ -2754,7 +3794,9 @@ manager.registerHandler((client, guildId, assignedDiscordGuildId) => {
 
   // Modmail Handler - DM-to-channel system (uses edge function for DB operations)
   try {
-    setupModmailHandler(client, SUPABASE_URL, BOT_SECRET_KEY, { shouldHandleGuild });
+    setupModmailHandler(client, SUPABASE_URL, BOT_SECRET_KEY, {
+      shouldHandleGuild,
+    });
     console.log(`[Bot] ✅ Modmail handler for ${clientLabel}`);
   } catch (e) {
     console.error(`[Bot] ❌ Modmail handler fejl:`, e.message);
@@ -2770,7 +3812,10 @@ manager.registerHandler((client, guildId, assignedDiscordGuildId) => {
 
   // Suggestion Handler - voting on suggestions
   try {
-    setupSuggestionHandler(client, supabase, { shouldHandleGuild, isCustomBot: !!guildId });
+    setupSuggestionHandler(client, supabase, {
+      shouldHandleGuild,
+      isCustomBot: !!guildId,
+    });
     console.log(`[Bot] ✅ Suggestion handler for ${clientLabel}`);
   } catch (e) {
     console.error(`[Bot] ❌ Suggestion handler fejl:`, e.message);
@@ -2778,8 +3823,11 @@ manager.registerHandler((client, guildId, assignedDiscordGuildId) => {
 
   // Verification Handler - anti-raid verification
   try {
-    const verificationHandler = setupVerificationHandler(client, supabase, { shouldHandleGuild });
-    if (verificationHandler) handlerInstances.set(`verification_${clientLabel}`, verificationHandler);
+    const verificationHandler = setupVerificationHandler(client, supabase, {
+      shouldHandleGuild,
+    });
+    if (verificationHandler)
+      handlerInstances.set(`verification_${clientLabel}`, verificationHandler);
     console.log(`[Bot] ✅ Verification handler for ${clientLabel}`);
   } catch (e) {
     console.error(`[Bot] ❌ Verification handler fejl:`, e.message);
@@ -2787,8 +3835,12 @@ manager.registerHandler((client, guildId, assignedDiscordGuildId) => {
 
   // Stats Handler - auto-updating voice channel names
   try {
-    const statsHandler = setupStatsHandler(client, supabase, { shouldHandleGuild, isCustomBot: !!guildId });
-    if (statsHandler) handlerInstances.set(`stats_${clientLabel}`, statsHandler);
+    const statsHandler = setupStatsHandler(client, supabase, {
+      shouldHandleGuild,
+      isCustomBot: !!guildId,
+    });
+    if (statsHandler)
+      handlerInstances.set(`stats_${clientLabel}`, statsHandler);
     console.log(`[Bot] ✅ Stats handler for ${clientLabel}`);
   } catch (e) {
     console.error(`[Bot] ❌ Stats handler fejl:`, e.message);
@@ -2796,8 +3848,12 @@ manager.registerHandler((client, guildId, assignedDiscordGuildId) => {
 
   // Global Ban Handler - listens for global bans via realtime
   try {
-    const globalBanHandler = setupGlobalBanHandler(client, supabase, { shouldHandleGuild, isCustomBot: !!guildId });
-    if (globalBanHandler) handlerInstances.set(`globalban_${clientLabel}`, globalBanHandler);
+    const globalBanHandler = setupGlobalBanHandler(client, supabase, {
+      shouldHandleGuild,
+      isCustomBot: !!guildId,
+    });
+    if (globalBanHandler)
+      handlerInstances.set(`globalban_${clientLabel}`, globalBanHandler);
     console.log(`[Bot] ✅ Global Ban handler for ${clientLabel}`);
   } catch (e) {
     console.error(`[Bot] ❌ Global Ban handler fejl:`, e.message);
@@ -2821,7 +3877,10 @@ manager.registerHandler((client, guildId, assignedDiscordGuildId) => {
 
   // Poll Handler
   try {
-    setupPollHandler(client, supabase, { shouldHandleGuild, isCustomBot: !!guildId });
+    setupPollHandler(client, supabase, {
+      shouldHandleGuild,
+      isCustomBot: !!guildId,
+    });
     console.log(`[Bot] ✅ Poll handler for ${clientLabel}`);
   } catch (e) {
     console.error(`[Bot] ❌ Poll handler fejl:`, e.message);
@@ -2949,7 +4008,11 @@ manager.registerHandler((client, guildId, assignedDiscordGuildId) => {
 
   // Music Quiz Handler
   try {
-    setupMusicQuizHandler(client, supabase, { shouldHandleGuild, checkCommandAccess, queueCommandExecution });
+    setupMusicQuizHandler(client, supabase, {
+      shouldHandleGuild,
+      checkCommandAccess,
+      queueCommandExecution,
+    });
     console.log(`[Bot] ✅ Music Quiz handler for ${clientLabel}`);
   } catch (e) {
     console.error(`[Bot] ❌ Music Quiz handler fejl:`, e.message);
@@ -2987,7 +4050,11 @@ manager.registerHandler((client, guildId, assignedDiscordGuildId) => {
     setupSnipeTracker(client, { shouldHandleGuild });
     Object.assign(
       slashHandlers,
-      createExtraHandlers(client, { supabase, handlers: slashHandlers, shopApi })
+      createExtraHandlers(client, {
+        supabase,
+        handlers: slashHandlers,
+        shopApi,
+      }),
     );
     console.log(`[Bot] ✅ Extra commands for ${clientLabel}`);
   } catch (e) {
@@ -2998,7 +4065,11 @@ manager.registerHandler((client, guildId, assignedDiscordGuildId) => {
   try {
     Object.assign(
       slashHandlers,
-      createAdminHandlers(client, { supabase, handlers: slashHandlers, getKazagumo })
+      createAdminHandlers(client, {
+        supabase,
+        handlers: slashHandlers,
+        getKazagumo,
+      }),
     );
     console.log(`[Bot] ✅ Admin commands for ${clientLabel}`);
   } catch (e) {
@@ -3025,10 +4096,16 @@ manager.registerHandler((client, guildId, assignedDiscordGuildId) => {
   try {
     Object.assign(
       slashHandlers,
-      createAdvancedModerationHandlers(client, { supabase })
+      createAdvancedModerationHandlers(client, { supabase }),
     );
-    const moderationScheduler = setupModerationScheduler(client, { supabase, shouldHandleGuild });
-    handlerInstances.set(`moderation_scheduler_${clientLabel}`, moderationScheduler);
+    const moderationScheduler = setupModerationScheduler(client, {
+      supabase,
+      shouldHandleGuild,
+    });
+    handlerInstances.set(
+      `moderation_scheduler_${clientLabel}`,
+      moderationScheduler,
+    );
     console.log(`[Bot] ✅ Advanced moderation for ${clientLabel}`);
   } catch (e) {
     console.error(`[Bot] ❌ Advanced moderation fejl:`, e.message);
@@ -3036,13 +4113,16 @@ manager.registerHandler((client, guildId, assignedDiscordGuildId) => {
 
   // Platform V3 workflows, command-health alerts and ticket SLA alerts
   try {
-    const platformV3Handler = setupPlatformV3Handler(client, supabase, { shouldHandleGuild });
+    const platformV3Handler = setupPlatformV3Handler(client, supabase, {
+      shouldHandleGuild,
+    });
     handlerInstances.set(`platform_v3_${clientLabel}`, platformV3Handler);
-    console.log(`[Bot] ✅ Platform V3 workflow/alert engine for ${clientLabel}`);
+    console.log(
+      `[Bot] ✅ Platform V3 workflow/alert engine for ${clientLabel}`,
+    );
   } catch (e) {
     console.error(`[Bot] ❌ Platform V3 handler fejl:`, e.message);
   }
-
 
   // The official GuildOS application is Discovery-enabled and must not expose
   // gambling/illegal-themed commands. Custom bots intentionally keep the full
@@ -3052,13 +4132,18 @@ manager.registerHandler((client, guildId, assignedDiscordGuildId) => {
       delete slashHandlers[commandName];
     }
     console.log(
-      `[Bot] ✅ Discovery-safe runtime for default: disabled ${[...DISCOVERY_EXCLUDED_COMMANDS].join(', ')}`
+      `[Bot] ✅ Discovery-safe runtime for default: disabled ${[...DISCOVERY_EXCLUDED_COMMANDS].join(", ")}`,
     );
   }
 
   // Register prefix command handler (mirrors all slash commands)
   try {
-    setupPrefixHandler(client, slashHandlers, { shouldHandleGuild, isCommandEnabled, checkCommandAccess, queueCommandExecution });
+    setupPrefixHandler(client, slashHandlers, {
+      shouldHandleGuild,
+      isCommandEnabled,
+      checkCommandAccess,
+      queueCommandExecution,
+    });
     console.log(`[Bot] ✅ Prefix handler for ${clientLabel}`);
   } catch (e) {
     console.error(`[Bot] ❌ Prefix handler fejl:`, e.message);
@@ -3067,15 +4152,30 @@ manager.registerHandler((client, guildId, assignedDiscordGuildId) => {
   // Register interaction handler for slash commands
   client.on(Events.InteractionCreate, async (interaction) => {
     // Handle giveaway buttons (sync check first to avoid async overhead for non-buttons)
-    if (interaction.isButton() && interaction.customId?.startsWith('giveaway_enter_')) {
-      if (await handleGiveawayButton(interaction, shouldHandleGuild, Boolean(guildId))) return;
+    if (
+      interaction.isButton() &&
+      interaction.customId?.startsWith("giveaway_enter_")
+    ) {
+      if (
+        await handleGiveawayButton(
+          interaction,
+          shouldHandleGuild,
+          Boolean(guildId),
+        )
+      )
+        return;
     }
 
     if (!interaction.isChatInputCommand()) return;
 
     // Slash handlers in this runtime are guild-scoped (permissions, analytics, modules).
     if (!interaction.guild) {
-      return interaction.reply({ content: '❌ Denne kommando kan kun bruges på en Discord-server.', flags: 64 }).catch(() => {});
+      return interaction
+        .reply({
+          content: "❌ Denne kommando kan kun bruges på en Discord-server.",
+          flags: 64,
+        })
+        .catch(() => {});
     }
 
     // Only handle commands for guilds this bot instance is responsible for
@@ -3095,9 +4195,15 @@ manager.registerHandler((client, guildId, assignedDiscordGuildId) => {
       guildId: interaction.guild.id,
       commandName,
       userId: interaction.user.id,
-      roleIds: interaction.member?.roles?.cache ? [...interaction.member.roles.cache.keys()] : [],
+      roleIds: interaction.member?.roles?.cache
+        ? [...interaction.member.roles.cache.keys()]
+        : [],
       channelId: interaction.channelId,
-      isAdmin: Boolean(interaction.member?.permissions?.has?.(PermissionFlagsBits.Administrator)),
+      isAdmin: Boolean(
+        interaction.member?.permissions?.has?.(
+          PermissionFlagsBits.Administrator,
+        ),
+      ),
     });
 
     if (!access.allowed) {
@@ -3106,12 +4212,15 @@ manager.registerHandler((client, guildId, assignedDiscordGuildId) => {
         commandName,
         userId: interaction.user.id,
         channelId: interaction.channelId,
-        source: 'slash',
-        status: 'blocked',
+        source: "slash",
+        status: "blocked",
         latencyMs: Date.now() - commandStartedAt,
-        blockedReason: access.reason || 'access',
+        blockedReason: access.reason || "access",
       });
-      return interaction.reply({ content: access.message || '🚫 Du har ikke adgang til denne command.', flags: 64 });
+      return interaction.reply({
+        content: access.message || "🚫 Du har ikke adgang til denne command.",
+        flags: 64,
+      });
     }
 
     try {
@@ -3121,8 +4230,8 @@ manager.registerHandler((client, guildId, assignedDiscordGuildId) => {
         commandName,
         userId: interaction.user.id,
         channelId: interaction.channelId,
-        source: 'slash',
-        status: 'success',
+        source: "slash",
+        status: "success",
         latencyMs: Date.now() - commandStartedAt,
       });
     } catch (error) {
@@ -3131,14 +4240,17 @@ manager.registerHandler((client, guildId, assignedDiscordGuildId) => {
         commandName,
         userId: interaction.user.id,
         channelId: interaction.channelId,
-        source: 'slash',
-        status: 'error',
+        source: "slash",
+        status: "error",
         latencyMs: Date.now() - commandStartedAt,
         error,
       });
 
       console.error(`[Bot] Fejl i command ${commandName}:`, error);
-      const reply = { content: '❌ Der skete en fejl under udførelse af kommandoen.', flags: 64 };
+      const reply = {
+        content: "❌ Der skete en fejl under udførelse af kommandoen.",
+        flags: 64,
+      };
       if (interaction.deferred || interaction.replied) {
         await interaction.editReply({ content: reply.content }).catch(() => {});
       } else {
@@ -3152,27 +4264,33 @@ manager.registerHandler((client, guildId, assignedDiscordGuildId) => {
 
 // ==================== START BOT MANAGER ====================
 
-console.log('');
-console.log('========================================');
-console.log('      Discord Bot - Starting...        ');
-console.log('========================================');
-console.log('');
+console.log("");
+console.log("========================================");
+console.log("      Discord Bot - Starting...        ");
+console.log("========================================");
+console.log("");
 
-manager.start().then(() => {
-  console.log('');
-  console.log('[Bot] ✅ Bot Manager startet succesfuldt');
-  console.log('[Bot] 📊 Status:', JSON.stringify(manager.getStatus(), null, 2));
-}).catch((error) => {
-  console.error('[Bot] ❌ Kunne ikke starte bot manager:', error);
-  process.exit(1);
-});
+manager
+  .start()
+  .then(() => {
+    console.log("");
+    console.log("[Bot] ✅ Bot Manager startet succesfuldt");
+    console.log(
+      "[Bot] 📊 Status:",
+      JSON.stringify(manager.getStatus(), null, 2),
+    );
+  })
+  .catch((error) => {
+    console.error("[Bot] ❌ Kunne ikke starte bot manager:", error);
+    process.exit(1);
+  });
 
 // ==================== GRACEFUL SHUTDOWN ====================
 
-process.on('SIGINT', async () => {
-  console.log('');
-  console.log('[Bot] ⚠️ Modtaget SIGINT - lukker ned...');
-  
+process.on("SIGINT", async () => {
+  console.log("");
+  console.log("[Bot] ⚠️ Modtaget SIGINT - lukker ned...");
+
   try {
     // Send offline status before shutdown
     const defaultClient = manager.defaultClient;
@@ -3192,18 +4310,18 @@ process.on('SIGINT', async () => {
     clearInterval(commandExecutionFlushInterval);
     await flushCommandExecutionEvents();
     await manager.stop();
-    console.log('[Bot] ✅ Bot Manager stoppet');
+    console.log("[Bot] ✅ Bot Manager stoppet");
   } catch (error) {
-    console.error('[Bot] ❌ Fejl under nedlukning:', error);
+    console.error("[Bot] ❌ Fejl under nedlukning:", error);
   }
-  
+
   process.exit(0);
 });
 
-process.on('SIGTERM', async () => {
-  console.log('');
-  console.log('[Bot] ⚠️ Modtaget SIGTERM - lukker ned...');
-  
+process.on("SIGTERM", async () => {
+  console.log("");
+  console.log("[Bot] ⚠️ Modtaget SIGTERM - lukker ned...");
+
   try {
     // Cleanup handler instances
     for (const [key, handler] of handlerInstances) {
@@ -3217,28 +4335,44 @@ process.on('SIGTERM', async () => {
     clearInterval(commandExecutionFlushInterval);
     await flushCommandExecutionEvents();
     await manager.stop();
-    console.log('[Bot] ✅ Bot Manager stoppet');
+    console.log("[Bot] ✅ Bot Manager stoppet");
   } catch (error) {
-    console.error('[Bot] ❌ Fejl under nedlukning:', error);
+    console.error("[Bot] ❌ Fejl under nedlukning:", error);
   }
-  
+
   process.exit(0);
 });
 
 // Handle uncaught exceptions — log and exit so process managers (PM2) restart cleanly.
-process.on('uncaughtException', (error) => {
-  console.error('[Bot] ❌ Uncaught Exception:', error);
+process.on("uncaughtException", (error) => {
+  console.error("[Bot] ❌ Uncaught Exception:", error);
   try {
-    botLog('00000000-0000-0000-0000-000000000000', 'error', 'system', `Uncaught Exception: ${error.message}`, { stack: error.stack });
-  } catch (_) { /* ignore logging failures during crash */ }
+    botLog(
+      "00000000-0000-0000-0000-000000000000",
+      "error",
+      "system",
+      `Uncaught Exception: ${error.message}`,
+      { stack: error.stack },
+    );
+  } catch (_) {
+    /* ignore logging failures during crash */
+  }
   setTimeout(() => process.exit(1), 500).unref?.();
 });
 
-process.on('unhandledRejection', (error) => {
-  console.error('[Bot] ❌ Unhandled Rejection:', error);
+process.on("unhandledRejection", (error) => {
+  console.error("[Bot] ❌ Unhandled Rejection:", error);
   try {
-    botLog('00000000-0000-0000-0000-000000000000', 'error', 'system', `Unhandled Rejection: ${error?.message || error}`, { stack: error?.stack });
-  } catch (_) { /* ignore */ }
+    botLog(
+      "00000000-0000-0000-0000-000000000000",
+      "error",
+      "system",
+      `Unhandled Rejection: ${error?.message || error}`,
+      { stack: error?.stack },
+    );
+  } catch (_) {
+    /* ignore */
+  }
 });
 
 module.exports = { manager };

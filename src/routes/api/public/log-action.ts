@@ -1,34 +1,53 @@
-// @ts-nocheck
 // Migrated from Supabase Edge Function `log-action` to a TanStack server route.
-import { createFileRoute } from '@tanstack/react-router'
-import { createClient } from '@supabase/supabase-js'
+// @ts-nocheck
+import { safeEqual } from "@/lib/server/api-auth";
+import { createFileRoute } from "@tanstack/react-router";
+import { createClient } from "@supabase/supabase-js";
+import type { Untyped } from "@/types/untyped";
 
-const __env = (k: string) => process.env[k] ?? (k === 'SUPABASE_ANON_KEY' ? process.env['SUPABASE_PUBLISHABLE_KEY'] : undefined)
-let __handler: (req: Request) => Response | Promise<Response>
-const __serve = (fn: any, _opts?: any) => { __handler = fn }
-
+const __env = (k: string) =>
+  process.env[k] ??
+  (k === "SUPABASE_ANON_KEY"
+    ? process.env["SUPABASE_PUBLISHABLE_KEY"]
+    : undefined);
+let __handler: (req: Request) => Response | Promise<Response>;
+const __serve = (fn: Untyped, _opts?: Untyped) => {
+  __handler = fn;
+};
 
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-bot-secret',
-}
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type, x-bot-secret",
+};
 
 interface LogActionPayload {
-  guild_id: string
-  action_type: 'ban' | 'kick' | 'mute' | 'warn' | 'delete' | 'timeout' | 'unban' | 'unmute'
-  moderator_id: string
-  moderator_name?: string
-  target_id: string
-  target_name?: string
-  reason?: string
-  duration_seconds?: number
+  guild_id: string;
+  action_type:
+    | "ban"
+    | "kick"
+    | "mute"
+    | "warn"
+    | "delete"
+    | "timeout"
+    | "unban"
+    | "unmute";
+  moderator_id: string;
+  moderator_name?: string;
+  target_id: string;
+  target_name?: string;
+  reason?: string;
+  duration_seconds?: number;
 }
 
-async function checkIPWhitelist(req: Request, supabase: any): Promise<{ allowed: boolean; ip: string }> {
-  const clientIp = 
-    req.headers.get("cf-connecting-ip") || 
-    req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || 
-    req.headers.get("x-real-ip") || 
+async function checkIPWhitelist(
+  req: Request,
+  supabase: Untyped,
+): Promise<{ allowed: boolean; ip: string }> {
+  const clientIp =
+    req.headers.get("cf-connecting-ip") ||
+    req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+    req.headers.get("x-real-ip") ||
     "unknown";
 
   const { count, error: countError } = await supabase
@@ -54,75 +73,97 @@ async function checkIPWhitelist(req: Request, supabase: any): Promise<{ allowed:
 }
 
 __serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
+  if (req.method === "OPTIONS") {
+    return new Response("ok", { headers: corsHeaders });
   }
 
-  if (req.method !== 'POST') {
-    return new Response(
-      JSON.stringify({ error: 'Method not allowed' }),
-      { status: 405, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    )
+  if (req.method !== "POST") {
+    return new Response(JSON.stringify({ error: "Method not allowed" }), {
+      status: 405,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   }
 
   try {
     // Validate bot secret
-    const botSecret = req.headers.get('x-bot-secret')
-    const expectedSecret = __env('BOT_SECRET_KEY')
-    
-    if (!botSecret || botSecret !== expectedSecret) {
-      console.error('Invalid or missing bot secret')
+    const botSecret = req.headers.get("x-bot-secret");
+    const expectedSecret = __env("BOT_SECRET_KEY");
+
+    if (!safeEqual(botSecret, expectedSecret)) {
+      console.error("Invalid or missing bot secret");
       return new Response(
-        JSON.stringify({ error: 'Unauthorized - Invalid bot secret' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
+        JSON.stringify({ error: "Unauthorized - Invalid bot secret" }),
+        {
+          status: 401,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
     }
 
     const supabase = createClient(
-      __env('SUPABASE_URL')!,
-      __env('SUPABASE_SERVICE_ROLE_KEY')!
-    )
+      __env("SUPABASE_URL")!,
+      __env("SUPABASE_SERVICE_ROLE_KEY")!,
+    );
 
     // Check IP whitelist
     const ipCheck = await checkIPWhitelist(req, supabase);
     if (!ipCheck.allowed) {
       console.error(`IP not whitelisted: ${ipCheck.ip}`);
       return new Response(
-        JSON.stringify({ error: 'Forbidden - IP not whitelisted', ip: ipCheck.ip }),
-        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
+        JSON.stringify({
+          error: "Forbidden - IP not whitelisted",
+          ip: ipCheck.ip,
+        }),
+        {
+          status: 403,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
     }
 
-    const payload: LogActionPayload = await req.json()
+    const payload: LogActionPayload = await req.json();
 
     // Validate required fields
-    if (!payload.guild_id || !payload.action_type || !payload.moderator_id || !payload.target_id) {
+    if (
+      !payload.guild_id ||
+      !payload.action_type ||
+      !payload.moderator_id ||
+      !payload.target_id
+    ) {
       return new Response(
-        JSON.stringify({ error: 'Missing required fields: guild_id, action_type, moderator_id, target_id' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
+        JSON.stringify({
+          error:
+            "Missing required fields: guild_id, action_type, moderator_id, target_id",
+        }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
     }
 
-    console.log(`Logging action: ${payload.action_type} in guild ${payload.guild_id}`)
+    console.log(
+      `Logging action: ${payload.action_type} in guild ${payload.guild_id}`,
+    );
 
     // Find the guild by Discord guild_id
     const { data: guild, error: guildError } = await supabase
-      .from('guilds')
-      .select('id')
-      .eq('guild_id', payload.guild_id)
-      .single()
+      .from("guilds")
+      .select("id")
+      .eq("guild_id", payload.guild_id)
+      .single();
 
     if (guildError || !guild) {
-      console.error('Guild not found:', guildError)
-      return new Response(
-        JSON.stringify({ error: 'Guild not found' }),
-        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
+      console.error("Guild not found:", guildError);
+      return new Response(JSON.stringify({ error: "Guild not found" }), {
+        status: 404,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     // Insert moderation log
     const { data: log, error: insertError } = await supabase
-      .from('moderation_logs')
+      .from("moderation_logs")
       .insert({
         guild_id: guild.id,
         action_type: payload.action_type,
@@ -134,36 +175,33 @@ __serve(async (req) => {
         duration_seconds: payload.duration_seconds,
       })
       .select()
-      .single()
+      .single();
 
     if (insertError) {
-      console.error('Error inserting moderation log:', insertError)
-      return new Response(
-        JSON.stringify({ error: 'Failed to log action' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
+      console.error("Error inserting moderation log:", insertError);
+      return new Response(JSON.stringify({ error: "Failed to log action" }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
-    console.log(`Action logged successfully: ${log.id}`)
+    console.log(`Action logged successfully: ${log.id}`);
 
-    return new Response(
-      JSON.stringify({ success: true, log_id: log.id }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    )
-
+    return new Response(JSON.stringify({ success: true, log_id: log.id }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   } catch (error) {
-    console.error('Unexpected error:', error)
-    return new Response(
-      JSON.stringify({ error: 'Internal server error' }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    )
+    console.error("Unexpected error:", error);
+    return new Response(JSON.stringify({ error: "Internal server error" }), {
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   }
-})
+});
 
+const __call = ({ request }: { request: Request }) => __handler(request);
 
-const __call = ({ request }: { request: Request }) => __handler(request)
-
-export const Route = createFileRoute('/api/public/log-action')({
+export const Route = createFileRoute("/api/public/log-action")({
   server: {
     handlers: {
       GET: __call,
@@ -174,4 +212,4 @@ export const Route = createFileRoute('/api/public/log-action')({
       OPTIONS: __call,
     },
   },
-})
+});

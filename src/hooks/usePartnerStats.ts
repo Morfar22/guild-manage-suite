@@ -1,6 +1,7 @@
-import { useEffect, useState, useCallback } from 'react';
-import { useGuild } from '@/contexts/GuildContext';
-import { supabase } from '@/integrations/supabase/client';
+import { useEffect, useState, useCallback } from "react";
+import { useGuild } from "@/contexts/GuildContext";
+import { supabase } from "@/integrations/supabase/client";
+import type { Untyped } from "@/types/untyped";
 
 export interface WeeklyStat {
   id: string;
@@ -30,16 +31,16 @@ export function usePartnerStats(weeks = 8) {
       const cutoffStr = cutoff.toISOString().slice(0, 10);
 
       const { data, error } = await supabase
-        .from('twitch_partner_weekly_stats' as any)
-        .select('*')
-        .eq('guild_id', selectedGuild.id)
-        .gte('week_start', cutoffStr)
-        .order('week_start', { ascending: false });
+        .from("twitch_partner_weekly_stats" as Untyped)
+        .select("*")
+        .eq("guild_id", selectedGuild.id)
+        .gte("week_start", cutoffStr)
+        .order("week_start", { ascending: false });
 
       if (error) throw error;
       setStats((data as unknown as WeeklyStat[]) || []);
     } catch (e) {
-      console.error('Error fetching partner stats:', e);
+      console.error("Error fetching partner stats:", e);
     } finally {
       setLoading(false);
     }
@@ -52,9 +53,14 @@ export function usePartnerStats(weeks = 8) {
     const channel = supabase
       .channel(`partner-stats-${selectedGuild.id}_${crypto.randomUUID()}`)
       .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'twitch_partner_weekly_stats', filter: `guild_id=eq.${selectedGuild.id}` },
-        () => fetchStats()
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "twitch_partner_weekly_stats",
+          filter: `guild_id=eq.${selectedGuild.id}`,
+        },
+        () => fetchStats(),
       )
       .subscribe();
 

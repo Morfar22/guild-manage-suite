@@ -1,7 +1,8 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
-import { useGuild } from '@/contexts/GuildContext';
-import { toast } from 'sonner';
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { useGuild } from "@/contexts/GuildContext";
+import { toast } from "sonner";
+import type { Untyped } from "@/types/untyped";
 
 export interface EmbedButton {
   label: string;
@@ -36,14 +37,14 @@ export function useSavedEmbeds() {
   const queryClient = useQueryClient();
 
   const query = useQuery({
-    queryKey: ['saved-embeds', selectedGuild?.id],
+    queryKey: ["saved-embeds", selectedGuild?.id],
     queryFn: async () => {
       if (!selectedGuild?.id) return [];
       const { data, error } = await supabase
-        .from('saved_embeds')
-        .select('*')
-        .eq('guild_id', selectedGuild.id)
-        .order('created_at', { ascending: false });
+        .from("saved_embeds")
+        .select("*")
+        .eq("guild_id", selectedGuild.id)
+        .order("created_at", { ascending: false });
       if (error) throw error;
       return (data || []) as unknown as SavedEmbed[];
     },
@@ -51,45 +52,65 @@ export function useSavedEmbeds() {
   });
 
   const saveEmbed = useMutation({
-    mutationFn: async ({ name, embed_data }: { name: string; embed_data: EmbedData }) => {
-      if (!selectedGuild?.id) throw new Error('No guild selected');
-      const { error } = await supabase.from('saved_embeds').insert({
+    mutationFn: async ({
+      name,
+      embed_data,
+    }: {
+      name: string;
+      embed_data: EmbedData;
+    }) => {
+      if (!selectedGuild?.id) throw new Error("No guild selected");
+      const { error } = await supabase.from("saved_embeds").insert({
         guild_id: selectedGuild.id,
         name,
-        embed_data: embed_data as any,
+        embed_data: embed_data as Untyped,
       });
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['saved-embeds'] });
-      toast.success('Embed gemt!');
+      queryClient.invalidateQueries({ queryKey: ["saved-embeds"] });
+      toast.success("Embed gemt!");
     },
     onError: (e: Error) => toast.error(e.message),
   });
 
   const updateEmbed = useMutation({
-    mutationFn: async ({ id, name, embed_data }: { id: string; name: string; embed_data: EmbedData }) => {
-      const { error } = await supabase.from('saved_embeds').update({
-        name,
-        embed_data: embed_data as any,
-      }).eq('id', id);
+    mutationFn: async ({
+      id,
+      name,
+      embed_data,
+    }: {
+      id: string;
+      name: string;
+      embed_data: EmbedData;
+    }) => {
+      const { error } = await supabase
+        .from("saved_embeds")
+        .update({
+          name,
+          embed_data: embed_data as Untyped,
+        })
+        .eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['saved-embeds'] });
-      toast.success('Embed opdateret!');
+      queryClient.invalidateQueries({ queryKey: ["saved-embeds"] });
+      toast.success("Embed opdateret!");
     },
     onError: (e: Error) => toast.error(e.message),
   });
 
   const deleteEmbed = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from('saved_embeds').delete().eq('id', id);
+      const { error } = await supabase
+        .from("saved_embeds")
+        .delete()
+        .eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['saved-embeds'] });
-      toast.success('Embed slettet!');
+      queryClient.invalidateQueries({ queryKey: ["saved-embeds"] });
+      toast.success("Embed slettet!");
     },
     onError: (e: Error) => toast.error(e.message),
   });

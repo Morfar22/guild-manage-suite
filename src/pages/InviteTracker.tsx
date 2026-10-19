@@ -1,14 +1,39 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Badge } from '@/components/ui/badge';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { useInviteLeaderboard, useRecentInvites } from '@/hooks/useInviteTracker';
-import { Trophy, UserPlus, AlertTriangle, LogOut, Users, Loader2 } from 'lucide-react';
-import { formatDistanceToNow } from 'date-fns';
-import { da } from 'date-fns/locale';
+import type { Untyped } from "@/types/untyped";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  useInviteLeaderboard,
+  useRecentInvites,
+} from "@/hooks/useInviteTracker";
+import {
+  Trophy,
+  UserPlus,
+  AlertTriangle,
+  LogOut,
+  Users,
+  Loader2,
+} from "lucide-react";
+import { formatDistanceToNow } from "date-fns";
+import { da } from "date-fns/locale";
 
 export default function InviteTracker() {
-  const { data: leaderboard = [], isLoading: lbLoading } = useInviteLeaderboard();
+  const { data: leaderboard = [], isLoading: lbLoading } =
+    useInviteLeaderboard();
   const { data: recent = [], isLoading: recentLoading } = useRecentInvites(100);
 
   const totals = leaderboard.reduce(
@@ -18,7 +43,7 @@ export default function InviteTracker() {
       left: acc.left + e.left,
       total: acc.total + e.total,
     }),
-    { real: 0, fake: 0, left: 0, total: 0 }
+    { real: 0, fake: 0, left: 0, total: 0 },
   );
 
   return (
@@ -31,9 +56,24 @@ export default function InviteTracker() {
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <StatCard icon={UserPlus} label="Rigtige invites" value={totals.real} tone="success" />
-        <StatCard icon={AlertTriangle} label="Fake (nye konti)" value={totals.fake} tone="warning" />
-        <StatCard icon={LogOut} label="Forladt" value={totals.left} tone="destructive" />
+        <StatCard
+          icon={UserPlus}
+          label="Rigtige invites"
+          value={totals.real}
+          tone="success"
+        />
+        <StatCard
+          icon={AlertTriangle}
+          label="Fake (nye konti)"
+          value={totals.fake}
+          tone="warning"
+        />
+        <StatCard
+          icon={LogOut}
+          label="Forladt"
+          value={totals.left}
+          tone="destructive"
+        />
         <StatCard icon={Users} label="Total joins" value={totals.total} />
       </div>
 
@@ -51,14 +91,19 @@ export default function InviteTracker() {
           <Card>
             <CardHeader>
               <CardTitle>Top invitere</CardTitle>
-              <CardDescription>Sorteret efter antal rigtige invites</CardDescription>
+              <CardDescription>
+                Sorteret efter antal rigtige invites
+              </CardDescription>
             </CardHeader>
             <CardContent>
               {lbLoading ? (
-                <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
+                <div className="flex justify-center py-8">
+                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                </div>
               ) : leaderboard.length === 0 ? (
                 <p className="text-center text-muted-foreground py-8">
-                  Ingen invite data endnu. Når et medlem joiner via et invite, vises de her.
+                  Ingen invite data endnu. Når et medlem joiner via et invite,
+                  vises de her.
                 </p>
               ) : (
                 <Table>
@@ -76,22 +121,47 @@ export default function InviteTracker() {
                     {leaderboard.map((e, i) => (
                       <TableRow key={e.id}>
                         <TableCell className="font-bold text-muted-foreground">
-                          {i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : i + 1}
+                          {i === 0
+                            ? "🥇"
+                            : i === 1
+                              ? "🥈"
+                              : i === 2
+                                ? "🥉"
+                                : i + 1}
                         </TableCell>
                         <TableCell>
                           <div className="font-medium">{e.username}</div>
-                          <div className="text-xs text-muted-foreground">{e.id}</div>
+                          <div className="text-xs text-muted-foreground">
+                            {e.id}
+                          </div>
                         </TableCell>
                         <TableCell className="text-right">
-                          <Badge variant="default" className="bg-green-600 hover:bg-green-700">{e.real}</Badge>
+                          <Badge
+                            variant="default"
+                            className="bg-green-600 hover:bg-green-700"
+                          >
+                            {e.real}
+                          </Badge>
                         </TableCell>
                         <TableCell className="text-right">
-                          <Badge variant="outline" className="border-yellow-600 text-yellow-600">{e.fake}</Badge>
+                          <Badge
+                            variant="outline"
+                            className="border-yellow-600 text-yellow-600"
+                          >
+                            {e.fake}
+                          </Badge>
                         </TableCell>
                         <TableCell className="text-right">
-                          <Badge variant="outline" className="border-red-600 text-red-600">{e.left}</Badge>
+                          <Badge
+                            variant="outline"
+                            className="border-red-600 text-red-600"
+                          >
+                            {e.left}
+                          </Badge>
                         </TableCell>
-                        <TableCell className="text-right font-semibold">{e.total}</TableCell>
+                        <TableCell className="text-right font-semibold">
+                          {e.total}
+                        </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -105,13 +175,19 @@ export default function InviteTracker() {
           <Card>
             <CardHeader>
               <CardTitle>Seneste joins</CardTitle>
-              <CardDescription>De seneste 100 medlemmer der har joinet</CardDescription>
+              <CardDescription>
+                De seneste 100 medlemmer der har joinet
+              </CardDescription>
             </CardHeader>
             <CardContent>
               {recentLoading ? (
-                <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
+                <div className="flex justify-center py-8">
+                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                </div>
               ) : recent.length === 0 ? (
-                <p className="text-center text-muted-foreground py-8">Ingen joins registreret endnu.</p>
+                <p className="text-center text-muted-foreground py-8">
+                  Ingen joins registreret endnu.
+                </p>
               ) : (
                 <Table>
                   <TableHeader>
@@ -127,22 +203,54 @@ export default function InviteTracker() {
                     {recent.map((r) => (
                       <TableRow key={r.id}>
                         <TableCell>
-                          <div className="font-medium">{r.joined_username || 'Ukendt'}</div>
-                          <div className="text-xs text-muted-foreground">{r.joined_user_id}</div>
+                          <div className="font-medium">
+                            {r.joined_username || "Ukendt"}
+                          </div>
+                          <div className="text-xs text-muted-foreground">
+                            {r.joined_user_id}
+                          </div>
                         </TableCell>
-                        <TableCell>{r.inviter_username || <span className="text-muted-foreground italic">Ukendt</span>}</TableCell>
-                        <TableCell><code className="text-xs">{r.invite_code || '-'}</code></TableCell>
+                        <TableCell>
+                          {r.inviter_username || (
+                            <span className="text-muted-foreground italic">
+                              Ukendt
+                            </span>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          <code className="text-xs">
+                            {r.invite_code || "-"}
+                          </code>
+                        </TableCell>
                         <TableCell>
                           {r.has_left ? (
-                            <Badge variant="outline" className="border-red-600 text-red-600">Forladt</Badge>
+                            <Badge
+                              variant="outline"
+                              className="border-red-600 text-red-600"
+                            >
+                              Forladt
+                            </Badge>
                           ) : r.is_fake ? (
-                            <Badge variant="outline" className="border-yellow-600 text-yellow-600">Fake</Badge>
+                            <Badge
+                              variant="outline"
+                              className="border-yellow-600 text-yellow-600"
+                            >
+                              Fake
+                            </Badge>
                           ) : (
-                            <Badge variant="default" className="bg-green-600 hover:bg-green-700">Aktiv</Badge>
+                            <Badge
+                              variant="default"
+                              className="bg-green-600 hover:bg-green-700"
+                            >
+                              Aktiv
+                            </Badge>
                           )}
                         </TableCell>
                         <TableCell className="text-right text-sm text-muted-foreground">
-                          {formatDistanceToNow(new Date(r.joined_at), { addSuffix: true, locale: da })}
+                          {formatDistanceToNow(new Date(r.joined_at), {
+                            addSuffix: true,
+                            locale: da,
+                          })}
                         </TableCell>
                       </TableRow>
                     ))}
@@ -163,16 +271,19 @@ function StatCard({
   value,
   tone,
 }: {
-  icon: any;
+  icon: Untyped;
   label: string;
   value: number;
-  tone?: 'success' | 'warning' | 'destructive';
+  tone?: "success" | "warning" | "destructive";
 }) {
   const toneClass =
-    tone === 'success' ? 'text-green-600' :
-    tone === 'warning' ? 'text-yellow-600' :
-    tone === 'destructive' ? 'text-red-600' :
-    'text-primary';
+    tone === "success"
+      ? "text-green-600"
+      : tone === "warning"
+        ? "text-yellow-600"
+        : tone === "destructive"
+          ? "text-red-600"
+          : "text-primary";
   return (
     <Card>
       <CardContent className="p-4 flex items-center gap-3">
