@@ -10,7 +10,7 @@ const { Events } = require('discord.js');
 const { botLog } = require('../consoleLogger');
 const { isAutomodBypassed } = require('./automodBypass');
 
-const APP_API_BASE = process.env.APP_API_BASE || 'https://bot.nethost-solutions.dk';
+const APP_API_BASE = (process.env.APP_API_BASE || 'https://bot.nethost-solutions.dk').replace(/\/$/, '');
 const AUTOMOD_URL = `${APP_API_BASE}/api/public/automod-handler`;
 const BOT_SECRET = process.env.BOT_SECRET_KEY;
 

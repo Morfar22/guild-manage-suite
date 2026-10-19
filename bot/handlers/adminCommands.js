@@ -44,17 +44,17 @@ function createAdminHandlers(client, { supabase, handlers, getKazagumo } = {}) {
     return data?.id || null;
   }
 
-  function requireManageGuild(interaction) {
+  async function requireManageGuild(interaction) {
     if (!interaction.member?.permissions?.has(PermissionFlagsBits.ManageGuild)) {
-      interaction.reply(ephemeral('❌ Du skal have "Administrer server" for at bruge denne kommando.'));
+      await interaction.reply(ephemeral('❌ Du skal have "Administrer server" for at bruge denne kommando.')).catch(() => {});
       return false;
     }
     return true;
   }
 
-  function requireAdmin(interaction) {
+  async function requireAdmin(interaction) {
     if (!interaction.member?.permissions?.has(PermissionFlagsBits.Administrator)) {
-      interaction.reply(ephemeral('❌ Du skal være administrator for at bruge denne kommando.'));
+      await interaction.reply(ephemeral('❌ Du skal være administrator for at bruge denne kommando.')).catch(() => {});
       return false;
     }
     return true;
@@ -108,7 +108,7 @@ function createAdminHandlers(client, { supabase, handlers, getKazagumo } = {}) {
   return {
     // ---------- ADMIN: setup ----------
     setup: async (interaction) => {
-      if (!requireManageGuild(interaction)) return;
+      if (!(await requireManageGuild(interaction))) return;
       await interaction.deferReply({ flags: 64 });
       const guildUuid = await getGuildUuid(interaction);
       if (!guildUuid) return interaction.editReply('❌ Serveren er ikke registreret i dashboardet.');
@@ -152,7 +152,7 @@ function createAdminHandlers(client, { supabase, handlers, getKazagumo } = {}) {
 
     // ---------- ADMIN: config ----------
     config: async (interaction) => {
-      if (!requireManageGuild(interaction)) return;
+      if (!(await requireManageGuild(interaction))) return;
       await interaction.deferReply({ flags: 64 });
       const guildUuid = await getGuildUuid(interaction);
       if (!guildUuid) return interaction.editReply('❌ Serveren er ikke registreret i dashboardet.');
@@ -224,7 +224,7 @@ function createAdminHandlers(client, { supabase, handlers, getKazagumo } = {}) {
 
     // ---------- ADMIN: setlog ----------
     setlog: async (interaction) => {
-      if (!requireManageGuild(interaction)) return;
+      if (!(await requireManageGuild(interaction))) return;
       await interaction.deferReply({ flags: 64 });
       const guildUuid = await getGuildUuid(interaction);
       if (!guildUuid) return interaction.editReply('❌ Serveren er ikke registreret.');
@@ -241,7 +241,7 @@ function createAdminHandlers(client, { supabase, handlers, getKazagumo } = {}) {
 
     // ---------- ADMIN: autorole ----------
     autorole: async (interaction) => {
-      if (!requireManageGuild(interaction)) return;
+      if (!(await requireManageGuild(interaction))) return;
       await interaction.deferReply({ flags: 64 });
       const guildUuid = await getGuildUuid(interaction);
       if (!guildUuid) return interaction.editReply('❌ Serveren er ikke registreret.');
@@ -297,7 +297,7 @@ function createAdminHandlers(client, { supabase, handlers, getKazagumo } = {}) {
 
     // ---------- ADMIN: setwelcome ----------
     setwelcome: async (interaction) => {
-      if (!requireManageGuild(interaction)) return;
+      if (!(await requireManageGuild(interaction))) return;
       await interaction.deferReply({ flags: 64 });
       const guildUuid = await getGuildUuid(interaction);
       if (!guildUuid) return interaction.editReply('❌ Serveren er ikke registreret.');
@@ -328,7 +328,7 @@ function createAdminHandlers(client, { supabase, handlers, getKazagumo } = {}) {
 
     // ---------- ADMIN: setleave ----------
     setleave: async (interaction) => {
-      if (!requireManageGuild(interaction)) return;
+      if (!(await requireManageGuild(interaction))) return;
       await interaction.deferReply({ flags: 64 });
       const guildUuid = await getGuildUuid(interaction);
       if (!guildUuid) return interaction.editReply('❌ Serveren er ikke registreret.');
@@ -357,7 +357,7 @@ function createAdminHandlers(client, { supabase, handlers, getKazagumo } = {}) {
 
     // ---------- ADMIN: automod ----------
     automod: async (interaction) => {
-      if (!requireManageGuild(interaction)) return;
+      if (!(await requireManageGuild(interaction))) return;
       await interaction.deferReply({ flags: 64 });
       const guildUuid = await getGuildUuid(interaction);
       if (!guildUuid) return interaction.editReply('❌ Serveren er ikke registreret.');
@@ -401,7 +401,7 @@ function createAdminHandlers(client, { supabase, handlers, getKazagumo } = {}) {
 
     // ---------- ADMIN: backup ----------
     backup: async (interaction) => {
-      if (!requireAdmin(interaction)) return;
+      if (!(await requireAdmin(interaction))) return;
       await interaction.deferReply({ flags: 64 });
       const guildUuid = await getGuildUuid(interaction);
       if (!guildUuid) return interaction.editReply('❌ Serveren er ikke registreret.');
@@ -482,7 +482,7 @@ function createAdminHandlers(client, { supabase, handlers, getKazagumo } = {}) {
 
     // ---------- ADMIN: restore ----------
     restore: async (interaction) => {
-      if (!requireAdmin(interaction)) return;
+      if (!(await requireAdmin(interaction))) return;
       if (interaction.guild.ownerId !== interaction.user.id) {
         return interaction.reply(ephemeral('❌ Kun serverejeren kan gendanne en backup.'));
       }
@@ -585,7 +585,7 @@ function createAdminHandlers(client, { supabase, handlers, getKazagumo } = {}) {
 
     // ---------- REACTION ROLES ----------
     reactionrole: async (interaction) => {
-      if (!requireManageGuild(interaction)) return;
+      if (!(await requireManageGuild(interaction))) return;
       await interaction.deferReply({ flags: 64 });
       const guildUuid = await getGuildUuid(interaction);
       if (!guildUuid) return interaction.editReply('❌ Serveren er ikke registreret.');
@@ -621,7 +621,7 @@ function createAdminHandlers(client, { supabase, handlers, getKazagumo } = {}) {
     },
 
     'rr-add': async (interaction) => {
-      if (!requireManageGuild(interaction)) return;
+      if (!(await requireManageGuild(interaction))) return;
       await interaction.deferReply({ flags: 64 });
       const guildUuid = await getGuildUuid(interaction);
       if (!guildUuid) return interaction.editReply('❌ Serveren er ikke registreret.');
@@ -660,7 +660,7 @@ function createAdminHandlers(client, { supabase, handlers, getKazagumo } = {}) {
     },
 
     'rr-remove': async (interaction) => {
-      if (!requireManageGuild(interaction)) return;
+      if (!(await requireManageGuild(interaction))) return;
       await interaction.deferReply({ flags: 64 });
       const guildUuid = await getGuildUuid(interaction);
       if (!guildUuid) return interaction.editReply('❌ Serveren er ikke registreret.');
@@ -718,7 +718,7 @@ function createAdminHandlers(client, { supabase, handlers, getKazagumo } = {}) {
     },
 
     'rr-clear': async (interaction) => {
-      if (!requireManageGuild(interaction)) return;
+      if (!(await requireManageGuild(interaction))) return;
       await interaction.deferReply({ flags: 64 });
       const guildUuid = await getGuildUuid(interaction);
       if (!guildUuid) return interaction.editReply('❌ Serveren er ikke registreret.');
@@ -767,7 +767,7 @@ function createAdminHandlers(client, { supabase, handlers, getKazagumo } = {}) {
     },
 
     setlevelrole: async (interaction) => {
-      if (!requireManageGuild(interaction)) return;
+      if (!(await requireManageGuild(interaction))) return;
       await interaction.deferReply({ flags: 64 });
       const guildUuid = await getGuildUuid(interaction);
       if (!guildUuid) return interaction.editReply('❌ Serveren er ikke registreret.');
@@ -802,7 +802,7 @@ function createAdminHandlers(client, { supabase, handlers, getKazagumo } = {}) {
     },
 
     xpmultiplier: async (interaction) => {
-      if (!requireManageGuild(interaction)) return;
+      if (!(await requireManageGuild(interaction))) return;
       await interaction.deferReply({ flags: 64 });
       const guildUuid = await getGuildUuid(interaction);
       if (!guildUuid) return interaction.editReply('❌ Serveren er ikke registreret.');
@@ -1122,7 +1122,7 @@ function createAdminHandlers(client, { supabase, handlers, getKazagumo } = {}) {
 
     // ---------- GIVEAWAY: gpause ----------
     gpause: async (interaction) => {
-      if (!requireManageGuild(interaction)) return;
+      if (!(await requireManageGuild(interaction))) return;
       await interaction.deferReply({ flags: 64 });
       const guildUuid = await getGuildUuid(interaction);
       if (!guildUuid) return interaction.editReply('❌ Serveren er ikke registreret.');

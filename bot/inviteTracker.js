@@ -13,7 +13,7 @@ const { createClient } = require('@supabase/supabase-js');
 const APP_API_BASE = (process.env.APP_API_BASE || 'https://bot.nethost-solutions.dk').replace(/\/$/, '');
 const API_URL = process.env.INVITE_TRACKER_API_URL || `${APP_API_BASE}/api/public/invite-tracker`;
 const BOT_SECRET = process.env.BOT_SECRET_KEY;
-const SUPABASE_URL = process.env.SUPABASE_URL || 'https://rkdqunnttcyuybbofkvz.supabase.co';
+const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY;
 const directSupabase = SUPABASE_KEY
   ? createClient(SUPABASE_URL, SUPABASE_KEY, {

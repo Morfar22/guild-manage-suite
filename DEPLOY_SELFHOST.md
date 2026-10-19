@@ -4,7 +4,7 @@ Denne guide flytter hele projektet til din egen infrastruktur.
 
 ## 1. Database (egen Supabase)
 
-1. Opret projekt på supabase.com (allerede gjort: `rkdqunnttcyuybbofkvz`).
+1. Opret projekt på supabase.com (erstat med dit eget projekt-id).
 2. Kør de 8 SQL-dele (`bot-nethost-part01.sql` … `part08.sql`) i rækkefølge i SQL Editor — de indeholder skema + data.
 3. Opret storage-bucket `ticket-transcripts` (privat) under Storage.
 4. Sæt Discord-login op under Authentication → Providers → Discord:
@@ -38,12 +38,12 @@ Projektet bygger med Nitro mod Cloudflare (allerede konfigureret i `vite.config.
 2. Build command: `bun install && bun run build` (eller `npm install && npm run build`).
 3. Output directory: `dist` (tjek `bun run build` lokalt første gang for at bekræfte mappenavnet).
 4. Tilføj environment variables i Cloudflare:
-   - `VITE_SUPABASE_URL` = `https://rkdqunnttcyuybbofkvz.supabase.co`
+   - `VITE_SUPABASE_URL` = `https://<dit-projekt>.supabase.co`
    - `VITE_SUPABASE_PUBLISHABLE_KEY` = din anon key
    - `SUPABASE_URL` = samme URL
    - `SUPABASE_SERVICE_ROLE_KEY` = din NYE service role key (fra nyt projekt)
    - `OPENAI_API_KEY` = din OpenAI API-nøgle (gem som Cloudflare Secret, aldrig som `VITE_`-variabel).
-   - `BOT_SECRET_KEY` = `Z_!ZyMb4fw_gDxZ` (samme som botten bruger)
+   - `BOT_SECRET_KEY` = generér en stærk hemmelighed (samme værdi i Cloudflare Secrets og `bot/.env`)
    - `DISCORD_CLIENT_ID`, `DISCORD_CLIENT_SECRET`, `TWITCH_CLIENT_ID`, `TWITCH_CLIENT_SECRET`
 5. Peg dit domæne (bot.nethost-solutions.dk) på Cloudflare-projektet.
 
@@ -61,8 +61,8 @@ Projektet bygger med Nitro mod Cloudflare (allerede konfigureret i `vite.config.
 AI-screening, AI-chat, AI-automod, AI auto-responder, tekstforbedring og ticket summaries bruger nu OpenAI direkte fra server-ruterne.
 - Opret en OpenAI API-nøgle.
 - Tilføj `OPENAI_API_KEY` som en hemmelig Cloudflare Secret.
-- Valgfrit: sæt `OPENAI_MODEL` for at overskrive standardmodellen (`gpt-6-luna`).
-- De aktive AI-ruter bruger én fælles server-side OpenAI-klient med `gpt-6-luna` som standardmodel, timeout og ens fejlbehandling.
+- Valgfrit: sæt `OPENAI_MODEL` for at overskrive standardmodellen (`gpt-4.1-mini`).
+- De aktive AI-ruter bruger én fælles server-side OpenAI-klient med `gpt-4.1-mini` som standardmodel, timeout og ens fejlbehandling.
 - OpenAI-nøglen må aldrig bruge `VITE_`-prefix og må aldrig sendes til browseren.
 
 ## 6. Tjekliste efter deploy

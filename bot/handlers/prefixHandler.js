@@ -9,11 +9,17 @@
 
 const { createClient } = require('@supabase/supabase-js');
 
-const SUPABASE_URL = process.env.SUPABASE_URL;
-const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
-const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY;
-
-const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY || SUPABASE_ANON_KEY);
+let supabase;
+function getSupabase() {
+  if (supabase) return supabase;
+  const url = process.env.SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!url || !key) {
+    throw new Error('[PrefixHandler] SUPABASE_URL og SUPABASE_SERVICE_ROLE_KEY er påkrævet');
+  }
+  supabase = createClient(url, key);
+  return supabase;
+}
 
 // Cache prefixes per guild (refresh every 60s)
 const prefixCache = new Map();
@@ -629,7 +635,7 @@ async function getGuildPrefix(guildDiscordId) {
   if (cached && Date.now() - cached.time < CACHE_TTL) return cached.prefix;
 
   try {
-    const { data: guild } = await supabase
+    const { data: guild } = await getSupabase()
       .from('guilds')
       .select('id')
       .eq('guild_id', guildDiscordId)
@@ -640,7 +646,7 @@ async function getGuildPrefix(guildDiscordId) {
       return '!';
     }
 
-    const { data: settings } = await supabase
+    const { data: settings } = await getSupabase()
       .from('guild_bot_settings')
       .select('command_prefix')
       .eq('guild_id', guild.id)

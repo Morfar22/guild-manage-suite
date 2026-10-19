@@ -12,11 +12,20 @@
  * - DISCORD_TOKEN / DEFAULT_BOT_TOKEN
  * - BOT_SECRET_KEY
  * - SUPABASE_URL
- * - SUPABASE_ANON_KEY
- * - SUPABASE_SERVICE_ROLE_KEY (anbefalet til botten)
+ * - SUPABASE_SERVICE_ROLE_KEY (påkrævet)
+ * - APP_API_BASE
  */
 
 require('dotenv').config({ path: require('path').join(__dirname, '.env'), override: true });
+
+// Normalize APP_API_BASE BEFORE requiring handlers (they capture it at module load).
+// Roadmap: automod/other handlers failed when APP_API_BASE had a trailing slash or was empty.
+process.env.APP_API_BASE = (process.env.APP_API_BASE || 'https://bot.nethost-solutions.dk').replace(/\/$/, '');
+if (!/^https?:\/\//i.test(process.env.APP_API_BASE)) {
+  console.error('[Bot] FATAL: APP_API_BASE skal være en absolut http(s)-URL');
+  process.exit(1);
+}
+
 require('./utils/consoleLogger').installGlobalConsoleLogger();
 
 const { Events, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, PermissionFlagsBits, ChannelType } = require('discord.js');
@@ -42,7 +51,7 @@ const jtcButtonHandler = require('./handlers/jtcButtonHandler');
 const { setupAIChatHandler } = require('./handlers/aiChatHandler');
 const { initXPHandler } = require('./handlers/xpHandler');
 const { setupApplicationHandler } = require('./handlers/applicationHandler');
-const APP_API_BASE = process.env.APP_API_BASE || 'https://bot.nethost-solutions.dk';
+const APP_API_BASE = process.env.APP_API_BASE;
 
 // NEW: Import new feature handlers
 const { setupStarboardHandler } = require('./handlers/starboardHandler');
@@ -100,7 +109,7 @@ try {
 
 // ==================== CONFIGURATION ====================
 
-const SUPABASE_URL = process.env.SUPABASE_URL || 'https://rkdqunnttcyuybbofkvz.supabase.co';
+const SUPABASE_URL = (process.env.SUPABASE_URL || '').replace(/\/$/, '');
 const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY;
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const BOT_SECRET_KEY = process.env.BOT_SECRET_KEY;
@@ -113,15 +122,23 @@ const DISCOVERY_EXCLUDED_COMMANDS = new Set([
   'blackjack',
 ]);
 
-// Supabase client for database operations
-const supabase = createClient(
-  SUPABASE_URL,
-  SUPABASE_SERVICE_ROLE_KEY || SUPABASE_ANON_KEY
-);
-
-if (!SUPABASE_SERVICE_ROLE_KEY) {
-  console.warn('[Bot] WARNING: SUPABASE_SERVICE_ROLE_KEY is not set; falling back to SUPABASE_ANON_KEY. Some DB queries may fail due to RLS.');
+function requireRuntimeSecrets() {
+  const missing = [];
+  if (!SUPABASE_URL) missing.push('SUPABASE_URL');
+  if (!SUPABASE_SERVICE_ROLE_KEY) missing.push('SUPABASE_SERVICE_ROLE_KEY');
+  if (!BOT_SECRET_KEY) missing.push('BOT_SECRET_KEY');
+  if (!APP_API_BASE || !/^https?:\/\//i.test(APP_API_BASE)) missing.push('APP_API_BASE');
+  if (missing.length) {
+    console.error(`[Bot] FATAL: mangler påkrævede env-variabler: ${missing.join(', ')}`);
+    console.error('[Bot] Botten kræver service-role + BOT_SECRET_KEY og må ikke falde tilbage til anon-nøglen.');
+    process.exit(1);
+  }
 }
+
+requireRuntimeSecrets();
+
+// Supabase client for database operations (service role only — anon policies are revoked).
+const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
 // Store handler instances for cleanup
 const handlerInstances = new Map();
@@ -1300,7 +1317,7 @@ function createSlashHandlers(client) {
         return interaction.reply({ content: '❌ Ugyldigt tidsformat. Brug f.eks. 10m, 1h, 1d', flags: 64 });
       }
 
-      const amount = parseInt(match[1]);
+      const amount = parseInt(match[1], 10);
       const unit = match[2];
       const multipliers = { s: 1000, m: 60000, h: 3600000, d: 86400000 };
       const ms = amount * multipliers[unit];
@@ -1309,15 +1326,42 @@ function createSlashHandlers(client) {
         return interaction.reply({ content: '❌ Max reminder tid er 7 dage.', flags: 64 });
       }
 
-      await interaction.reply(`✅ Jeg minder dig om "${message}" om ${time}!\n⚠️ *(Påmindelsen forsvinder ved bot-genstart)*`);
+      const { data: guildRow, error: guildError } = await supabase
+        .from('guilds')
+        .select('id')
+        .eq('guild_id', interaction.guild.id)
+        .maybeSingle();
 
-      setTimeout(async () => {
-        try {
-          await interaction.user.send(`⏰ **Påmindelse:** ${message}`);
-        } catch {
-          await interaction.channel.send(`⏰ <@${interaction.user.id}> **Påmindelse:** ${message}`);
-        }
-      }, ms);
+      if (guildError || !guildRow?.id) {
+        return interaction.reply({ content: '❌ Serveren er ikke registreret i dashboardet.', flags: 64 });
+      }
+
+      const remindAt = new Date(Date.now() + ms).toISOString();
+      const { error: insertError } = await supabase.from('reminders').insert({
+        guild_id: guildRow.id,
+        channel_id: interaction.channelId,
+        target_channel_id: interaction.channelId,
+        target_user_discord_id: interaction.user.id,
+        message,
+        remind_at: remindAt,
+        sent: false,
+        is_sent: false,
+        created_by_id: interaction.user.id,
+        created_by_name: interaction.user.tag,
+        created_by_user_id: null,
+        repeat_interval: 'none',
+        is_recurring: false,
+      });
+
+      if (insertError) {
+        console.error('[Remind] Persist failed:', insertError.message);
+        return interaction.reply({ content: '❌ Kunne ikke gemme påmindelsen. Prøv igen.', flags: 64 });
+      }
+
+      await interaction.reply({
+        content: `✅ Jeg minder dig om "${message}" om ${time}! (gemt i databasen)`,
+        flags: 64,
+      });
     },
 
     // ==================== FUN ====================
@@ -2626,7 +2670,7 @@ manager.registerHandler((client, guildId, assignedDiscordGuildId) => {
     jtcHandler.init(
       client,
       SUPABASE_URL,
-      SUPABASE_ANON_KEY,
+      SUPABASE_SERVICE_ROLE_KEY,
       BOT_SECRET_KEY,
       { shouldHandleGuild }
     );
@@ -2640,7 +2684,7 @@ manager.registerHandler((client, guildId, assignedDiscordGuildId) => {
     jtcButtonHandler.init(
       client,
       SUPABASE_URL,
-      SUPABASE_ANON_KEY,
+      SUPABASE_SERVICE_ROLE_KEY,
       { shouldHandleGuild }
     );
     console.log(`[Bot] ✅ JTC button handler for ${clientLabel}`);
@@ -3176,15 +3220,20 @@ process.on('SIGTERM', async () => {
   process.exit(0);
 });
 
-// Handle uncaught exceptions
+// Handle uncaught exceptions — log and exit so process managers (PM2) restart cleanly.
 process.on('uncaughtException', (error) => {
   console.error('[Bot] ❌ Uncaught Exception:', error);
-  botLog('00000000-0000-0000-0000-000000000000', 'error', 'system', `Uncaught Exception: ${error.message}`, { stack: error.stack });
+  try {
+    botLog('00000000-0000-0000-0000-000000000000', 'error', 'system', `Uncaught Exception: ${error.message}`, { stack: error.stack });
+  } catch (_) { /* ignore logging failures during crash */ }
+  setTimeout(() => process.exit(1), 500).unref?.();
 });
 
 process.on('unhandledRejection', (error) => {
   console.error('[Bot] ❌ Unhandled Rejection:', error);
-  botLog('00000000-0000-0000-0000-000000000000', 'error', 'system', `Unhandled Rejection: ${error?.message || error}`, { stack: error?.stack });
+  try {
+    botLog('00000000-0000-0000-0000-000000000000', 'error', 'system', `Unhandled Rejection: ${error?.message || error}`, { stack: error?.stack });
+  } catch (_) { /* ignore */ }
 });
 
 module.exports = { manager };

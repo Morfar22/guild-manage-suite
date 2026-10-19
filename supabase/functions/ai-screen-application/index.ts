@@ -11,7 +11,7 @@ const corsHeaders = {
 };
 
 const OPENAI_URL = 'https://api.openai.com/v1/chat/completions';
-const DEFAULT_MODEL = 'gpt-6-luna';
+const DEFAULT_MODEL = 'gpt-4.1-mini';
 
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {

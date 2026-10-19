@@ -24,7 +24,7 @@ const { commands } = require('./commandDefinitions');
 const { groupFlatCommandDefinitions } = require('./commandRouting');
 const { commandSetsEqual } = require('./commandSync');
 
-const SUPABASE_URL = process.env.SUPABASE_URL || 'https://rkdqunnttcyuybbofkvz.supabase.co';
+const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const BOT_SECRET_KEY = process.env.BOT_SECRET_KEY;
 const DEFAULT_BOT_TOKEN_CANDIDATES = [
@@ -457,7 +457,7 @@ class CustomBotManager {
         GatewayIntentBits.GuildMessageReactions,
         GatewayIntentBits.GuildInvites,
         GatewayIntentBits.GuildVoiceStates,
-        GatewayIntentBits.GuildBans,
+        GatewayIntentBits.GuildModeration,
         GatewayIntentBits.GuildPresences,
         GatewayIntentBits.MessageContent,
         GatewayIntentBits.DirectMessages
