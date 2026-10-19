@@ -1,9 +1,9 @@
+import type { Untyped } from "@/types/untyped";
 import type { TablesUpdate } from "@/integrations/supabase/types";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useGuild } from "@/contexts/GuildContext";
 import { useEffect } from "react";
-import type { Untyped } from "@/types/untyped";
 
 export interface DashboardNotification {
   id: string;
@@ -47,7 +47,7 @@ export function useDashboardNotifications() {
   useEffect(() => {
     if (!selectedGuild?.id) return;
     const channel = supabase
-      .channel("dashboard-notifications")
+      .channel(`dashboard-notifications_${crypto.randomUUID()}`)
       .on(
         "postgres_changes",
         {

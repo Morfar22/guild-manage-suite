@@ -1,6 +1,7 @@
 // @ts-nocheck
-import { safeEqual } from "@/lib/server/api-auth";
 import type { Untyped } from "@/types/untyped";
+import { safeEqual } from "@/lib/server/api-auth";
+import { resolveGuildBotToken } from "@/lib/server/guild-bot-token";
 import {
   decryptBotToken as simpleDecrypt,
   encryptBotToken as simpleEncrypt,
@@ -68,6 +69,52 @@ __serve(async (req) => {
       );
 
       const { action } = (body || {}) as { action?: string };
+
+      // VPS-only: return only the token for the authenticated request's guild.
+      if (action === "resolve_bridge_bot") {
+        const discordGuildId = body?.discord_guild_id;
+        if (
+          typeof discordGuildId !== "string" ||
+          !/^\d{16,22}$/.test(discordGuildId)
+        ) {
+          return new Response(
+            JSON.stringify({ error: "Invalid Discord guild ID" }),
+            {
+              status: 400,
+              headers: { ...corsHeaders, "Cache-Control": "no-store" },
+            },
+          );
+        }
+        try {
+          const token = await resolveGuildBotToken(
+            adminSupabase,
+            discordGuildId,
+            "bridge-default",
+          );
+          return new Response(
+            JSON.stringify(
+              token === "bridge-default"
+                ? { discord_guild_id: discordGuildId, use_default_bot: true }
+                : { discord_guild_id: discordGuildId, bot_token: token },
+            ),
+            {
+              headers: {
+                ...corsHeaders,
+                "Content-Type": "application/json",
+                "Cache-Control": "no-store",
+              },
+            },
+          );
+        } catch {
+          return new Response(
+            JSON.stringify({ error: "Unable to resolve guild bot" }),
+            {
+              status: 503,
+              headers: { ...corsHeaders, "Cache-Control": "no-store" },
+            },
+          );
+        }
+      }
 
       // List all active custom bots (for bot manager to start them)
       if (action === "list_active") {

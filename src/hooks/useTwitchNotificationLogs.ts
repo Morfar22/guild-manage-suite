@@ -1,7 +1,7 @@
+import type { Untyped } from "@/types/untyped";
 import { useState, useEffect, useCallback } from "react";
 import { useGuild } from "@/contexts/GuildContext";
 import { supabase } from "@/integrations/supabase/client";
-import type { Untyped } from "@/types/untyped";
 
 export interface TwitchNotificationLog {
   id: string;
@@ -71,7 +71,7 @@ export function useTwitchNotificationLogs() {
 
     // Subscribe to realtime
     const channel = supabase
-      .channel(`twitch-logs-${selectedGuild.id}`)
+      .channel(`twitch-logs-${selectedGuild.id}_${crypto.randomUUID()}`)
       .on(
         "postgres_changes",
         {

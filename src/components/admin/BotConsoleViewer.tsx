@@ -1,7 +1,7 @@
+import type { Untyped } from "@/types/untyped";
 import { useState, useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import type { Untyped } from "@/types/untyped";
 import {
   Card,
   CardContent,
@@ -109,7 +109,7 @@ export function BotConsoleViewer({
 
   useEffect(() => {
     const channel = supabase
-      .channel("bot-console-logs")
+      .channel(`bot-console-logs_${crypto.randomUUID()}`)
       .on(
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "bot_console_logs" },

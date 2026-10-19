@@ -37,7 +37,7 @@ export default function Modules() {
 
     // Realtime subscription for module changes
     const channel = supabase
-      .channel(`guild_modules:${selectedGuild.id}`)
+      .channel(`guild_modules:${selectedGuild.id}_${crypto.randomUUID()}`)
       .on(
         "postgres_changes",
         {

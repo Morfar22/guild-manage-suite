@@ -6,16 +6,60 @@ require("dotenv").config();
 const host = process.env.GUILDOS_BRIDGE_HOST || "127.0.0.1";
 const port = Number(process.env.GUILDOS_BRIDGE_PORT || 3187);
 const secret = process.env.GUILDOS_BRIDGE_SECRET;
-const token =
+const defaultToken =
   process.env.DEFAULT_BOT_TOKEN ||
   process.env.DISCORD_TOKEN ||
   process.env.DISCORD_BOT_TOKEN;
-if (!secret || Buffer.byteLength(secret) < 32 || !token) {
+if (!secret || Buffer.byteLength(secret) < 32 || !defaultToken) {
   console.error(
     "[guildos-bridge] GUILDOS_BRIDGE_SECRET (>=32 bytes) and bot token required",
   );
   process.exit(1);
 }
+// Resolve only this guild through the authenticated bot configuration API.
+// Never accept a bot token or an internal guild UUID from the caller.
+async function resolveGuildToken(guildId, signal) {
+  const base = process.env.APP_API_BASE;
+  const botSecret = process.env.BOT_SECRET_KEY;
+  if (!base || !botSecret) throw new Error("Bot configuration unavailable");
+  const url = new URL(base);
+  if (
+    url.protocol !== "https:" ||
+    url.username ||
+    url.password ||
+    url.search ||
+    url.hash
+  ) {
+    throw new Error("Invalid bot configuration URL");
+  }
+  url.pathname =
+    url.pathname.replace(/\/$/, "") + "/api/public/guild-bot-config";
+  const response = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "x-bot-secret": botSecret },
+    body: JSON.stringify({
+      action: "resolve_bridge_bot",
+      discord_guild_id: guildId,
+    }),
+    redirect: "error",
+    signal,
+  });
+  if (!response.ok) throw new Error("Bot configuration unavailable");
+  const payload = await response.json();
+  if (payload.discord_guild_id !== guildId)
+    throw new Error("Invalid bot configuration");
+  if (payload.use_default_bot === true && payload.bot_token === undefined)
+    return defaultToken;
+  if (
+    payload.use_default_bot !== undefined ||
+    typeof payload.bot_token !== "string" ||
+    !payload.bot_token.trim()
+  ) {
+    throw new Error("Invalid bot configuration");
+  }
+  return payload.bot_token;
+}
+
 function authorized(header) {
   if (!header || !header.startsWith("Bearer ")) return false;
   const a = Buffer.from(header.slice(7)),
@@ -53,30 +97,31 @@ const server = http.createServer(async (req, res) => {
   try {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 12000);
-    const discordHeaders = { Authorization: "Bot " + token };
-    const call = async (suffix, method = "GET") => {
-      const response = await fetch(
-        "https://discord.com/api/v10/guilds/" + guildId + suffix,
-        {
-          method,
-          headers: discordHeaders,
-          signal: controller.signal,
-        },
-      );
-      if (!response.ok) {
-        console.error(
-          "[guildos-bridge] Discord HTTP",
-          response.status,
-          suffix.replace(/\d{16,22}/g, ":id"),
-        );
-        return { status: response.status, error: true };
-      }
-      return {
-        status: response.status,
-        data: response.status === 204 ? null : await response.json(),
-      };
-    };
     try {
+      const token = await resolveGuildToken(guildId, controller.signal);
+      const discordHeaders = { Authorization: "Bot " + token };
+      const call = async (suffix, method = "GET") => {
+        const response = await fetch(
+          "https://discord.com/api/v10/guilds/" + guildId + suffix,
+          {
+            method,
+            headers: discordHeaders,
+            signal: controller.signal,
+          },
+        );
+        if (!response.ok) {
+          console.error(
+            "[guildos-bridge] Discord HTTP",
+            response.status,
+            suffix.replace(/\d{16,22}/g, ":id"),
+          );
+          return { status: response.status, error: true };
+        }
+        return {
+          status: response.status,
+          data: response.status === 204 ? null : await response.json(),
+        };
+      };
       let result;
       if (roleAction) {
         result = await call(
@@ -144,10 +189,7 @@ const server = http.createServer(async (req, res) => {
       clearTimeout(timeout);
     }
   } catch (error) {
-    console.error(
-      "[guildos-bridge] Failed to retrieve channels:",
-      error.message,
-    );
+    console.error("[guildos-bridge] Request failed");
     return reply(res, 502, { error: "Bot bridge could not contact Discord" });
   }
 });

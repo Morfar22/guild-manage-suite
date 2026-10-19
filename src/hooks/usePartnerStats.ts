@@ -51,7 +51,7 @@ export function usePartnerStats(weeks = 8) {
 
     if (!selectedGuild?.id) return;
     const channel = supabase
-      .channel(`partner-stats-${selectedGuild.id}`)
+      .channel(`partner-stats-${selectedGuild.id}_${crypto.randomUUID()}`)
       .on(
         "postgres_changes",
         {
