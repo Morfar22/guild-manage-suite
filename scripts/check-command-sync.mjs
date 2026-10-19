@@ -213,7 +213,9 @@ function handlerNames() {
     names.add(match[1]);
   }
 
-  if (musicQuiz.includes("startsWith('musicquiz-')")) names.add("musicquiz");
+  // Quote-agnostic: prettier normalises the handler source to double quotes.
+  if (/startsWith\(\s*['"]musicquiz-['"]\s*\)/.test(musicQuiz))
+    names.add("musicquiz");
 
   return [...names];
 }
