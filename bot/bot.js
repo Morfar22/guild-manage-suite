@@ -3073,8 +3073,13 @@ manager.registerHandler((client, guildId, assignedDiscordGuildId) => {
 
     if (!interaction.isChatInputCommand()) return;
 
+    // Slash handlers in this runtime are guild-scoped (permissions, analytics, modules).
+    if (!interaction.guild) {
+      return interaction.reply({ content: '❌ Denne kommando kan kun bruges på en Discord-server.', flags: 64 }).catch(() => {});
+    }
+
     // Only handle commands for guilds this bot instance is responsible for
-    if (interaction.guild && !shouldHandleGuild(interaction.guild.id)) return;
+    if (!shouldHandleGuild(interaction.guild.id)) return;
 
     const resolvedCommand = resolveInteractionCommand(interaction);
     const commandName = resolvedCommand.logicalName;
