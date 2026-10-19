@@ -9,11 +9,17 @@ const { EmbedBuilder } = require('discord.js');
 const { createClient } = require('@supabase/supabase-js');
 const { manager } = require('../customBotManager');
 
-const SUPABASE_URL = process.env.SUPABASE_URL || 'https://rkdqunnttcyuybbofkvz.supabase.co';
-const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
-const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY;
-
-const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY || SUPABASE_ANON_KEY);
+let supabase;
+function getSupabase() {
+  if (supabase) return supabase;
+  const url = process.env.SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!url || !key) {
+    throw new Error('[TebexHandler] SUPABASE_URL og SUPABASE_SERVICE_ROLE_KEY er påkrævet');
+  }
+  supabase = createClient(url, key);
+  return supabase;
+}
 
 const POLL_INTERVAL = 10000; // 10 seconds
 let tebexPollingStarted = false;
@@ -47,7 +53,7 @@ function setupTebexHandler(client) {
 
 async function pollTebexQueue() {
   try {
-    const { data: commands, error } = await supabase
+    const { data: commands, error } = await getSupabase()
       .from('fivem_command_queue')
       .select('*')
       .in('command_name', ['tebex_notification', 'tebex_role_grant'])
@@ -60,7 +66,7 @@ async function pollTebexQueue() {
     for (const cmd of commands) {
       try {
         // Guild filter: resolve guild_id to Discord guild_id and check
-        const { data: guildRow } = await supabase
+        const { data: guildRow } = await getSupabase()
           .from('guilds')
           .select('guild_id')
           .eq('id', cmd.guild_id)
@@ -99,7 +105,7 @@ async function pollTebexQueue() {
 }
 
 async function markCommand(id, status, result) {
-  await supabase
+  await getSupabase()
     .from('fivem_command_queue')
     .update({ status, executed_at: new Date().toISOString(), result })
     .eq('id', id);

@@ -5,7 +5,7 @@
  * then calls the auto-report edge function to send the report to Discord.
  */
 
-const APP_API_BASE = process.env.APP_API_BASE || 'https://bot.nethost-solutions.dk';
+const APP_API_BASE = (process.env.APP_API_BASE || 'https://bot.nethost-solutions.dk').replace(/\/$/, '');
 
 function setupAutoReportHandler(client, supabase, options = {}) {
   const { shouldHandleGuild } = options;

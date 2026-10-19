@@ -86,7 +86,7 @@ serve(async (req) => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: 'gpt-6-luna',
+          model: 'gpt-4.1-mini',
           reasoning_effort: 'none',
           messages: [
             {

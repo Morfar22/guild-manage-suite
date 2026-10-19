@@ -20,7 +20,7 @@ function setupReminderHandler(client, supabase, options = {}) {
       const { data: reminders, error } = await supabase
         .from('reminders')
         .select('*, guilds!inner(guild_id)')
-        .eq('sent', false)
+        .or('sent.eq.false,sent.is.null')
         .lte('remind_at', now);
 
       if (error) {
@@ -38,10 +38,11 @@ function setupReminderHandler(client, supabase, options = {}) {
           // Check if this bot instance should handle this guild
           if (shouldHandleGuild && !shouldHandleGuild(discordGuildId)) continue;
 
-          const channel = await client.channels.fetch(reminder.channel_id).catch(() => null);
+          const channelId = reminder.channel_id || reminder.target_channel_id;
+          const channel = channelId ? await client.channels.fetch(channelId).catch(() => null) : null;
 
           if (!channel) {
-            console.warn(`[Reminders] Channel not found: ${reminder.channel_id}`);
+            console.warn(`[Reminders] Channel not found: ${channelId}`);
             await markReminderSent(supabase, reminder.id);
             continue;
           }
@@ -71,8 +72,17 @@ function setupReminderHandler(client, supabase, options = {}) {
             });
           }
 
-          await channel.send({ embeds: [embed] });
-          console.log(`[Reminders] Sent reminder ${reminder.id} to channel ${reminder.channel_id}`);
+          if (reminder.target_user_discord_id) {
+            try {
+              const user = await client.users.fetch(reminder.target_user_discord_id);
+              await user.send({ embeds: [embed] });
+            } catch {
+              await channel.send({ content: `<@${reminder.target_user_discord_id}>`, embeds: [embed] });
+            }
+          } else {
+            await channel.send({ embeds: [embed] });
+          }
+          console.log(`[Reminders] Sent reminder ${reminder.id} to channel ${channelId}`);
 
           // Mark as sent
           await markReminderSent(supabase, reminder.id);
@@ -96,7 +106,7 @@ function setupReminderHandler(client, supabase, options = {}) {
 async function markReminderSent(supabase, reminderId) {
   await supabase
     .from('reminders')
-    .update({ sent: true })
+    .update({ sent: true, is_sent: true })
     .eq('id', reminderId);
 }
 
@@ -147,13 +157,18 @@ async function scheduleNextReminder(supabase, reminder) {
     .from('reminders')
     .insert({
       guild_id: reminder.guild_id,
-      channel_id: reminder.channel_id,
+      channel_id: reminder.channel_id || reminder.target_channel_id,
+      target_channel_id: reminder.target_channel_id || reminder.channel_id,
+      target_user_discord_id: reminder.target_user_discord_id || null,
       message: reminder.message,
       remind_at: nextDate.toISOString(),
-      repeat_interval: reminder.repeat_interval,
+      repeat_interval: reminder.repeat_interval || reminder.recurrence_interval || 'none',
+      recurrence_interval: reminder.repeat_interval || reminder.recurrence_interval || null,
+      is_recurring: true,
       created_by_id: reminder.created_by_id,
       created_by_name: reminder.created_by_name,
       sent: false,
+      is_sent: false,
     });
 
   if (error) {

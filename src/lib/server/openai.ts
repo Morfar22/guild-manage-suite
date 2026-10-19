@@ -1,7 +1,7 @@
 // Server-only OpenAI helper shared by all self-hosted AI routes.
 
 export const OPENAI_CHAT_COMPLETIONS_URL = 'https://api.openai.com/v1/chat/completions';
-export const DEFAULT_OPENAI_MODEL = 'gpt-6-luna';
+export const DEFAULT_OPENAI_MODEL = 'gpt-4.1-mini';
 
 type RuntimeEnv = Record<string, unknown>;
 

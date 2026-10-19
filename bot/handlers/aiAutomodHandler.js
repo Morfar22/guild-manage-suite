@@ -8,7 +8,7 @@
 const { Events, EmbedBuilder } = require('discord.js');
 const { isAutomodBypassed } = require('./automodBypass');
 
-const APP_API_BASE = process.env.APP_API_BASE || 'https://bot.nethost-solutions.dk';
+const APP_API_BASE = (process.env.APP_API_BASE || 'https://bot.nethost-solutions.dk').replace(/\/$/, '');
 const AI_AUTOMOD_URL = `${APP_API_BASE}/api/public/ai-automod`;
 const BOT_SECRET = process.env.BOT_SECRET_KEY;
 
