@@ -78,6 +78,7 @@ import {
   Pie,
   Cell,
 } from "recharts";
+import { safeHref } from "@/lib/safeHref";
 
 const SEVERITY_COLORS: Record<string, string> = {
   cheating: "text-red-600 border-red-600",
@@ -405,7 +406,7 @@ export default function GlobalBanReports() {
                                     {report.evidence_urls.map((url, i) => (
                                       <a
                                         key={i}
-                                        href={url}
+                                        href={safeHref(url)}
                                         target="_blank"
                                         rel="noopener noreferrer"
                                         className="text-xs text-primary flex items-center gap-1 hover:underline"

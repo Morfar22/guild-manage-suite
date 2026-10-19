@@ -1,5 +1,6 @@
 import { cn } from "@/lib/utils";
 import { ExternalLink } from "lucide-react";
+import { safeHref } from "@/lib/safeHref";
 
 interface EmbedField {
   name: string;
@@ -168,7 +169,7 @@ export function DiscordEmbedPreview({
               {buttons.map((btn, i) => (
                 <a
                   key={i}
-                  href={btn.url}
+                  href={safeHref(btn.url)}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded text-sm font-medium bg-[#4e5058] hover:bg-[#6d6f78] text-white transition-colors"

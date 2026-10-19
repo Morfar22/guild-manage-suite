@@ -62,6 +62,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { safeHref } from "@/lib/safeHref";
 
 function YouTubeIcon({ className }: { className?: string }) {
   return (
@@ -627,7 +628,7 @@ export default function YouTubeSettings() {
                         <TableCell className="max-w-[200px] truncate">
                           {log.video_url ? (
                             <a
-                              href={log.video_url}
+                              href={safeHref(log.video_url)}
                               target="_blank"
                               rel="noopener noreferrer"
                               className="text-primary hover:underline"

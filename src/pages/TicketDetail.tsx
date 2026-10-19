@@ -41,6 +41,7 @@ import {
 import { format, formatDistanceToNow } from "date-fns";
 import { da, enUS } from "date-fns/locale";
 import { toast } from "sonner";
+import { safeHref } from "@/lib/safeHref";
 
 type Attachment = {
   url?: string;
@@ -555,7 +556,7 @@ export default function TicketDetail() {
                               {attachments.map((attachment, index) => (
                                 <a
                                   key={`${message.id}-attachment-${index}`}
-                                  href={attachment.url}
+                                  href={safeHref(attachment.url)}
                                   target="_blank"
                                   rel="noreferrer"
                                   className="flex items-center gap-2 rounded-md border border-border/60 bg-background/50 p-2 text-xs hover:bg-accent"

@@ -54,9 +54,7 @@ jobs:
       - name: Verify web runtime symbols
         run: npm run check:web-runtime
 
-      - name: Legacy lint audit
-        if: github.event_name == 'workflow_dispatch'
-        continue-on-error: true
+      - name: Lint
         run: npm run lint
 
       - name: Tests

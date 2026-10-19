@@ -1,3 +1,4 @@
+import { safeHref } from "@/lib/safeHref";
 import { afterEach, describe, expect, it } from "vitest";
 import { DEFAULT_OPENAI_MODEL, getOpenAIModel } from "@/lib/server/openai";
 import { safeEqual } from "@/lib/server/api-auth";
@@ -35,5 +36,17 @@ describe("safeEqual", () => {
     expect(safeEqual(null, "abc")).toBe(false);
     expect(safeEqual("abc", undefined)).toBe(false);
     expect(safeEqual("æøå", "æøå")).toBe(true);
+  });
+});
+
+describe("safeHref", () => {
+  it("allows http(s)/mailto and blocks script-capable schemes", () => {
+    expect(safeHref("https://discord.com/x")).toBe("https://discord.com/x");
+    expect(safeHref("mailto:a@b.dk")).toBe("mailto:a@b.dk");
+    expect(safeHref("javascript:alert(1)")).toBeUndefined();
+    expect(safeHref(" JavaScript:alert(1)")).toBeUndefined();
+    expect(safeHref("data:text/html,<script>")).toBeUndefined();
+    expect(safeHref("not a url")).toBeUndefined();
+    expect(safeHref(null)).toBeUndefined();
   });
 });

@@ -66,6 +66,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { PremiumGate } from "@/components/premium/PremiumGate";
+import { safeHref } from "@/lib/safeHref";
 
 // TikTok icon as SVG since lucide doesn't have one
 function TikTokIcon({ className }: { className?: string }) {
@@ -668,7 +669,7 @@ export default function TikTokSettings() {
                           <TableCell className="max-w-[200px] truncate">
                             {log.video_url ? (
                               <a
-                                href={log.video_url}
+                                href={safeHref(log.video_url)}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="text-primary hover:underline"
