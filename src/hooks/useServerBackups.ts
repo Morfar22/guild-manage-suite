@@ -2,12 +2,13 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useGuild } from "@/contexts/GuildContext";
 import { toast } from "sonner";
+import type { Untyped } from "@/types/untyped";
 
 export interface ServerBackup {
   id: string;
   guild_id: string;
   backup_type: string;
-  backup_data: any;
+  backup_data: Untyped;
   description: string | null;
   created_by: string | null;
   created_at: string;

@@ -1,6 +1,7 @@
 import { decryptBotToken as simpleDecrypt } from "../_shared/bot-token-crypto.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import type { Untyped } from "../_shared/untyped";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -18,13 +19,13 @@ function esc(s: string) {
   );
 }
 
-function buildHtml(ticket: any, messages: any[], guildName: string) {
+function buildHtml(ticket: Untyped, messages: Untyped[], guildName: string) {
   const rows = messages
     .map((m) => {
       const time = new Date(m.created_at).toLocaleString();
       const att =
         Array.isArray(m.attachments) && m.attachments.length
-          ? `<div class="atts">${m.attachments.map((a: any) => `<a href="${esc(a.url)}" target="_blank">${esc(a.name || "attachment")}</a>`).join(" ")}</div>`
+          ? `<div class="atts">${m.attachments.map((a: Untyped) => `<a href="${esc(a.url)}" target="_blank">${esc(a.name || "attachment")}</a>`).join(" ")}</div>`
           : "";
       return `<div class="msg">
       <img class="avatar" src="${esc(m.author_avatar || "https://cdn.discordapp.com/embed/avatars/0.png")}" alt="">
@@ -79,7 +80,10 @@ async function fetchDMChannel(botToken: string, userId: string) {
   return r.json();
 }
 
-async function getBotToken(supabase: any, guildId: string): Promise<string> {
+async function getBotToken(
+  supabase: Untyped,
+  guildId: string,
+): Promise<string> {
   const { data } = await supabase
     .from("guild_bot_settings")
     .select("bot_token_encrypted")
@@ -91,7 +95,9 @@ async function getBotToken(supabase: any, guildId: string): Promise<string> {
   if (data?.bot_token_encrypted) {
     try {
       return simpleDecrypt(data.bot_token_encrypted, k);
-    } catch (_) {}
+    } catch (_) {
+      /* ignore */
+    }
   }
   return Deno.env.get("DISCORD_BOT_TOKEN")!;
 }
@@ -174,7 +180,7 @@ serve(async (req) => {
       const botToken = await getBotToken(supabase, ticket.guild_id);
       const dm = await fetchDMChannel(botToken, ticket.creator_id);
       if (dm?.id) {
-        const components: any[] = [];
+        const components: Untyped[] = [];
         if (settings?.enable_ratings) {
           components.push({
             type: 1,

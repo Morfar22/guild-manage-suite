@@ -1,5 +1,6 @@
 import { useMemo, useState, type ReactNode } from "react";
 import { useParams, Link } from "@tanstack/react-router";
+import type { Untyped } from "@/types/untyped";
 import {
   useTicket,
   useTicketMessages,
@@ -214,7 +215,7 @@ export default function TicketDetail() {
             ? "The requested ticket does not exist."
             : "Den valgte ticket findes ikke."}
         </p>
-        <Link to={"/dashboard/tickets" as any}>
+        <Link to={"/dashboard/tickets" as Untyped}>
           <Button>{en ? "Back to tickets" : "Tilbage til tickets"}</Button>
         </Link>
       </div>
@@ -231,7 +232,7 @@ export default function TicketDetail() {
     <div className="space-y-6">
       <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
         <div className="flex items-start gap-3">
-          <Link to={"/dashboard/tickets" as any}>
+          <Link to={"/dashboard/tickets" as Untyped}>
             <Button variant="ghost" size="icon">
               <ArrowLeft className="h-5 w-5" />
             </Button>
@@ -342,7 +343,7 @@ export default function TicketDetail() {
 
       <TicketOperationsPanel ticket={ticket} />
 
-      {(ticket as any).ai_summary && (
+      {(ticket as Untyped).ai_summary && (
         <Card className="border-primary/20 bg-primary/5 backdrop-blur-sm">
           <CardHeader className="pb-2">
             <CardTitle className="flex items-center gap-2 text-lg">
@@ -352,7 +353,7 @@ export default function TicketDetail() {
           </CardHeader>
           <CardContent>
             <p className="whitespace-pre-wrap text-sm leading-6 text-foreground/90">
-              {(ticket as any).ai_summary}
+              {(ticket as Untyped).ai_summary}
             </p>
           </CardContent>
         </Card>

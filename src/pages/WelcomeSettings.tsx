@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import type { Untyped } from "@/types/untyped";
 import {
   Card,
   CardContent,
@@ -103,9 +104,9 @@ export default function WelcomeSettings() {
         auto_role_enabled: settings.auto_role_enabled,
         auto_role_id: settings.auto_role_id || "",
         auto_role_ids:
-          Array.isArray((settings as any).auto_role_ids) &&
-          (settings as any).auto_role_ids.length > 0
-            ? (settings as any).auto_role_ids
+          Array.isArray((settings as Untyped).auto_role_ids) &&
+          (settings as Untyped).auto_role_ids.length > 0
+            ? (settings as Untyped).auto_role_ids
             : settings.auto_role_id
               ? [settings.auto_role_id]
               : [],
@@ -242,7 +243,7 @@ export default function WelcomeSettings() {
         title: "✅ Test sendt!",
         description: "Tjek velkomstkanalen på Discord.",
       });
-    } catch (error: any) {
+    } catch (error: Untyped) {
       toast({
         title: "Fejl",
         description: error.message || "Kunne ikke sende testbesked.",
@@ -289,7 +290,7 @@ export default function WelcomeSettings() {
         title: "✅ Test sendt!",
         description: "Tjek farvelkanalen på Discord.",
       });
-    } catch (error: any) {
+    } catch (error: Untyped) {
       toast({
         title: "Fejl",
         description: error.message || "Kunne ikke sende testbesked.",

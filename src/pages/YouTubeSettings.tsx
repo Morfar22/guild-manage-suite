@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useYouTubeChannels, YouTubeChannel } from "@/hooks/useYouTubeChannels";
 import { useDiscordChannels } from "@/hooks/useDiscordChannels";
 import { useDiscordRoles } from "@/hooks/useDiscordRoles";
+import type { Untyped } from "@/types/untyped";
 import {
   Card,
   CardContent,
@@ -407,7 +408,7 @@ export default function YouTubeSettings() {
                         <Switch
                           checked={ch.enabled}
                           onCheckedChange={(enabled) =>
-                            updateChannel(ch.id, { enabled } as any)
+                            updateChannel(ch.id, { enabled } as Untyped)
                           }
                         />
                         <Button

@@ -3,6 +3,7 @@ import { decryptBotToken as simpleDecrypt } from "@/lib/server/bot-token-crypto"
 // Migrated from Supabase Edge Function `application-handler` to a TanStack server route.
 import { createFileRoute } from "@tanstack/react-router";
 import { createClient } from "@supabase/supabase-js";
+import type { Untyped } from "@/types/untyped";
 
 const __env = (k: string) =>
   process.env[k] ??
@@ -10,7 +11,7 @@ const __env = (k: string) =>
     ? process.env["SUPABASE_PUBLISHABLE_KEY"]
     : undefined);
 let __handler: (req: Request) => Response | Promise<Response>;
-const __serve = (fn: any, _opts?: any) => {
+const __serve = (fn: Untyped, _opts?: Untyped) => {
   __handler = fn;
 };
 
@@ -38,7 +39,7 @@ function getClientIp(req: Request): string {
 
 async function checkIPWhitelist(
   req: Request,
-  supabase: any,
+  supabase: Untyped,
 ): Promise<{ allowed: boolean; ip: string }> {
   const clientIp = getClientIp(req);
 
@@ -105,7 +106,7 @@ interface ApplicationSettings {
 }
 
 async function getBotTokenForGuild(
-  supabase: any,
+  supabase: Untyped,
   guildId: string,
   fallbackToken: string | undefined,
 ): Promise<string | undefined> {
@@ -174,7 +175,7 @@ __serve(async (req) => {
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    let body: any;
+    let body: Untyped;
     try {
       body = await req.json();
     } catch {
@@ -308,7 +309,7 @@ __serve(async (req) => {
           })),
         };
 
-        const components: any[] = [];
+        const components: Untyped[] = [];
 
         if (panelType === "dropdown") {
           const options = forms.map((form: ApplicationForm) => ({
@@ -332,7 +333,7 @@ __serve(async (req) => {
             ],
           });
         } else {
-          let currentRow: any[] = [];
+          let currentRow: Untyped[] = [];
 
           for (let i = 0; i < forms.length; i++) {
             currentRow.push({

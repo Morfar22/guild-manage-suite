@@ -1,5 +1,6 @@
 import { decryptBotToken as simpleDecrypt } from "../_shared/bot-token-crypto.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import type { Untyped } from "../_shared/untyped";
 import {
   requireUser,
   requireGuildAdmin,
@@ -12,7 +13,7 @@ const __env = (key: string) =>
     ? Deno.env.get("SUPABASE_PUBLISHABLE_KEY")
     : undefined);
 let __handler: (req: Request) => Response | Promise<Response>;
-const __serve = (fn: any, _opts?: any) => {
+const __serve = (fn: Untyped, _opts?: Untyped) => {
   __handler = fn;
 };
 
@@ -23,7 +24,7 @@ const corsHeaders = {
 };
 
 async function getBotTokenForGuild(
-  supabase: any,
+  supabase: Untyped,
   guildId: string,
 ): Promise<string> {
   const { data: settings } = await supabase
@@ -150,11 +151,11 @@ __serve(async (req) => {
       voters: string[];
     }>;
     const description = options
-      .map((o: any, i: number) => `**${i + 1}.** ${o.label}`)
+      .map((o: Untyped, i: number) => `**${i + 1}.** ${o.label}`)
       .join("\n");
-    const votes = (poll.votes || {}) as Record<string, any>;
+    const votes = (poll.votes || {}) as Record<string, Untyped>;
 
-    const embed: any = {
+    const embed: Untyped = {
       title: `📊 ${poll.question}`,
       description,
       color: 0x5865f2,
@@ -174,11 +175,11 @@ __serve(async (req) => {
     }
 
     // Build vote buttons (max 5 per row, max 2 rows = 10 options)
-    const components: any[] = [];
+    const components: Untyped[] = [];
     for (let i = 0; i < options.length; i += 5) {
-      const row: any = { type: 1, components: [] };
+      const row: Untyped = { type: 1, components: [] };
       const chunk = options.slice(i, i + 5);
-      chunk.forEach((o: any, j: number) => {
+      chunk.forEach((o: Untyped, j: number) => {
         row.components.push({
           type: 2,
           style: 1, // Primary

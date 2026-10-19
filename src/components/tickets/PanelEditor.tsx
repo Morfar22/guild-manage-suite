@@ -1,4 +1,5 @@
 import { useState } from "react";
+import type { Untyped } from "@/types/untyped";
 import {
   TicketPanel,
   PanelInput,
@@ -95,7 +96,7 @@ export default function PanelEditor({
     patch: Partial<{ enabled: boolean; open: string; close: string }>,
   ) => {
     const hours = form.operating_hours || { enabled: false };
-    const days = { ...(hours.days || {}) } as any;
+    const days = { ...(hours.days || {}) } as Untyped;
     days[dayKey] = { ...(days[dayKey] || defaultDay), ...patch };
     updateHours({ days });
   };

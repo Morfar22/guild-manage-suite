@@ -1,6 +1,7 @@
-// @ts-nocheck
 // Migrated from Supabase Edge Function `invite-tracker` to a TanStack server route.
+// @ts-nocheck
 import { createFileRoute } from "@tanstack/react-router";
+import type { Untyped } from "@/types/untyped";
 import {
   requireUser,
   requireGuildAdmin,
@@ -14,7 +15,7 @@ const __env = (k: string) =>
     ? process.env["SUPABASE_PUBLISHABLE_KEY"]
     : undefined);
 let __handler: (req: Request) => Response | Promise<Response>;
-const __serve = (fn: any, _opts?: any) => {
+const __serve = (fn: Untyped, _opts?: Untyped) => {
   __handler = fn;
 };
 
@@ -62,7 +63,7 @@ __serve(async (req) => {
       case "syncInvites": {
         const { guildId, invites } = data as {
           guildId: string;
-          invites: any[];
+          invites: Untyped[];
         };
         const uuid = await getGuildUuid(guildId);
         if (!uuid)
@@ -139,7 +140,7 @@ __serve(async (req) => {
         }
 
         // Return inviter stats so caller (welcome flow) can use them
-        let stats = { real: 0, fake: 0, left: 0, total: 0 };
+        const stats = { real: 0, fake: 0, left: 0, total: 0 };
         if (inviterDiscordId) {
           const { data: rows } = await supabase
             .from("invite_uses")
@@ -148,8 +149,8 @@ __serve(async (req) => {
             .eq("inviter_discord_id", inviterDiscordId);
           if (rows) {
             stats.total = rows.length;
-            stats.fake = rows.filter((r: any) => r.is_fake).length;
-            stats.left = rows.filter((r: any) => r.has_left).length;
+            stats.fake = rows.filter((r: Untyped) => r.is_fake).length;
+            stats.left = rows.filter((r: Untyped) => r.has_left).length;
             stats.real = stats.total - stats.fake - stats.left;
           }
         }
@@ -215,7 +216,7 @@ __serve(async (req) => {
             total: number;
           }
         >();
-        (rows ?? []).forEach((r: any) => {
+        (rows ?? []).forEach((r: Untyped) => {
           const id = r.inviter_discord_id;
           if (!id) return;
           if (!map.has(id))
@@ -267,7 +268,7 @@ __serve(async (req) => {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
     }
-  } catch (e: any) {
+  } catch (e: Untyped) {
     if (e instanceof Response) return e;
     console.error("invite-tracker error:", e?.message);
     return new Response(

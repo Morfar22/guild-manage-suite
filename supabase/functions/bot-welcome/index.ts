@@ -1,5 +1,6 @@
 import { decryptBotToken as simpleDecrypt } from "../_shared/bot-token-crypto.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import type { Untyped } from "../_shared/untyped";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -7,7 +8,10 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-bot-secret, cf-connecting-ip, x-forwarded-for, x-real-ip",
 };
 
-async function getBotToken(supabase: any, guildId: string): Promise<string> {
+async function getBotToken(
+  supabase: Untyped,
+  guildId: string,
+): Promise<string> {
   const encryptionKey = Deno.env.get("BOT_SECRET_KEY") || "";
 
   const { data: guild } = await supabase
@@ -43,7 +47,7 @@ async function getBotToken(supabase: any, guildId: string): Promise<string> {
 
 async function checkIPWhitelist(
   req: Request,
-  supabase: any,
+  supabase: Untyped,
 ): Promise<{ allowed: boolean; ip: string }> {
   const clientIp =
     req.headers.get("cf-connecting-ip") ||
@@ -68,7 +72,7 @@ async function checkIPWhitelist(
 
 // Build welcome embed from settings
 function buildWelcomeEmbed(
-  settings: any,
+  settings: Untyped,
   username: string,
   userId: string,
   avatarUrl: string,
@@ -104,7 +108,7 @@ function buildWelcomeEmbed(
     ? formatMsg(settings.embed_footer)
     : `${guildName} • We're glad to have you here!`;
 
-  const fields: any[] = [
+  const fields: Untyped[] = [
     {
       name: "👤 User",
       value: isTest ? `@${username}` : `<@${userId}>`,
@@ -136,7 +140,7 @@ function buildWelcomeEmbed(
     });
   }
 
-  const embed: any = {
+  const embed: Untyped = {
     author: {
       name: `Welcome, ${username}!`,
       icon_url: avatarUrl,
@@ -167,7 +171,7 @@ function buildWelcomeEmbed(
 
 // Build leave embed
 function buildLeaveEmbed(
-  settings: any,
+  settings: Untyped,
   username: string,
   guildName: string,
   isTest = false,
@@ -371,7 +375,7 @@ Deno.serve(async (req) => {
 
         // Send welcome message to channel
         if (welcomeMessageEnabled && settings.welcome_channel_id) {
-          const payload: any = settings.embed_enabled
+          const payload: Untyped = settings.embed_enabled
             ? {
                 embeds: [
                   buildWelcomeEmbed(
@@ -565,7 +569,7 @@ Deno.serve(async (req) => {
           username: "TestInviter",
           total: 7,
         };
-        const payload: any = settings.embed_enabled
+        const payload: Untyped = settings.embed_enabled
           ? {
               embeds: [
                 buildWelcomeEmbed(
@@ -676,7 +680,7 @@ Deno.serve(async (req) => {
         const botToken = await getBotToken(supabase, guild.id);
         const testUsername = username || "TestUser";
 
-        const payload: any = settings.leave_embed_enabled
+        const payload: Untyped = settings.leave_embed_enabled
           ? {
               embeds: [
                 buildLeaveEmbed(settings, testUsername, guild.guild_name, true),
@@ -776,7 +780,7 @@ Deno.serve(async (req) => {
 
         const botToken = await getBotToken(supabase, guild.id);
 
-        const payload: any = settings.leave_embed_enabled
+        const payload: Untyped = settings.leave_embed_enabled
           ? { embeds: [buildLeaveEmbed(settings, username, guild.guild_name)] }
           : {
               content: (settings.leave_message || "{user} has left the server.")

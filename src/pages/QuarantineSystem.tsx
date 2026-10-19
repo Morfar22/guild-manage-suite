@@ -1,4 +1,5 @@
 import { useState } from "react";
+import type { Untyped } from "@/types/untyped";
 import {
   Card,
   CardContent,
@@ -67,8 +68,8 @@ export default function QuarantineSystem() {
       </div>
     );
 
-  const activeEntries = entries.filter((e: any) => !e.released_at);
-  const releasedEntries = entries.filter((e: any) => e.released_at);
+  const activeEntries = entries.filter((e: Untyped) => !e.released_at);
+  const releasedEntries = entries.filter((e: Untyped) => e.released_at);
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -177,7 +178,7 @@ export default function QuarantineSystem() {
               </p>
             ) : (
               <div className="space-y-2">
-                {activeEntries.map((entry: any) => (
+                {activeEntries.map((entry: Untyped) => (
                   <div
                     key={entry.id}
                     className="flex items-center justify-between rounded-lg border border-border p-3"
@@ -227,7 +228,7 @@ export default function QuarantineSystem() {
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
-              {releasedEntries.slice(0, 10).map((entry: any) => (
+              {releasedEntries.slice(0, 10).map((entry: Untyped) => (
                 <div
                   key={entry.id}
                   className="flex items-center justify-between rounded-lg border border-border p-3 opacity-70"

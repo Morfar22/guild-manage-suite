@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import type { Untyped } from "../_shared/untyped";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -1199,7 +1200,9 @@ serve(async (req) => {
 
       if (getResponse.ok) {
         const existingCommands = await getResponse.json();
-        const fivemCmd = existingCommands.find((c: any) => c.name === "fivem");
+        const fivemCmd = existingCommands.find(
+          (c: Untyped) => c.name === "fivem",
+        );
 
         if (fivemCmd) {
           await fetch(
@@ -1221,7 +1224,7 @@ serve(async (req) => {
       );
     } else if (action === "list") {
       // Return structured list of all commands
-      const commandList: any[] = [];
+      const commandList: Untyped[] = [];
 
       Object.entries(FIVEM_SUBCOMMANDS).forEach(([group, commands]) => {
         commands.forEach((cmd) => {

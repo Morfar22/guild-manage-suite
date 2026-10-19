@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useGuild } from "@/contexts/GuildContext";
+import type { Untyped } from "@/types/untyped";
 import {
   Card,
   CardContent,
@@ -31,12 +32,12 @@ export default function AutoReports() {
     queryKey: ["auto-report-settings", selectedGuild?.id],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("auto_report_settings" as any)
+        .from("auto_report_settings" as Untyped)
         .select("*")
         .eq("guild_id", selectedGuild!.id)
         .maybeSingle();
       if (error) throw error;
-      return data as any;
+      return data as Untyped;
     },
     enabled: !!selectedGuild?.id,
   });
@@ -52,7 +53,7 @@ export default function AutoReports() {
   const saveSettings = useMutation({
     mutationFn: async () => {
       const { error } = await supabase
-        .from("auto_report_settings" as any)
+        .from("auto_report_settings" as Untyped)
         .upsert(
           {
             guild_id: selectedGuild!.id,

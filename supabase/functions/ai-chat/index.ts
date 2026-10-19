@@ -1,6 +1,7 @@
 import { requireUser, requireGuildAdmin } from "../_shared/api-auth.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import type { Untyped } from "../_shared/untyped";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -9,7 +10,7 @@ const corsHeaders = {
 };
 
 // Fetch protected IDs from DB (cached per request)
-async function getProtectedIds(supabase: any): Promise<Set<string>> {
+async function getProtectedIds(supabase: Untyped): Promise<Set<string>> {
   const { data } = await supabase
     .from("protected_discord_ids")
     .select("discord_id");
@@ -371,7 +372,7 @@ function detectModelRefusalCategories(
 
 /** Log illegal content attempt to database */
 async function logIllegalContent(
-  supabase: any,
+  supabase: Untyped,
   guildId: string,
   userId: string,
   userName: string | null,
@@ -443,7 +444,7 @@ const SAFETY_RESPONSE_EN =
 
 async function checkIPWhitelist(
   req: Request,
-  supabase: any,
+  supabase: Untyped,
 ): Promise<{ allowed: boolean; ip: string }> {
   const clientIp =
     req.headers.get("cf-connecting-ip") ||

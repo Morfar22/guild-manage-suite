@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import type { Untyped } from "@/types/untyped";
 
 export interface ProtectedDiscordId {
   id: string;
@@ -42,7 +43,7 @@ export function useProtectedIds() {
       queryClient.invalidateQueries({ queryKey: ["protected-discord-ids"] });
       toast.success("Discord ID tilføjet til beskyttede IDs");
     },
-    onError: (e: any) => {
+    onError: (e: Untyped) => {
       if (e.message?.includes("duplicate")) {
         toast.error("Dette Discord ID er allerede beskyttet");
       } else {

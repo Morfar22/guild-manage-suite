@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { format } from "date-fns";
 import { enUS } from "date-fns/locale";
+import type { Untyped } from "@/types/untyped";
 import {
   FileText,
   Settings,
@@ -57,7 +58,7 @@ function ApplicationCard({
 }) {
   const config = statusConfig[submission.status];
   const StatusIcon = config.icon;
-  const aiScore = (submission as any).ai_score as number | null;
+  const aiScore = (submission as Untyped).ai_score as number | null;
 
   const scoreColor =
     aiScore == null
@@ -232,7 +233,7 @@ export default function ApplicationList() {
       <Tabs
         value={selectedStatus || "all"}
         onValueChange={(v) =>
-          setSelectedStatus(v === "all" ? undefined : (v as any))
+          setSelectedStatus(v === "all" ? undefined : (v as Untyped))
         }
       >
         <TabsList>

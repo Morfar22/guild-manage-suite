@@ -1,4 +1,5 @@
 import { useMemo, useState, type ReactNode } from "react";
+import type { Untyped } from "@/types/untyped";
 import {
   useTickets,
   useTicketStats,
@@ -537,7 +538,9 @@ export default function Tickets() {
                             <TableCell className="text-right">
                               <div className="flex items-center justify-end gap-1">
                                 <Link
-                                  to={`/dashboard/tickets/${ticket.id}` as any}
+                                  to={
+                                    `/dashboard/tickets/${ticket.id}` as Untyped
+                                  }
                                 >
                                   <Button variant="ghost" size="sm">
                                     {en ? "Details" : "Detaljer"}

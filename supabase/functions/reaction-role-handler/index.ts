@@ -1,5 +1,6 @@
 import { decryptBotToken as simpleDecrypt } from "../_shared/bot-token-crypto.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import type { Untyped } from "../_shared/untyped";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -10,7 +11,7 @@ const corsHeaders = {
 // Helper function to check if IP is whitelisted
 async function checkIPWhitelist(
   req: Request,
-  supabase: any,
+  supabase: Untyped,
 ): Promise<{ allowed: boolean; ip: string }> {
   const clientIp =
     req.headers.get("cf-connecting-ip") ||
@@ -207,7 +208,7 @@ Deno.serve(async (req) => {
 
         // Unicode emoji - only allow likely emoji glyphs, otherwise skip it
         if (
-          /[\p{Extended_Pictographic}\p{Regional_Indicator}\u200D\uFE0F]/u.test(
+          /(?:\p{Extended_Pictographic}|\p{Regional_Indicator})(?:\u200D(?:\p{Extended_Pictographic}|\p{Regional_Indicator}))*\uFE0F?/u.test(
             trimmedEmoji,
           )
         ) {

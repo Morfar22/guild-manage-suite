@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useParams, useNavigate } from "@tanstack/react-router";
 import { format } from "date-fns";
 import { enUS } from "date-fns/locale";
+import type { Untyped } from "@/types/untyped";
 import {
   ArrowLeft,
   User,
@@ -107,7 +108,7 @@ export default function ApplicationReview() {
         setNotes(data.polished);
         toast.success("Svar finpudset med AI");
       }
-    } catch (e: any) {
+    } catch (e: Untyped) {
       toast.error(e.message || "AI fejlede");
     } finally {
       setPolishing(false);
@@ -117,7 +118,7 @@ export default function ApplicationReview() {
   const handleReview = async (status: "approved" | "denied") => {
     if (!submission || !user) return;
 
-    const meta = (user.user_metadata || {}) as Record<string, any>;
+    const meta = (user.user_metadata || {}) as Record<string, Untyped>;
     const discordName =
       meta.custom_claims?.global_name ||
       meta.full_name ||
@@ -207,15 +208,15 @@ export default function ApplicationReview() {
             {hasPremium && (
               <AiScoreCard
                 submissionId={submission.id}
-                score={(submission as any).ai_score ?? null}
-                summary={(submission as any).ai_summary ?? null}
-                flags={((submission as any).ai_flags as string[]) ?? null}
-                reasoning={(submission as any).ai_reasoning ?? null}
+                score={(submission as Untyped).ai_score ?? null}
+                summary={(submission as Untyped).ai_summary ?? null}
+                flags={((submission as Untyped).ai_flags as string[]) ?? null}
+                reasoning={(submission as Untyped).ai_reasoning ?? null}
                 aiGeneratedLikelihood={
-                  (submission as any).ai_generated_likelihood ?? null
+                  (submission as Untyped).ai_generated_likelihood ?? null
                 }
                 aiGeneratedReasoning={
-                  (submission as any).ai_generated_reasoning ?? null
+                  (submission as Untyped).ai_generated_reasoning ?? null
                 }
               />
             )}
@@ -349,7 +350,7 @@ export default function ApplicationReview() {
               <div className="flex items-center gap-2">
                 <Select
                   value={aiTone}
-                  onValueChange={(v) => setAiTone(v as any)}
+                  onValueChange={(v) => setAiTone(v as Untyped)}
                 >
                   <SelectTrigger className="w-[160px] h-8 text-xs">
                     <SelectValue />
@@ -416,7 +417,7 @@ export default function ApplicationReview() {
               <div className="flex items-center gap-2">
                 <Select
                   value={aiTone}
-                  onValueChange={(v) => setAiTone(v as any)}
+                  onValueChange={(v) => setAiTone(v as Untyped)}
                 >
                   <SelectTrigger className="w-[160px] h-8 text-xs">
                     <SelectValue />

@@ -2,6 +2,7 @@ import type { TablesUpdate } from "@/integrations/supabase/types";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useGuild } from "@/contexts/GuildContext";
+import type { Untyped } from "@/types/untyped";
 
 export type TicketStatus = "open" | "claimed" | "closed";
 export type TicketType = "support" | "application";
@@ -71,7 +72,7 @@ export interface TicketCategory {
 }
 
 // Helper to transform DB response to typed category
-function transformCategory(cat: any): TicketCategory {
+function transformCategory(cat: Untyped): TicketCategory {
   return {
     ...cat,
     questions: Array.isArray(cat.questions) ? cat.questions : [],
@@ -151,7 +152,7 @@ export function useTickets(
       const { data, error } = await query;
       if (error) throw error;
       // Transform ticket_categories to handle questions
-      return (data || []).map((ticket: any) => ({
+      return (data || []).map((ticket: Untyped) => ({
         ...ticket,
         ticket_categories: ticket.ticket_categories
           ? transformCategory(ticket.ticket_categories)
@@ -278,13 +279,13 @@ export function useTicketStats(excludeApplications: boolean = true) {
           (t) => new Date(t.created_at) >= weekAgo,
         ).length,
         urgentTickets: tickets.filter(
-          (t) => t.status !== "closed" && (t as any).priority === "urgent",
+          (t) => t.status !== "closed" && (t as Untyped).priority === "urgent",
         ).length,
         overdueSla: tickets.filter(
           (t) =>
             t.status !== "closed" &&
-            (t as any).sla_due_at &&
-            new Date((t as any).sla_due_at).getTime() < now.getTime(),
+            (t as Untyped).sla_due_at &&
+            new Date((t as Untyped).sla_due_at).getTime() < now.getTime(),
         ).length,
       };
 
@@ -357,7 +358,7 @@ export function useCreateCategory() {
 
       const { data, error } = await supabase
         .from("ticket_categories")
-        .insert(insertData as any)
+        .insert(insertData as Untyped)
         .select()
         .single();
 

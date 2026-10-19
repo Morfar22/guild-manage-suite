@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import type { Untyped } from "@/types/untyped";
 import {
   Select,
   SelectContent,
@@ -60,7 +61,7 @@ export default function EmbedBuilder() {
   const textChannels =
     channelsData?.channels?.filter((c) => c.type === 0) || [];
 
-  const updateField = (key: keyof EmbedData, value: any) => {
+  const updateField = (key: keyof EmbedData, value: Untyped) => {
     setEmbed((prev) => ({ ...prev, [key]: value }));
   };
 
@@ -74,7 +75,7 @@ export default function EmbedBuilder() {
     }));
   };
 
-  const updateEmbedField = (index: number, key: string, value: any) => {
+  const updateEmbedField = (index: number, key: string, value: Untyped) => {
     setEmbed((prev) => ({
       ...prev,
       fields: prev.fields?.map((f, i) =>
@@ -116,7 +117,7 @@ export default function EmbedBuilder() {
     }));
   };
 
-  const loadTemplate = (saved: any) => {
+  const loadTemplate = (saved: Untyped) => {
     setEmbed(saved.embed_data);
     setTemplateName(saved.name);
     setEditingId(saved.id);
@@ -170,7 +171,7 @@ export default function EmbedBuilder() {
       });
       if (!response.ok) throw new Error("Kunne ikke sende embed");
       toast.success("Embed sendt!");
-    } catch (e: any) {
+    } catch (e: Untyped) {
       toast.error(e.message);
     } finally {
       setSending(false);

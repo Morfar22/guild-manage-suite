@@ -1,5 +1,6 @@
 import { decryptBotToken as simpleDecrypt } from "../_shared/bot-token-crypto.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import type { Untyped } from "../_shared/untyped";
 import {
   requireUser,
   requireGuildAdmin,
@@ -12,7 +13,7 @@ const __env = (key: string) =>
     ? Deno.env.get("SUPABASE_PUBLISHABLE_KEY")
     : undefined);
 let __handler: (req: Request) => Response | Promise<Response>;
-const __serve = (fn: any, _opts?: any) => {
+const __serve = (fn: Untyped, _opts?: Untyped) => {
   __handler = fn;
 };
 
@@ -23,7 +24,7 @@ const corsHeaders = {
 };
 
 async function getBotTokenForGuild(
-  supabase: any,
+  supabase: Untyped,
   guildId: string,
 ): Promise<string> {
   const { data: settings } = await supabase
@@ -79,7 +80,7 @@ __serve(async (req) => {
     await requireGuildChannel(botToken, guild.guild_id, channelId);
 
     // Build Discord embed object
-    const discordEmbed: any = {};
+    const discordEmbed: Untyped = {};
     if (embed.title) discordEmbed.title = embed.title;
     if (embed.description) discordEmbed.description = embed.description;
     if (embed.color)
@@ -90,7 +91,7 @@ __serve(async (req) => {
     if (embed.author) discordEmbed.author = embed.author;
     if (embed.timestamp) discordEmbed.timestamp = new Date().toISOString();
     if (embed.fields && embed.fields.length > 0) {
-      discordEmbed.fields = embed.fields.map((f: any) => ({
+      discordEmbed.fields = embed.fields.map((f: Untyped) => ({
         name: f.name || "\u200b",
         value: f.value || "\u200b",
         inline: f.inline ?? false,
@@ -99,12 +100,12 @@ __serve(async (req) => {
 
     // Build Discord components (link buttons)
     const allButtons = buttons || embed.buttons || [];
-    const components: any[] = [];
+    const components: Untyped[] = [];
     if (allButtons.length > 0) {
       components.push({
         type: 1, // ACTION_ROW
-        components: allButtons.slice(0, 5).map((btn: any) => {
-          const button: any = {
+        components: allButtons.slice(0, 5).map((btn: Untyped) => {
+          const button: Untyped = {
             type: 2, // BUTTON
             style: 5, // LINK
             label: btn.label || "Link",
@@ -113,7 +114,7 @@ __serve(async (req) => {
           if (btn.emoji) {
             // Support unicode emoji
             const emojiRegex =
-              /[\p{Extended_Pictographic}\p{Regional_Indicator}\u200D\uFE0F]/u;
+              /(?:\p{Extended_Pictographic}|\p{Regional_Indicator})(?:\u200D(?:\p{Extended_Pictographic}|\p{Regional_Indicator}))*\uFE0F?/u;
             if (emojiRegex.test(btn.emoji)) {
               button.emoji = { name: btn.emoji };
             }
@@ -123,7 +124,7 @@ __serve(async (req) => {
       });
     }
 
-    const body: any = { embeds: [discordEmbed] };
+    const body: Untyped = { embeds: [discordEmbed] };
     if (components.length > 0) body.components = components;
 
     const response = await fetch(

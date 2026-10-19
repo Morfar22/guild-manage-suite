@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useGuild } from "@/contexts/GuildContext";
 import { toast } from "sonner";
+import type { Untyped } from "@/types/untyped";
 
 export interface ApplicationQuestion {
   id: string;
@@ -106,7 +107,7 @@ export function useCreateApplicationForm() {
           emoji: form.emoji,
           enabled: form.enabled,
           guild_id: selectedGuild.id,
-          questions: (form.questions || []) as unknown as any,
+          questions: (form.questions || []) as unknown as Untyped,
           granted_role_id: form.granted_role_id,
           approval_channel_id: form.approval_channel_id,
           denial_channel_id: form.denial_channel_id,
@@ -149,7 +150,7 @@ export function useUpdateApplicationForm() {
       if (form.emoji !== undefined) updateData.emoji = form.emoji;
       if (form.enabled !== undefined) updateData.enabled = form.enabled;
       if (form.questions !== undefined)
-        updateData.questions = form.questions as unknown as any;
+        updateData.questions = form.questions as unknown as Untyped;
       if (form.granted_role_id !== undefined)
         updateData.granted_role_id = form.granted_role_id;
       if (form.approval_channel_id !== undefined)

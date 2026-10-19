@@ -3,6 +3,7 @@ import { decryptBotToken as simpleDecrypt } from "@/lib/server/bot-token-crypto"
 // Migrated from Supabase Edge Function `bot-tickets` to a TanStack server route.
 import { createFileRoute } from "@tanstack/react-router";
 import { createClient } from "@supabase/supabase-js";
+import type { Untyped } from "@/types/untyped";
 
 const __env = (k: string) =>
   process.env[k] ??
@@ -10,7 +11,7 @@ const __env = (k: string) =>
     ? process.env["SUPABASE_PUBLISHABLE_KEY"]
     : undefined);
 let __handler: (req: Request) => Response | Promise<Response>;
-const __serve = (fn: any, _opts?: any) => {
+const __serve = (fn: Untyped, _opts?: Untyped) => {
   __handler = fn;
 };
 
@@ -22,7 +23,7 @@ const corsHeaders = {
 
 async function checkIPWhitelist(
   req: Request,
-  supabase: any,
+  supabase: Untyped,
 ): Promise<{ allowed: boolean; ip: string }> {
   const clientIp =
     req.headers.get("cf-connecting-ip") ||
@@ -56,7 +57,7 @@ async function checkIPWhitelist(
 }
 
 async function getBotTokenForGuild(
-  supabase: any,
+  supabase: Untyped,
   guildId: string,
 ): Promise<string> {
   const { data: settings } = await supabase
@@ -187,7 +188,7 @@ __serve(async (req) => {
           .eq("guild_id", guildId)
           .maybeSingle();
 
-        let panel: any = null;
+        let panel: Untyped = null;
         if (panelId) {
           const { data: p } = await supabase
             .from("ticket_panels")
@@ -200,7 +201,7 @@ __serve(async (req) => {
         // Panel operating_hours (if set) override the global settings hours
         const merged = settings ? { ...settings } : {};
         if (panel?.operating_hours && panel.operating_hours.enabled) {
-          (merged as any).operating_hours = panel.operating_hours;
+          (merged as Untyped).operating_hours = panel.operating_hours;
         }
 
         return new Response(JSON.stringify({ settings: merged, panel }), {
@@ -454,13 +455,13 @@ __serve(async (req) => {
             // Build transcript preview (last 10 messages)
             const recentMessages = messages
               .sort(
-                (a: any, b: any) =>
+                (a: Untyped, b: Untyped) =>
                   new Date(a.created_at).getTime() -
                   new Date(b.created_at).getTime(),
               )
               .slice(-10)
               .map(
-                (m: any) =>
+                (m: Untyped) =>
                   `**${m.author_name || m.author_id}:** ${m.content.slice(0, 100)}${m.content.length > 100 ? "..." : ""}`,
               )
               .join("\n");

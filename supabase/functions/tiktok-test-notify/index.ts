@@ -1,5 +1,6 @@
 import { decryptBotToken as decryptToken } from "../_shared/bot-token-crypto.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import type { Untyped } from "../_shared/untyped";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -8,7 +9,7 @@ const corsHeaders = {
 };
 
 async function resolveGuildBotToken(
-  supabase: any,
+  supabase: Untyped,
   guildId: string,
 ): Promise<string | null> {
   try {

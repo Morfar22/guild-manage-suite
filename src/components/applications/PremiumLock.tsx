@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useGuildPremium } from "@/hooks/useGuildPremium";
 import { Link } from "@tanstack/react-router";
+import type { Untyped } from "@/types/untyped";
 
 interface PremiumLockProps {
   children: ReactNode;
@@ -71,7 +72,7 @@ export function PremiumLock({
           size="sm"
           className="bg-gradient-to-r from-amber-500 to-yellow-500 text-black hover:from-amber-400 hover:to-yellow-400"
         >
-          <Link to={"/premium" as any}>
+          <Link to={"/premium" as Untyped}>
             <Crown className="mr-2 h-4 w-4" />
             Opgrader til Pro
           </Link>

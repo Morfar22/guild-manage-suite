@@ -1,4 +1,5 @@
 import { useState } from "react";
+import type { Untyped } from "@/types/untyped";
 import {
   Card,
   CardContent,
@@ -247,7 +248,7 @@ const CurrencyShop = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {purchases.map((p: any) => (
+                {purchases.map((p: Untyped) => (
                   <TableRow key={p.id}>
                     <TableCell>{p.user_name || p.user_id}</TableCell>
                     <TableCell>

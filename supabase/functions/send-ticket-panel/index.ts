@@ -1,6 +1,7 @@
 import { decryptBotToken as simpleDecrypt } from "../_shared/bot-token-crypto.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import type { Untyped } from "../_shared/untyped";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -9,7 +10,7 @@ const corsHeaders = {
 };
 
 async function getBotTokenForGuild(
-  supabase: any,
+  supabase: Untyped,
   guildId: string,
 ): Promise<string> {
   const { data: settings } = await supabase
@@ -24,7 +25,9 @@ async function getBotTokenForGuild(
   if (settings?.bot_token_encrypted) {
     try {
       return simpleDecrypt(settings.bot_token_encrypted, key);
-    } catch (_) {}
+    } catch (_) {
+      /* ignore */
+    }
   }
   const globalToken = Deno.env.get("DISCORD_BOT_TOKEN");
   if (!globalToken) throw new Error("Discord bot token not configured");
@@ -69,7 +72,7 @@ serve(async (req) => {
     if (!guild) return json({ error: "Guild not found" }, 404);
 
     // Load panel (new system) or fall back to legacy ticket_settings
-    let panel: any = null;
+    let panel: Untyped = null;
     let legacyMode = false;
     if (panel_id) {
       const { data } = await supabase
@@ -112,7 +115,7 @@ serve(async (req) => {
     if (!panel.channel_id) return json({ error: "Panel channel not set" }, 400);
 
     // Categories filter
-    let cats: any[] = [];
+    let cats: Untyped[] = [];
     if (Array.isArray(panel.category_ids) && panel.category_ids.length > 0) {
       const { data } = await supabase
         .from("ticket_categories")
@@ -130,7 +133,7 @@ serve(async (req) => {
       cats = data || [];
     }
 
-    const embed: any = {
+    const embed: Untyped = {
       title: (panel.embed_title || "🎫 Support Tickets").slice(0, 256),
       description: (panel.embed_description || "").slice(0, 4000),
       color: panel.embed_color ?? 0x5865f2,
@@ -147,7 +150,7 @@ serve(async (req) => {
     };
 
     const idSuffix = panel.id ? `_${panel.id}` : "";
-    const components: any[] = [];
+    const components: Untyped[] = [];
 
     if (cats.length === 0) {
       components.push({
@@ -165,7 +168,7 @@ serve(async (req) => {
     } else if (panel.component_style === "buttons") {
       // Buttons - max 5 per row, 5 rows = 25 buttons max
       for (let i = 0; i < Math.min(cats.length, 25); i += 5) {
-        const row = cats.slice(i, i + 5).map((c: any) => ({
+        const row = cats.slice(i, i + 5).map((c: Untyped) => ({
           type: 2,
           style: c.button_color ? 1 : panel.button_style || 1,
           label: c.name.slice(0, 80),
@@ -176,7 +179,7 @@ serve(async (req) => {
       }
     } else {
       // Select menu
-      const opts = cats.slice(0, 25).map((c: any) => ({
+      const opts = cats.slice(0, 25).map((c: Untyped) => ({
         label: c.name.slice(0, 100),
         description: c.description ? c.description.slice(0, 100) : undefined,
         value: c.id,

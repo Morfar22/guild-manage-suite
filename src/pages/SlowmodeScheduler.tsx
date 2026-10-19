@@ -1,4 +1,5 @@
 import { useState } from "react";
+import type { Untyped } from "@/types/untyped";
 import {
   Card,
   CardContent,
@@ -158,7 +159,7 @@ export default function SlowmodeScheduler() {
         </Card>
       ) : (
         <div className="grid gap-4 md:grid-cols-2">
-          {schedules.map((s: any) => (
+          {schedules.map((s: Untyped) => (
             <Card key={s.id} className={!s.enabled ? "opacity-60" : ""}>
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">

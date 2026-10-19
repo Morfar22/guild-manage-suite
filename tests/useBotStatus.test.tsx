@@ -1,12 +1,13 @@
 // @vitest-environment jsdom
 import { act, cleanup, renderHook } from "@testing-library/react";
 import { afterEach, expect, test, vi } from "vitest";
+import type { Untyped } from "./untyped";
 
 const mocks = vi.hoisted(() => ({
   guild: { id: "guild-1" },
-  channels: new Map<string, any>(),
-  created: [] as any[],
-  removeChannel: vi.fn(async (_channel: any) => "ok"),
+  channels: new Map<string, Untyped>(),
+  created: [] as Untyped[],
+  removeChannel: vi.fn(async (_channel: Untyped) => "ok"),
 }));
 
 vi.mock("@/contexts/GuildContext", () => ({
@@ -27,8 +28,8 @@ vi.mock("@/integrations/supabase/client", () => ({
       if (mocks.channels.has(topic)) return mocks.channels.get(topic);
       const channel = {
         subscribed: false,
-        callback: (_payload: any) => {},
-        on(_event: string, _filter: any, callback: any) {
+        callback: (_payload: Untyped) => {},
+        on(_event: string, _filter: Untyped, callback: Untyped) {
           if (this.subscribed)
             throw new Error("cannot add callbacks after subscribe()");
           this.callback = callback;

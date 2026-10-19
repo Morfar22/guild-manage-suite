@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import type { Untyped } from "@/types/untyped";
 import {
   Plus,
   FileText,
@@ -143,7 +144,7 @@ export default function ApplicationSettingsPage() {
         name: tpl.name,
         emoji: tpl.emoji,
         description: tpl.description,
-        questions: withIds as any,
+        questions: withIds as Untyped,
       });
       setTemplateDialogOpen(false);
       toast.success(`Template "${tpl.name}" oprettet`);

@@ -1,5 +1,6 @@
 import { decryptBotToken as simpleDecrypt } from "../_shared/bot-token-crypto.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import type { Untyped } from "../_shared/untyped";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -867,7 +868,7 @@ Deno.serve(async (req) => {
       JSON.stringify({
         success: true,
         deployed: deployed.length,
-        commands: deployed.map((c: any) => c.name),
+        commands: deployed.map((c: Untyped) => c.name),
         usingCustomBot: isCustomBot,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },

@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import type { Untyped } from "../_shared/untyped";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -12,7 +13,7 @@ interface DiscordChannel {
   type: number;
   parent_id: string | null;
   position: number;
-  permission_overwrites?: any[];
+  permission_overwrites?: Untyped[];
   topic?: string;
   nsfw?: boolean;
   rate_limit_per_user?: number;
@@ -42,8 +43,8 @@ interface DiscordMessage {
   };
   content: string;
   timestamp: string;
-  attachments: any[];
-  embeds: any[];
+  attachments: Untyped[];
+  embeds: Untyped[];
   pinned: boolean;
 }
 
@@ -64,7 +65,7 @@ interface DiscordThread {
   name: string;
   parent_id: string;
   type: number;
-  thread_metadata?: any;
+  thread_metadata?: Untyped;
   message_count?: number;
 }
 
@@ -392,10 +393,10 @@ Deno.serve(async (req) => {
         }));
 
       // ===== PREMIUM FEATURES: Fetch additional data =====
-      let messagesData: any[] = [];
-      let bansData: any[] = [];
-      let membersData: any[] = [];
-      let threadsData: any[] = [];
+      const messagesData: Untyped[] = [];
+      let bansData: Untyped[] = [];
+      let membersData: Untyped[] = [];
+      let threadsData: Untyped[] = [];
       let serverSettingsData: DiscordGuildSettings | null = null;
 
       // Fetch messages if requested (PREMIUM)
@@ -408,7 +409,7 @@ Deno.serve(async (req) => {
           try {
             const channelMessages = await fetchChannelMessages(
               botToken,
-              (channel as any).original_id ||
+              (channel as Untyped).original_id ||
                 channels.find(
                   (c) => c.name === channel.name && c.type === channel.type,
                 )?.id ||
@@ -586,14 +587,14 @@ Deno.serve(async (req) => {
         );
       }
 
-      let categories: any[] = [];
-      let channels: any[] = [];
-      let roles: any[] = [];
-      let messages: any[] = [];
-      let bans: any[] = [];
-      let members: any[] = [];
-      let threads: any[] = [];
-      let serverSettings: any = {};
+      let categories: Untyped[] = [];
+      let channels: Untyped[] = [];
+      let roles: Untyped[] = [];
+      let messages: Untyped[] = [];
+      let bans: Untyped[] = [];
+      let members: Untyped[] = [];
+      let threads: Untyped[] = [];
+      let serverSettings: Untyped = {};
 
       // If cloning from template
       if (templateId) {
@@ -870,7 +871,7 @@ Deno.serve(async (req) => {
       ) {
         console.log("Updating server settings...");
         try {
-          const settingsPayload: any = {};
+          const settingsPayload: Untyped = {};
           if (serverSettings.name) settingsPayload.name = serverSettings.name;
           if (serverSettings.description !== undefined)
             settingsPayload.description = serverSettings.description;
@@ -980,7 +981,7 @@ Deno.serve(async (req) => {
       }
 
       // Helper function to map permission overwrites
-      const mapPermissionOverwrites = (overwrites: any[]): any[] => {
+      const mapPermissionOverwrites = (overwrites: Untyped[]): Untyped[] => {
         if (!overwrites || !Array.isArray(overwrites)) return [];
         return overwrites
           .map((ow) => {
@@ -1009,7 +1010,7 @@ Deno.serve(async (req) => {
             const mappedPerms = mapPermissionOverwrites(
               category.permission_overwrites,
             );
-            const payload: any = { name: category.name, type: 4 };
+            const payload: Untyped = { name: category.name, type: 4 };
             if (mappedPerms.length > 0)
               payload.permission_overwrites = mappedPerms;
 
@@ -1047,7 +1048,7 @@ Deno.serve(async (req) => {
             const mappedPerms = mapPermissionOverwrites(
               channel.permission_overwrites,
             );
-            const payload: any = { name: channel.name, type: channel.type };
+            const payload: Untyped = { name: channel.name, type: channel.type };
 
             if (channel.parent_id && categoryIdMap[channel.parent_id]) {
               payload.parent_id = categoryIdMap[channel.parent_id];
@@ -1185,7 +1186,7 @@ Deno.serve(async (req) => {
         console.log(`Updating ${members.length} members...`);
         for (const member of members) {
           try {
-            const payload: any = {};
+            const payload: Untyped = {};
             if (member.nickname) payload.nick = member.nickname;
             if (member.roles && member.roles.length > 0) {
               // Map old role IDs to new ones
@@ -1271,7 +1272,7 @@ Deno.serve(async (req) => {
       const encoder = new TextEncoder();
       const stream = new ReadableStream({
         async start(controller) {
-          const send = (type: string, payload: any) => {
+          const send = (type: string, payload: Untyped) => {
             if (type === "error") {
               console.error("clone-stream error:", payload);
             }
@@ -1293,13 +1294,13 @@ Deno.serve(async (req) => {
           };
 
           try {
-            let categories: any[] = [];
-            let channels: any[] = [];
-            let roles: any[] = [];
-            let messages: any[] = [];
-            let bans: any[] = [];
-            let members: any[] = [];
-            let serverSettings: any = {};
+            let categories: Untyped[] = [];
+            let channels: Untyped[] = [];
+            let roles: Untyped[] = [];
+            let messages: Untyped[] = [];
+            let bans: Untyped[] = [];
+            let members: Untyped[] = [];
+            let serverSettings: Untyped = {};
 
             // Load data from template or source guild
             if (templateId) {
@@ -1658,7 +1659,9 @@ Deno.serve(async (req) => {
             }
 
             // Permission mapping helper
-            const mapPermissionOverwrites = (overwrites: any[]): any[] => {
+            const mapPermissionOverwrites = (
+              overwrites: Untyped[],
+            ): Untyped[] => {
               if (!overwrites || !Array.isArray(overwrites)) return [];
               return overwrites
                 .map((ow) => {
@@ -1687,7 +1690,7 @@ Deno.serve(async (req) => {
                   const mappedPerms = mapPermissionOverwrites(
                     category.permission_overwrites,
                   );
-                  const payload: any = { name: category.name, type: 4 };
+                  const payload: Untyped = { name: category.name, type: 4 };
                   if (mappedPerms.length > 0)
                     payload.permission_overwrites = mappedPerms;
 
@@ -1736,7 +1739,7 @@ Deno.serve(async (req) => {
                   const mappedPerms = mapPermissionOverwrites(
                     channel.permission_overwrites,
                   );
-                  const payload: any = {
+                  const payload: Untyped = {
                     name: channel.name,
                     type: channel.type,
                   };
@@ -1917,7 +1920,7 @@ Deno.serve(async (req) => {
               let memberProgress = 0;
               for (const member of members) {
                 try {
-                  const payload: any = {};
+                  const payload: Untyped = {};
                   if (member.nickname) payload.nick = member.nickname;
                   if (member.roles && member.roles.length > 0) {
                     const mappedRoles = member.roles

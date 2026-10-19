@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useGuild } from "@/contexts/GuildContext";
 import { useLanguage } from "@/contexts/LanguageContext";
+import type { Untyped } from "@/types/untyped";
 import {
   useReactionRoles,
   useReactionRolePanels,
@@ -631,8 +632,8 @@ function RoleMenuCard({
   onDelete,
   onUpdate,
 }: {
-  menu: any;
-  discordRoles: any[];
+  menu: Untyped;
+  discordRoles: Untyped[];
   isSelected: boolean;
   onSelect: () => void;
   onDelete: () => void;
@@ -646,7 +647,7 @@ function RoleMenuCard({
 
   const handleAddRole = () => {
     if (!addRoleId) return;
-    const role = discordRoles.find((r: any) => r.id === addRoleId);
+    const role = discordRoles.find((r: Untyped) => r.id === addRoleId);
     onUpdate([
       ...roles,
       {
@@ -733,7 +734,7 @@ function RoleMenuCard({
                     <SelectValue placeholder={t("common.selectRole")} />
                   </SelectTrigger>
                   <SelectContent>
-                    {discordRoles.map((role: any) => (
+                    {discordRoles.map((role: Untyped) => (
                       <SelectItem key={role.id} value={role.id}>
                         <div className="flex items-center gap-2">
                           <div

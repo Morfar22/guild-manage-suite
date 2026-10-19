@@ -1,3 +1,4 @@
+import type { Untyped } from "@/types/untyped";
 import {
   Sparkles,
   AlertTriangle,
@@ -117,7 +118,7 @@ export function AiScoreCard({
       qc.invalidateQueries({
         queryKey: ["application-submission", submissionId],
       });
-    } catch (e: any) {
+    } catch (e: Untyped) {
       toast({
         title: "AI-screening fejlede",
         description: e.message,

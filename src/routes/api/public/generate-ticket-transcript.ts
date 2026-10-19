@@ -3,6 +3,7 @@ import { decryptBotToken as simpleDecrypt } from "@/lib/server/bot-token-crypto"
 // Migrated from Supabase Edge Function `generate-ticket-transcript` to a TanStack server route.
 import { createFileRoute } from "@tanstack/react-router";
 import { createClient } from "@supabase/supabase-js";
+import type { Untyped } from "@/types/untyped";
 
 const __env = (k: string) =>
   process.env[k] ??
@@ -10,7 +11,7 @@ const __env = (k: string) =>
     ? process.env["SUPABASE_PUBLISHABLE_KEY"]
     : undefined);
 let __handler: (req: Request) => Response | Promise<Response>;
-const __serve = (fn: any, _opts?: any) => {
+const __serve = (fn: Untyped, _opts?: Untyped) => {
   __handler = fn;
 };
 
@@ -30,13 +31,13 @@ function esc(s: string) {
   );
 }
 
-function buildHtml(ticket: any, messages: any[], guildName: string) {
+function buildHtml(ticket: Untyped, messages: Untyped[], guildName: string) {
   const rows = messages
     .map((m) => {
       const time = new Date(m.created_at).toLocaleString();
       const att =
         Array.isArray(m.attachments) && m.attachments.length
-          ? `<div class="atts">${m.attachments.map((a: any) => `<a href="${esc(a.url)}" target="_blank">${esc(a.name || "attachment")}</a>`).join(" ")}</div>`
+          ? `<div class="atts">${m.attachments.map((a: Untyped) => `<a href="${esc(a.url)}" target="_blank">${esc(a.name || "attachment")}</a>`).join(" ")}</div>`
           : "";
       return `<div class="msg">
       <img class="avatar" src="${esc(m.author_avatar || "https://cdn.discordapp.com/embed/avatars/0.png")}" alt="">
@@ -91,7 +92,10 @@ async function fetchDMChannel(botToken: string, userId: string) {
   return r.json();
 }
 
-async function getBotToken(supabase: any, guildId: string): Promise<string> {
+async function getBotToken(
+  supabase: Untyped,
+  guildId: string,
+): Promise<string> {
   const { data } = await supabase
     .from("guild_bot_settings")
     .select("bot_token_encrypted")
@@ -103,7 +107,9 @@ async function getBotToken(supabase: any, guildId: string): Promise<string> {
   if (data?.bot_token_encrypted) {
     try {
       return simpleDecrypt(data.bot_token_encrypted, k);
-    } catch (_) {}
+    } catch (_) {
+      /* ignore */
+    }
   }
   return __env("DISCORD_BOT_TOKEN")!;
 }
@@ -186,7 +192,7 @@ __serve(async (req) => {
       const botToken = await getBotToken(supabase, ticket.guild_id);
       const dm = await fetchDMChannel(botToken, ticket.creator_id);
       if (dm?.id) {
-        const components: any[] = [];
+        const components: Untyped[] = [];
         if (settings?.enable_ratings) {
           components.push({
             type: 1,

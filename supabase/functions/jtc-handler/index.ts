@@ -1,6 +1,7 @@
 import { decryptBotToken as simpleDecrypt } from "../_shared/bot-token-crypto.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { requireUser, requireGuildAdmin } from "../_shared/api-auth.ts";
+import type { Untyped } from "../_shared/untyped";
 
 const __env = (key: string) =>
   Deno.env.get(key) ??
@@ -8,7 +9,7 @@ const __env = (key: string) =>
     ? Deno.env.get("SUPABASE_PUBLISHABLE_KEY")
     : undefined);
 let __handler: (req: Request) => Response | Promise<Response>;
-const __serve = (fn: any, _opts?: any) => {
+const __serve = (fn: Untyped, _opts?: Untyped) => {
   __handler = fn;
 };
 
@@ -19,7 +20,7 @@ const corsHeaders = {
 };
 
 async function getBotTokenForGuild(
-  supabase: any,
+  supabase: Untyped,
   guildId: string,
 ): Promise<string> {
   const { data: settings } = await supabase
@@ -56,7 +57,7 @@ async function getBotTokenForGuild(
 // Helper function to check if IP is whitelisted
 async function checkIPWhitelist(
   req: Request,
-  supabase: any,
+  supabase: Untyped,
 ): Promise<{ allowed: boolean; ip: string }> {
   const clientIp =
     req.headers.get("cf-connecting-ip") ||

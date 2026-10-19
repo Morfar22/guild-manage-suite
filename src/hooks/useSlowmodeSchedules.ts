@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useGuild } from "@/contexts/GuildContext";
 import { toast } from "sonner";
+import type { Untyped } from "@/types/untyped";
 
 export function useSlowmodeSchedules() {
   const { selectedGuild } = useGuild();
@@ -23,11 +24,11 @@ export function useSlowmodeSchedules() {
   });
 
   const create = useMutation({
-    mutationFn: async (values: any) => {
+    mutationFn: async (values: Untyped) => {
       if (!selectedGuild?.id) throw new Error("No guild");
       const { error } = await supabase
         .from("slowmode_schedules")
-        .insert([{ ...values, guild_id: selectedGuild.id }] as any);
+        .insert([{ ...values, guild_id: selectedGuild.id }] as Untyped);
       if (error) throw error;
     },
     onSuccess: () => {

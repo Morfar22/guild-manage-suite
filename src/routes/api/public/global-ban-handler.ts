@@ -1,7 +1,8 @@
-// @ts-nocheck
 // Migrated from Supabase Edge Function `global-ban-handler` to a TanStack server route.
+// @ts-nocheck
 import { createFileRoute } from "@tanstack/react-router";
 import { createClient } from "@supabase/supabase-js";
+import type { Untyped } from "@/types/untyped";
 
 const __env = (k: string) =>
   process.env[k] ??
@@ -9,7 +10,7 @@ const __env = (k: string) =>
     ? process.env["SUPABASE_PUBLISHABLE_KEY"]
     : undefined);
 let __handler: (req: Request) => Response | Promise<Response>;
-const __serve = (fn: any, _opts?: any) => {
+const __serve = (fn: Untyped, _opts?: Untyped) => {
   __handler = fn;
 };
 
@@ -38,7 +39,7 @@ const SEVERITY_COLORS: Record<string, number> = {
 };
 
 async function broadcastGlobalBanNotification(
-  supabaseAdmin: any,
+  supabaseAdmin: Untyped,
   ban: {
     target_discord_id: string;
     target_discord_name: string;
@@ -80,7 +81,7 @@ async function broadcastGlobalBanNotification(
     };
 
     // Send to all log channels (fire-and-forget, don't block on failures)
-    const promises = logSettings.map(async (ls: any) => {
+    const promises = logSettings.map(async (ls: Untyped) => {
       try {
         await fetch(
           `https://discord.com/api/v10/channels/${ls.log_channel_id}/messages`,
@@ -273,7 +274,7 @@ __serve(async (req) => {
         // Severity distribution
         const severityCounts: Record<string, number> = {};
         bans?.forEach((b) => {
-          const sev = (b as any).severity || "other";
+          const sev = (b as Untyped).severity || "other";
           severityCounts[sev] = (severityCounts[sev] || 0) + 1;
         });
 
@@ -393,7 +394,7 @@ __serve(async (req) => {
             target_discord_name: report.target_discord_name,
             reason: report.reason,
             banned_by: userId,
-            severity: (report as any).severity || "other",
+            severity: (report as Untyped).severity || "other",
           })
           .select()
           .single();

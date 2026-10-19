@@ -1,4 +1,5 @@
 import { useState } from "react";
+import type { Untyped } from "@/types/untyped";
 import {
   useTicketPanels,
   useCreatePanel,
@@ -122,7 +123,7 @@ export default function PanelList() {
                           ? "Panel updated in Discord"
                           : "Panel sent to Discord",
                       });
-                    } catch (e: any) {
+                    } catch (e: Untyped) {
                       toast({
                         title: "Send failed",
                         description: e?.message || "Check bot is online",

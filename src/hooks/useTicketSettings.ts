@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useGuild } from "@/contexts/GuildContext";
 import type { OperatingHours } from "./useTicketPanels";
 import { invokeFunction } from "@/lib/functions-client";
+import type { Untyped } from "@/types/untyped";
 
 export interface TicketSettings {
   id: string;
@@ -38,7 +39,9 @@ export function useTicketSettings() {
       if (!data) return null;
       return {
         ...data,
-        operating_hours: (data as any).operating_hours || { enabled: false },
+        operating_hours: (data as Untyped).operating_hours || {
+          enabled: false,
+        },
       } as TicketSettings;
     },
     enabled: !!selectedGuild?.id,
@@ -66,7 +69,7 @@ export function useUpsertTicketSettings() {
       if (existing) {
         const { data, error } = await supabase
           .from("ticket_settings")
-          .update(settings as any)
+          .update(settings as Untyped)
           .eq("guild_id", selectedGuild.id)
           .select()
           .single();
@@ -75,7 +78,7 @@ export function useUpsertTicketSettings() {
       } else {
         const { data, error } = await supabase
           .from("ticket_settings")
-          .insert({ ...(settings as any), guild_id: selectedGuild.id })
+          .insert({ ...(settings as Untyped), guild_id: selectedGuild.id })
           .select()
           .single();
         if (error) throw error;

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useGuild } from "@/contexts/GuildContext";
+import type { Untyped } from "@/types/untyped";
 import {
   useLogSettings,
   LOG_CATEGORIES,
@@ -55,7 +56,7 @@ export default function LogSettings() {
     if (key in localSettings) {
       return localSettings[key] as boolean;
     }
-    return (settings as any)?.[key] ?? false;
+    return (settings as Untyped)?.[key] ?? false;
   };
 
   const getChannelValue = (): string => {
@@ -88,7 +89,7 @@ export default function LogSettings() {
   };
 
   const handleSave = () => {
-    updateSettings.mutate(localSettings as any);
+    updateSettings.mutate(localSettings as Untyped);
     setHasChanges(false);
     setLocalSettings({});
   };

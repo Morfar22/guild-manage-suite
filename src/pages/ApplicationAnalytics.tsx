@@ -3,6 +3,7 @@ import { Link } from "@tanstack/react-router";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import type { Untyped } from "@/types/untyped";
 import {
   ArrowLeft,
   TrendingUp,
@@ -41,7 +42,7 @@ function Kpi({
 }: {
   label: string;
   value: string | number;
-  icon: any;
+  icon: Untyped;
   gradient: string;
 }) {
   return (
@@ -83,11 +84,13 @@ function AnalyticsContent() {
     const reviewed = approved + denied;
     const approvalRate = reviewed ? Math.round((approved / reviewed) * 100) : 0;
 
-    const aiScored = submissions.filter((s: any) => s.ai_score != null);
+    const aiScored = submissions.filter((s: Untyped) => s.ai_score != null);
     const avgAiScore = aiScored.length
       ? Math.round(
-          aiScored.reduce((sum: number, s: any) => sum + (s.ai_score || 0), 0) /
-            aiScored.length,
+          aiScored.reduce(
+            (sum: number, s: Untyped) => sum + (s.ai_score || 0),
+            0,
+          ) / aiScored.length,
         )
       : null;
 
@@ -115,7 +118,7 @@ function AnalyticsContent() {
       { range: "61-80", min: 61, max: 80, count: 0 },
       { range: "81-100", min: 81, max: 100, count: 0 },
     ];
-    aiScored.forEach((s: any) => {
+    aiScored.forEach((s: Untyped) => {
       const b = buckets.find((b) => s.ai_score >= b.min && s.ai_score <= b.max);
       if (b) b.count++;
     });

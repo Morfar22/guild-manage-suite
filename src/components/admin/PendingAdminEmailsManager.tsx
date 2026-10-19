@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import type { Untyped } from "@/types/untyped";
 import {
   Card,
   CardContent,
@@ -47,7 +48,7 @@ export function PendingAdminEmailsManager() {
         description: "Email tilføjet til pending admins",
       });
     },
-    onError: (err: any) => {
+    onError: (err: Untyped) => {
       toast({
         title: "Fejl",
         description: err.message,
@@ -115,7 +116,7 @@ export function PendingAdminEmailsManager() {
           </div>
         ) : emails && emails.length > 0 ? (
           <div className="space-y-2 max-h-[300px] overflow-y-auto">
-            {emails.map((e: any) => (
+            {emails.map((e: Untyped) => (
               <div
                 key={e.id}
                 className="flex items-center justify-between p-3 rounded-lg border"

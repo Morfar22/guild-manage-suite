@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useGuild } from "@/contexts/GuildContext";
+import type { Untyped } from "@/types/untyped";
 import {
   useGuildBotSettings,
   useActiveBots,
@@ -222,7 +223,9 @@ export default function BotSettings() {
                 <AlertTriangle className="h-8 w-8 mx-auto mb-2 opacity-50" />
                 <p>Kunne ikke hente aktive bots</p>
                 <p className="mt-1 text-xs">
-                  {String((activeBotsError as any)?.message || activeBotsError)}
+                  {String(
+                    (activeBotsError as Untyped)?.message || activeBotsError,
+                  )}
                 </p>
               </div>
             ) : activeBots && activeBots.length > 0 ? (

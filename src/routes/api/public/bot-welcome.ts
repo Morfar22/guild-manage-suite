@@ -3,6 +3,7 @@ import { decryptBotToken as simpleDecrypt } from "@/lib/server/bot-token-crypto"
 // Migrated from Supabase Edge Function `bot-welcome` to a TanStack server route.
 import { createFileRoute } from "@tanstack/react-router";
 import { createClient } from "@supabase/supabase-js";
+import type { Untyped } from "@/types/untyped";
 
 const __env = (k: string) =>
   process.env[k] ??
@@ -10,7 +11,7 @@ const __env = (k: string) =>
     ? process.env["SUPABASE_PUBLISHABLE_KEY"]
     : undefined);
 let __handler: (req: Request) => Response | Promise<Response>;
-const __serve = (fn: any, _opts?: any) => {
+const __serve = (fn: Untyped, _opts?: Untyped) => {
   __handler = fn;
 };
 
@@ -29,7 +30,10 @@ function getDefaultBotToken(): string {
   );
 }
 
-async function getBotToken(supabase: any, guildId: string): Promise<string> {
+async function getBotToken(
+  supabase: Untyped,
+  guildId: string,
+): Promise<string> {
   const encryptionKey = __env("BOT_SECRET_KEY") || "";
 
   const { data: customBotSettings } = await supabase
@@ -66,7 +70,7 @@ async function getBotToken(supabase: any, guildId: string): Promise<string> {
 
 async function checkIPWhitelist(
   req: Request,
-  supabase: any,
+  supabase: Untyped,
 ): Promise<{ allowed: boolean; ip: string }> {
   const clientIp =
     req.headers.get("cf-connecting-ip") ||
@@ -91,7 +95,7 @@ async function checkIPWhitelist(
 
 // Build welcome embed from settings
 function buildWelcomeEmbed(
-  settings: any,
+  settings: Untyped,
   username: string,
   userId: string,
   avatarUrl: string,
@@ -127,7 +131,7 @@ function buildWelcomeEmbed(
     ? formatMsg(settings.embed_footer)
     : `${guildName} • We're glad to have you here!`;
 
-  const fields: any[] = [
+  const fields: Untyped[] = [
     {
       name: "👤 User",
       value: isTest ? `@${username}` : `<@${userId}>`,
@@ -159,7 +163,7 @@ function buildWelcomeEmbed(
     });
   }
 
-  const embed: any = {
+  const embed: Untyped = {
     author: {
       name: `Welcome, ${username}!`,
       icon_url: avatarUrl,
@@ -190,7 +194,7 @@ function buildWelcomeEmbed(
 
 // Build leave embed
 function buildLeaveEmbed(
-  settings: any,
+  settings: Untyped,
   username: string,
   guildName: string,
   isTest = false,
@@ -423,7 +427,7 @@ __serve(async (req) => {
             .replace(/{invitercount}/g, String(inviterInfo?.total ?? 0));
 
         const botToken = await getBotToken(supabase, guild.id);
-        const results: Record<string, any> = {
+        const results: Record<string, Untyped> = {
           welcome: { attempted: false, sent: false },
           dm: { attempted: false, sent: false },
           roles: { attempted: false, assigned: [], failed: [] },
@@ -438,7 +442,7 @@ __serve(async (req) => {
             );
           } else {
             results.welcome.attempted = true;
-            const payload: any = settings.embed_enabled
+            const payload: Untyped = settings.embed_enabled
               ? {
                   embeds: [
                     buildWelcomeEmbed(
@@ -695,7 +699,7 @@ __serve(async (req) => {
           username: "TestInviter",
           total: 7,
         };
-        const payload: any = effectiveSettings.embed_enabled
+        const payload: Untyped = effectiveSettings.embed_enabled
           ? {
               embeds: [
                 buildWelcomeEmbed(
@@ -813,7 +817,7 @@ __serve(async (req) => {
         const botToken = await getBotToken(supabase, guild.id);
         const testUsername = username || "TestUser";
 
-        const payload: any = effectiveSettings.leave_embed_enabled
+        const payload: Untyped = effectiveSettings.leave_embed_enabled
           ? {
               embeds: [
                 buildLeaveEmbed(
@@ -918,7 +922,7 @@ __serve(async (req) => {
 
         const botToken = await getBotToken(supabase, guild.id);
 
-        const payload: any = settings.leave_embed_enabled
+        const payload: Untyped = settings.leave_embed_enabled
           ? { embeds: [buildLeaveEmbed(settings, username, guild.guild_name)] }
           : {
               content: (settings.leave_message || "{user} has left the server.")

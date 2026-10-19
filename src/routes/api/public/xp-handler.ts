@@ -1,8 +1,9 @@
-// @ts-nocheck
 // Migrated from Supabase Edge Function `xp-handler` to a TanStack server route.
+// @ts-nocheck
 import { createFileRoute } from "@tanstack/react-router";
 import { decryptBotToken } from "@/lib/server/bot-token-crypto";
 import { createClient } from "@supabase/supabase-js";
+import type { Untyped } from "@/types/untyped";
 
 const __env = (k: string) =>
   process.env[k] ??
@@ -10,7 +11,7 @@ const __env = (k: string) =>
     ? process.env["SUPABASE_PUBLISHABLE_KEY"]
     : undefined);
 let __handler: (req: Request) => Response | Promise<Response>;
-const __serve = (fn: any, _opts?: any) => {
+const __serve = (fn: Untyped, _opts?: Untyped) => {
   __handler = fn;
 };
 
@@ -23,7 +24,7 @@ const corsHeaders = {
 // Helper function to check if IP is whitelisted
 async function checkIPWhitelist(
   req: Request,
-  supabase: any,
+  supabase: Untyped,
 ): Promise<{ allowed: boolean; ip: string }> {
   const clientIp =
     req.headers.get("cf-connecting-ip") ||
@@ -478,7 +479,7 @@ __serve(async (req) => {
     }
 
     // Get level up message settings
-    let levelUpResponse: any = null;
+    let levelUpResponse: Untyped = null;
     if (leveledUp && newLevel > 1) {
       const levelUpMessage =
         settings?.level_up_message ||

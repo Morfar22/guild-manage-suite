@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useGuild } from "@/contexts/GuildContext";
 import { toast } from "sonner";
+import type { Untyped } from "@/types/untyped";
 
 export interface RoleMenuOption {
   role_id: string;
@@ -38,7 +39,7 @@ export function useRoleMenus() {
         .eq("guild_id", selectedGuild.id)
         .order("created_at", { ascending: false });
       if (error) throw error;
-      return (data ?? []).map((d: any) => ({
+      return (data ?? []).map((d: Untyped) => ({
         ...d,
         roles: Array.isArray(d.roles) ? d.roles : [],
       })) as RoleMenu[];
@@ -89,7 +90,7 @@ export function useRoleMenus() {
     }) => {
       const { error } = await supabase
         .from("role_menus")
-        .update(data as any)
+        .update(data as Untyped)
         .eq("id", id);
       if (error) throw error;
     },

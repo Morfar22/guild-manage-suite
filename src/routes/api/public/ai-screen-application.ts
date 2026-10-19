@@ -1,9 +1,10 @@
-// @ts-nocheck
 // Migrated from Supabase Edge Function `ai-screen-application` to a TanStack server route.
+// @ts-nocheck
 import { createFileRoute } from "@tanstack/react-router";
 import { requireUser, requireGuildAdmin } from "@/lib/server/api-auth";
 import { createClient } from "@supabase/supabase-js";
 import { openAIChatCompletion, openAIErrorResponse } from "@/lib/server/openai";
+import type { Untyped } from "@/types/untyped";
 
 const __env = (k: string) =>
   process.env[k] ??
@@ -11,7 +12,7 @@ const __env = (k: string) =>
     ? process.env["SUPABASE_PUBLISHABLE_KEY"]
     : undefined);
 let __handler: (req: Request) => Response | Promise<Response>;
-const __serve = (fn: any, _opts?: any) => {
+const __serve = (fn: Untyped, _opts?: Untyped) => {
   __handler = fn;
 };
 
@@ -71,7 +72,7 @@ __serve(async (req) => {
 
     await requireGuildAdmin(supabase, user.id, sub.guild_id);
 
-    const form = sub.form as any;
+    const form = sub.form as Untyped;
     if (!form?.ai_screening_enabled) {
       return json({ skipped: true, reason: "AI screening disabled on form" });
     }
@@ -92,9 +93,9 @@ __serve(async (req) => {
       form.ai_screening_prompt?.trim() ||
       "Du er en streng men retfærdig moderator der vurderer ansøgninger. Vær kritisk overfor svar der virker copy/pastede, korte eller mangelfulde.";
 
-    const answersText = (sub.answers as any[])
+    const answersText = (sub.answers as Untyped[])
       .map(
-        (a: any) =>
+        (a: Untyped) =>
           `Q: ${a.question || a.label}\nA: ${a.answer || a.value || "(tomt)"}`,
       )
       .join("\n\n");

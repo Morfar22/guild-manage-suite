@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import type { Untyped } from "../_shared/untyped";
 import {
   DISCORD_REDIRECT_URI,
   createOAuthState,
@@ -13,7 +14,7 @@ const __env = (key: string) =>
     ? Deno.env.get("SUPABASE_PUBLISHABLE_KEY")
     : undefined);
 let __handler: (req: Request) => Response | Promise<Response>;
-const __serve = (fn: any, _opts?: any) => {
+const __serve = (fn: Untyped, _opts?: Untyped) => {
   __handler = fn;
 };
 

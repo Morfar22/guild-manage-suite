@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
+import type { Untyped } from "@/types/untyped";
 import {
   Select,
   SelectContent,
@@ -54,7 +55,7 @@ export default function VerificationSettings() {
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
       toast.success("Verifikationspanel sendt til kanalen!");
-    } catch (err: any) {
+    } catch (err: Untyped) {
       toast.error(err.message || "Kunne ikke sende panel");
     } finally {
       setSendingPanel(false);
@@ -118,7 +119,7 @@ export default function VerificationSettings() {
                 <SelectValue placeholder={t("common.selectRole")} />
               </SelectTrigger>
               <SelectContent>
-                {(roles || []).map((r: any) => (
+                {(roles || []).map((r: Untyped) => (
                   <SelectItem key={r.id} value={r.id}>
                     @{r.name}
                   </SelectItem>

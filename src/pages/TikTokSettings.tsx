@@ -3,6 +3,7 @@ import { useTikTokAccounts, TikTokAccount } from "@/hooks/useTikTokAccounts";
 import { supabase } from "@/integrations/supabase/client";
 import { useDiscordChannels } from "@/hooks/useDiscordChannels";
 import { useDiscordRoles } from "@/hooks/useDiscordRoles";
+import type { Untyped } from "@/types/untyped";
 import {
   Card,
   CardContent,
@@ -418,7 +419,7 @@ export default function TikTokSettings() {
                           <Switch
                             checked={account.enabled}
                             onCheckedChange={(enabled) =>
-                              updateAccount(account.id, { enabled } as any)
+                              updateAccount(account.id, { enabled } as Untyped)
                             }
                           />
                           <Button

@@ -1,5 +1,6 @@
 import { decryptBotToken } from "../_shared/bot-token-crypto.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import type { Untyped } from "../_shared/untyped";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -10,7 +11,7 @@ const corsHeaders = {
 // Helper function to check if IP is whitelisted
 async function checkIPWhitelist(
   req: Request,
-  supabase: any,
+  supabase: Untyped,
 ): Promise<{ allowed: boolean; ip: string }> {
   const clientIp =
     req.headers.get("cf-connecting-ip") ||
@@ -465,7 +466,7 @@ Deno.serve(async (req) => {
     }
 
     // Get level up message settings
-    let levelUpResponse: any = null;
+    let levelUpResponse: Untyped = null;
     if (leveledUp && newLevel > 1) {
       const levelUpMessage =
         settings?.level_up_message ||

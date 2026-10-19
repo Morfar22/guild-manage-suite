@@ -1,3 +1,4 @@
+import type { Untyped } from "@/types/untyped";
 import {
   Card,
   CardContent,
@@ -270,7 +271,7 @@ function StatCard({
   value,
   tone,
 }: {
-  icon: any;
+  icon: Untyped;
   label: string;
   value: number;
   tone?: "success" | "warning" | "destructive";

@@ -1,5 +1,6 @@
 import { decryptBotToken as simpleDecrypt } from "../_shared/bot-token-crypto.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import type { Untyped } from "../_shared/untyped";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -10,7 +11,7 @@ const corsHeaders = {
 // Helper function to check if IP is whitelisted
 async function checkIPWhitelist(
   req: Request,
-  supabase: any,
+  supabase: Untyped,
 ): Promise<{ allowed: boolean; ip: string }> {
   const clientIp =
     req.headers.get("cf-connecting-ip") ||
@@ -34,7 +35,7 @@ async function checkIPWhitelist(
 }
 
 async function getBotTokenForGuild(
-  supabase: any,
+  supabase: Untyped,
   guildId: string,
   fallbackToken?: string | null,
 ): Promise<string> {
@@ -234,7 +235,7 @@ Deno.serve(async (req) => {
         : [];
     }
 
-    function buildGiveawayEmbed(giveaway: any) {
+    function buildGiveawayEmbed(giveaway: Untyped) {
       const entries = getEntries(giveaway.entries);
       const winners = getWinners(giveaway.winners);
       const hasEnded =
@@ -292,7 +293,7 @@ Deno.serve(async (req) => {
       };
     }
 
-    function buildGiveawayComponents(giveaway: any) {
+    function buildGiveawayComponents(giveaway: Untyped) {
       const entries = getEntries(giveaway.entries);
       const hasEnded =
         giveaway.ended || new Date(giveaway.ends_at) <= new Date();
@@ -316,7 +317,7 @@ Deno.serve(async (req) => {
       ];
     }
 
-    function buildGiveawayMessagePayload(giveaway: any) {
+    function buildGiveawayMessagePayload(giveaway: Untyped) {
       const hasEnded =
         giveaway.ended || new Date(giveaway.ends_at) <= new Date();
 
@@ -329,7 +330,7 @@ Deno.serve(async (req) => {
       };
     }
 
-    async function syncGiveawayMessage(giveaway: any) {
+    async function syncGiveawayMessage(giveaway: Untyped) {
       if (!giveaway?.channel_id || !giveaway?.message_id) return;
 
       try {

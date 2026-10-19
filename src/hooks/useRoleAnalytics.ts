@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useGuild } from "@/contexts/GuildContext";
 import { useDiscordRoles } from "./useDiscordRoles";
+import type { Untyped } from "@/types/untyped";
 
 export interface RoleDistribution {
   name: string;
@@ -45,14 +46,14 @@ export function useRoleAnalytics() {
 
     const roleCounts = new Map<string, number>();
     for (const member of members) {
-      const memberRoles = (member as any).roles || [];
+      const memberRoles = (member as Untyped).roles || [];
       for (const roleId of memberRoles) {
         roleCounts.set(roleId, (roleCounts.get(roleId) || 0) + 1);
       }
     }
 
     return roles
-      .map((role: any) => ({
+      .map((role: Untyped) => ({
         name: role.name,
         color: `#${(role.color || 0x808080).toString(16).padStart(6, "0")}`,
         count: roleCounts.get(role.id) || 0,

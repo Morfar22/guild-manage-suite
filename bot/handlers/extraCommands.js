@@ -154,7 +154,7 @@ function toAscii(text) {
 function safeMath(expression) {
   const cleaned = String(expression).replace(/[^0-9+\-*/(). %]/g, "");
   if (!cleaned.trim()) throw new Error("Tomt udtryk");
-  // eslint-disable-next-line no-new-func
+
   const result = Function(`"use strict"; return (${cleaned});`)();
   if (typeof result !== "number" || !isFinite(result))
     throw new Error("Ugyldigt resultat");

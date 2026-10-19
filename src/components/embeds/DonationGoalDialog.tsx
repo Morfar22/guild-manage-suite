@@ -1,3 +1,4 @@
+import { buildProgressBar } from "./donationProgress";
 import { useState } from "react";
 import {
   Dialog,
@@ -16,16 +17,6 @@ import type { EmbedData } from "@/hooks/useSavedEmbeds";
 
 interface Props {
   onGenerate: (embed: EmbedData) => void;
-}
-
-export function buildProgressBar(
-  current: number,
-  goal: number,
-  length = 16,
-): string {
-  const pct = goal > 0 ? Math.max(0, Math.min(1, current / goal)) : 0;
-  const filled = Math.round(pct * length);
-  return "█".repeat(filled) + "░".repeat(length - filled);
 }
 
 export function DonationGoalDialog({ onGenerate }: Props) {

@@ -1,5 +1,6 @@
 import { decryptBotToken as simpleDecrypt } from "../_shared/bot-token-crypto.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import type { Untyped } from "../_shared/untyped";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -8,7 +9,7 @@ const corsHeaders = {
 };
 
 async function getBotTokenForGuild(
-  supabase: any,
+  supabase: Untyped,
   guildId: string,
 ): Promise<string> {
   const { data: settings } = await supabase
@@ -39,7 +40,7 @@ async function getBotTokenForGuild(
 
 async function checkIPWhitelist(
   req: Request,
-  supabase: any,
+  supabase: Untyped,
 ): Promise<{ allowed: boolean; ip: string }> {
   const clientIp =
     req.headers.get("cf-connecting-ip") ||
@@ -65,13 +66,13 @@ async function checkIPWhitelist(
 interface LogEventPayload {
   guild_id: string;
   event_type: string;
-  data: Record<string, any>;
+  data: Record<string, Untyped>;
 }
 
 function generateEventHash(
   guildId: string,
   eventType: string,
-  data: Record<string, any>,
+  data: Record<string, Untyped>,
 ): string {
   const parts = [guildId, eventType];
   if (data.user_id) parts.push(data.user_id);
@@ -235,8 +236,8 @@ const EVENT_TITLES: Record<string, string> = {
   sticker_delete: "🎨 Sticker Slettet",
 };
 
-function buildEmbed(eventType: string, data: Record<string, any>): object {
-  const embed: any = {
+function buildEmbed(eventType: string, data: Record<string, Untyped>): object {
+  const embed: Untyped = {
     title: EVENT_TITLES[eventType] || eventType,
     color: EVENT_COLORS[eventType] || 0x5865f2,
     timestamp: new Date().toISOString(),

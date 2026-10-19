@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useGuild } from "@/contexts/GuildContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import type { Untyped } from "@/types/untyped";
 
 export interface YouTubeChannel {
   id: string;
@@ -134,7 +135,7 @@ export function useYouTubeChannels() {
         notification_channel_id: notificationChannelId,
         live_channel_id: liveChannelId || null,
         mention_role_id: mentionRoleId || null,
-      } as any);
+      } as Untyped);
       if (error) throw error;
       toast({
         title: "YouTube kanal tilføjet",
@@ -192,7 +193,7 @@ export function useYouTubeChannels() {
     try {
       const { error } = await supabase
         .from("youtube_channels")
-        .update(updates as any)
+        .update(updates as Untyped)
         .eq("id", id);
       if (error) throw error;
       toast({
@@ -222,13 +223,13 @@ export function useYouTubeChannels() {
       if (settings?.id) {
         const { error } = await supabase
           .from("youtube_settings")
-          .update(newSettings as any)
+          .update(newSettings as Untyped)
           .eq("id", settings.id);
         if (error) throw error;
       } else {
         const { error } = await supabase
           .from("youtube_settings")
-          .insert({ guild_id: selectedGuild.id, ...newSettings } as any);
+          .insert({ guild_id: selectedGuild.id, ...newSettings } as Untyped);
         if (error) throw error;
       }
       toast({ title: "Gemt", description: "YouTube indstillinger blev gemt." });

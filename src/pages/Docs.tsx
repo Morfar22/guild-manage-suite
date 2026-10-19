@@ -2,6 +2,7 @@ import { Link } from "@tanstack/react-router";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { docCategories } from "@/docs";
 import * as Icons from "lucide-react";
+import type { Untyped } from "@/types/untyped";
 import {
   Card,
   CardContent,
@@ -53,12 +54,12 @@ export default function Docs() {
         </h2>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {docCategories.map((cat) => {
-            const Icon = (Icons as any)[cat.icon] ?? Icons.Folder;
+            const Icon = (Icons as Untyped)[cat.icon] ?? Icons.Folder;
             const firstPage = cat.pages[0];
             return (
               <Link
                 key={cat.slug}
-                to={`/docs/${cat.slug}/${firstPage.slug}` as any}
+                to={`/docs/${cat.slug}/${firstPage.slug}` as Untyped}
               >
                 <Card className="h-full transition-colors hover:border-primary/50 hover:bg-muted/40">
                   <CardHeader>

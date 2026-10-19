@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import type { Untyped } from "../_shared/untyped";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -10,7 +11,7 @@ const corsHeaders = {
 // IP whitelist check function
 async function checkIPWhitelist(
   req: Request,
-  supabaseClient: any,
+  supabaseClient: Untyped,
 ): Promise<{ allowed: boolean; ip: string }> {
   const forwarded = req.headers.get("x-forwarded-for");
   const ip = forwarded ? forwarded.split(",")[0].trim() : "unknown";
@@ -36,10 +37,10 @@ async function checkIPWhitelist(
 
 // Helper to log actions
 async function logAction(
-  supabase: any,
+  supabase: Untyped,
   guildId: string,
   actionType: string,
-  data: any,
+  data: Untyped,
 ) {
   await supabase.from("fivem_action_logs").insert({
     guild_id: guildId,
@@ -136,10 +137,10 @@ function getNextRestartTime(
 // Send or update Discord status embed via webhook (txAdmin style)
 async function sendDiscordStatusEmbed(
   webhookUrl: string,
-  status: any,
+  status: Untyped,
   isOnline: boolean,
   existingMessageId?: string | null,
-  settings?: any,
+  settings?: Untyped,
 ): Promise<string | null> {
   // Build the embed in txAdmin style
   const serverName =
@@ -224,7 +225,7 @@ async function sendDiscordStatusEmbed(
       let res = await fetch(url, opts);
       if (res.status === 429) {
         const retryData = await res.json().catch(() => ({}));
-        const retryAfter = ((retryData as any).retry_after || 2) * 1000;
+        const retryAfter = ((retryData as Untyped).retry_after || 2) * 1000;
         console.log(`Discord rate limited, retrying after ${retryAfter}ms`);
         await new Promise((r) => setTimeout(r, retryAfter));
         res = await fetch(url, opts);
@@ -716,7 +717,7 @@ serve(async (req) => {
       case "checkBan": {
         const { discordId, steamHex, license, ipAddress } = data;
 
-        let query = supabase
+        const query = supabase
           .from("fivem_bans")
           .select("*")
           .eq("guild_id", internalGuildId)

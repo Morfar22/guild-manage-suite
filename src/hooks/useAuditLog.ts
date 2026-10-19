@@ -2,6 +2,7 @@ import { useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useGuild } from "@/contexts/GuildContext";
 import { useAuth } from "@/contexts/AuthContext";
+import type { Untyped } from "@/types/untyped";
 
 export function useAuditLog() {
   const { selectedGuild } = useGuild();
@@ -17,7 +18,7 @@ export function useAuditLog() {
       if (!selectedGuild?.id || !user?.id) return;
 
       try {
-        await supabase.from("dashboard_audit_log" as any).insert({
+        await supabase.from("dashboard_audit_log" as Untyped).insert({
           guild_id: selectedGuild.id,
           user_id: user.id,
           user_email: user.email ?? null,

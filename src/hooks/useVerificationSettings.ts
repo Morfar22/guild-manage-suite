@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useGuild } from "@/contexts/GuildContext";
 import { toast } from "sonner";
+import type { Untyped } from "@/types/untyped";
 
 export interface VerificationSettings {
   id: string;
@@ -71,13 +72,13 @@ export function useVerificationSettings() {
       if (existing) {
         const { error } = await supabase
           .from("verification_settings")
-          .update(settings as any)
+          .update(settings as Untyped)
           .eq("guild_id", selectedGuild.id);
         if (error) throw error;
       } else {
         const { error } = await supabase
           .from("verification_settings")
-          .insert({ guild_id: selectedGuild.id, ...settings } as any);
+          .insert({ guild_id: selectedGuild.id, ...settings } as Untyped);
         if (error) throw error;
       }
     },

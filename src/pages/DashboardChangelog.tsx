@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useGuild } from "@/contexts/GuildContext";
+import type { Untyped } from "@/types/untyped";
 import {
   Card,
   CardContent,
@@ -49,7 +50,7 @@ export default function DashboardChangelog() {
     queryKey: ["dashboard-audit-log", selectedGuild?.id],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("dashboard_audit_log" as any)
+        .from("dashboard_audit_log" as Untyped)
         .select("*")
         .eq("guild_id", selectedGuild!.id)
         .order("created_at", { ascending: false })

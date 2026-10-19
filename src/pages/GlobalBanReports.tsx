@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import type { Untyped } from "@/types/untyped";
 import {
   useGlobalBanReports,
   useGlobalBans,
@@ -352,7 +353,7 @@ export default function GlobalBanReports() {
                             <div className="flex items-center gap-2 flex-wrap">
                               {statusBadge(report.status)}
                               <SeverityBadge
-                                severity={(report as any).severity}
+                                severity={(report as Untyped).severity}
                               />
                               <span className="text-xs text-muted-foreground flex items-center gap-1">
                                 <Clock className="h-3 w-3" />
@@ -566,7 +567,9 @@ export default function GlobalBanReports() {
                             <span className="text-xs font-mono text-muted-foreground">
                               ({ban.target_discord_id})
                             </span>
-                            <SeverityBadge severity={(ban as any).severity} />
+                            <SeverityBadge
+                              severity={(ban as Untyped).severity}
+                            />
                           </p>
                           <p className="text-sm text-muted-foreground">
                             {ban.reason}

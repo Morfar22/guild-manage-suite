@@ -3,6 +3,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { findCategory, findPage } from "@/docs";
 import { Badge } from "@/components/ui/badge";
 import { ChevronRight, ArrowRight } from "lucide-react";
+import type { Untyped } from "@/types/untyped";
 import {
   Table,
   TableBody,
@@ -195,7 +196,7 @@ export default function DocsPage() {
       <nav className="mt-12 flex items-center justify-between gap-4 border-t pt-6">
         {prev ? (
           <Link
-            to={`/docs/${prev.category}/${prev.slug}` as any}
+            to={`/docs/${prev.category}/${prev.slug}` as Untyped}
             className="group flex flex-col rounded-lg border p-4 transition-colors hover:border-primary/50"
           >
             <span className="text-xs text-muted-foreground">
@@ -210,7 +211,7 @@ export default function DocsPage() {
         )}
         {next ? (
           <Link
-            to={`/docs/${next.category}/${next.slug}` as any}
+            to={`/docs/${next.category}/${next.slug}` as Untyped}
             className="group ml-auto flex flex-col rounded-lg border p-4 text-right transition-colors hover:border-primary/50"
           >
             <span className="text-xs text-muted-foreground">

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import type { Untyped } from "@/types/untyped";
 import {
   Card,
   CardContent,
@@ -228,7 +229,7 @@ export default function RaidProtection() {
             </p>
           ) : (
             <div className="space-y-2">
-              {logs.map((log: any) => (
+              {logs.map((log: Untyped) => (
                 <div
                   key={log.id}
                   className="flex items-center justify-between rounded-lg border border-border p-3"

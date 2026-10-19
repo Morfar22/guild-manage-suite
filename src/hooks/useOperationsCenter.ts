@@ -5,6 +5,7 @@ import type { Json, Tables } from "@/integrations/supabase/types";
 import { useGuild } from "@/contexts/GuildContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import type { Untyped } from "@/types/untyped";
 
 export type ModerationCase = Tables<"moderation_logs">;
 export type ModerationEvidence = Tables<"moderation_evidence">;
@@ -659,7 +660,7 @@ export function useOperationsCenter() {
 
       if (insert && typeof insert === "object" && !Array.isArray(insert)) {
         const { error } = await (
-          supabase.from(table as "automation_workflows") as any
+          supabase.from(table as "automation_workflows") as Untyped
         ).insert(insert);
         if (error) throw error;
       } else if (
@@ -671,7 +672,7 @@ export function useOperationsCenter() {
       ) {
         const { error } = await supabase
           .from("guild_commands")
-          .update(values as any)
+          .update(values as Untyped)
           .eq("guild_id", guildId)
           .eq("command_name", String(payload.command_name));
         if (error) throw error;
@@ -682,7 +683,7 @@ export function useOperationsCenter() {
         !Array.isArray(values)
       ) {
         const { error } = await (
-          supabase.from(table as "moderation_logs") as any
+          supabase.from(table as "moderation_logs") as Untyped
         )
           .update(values)
           .eq("id", id)

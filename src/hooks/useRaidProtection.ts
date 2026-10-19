@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useGuild } from "@/contexts/GuildContext";
 import { toast } from "sonner";
+import type { Untyped } from "@/types/untyped";
 
 export function useRaidProtection() {
   const { selectedGuild } = useGuild();
@@ -38,18 +39,16 @@ export function useRaidProtection() {
   });
 
   const upsert = useMutation({
-    mutationFn: async (values: any) => {
+    mutationFn: async (values: Untyped) => {
       if (!selectedGuild?.id) throw new Error("No guild");
-      const { error } = await supabase
-        .from("raid_protection_settings")
-        .upsert(
-          {
-            ...values,
-            guild_id: selectedGuild.id,
-            updated_at: new Date().toISOString(),
-          },
-          { onConflict: "guild_id" },
-        );
+      const { error } = await supabase.from("raid_protection_settings").upsert(
+        {
+          ...values,
+          guild_id: selectedGuild.id,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: "guild_id" },
+      );
       if (error) throw error;
     },
     onSuccess: () => {

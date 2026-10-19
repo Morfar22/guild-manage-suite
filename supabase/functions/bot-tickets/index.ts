@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import type { Untyped } from "../_shared/untyped";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -8,7 +9,7 @@ const corsHeaders = {
 
 async function checkIPWhitelist(
   req: Request,
-  supabase: any,
+  supabase: Untyped,
 ): Promise<{ allowed: boolean; ip: string }> {
   const clientIp =
     req.headers.get("cf-connecting-ip") ||
@@ -150,7 +151,7 @@ Deno.serve(async (req) => {
           .eq("guild_id", guildId)
           .maybeSingle();
 
-        let panel: any = null;
+        let panel: Untyped = null;
         if (panelId) {
           const { data: p } = await supabase
             .from("ticket_panels")
@@ -163,7 +164,7 @@ Deno.serve(async (req) => {
         // Panel operating_hours (if set) override the global settings hours
         const merged = settings ? { ...settings } : {};
         if (panel?.operating_hours && panel.operating_hours.enabled) {
-          (merged as any).operating_hours = panel.operating_hours;
+          (merged as Untyped).operating_hours = panel.operating_hours;
         }
 
         return new Response(JSON.stringify({ settings: merged, panel }), {
@@ -326,13 +327,13 @@ Deno.serve(async (req) => {
             // Build transcript preview (last 10 messages)
             const recentMessages = messages
               .sort(
-                (a: any, b: any) =>
+                (a: Untyped, b: Untyped) =>
                   new Date(a.created_at).getTime() -
                   new Date(b.created_at).getTime(),
               )
               .slice(-10)
               .map(
-                (m: any) =>
+                (m: Untyped) =>
                   `**${m.author_name || m.author_id}:** ${m.content.slice(0, 100)}${m.content.length > 100 ? "..." : ""}`,
               )
               .join("\n");

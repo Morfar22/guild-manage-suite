@@ -1,10 +1,11 @@
 import routeConfig from "../../shared/command-routes.json";
+import type { Untyped } from "@/types/untyped";
 
 type FlatCommand = {
   name: string;
   description?: string;
-  options?: Array<Record<string, any>>;
-  [key: string]: any;
+  options?: Array<Record<string, Untyped>>;
+  [key: string]: Untyped;
 };
 
 type CommandRoute = {
@@ -53,7 +54,7 @@ export function groupFlatCommandDefinitions(flatDefinitions: FlatCommand[]) {
   const sourceByName = new Map(
     flatDefinitions.map((definition) => [definition.name, definition]),
   );
-  const rootCommands = new Map<string, any>();
+  const rootCommands = new Map<string, Untyped>();
 
   for (const route of routes) {
     if (route.passthrough) continue;
@@ -79,7 +80,7 @@ export function groupFlatCommandDefinitions(flatDefinitions: FlatCommand[]) {
 
     if (route.group) {
       let groupDefinition = rootCommand.options.find(
-        (option: any) => option.type === 2 && option.name === route.group,
+        (option: Untyped) => option.type === 2 && option.name === route.group,
       );
       if (!groupDefinition) {
         groupDefinition = {

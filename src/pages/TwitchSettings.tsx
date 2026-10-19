@@ -5,6 +5,7 @@ import { useDiscordChannels } from "@/hooks/useDiscordChannels";
 import { useDiscordRoles } from "@/hooks/useDiscordRoles";
 import { useDiscordMembers } from "@/hooks/useDiscordMembers";
 import { supabase } from "@/integrations/supabase/client";
+import type { Untyped } from "@/types/untyped";
 import {
   Card,
   CardContent,
@@ -169,7 +170,7 @@ export default function TwitchSettings() {
         show_viewers: settings.show_viewers,
         show_thumbnail: settings.show_thumbnail,
         notify_on_offline: settings.notify_on_offline,
-        live_role_id: (settings as any).live_role_id ?? "",
+        live_role_id: (settings as Untyped).live_role_id ?? "",
         notify_clips: settings.notify_clips ?? false,
         notify_vods: settings.notify_vods ?? false,
         notify_highlights: settings.notify_highlights ?? false,
@@ -219,8 +220,8 @@ export default function TwitchSettings() {
   };
 
   const handleToggleMute = async (streamer: TwitchStreamer) => {
-    const currentMuted = (streamer as any).is_muted ?? false;
-    await updateStreamer(streamer.id, { is_muted: !currentMuted } as any);
+    const currentMuted = (streamer as Untyped).is_muted ?? false;
+    await updateStreamer(streamer.id, { is_muted: !currentMuted } as Untyped);
   };
 
   const handleTestNotification = async (streamer: TwitchStreamer) => {
@@ -551,7 +552,7 @@ export default function TwitchSettings() {
                 {streamers.map((streamer) => (
                   <StreamerCard
                     key={streamer.id}
-                    streamer={streamer as any}
+                    streamer={streamer as Untyped}
                     channelName={getChannelName(
                       streamer.notification_channel_id,
                     )}
@@ -1208,7 +1209,7 @@ export default function TwitchSettings() {
 
         {/* Filters Dialog */}
         <StreamerFiltersDialog
-          streamer={selectedStreamer as any}
+          streamer={selectedStreamer as Untyped}
           open={filtersDialogOpen}
           onOpenChange={setFiltersDialogOpen}
           onSave={(updates) => updateStreamer(selectedStreamer!.id, updates)}

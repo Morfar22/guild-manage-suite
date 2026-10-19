@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { invokeFunction } from "@/lib/functions-client";
+import type { Untyped } from "@/types/untyped";
 
 export function useAITicketSummary() {
   const queryClient = useQueryClient();
@@ -19,7 +20,7 @@ export function useAITicketSummary() {
       queryClient.invalidateQueries({ queryKey: ["ticket"] });
       toast.success("AI-opsummering genereret");
     },
-    onError: (err: any) => {
+    onError: (err: Untyped) => {
       if (err.code === "openai_rate_limited") {
         toast.error("OpenAI er rate limited. Prøv igen om lidt.");
       } else if (err.code === "openai_quota_exceeded") {

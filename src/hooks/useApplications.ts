@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useGuild } from "@/contexts/GuildContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { invokeFunction } from "@/lib/functions-client";
+import type { Untyped } from "@/types/untyped";
 
 export type ApplicationStatus = "pending" | "approved" | "denied";
 
@@ -55,7 +56,7 @@ export function useApplications(status?: ApplicationStatus) {
       const { data, error } = await query;
       if (error) throw error;
 
-      return (data || []).map((app: any) => ({
+      return (data || []).map((app: Untyped) => ({
         ...app,
         answers: Array.isArray(app.answers) ? app.answers : [],
       })) as Application[];
@@ -182,8 +183,8 @@ export function useApplicationByTicketId(ticketId?: string) {
 
       return {
         ...data,
-        answers: Array.isArray((data as any).answers)
-          ? (data as any).answers
+        answers: Array.isArray((data as Untyped).answers)
+          ? (data as Untyped).answers
           : [],
       } as Application;
     },

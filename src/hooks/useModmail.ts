@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useGuild } from "@/contexts/GuildContext";
 import { useToast } from "@/hooks/use-toast";
+import type { Untyped } from "@/types/untyped";
 
 export interface ModmailSettings {
   id: string;
@@ -37,7 +38,7 @@ export interface ModmailMessage {
   author_id: string;
   author_name: string | null;
   content: string;
-  attachments: any[];
+  attachments: Untyped[];
   created_at: string;
 }
 

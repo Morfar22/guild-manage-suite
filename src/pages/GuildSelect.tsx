@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useCallback, useState, useEffect } from "react";
 import { Navigate, useNavigate, Link } from "@tanstack/react-router";
 import { useSearchParams } from "@/hooks/useSearchParams";
 import { useAuth } from "@/contexts/AuthContext";
@@ -57,25 +57,7 @@ export default function GuildSelect() {
   const [deletingGuildId, setDeletingGuildId] = useState<string | null>(null);
   const { data: isAdmin } = useIsAdmin();
 
-  useEffect(() => {
-    if (user && isAdmin !== undefined) {
-      fetchGuilds();
-      if (isAdmin) setShowInactive(true);
-    }
-  }, [user, isAdmin]);
-
-  useEffect(() => {
-    const guildParam = searchParams.get("guild");
-    if (guildParam && guilds.length > 0 && !loading) {
-      const target = guilds.find((g) => g.id === guildParam);
-      if (target) {
-        setSelectedGuild(target);
-        navigate({ to: "/dashboard", replace: true });
-      }
-    }
-  }, [guilds, loading, searchParams]);
-
-  const fetchGuilds = async () => {
+  const fetchGuilds = useCallback(async () => {
     try {
       const fiveMinAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
       const { data: statusData } = await supabase
@@ -113,7 +95,25 @@ export default function GuildSelect() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [isAdmin, user?.id]);
+
+  useEffect(() => {
+    if (user && isAdmin !== undefined) {
+      void fetchGuilds();
+      if (isAdmin) setShowInactive(true);
+    }
+  }, [user, isAdmin, fetchGuilds]);
+
+  useEffect(() => {
+    const guildParam = searchParams.get("guild");
+    if (guildParam && guilds.length > 0 && !loading) {
+      const target = guilds.find((g) => g.id === guildParam);
+      if (target) {
+        setSelectedGuild(target);
+        navigate({ to: "/dashboard", replace: true });
+      }
+    }
+  }, [guilds, loading, searchParams, navigate, setSelectedGuild]);
 
   const isBotActive = (guildId: string) => !!botStatusMap[guildId];
   const filteredGuilds = showInactive

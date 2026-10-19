@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useGuild } from "@/contexts/GuildContext";
+import type { Untyped } from "@/types/untyped";
 
 export interface TicketRating {
   id: string;
@@ -35,12 +36,12 @@ export function useTicketRatings() {
     queryFn: async () => {
       if (!selectedGuild?.id) return [];
       const { data, error } = await supabase
-        .from("ticket_ratings" as any)
+        .from("ticket_ratings" as Untyped)
         .select("*")
         .eq("guild_id", selectedGuild.id)
         .order("created_at", { ascending: false });
       if (error) throw error;
-      return data as any[] as TicketRating[];
+      return data as Untyped[] as TicketRating[];
     },
     enabled: !!selectedGuild?.id,
   });
@@ -62,7 +63,7 @@ export function useTicketInsights() {
           .eq("guild_id", selectedGuild.id)
           .eq("ticket_type", "support"),
         supabase
-          .from("ticket_ratings" as any)
+          .from("ticket_ratings" as Untyped)
           .select("*")
           .eq("guild_id", selectedGuild.id),
       ]);
@@ -70,7 +71,7 @@ export function useTicketInsights() {
       if (ratingsRes.error) throw ratingsRes.error;
 
       const tickets = ticketsRes.data || [];
-      const ratings = ratingsRes.data as any[] as TicketRating[];
+      const ratings = ratingsRes.data as Untyped[] as TicketRating[];
 
       // Daily volume - last 30 days
       const daysMap = new Map<string, number>();
@@ -79,7 +80,7 @@ export function useTicketInsights() {
         const d = new Date(now.getTime() - i * 86400000);
         daysMap.set(d.toISOString().slice(0, 10), 0);
       }
-      tickets.forEach((t: any) => {
+      tickets.forEach((t: Untyped) => {
         const key = new Date(t.created_at).toISOString().slice(0, 10);
         if (daysMap.has(key)) daysMap.set(key, (daysMap.get(key) || 0) + 1);
       });
@@ -96,7 +97,7 @@ export function useTicketInsights() {
           _ratingSum: number;
         }
       >();
-      tickets.forEach((t: any) => {
+      tickets.forEach((t: Untyped) => {
         const sid = t.closed_by_id || t.claimed_by_id;
         const sname = t.closed_by_name || t.claimed_by_name;
         if (!sid) return;

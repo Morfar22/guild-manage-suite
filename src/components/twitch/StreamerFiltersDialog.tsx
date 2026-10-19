@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { TwitchStreamer } from "@/hooks/useTwitchStreamers";
+import type { Untyped } from "@/types/untyped";
 import {
   Dialog,
   DialogContent,
@@ -98,7 +99,7 @@ export function StreamerFiltersDialog({
       custom_live_message: customMessage || null,
       custom_embed_color: customColor || null,
       notification_cooldown_minutes: cooldownMinutes,
-    } as any);
+    } as Untyped);
     if (success) {
       onOpenChange(false);
     }

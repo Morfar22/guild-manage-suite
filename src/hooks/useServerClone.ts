@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useGuild } from "@/contexts/GuildContext";
 import { toast } from "sonner";
 import { invokeFunction } from "@/lib/functions-client";
+import type { Untyped } from "@/types/untyped";
 
 export interface ServerTemplate {
   id: string;
@@ -11,10 +12,10 @@ export interface ServerTemplate {
   guild_id: string | null;
   created_by: string;
   is_public: boolean;
-  channels: any[];
-  roles: any[];
-  categories: any[];
-  bot_settings: Record<string, any>;
+  channels: Untyped[];
+  roles: Untyped[];
+  categories: Untyped[];
+  bot_settings: Record<string, Untyped>;
   created_at: string;
   updated_at: string;
   // Premium data counts

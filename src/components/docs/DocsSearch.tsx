@@ -5,6 +5,7 @@ import { Search, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { allDocPages } from "@/docs";
+import type { Untyped } from "@/types/untyped";
 
 export function DocsSearch() {
   const { language, t } = useLanguage();
@@ -58,7 +59,9 @@ export function DocsSearch() {
         }}
         onFocus={() => setOpen(true)}
         onBlur={() => setTimeout(() => setOpen(false), 150)}
-        placeholder={t("docs.searchPlaceholder" as any) || "Søg i docs... (⌘K)"}
+        placeholder={
+          t("docs.searchPlaceholder" as Untyped) || "Søg i docs... (⌘K)"
+        }
         className="pl-9 pr-9"
       />
       {query && (

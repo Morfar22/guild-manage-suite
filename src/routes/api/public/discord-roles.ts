@@ -1,8 +1,9 @@
-// @ts-nocheck
 // Migrated from Supabase Edge Function `discord-roles` to a TanStack server route.
+// @ts-nocheck
 import { createFileRoute } from "@tanstack/react-router";
 import { createClient } from "@supabase/supabase-js";
 import { vpsDiscordRequest } from "@/lib/vps-discord-bridge";
+import type { Untyped } from "@/types/untyped";
 
 const __env = (k: string) =>
   process.env[k] ??
@@ -10,7 +11,7 @@ const __env = (k: string) =>
     ? process.env["SUPABASE_PUBLISHABLE_KEY"]
     : undefined);
 let __handler: (req: Request) => Response | Promise<Response>;
-const __serve = (fn: any, _opts?: any) => {
+const __serve = (fn: Untyped, _opts?: Untyped) => {
   __handler = fn;
 };
 
@@ -143,7 +144,7 @@ __serve(async (req) => {
       0,
     );
     const permissionBits = botRoles.reduce(
-      (bits, role: any) => bits | BigInt(role.permissions || "0"),
+      (bits, role: Untyped) => bits | BigInt(role.permissions || "0"),
       0n,
     );
     const hasAdministrator = (permissionBits & 8n) === 8n;

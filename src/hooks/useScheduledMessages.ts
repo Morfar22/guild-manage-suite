@@ -2,13 +2,14 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useGuild } from "@/contexts/GuildContext";
 import { useToast } from "@/hooks/use-toast";
+import type { Untyped } from "@/types/untyped";
 
 export interface ScheduledMessage {
   id: string;
   guild_id: string;
   channel_id: string;
   content: string | null;
-  embed: Record<string, any> | null;
+  embed: Record<string, Untyped> | null;
   scheduled_at: string;
   repeat_interval: "daily" | "weekly" | "monthly" | null;
   created_by_id: string;
@@ -22,7 +23,7 @@ export interface ScheduledMessage {
 export interface CreateScheduledMessage {
   channel_id: string;
   content?: string;
-  embed?: Record<string, any>;
+  embed?: Record<string, Untyped>;
   scheduled_at: string;
   repeat_interval?: "daily" | "weekly" | "monthly" | null;
   created_by_id: string;

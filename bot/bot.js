@@ -2419,16 +2419,14 @@ function createSlashHandlers(client) {
           .from("economy_accounts")
           .update({ wallet: (receiverAccount.wallet || 0) + amount })
           .eq("id", receiverAccount.id);
-        await supabase
-          .from("economy_transactions")
-          .insert({
-            guild_id: guild.id,
-            to_user_id: target.id,
-            from_user_id: interaction.user.id,
-            amount,
-            transaction_type: "transfer",
-            description: `Betaling fra ${interaction.user.tag}`,
-          });
+        await supabase.from("economy_transactions").insert({
+          guild_id: guild.id,
+          to_user_id: target.id,
+          from_user_id: interaction.user.id,
+          amount,
+          transaction_type: "transfer",
+          description: `Betaling fra ${interaction.user.tag}`,
+        });
 
         await interaction.editReply(
           `✅ Du betalte **${amount}** til **${target.tag}**.`,
@@ -2570,16 +2568,14 @@ function createSlashHandlers(client) {
             .from("economy_accounts")
             .update({ wallet: (robberAccount.wallet || 0) + stolen })
             .eq("id", robberAccount.id);
-          await supabase
-            .from("economy_transactions")
-            .insert({
-              guild_id: guild.id,
-              to_user_id: interaction.user.id,
-              from_user_id: target.id,
-              amount: stolen,
-              transaction_type: "rob",
-              description: `Røvede ${target.tag}`,
-            });
+          await supabase.from("economy_transactions").insert({
+            guild_id: guild.id,
+            to_user_id: interaction.user.id,
+            from_user_id: target.id,
+            amount: stolen,
+            transaction_type: "rob",
+            description: `Røvede ${target.tag}`,
+          });
           await interaction.editReply(
             `🦹 Du røvede **${stolen}** fra **${target.tag}**!`,
           );

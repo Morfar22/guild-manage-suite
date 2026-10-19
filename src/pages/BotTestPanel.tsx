@@ -5,6 +5,7 @@ import { useBotStatus } from "@/hooks/useBotStatus";
 import { useConfigurationAlerts } from "@/hooks/useConfigurationAlerts";
 import { supabase } from "@/integrations/supabase/client";
 import { COMMANDS_BY_CATEGORY } from "@/types/discord";
+import type { Untyped } from "@/types/untyped";
 import {
   Card,
   CardContent,
@@ -250,7 +251,7 @@ export default function BotTestPanel() {
         return { status: "fail", detail: "Ingen server valgt" };
       try {
         const { error, count } = await supabase
-          .from(handler.table as any)
+          .from(handler.table as Untyped)
           .select("*", { count: "exact", head: true })
           .eq("guild_id", selectedGuild.id);
 
@@ -265,7 +266,7 @@ export default function BotTestPanel() {
           status: "pass",
           detail: `${count} ${count === 1 ? "konfiguration" : "konfigurationer"} fundet`,
         };
-      } catch (err: any) {
+      } catch (err: Untyped) {
         return { status: "fail", detail: err.message || "Ukendt fejl" };
       }
     },

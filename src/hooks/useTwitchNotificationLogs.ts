@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useGuild } from "@/contexts/GuildContext";
 import { supabase } from "@/integrations/supabase/client";
+import type { Untyped } from "@/types/untyped";
 
 export interface TwitchNotificationLog {
   id: string;
@@ -47,7 +48,7 @@ export function useTwitchNotificationLogs() {
 
       if (error) throw error;
 
-      const formattedLogs = (data || []).map((log: any) => ({
+      const formattedLogs = (data || []).map((log: Untyped) => ({
         ...log,
         streamer_name: log.twitch_streamers?.display_name,
         streamer_avatar: log.twitch_streamers?.profile_image_url,

@@ -4,6 +4,7 @@ import { decryptBotToken as simpleDecrypt } from "@/lib/server/bot-token-crypto"
 import { createFileRoute } from "@tanstack/react-router";
 import { createClient } from "@supabase/supabase-js";
 import nacl from "tweetnacl";
+import type { Untyped } from "@/types/untyped";
 
 const __env = (k: string) =>
   process.env[k] ??
@@ -11,7 +12,7 @@ const __env = (k: string) =>
     ? process.env["SUPABASE_PUBLISHABLE_KEY"]
     : undefined);
 let __handler: (req: Request) => Response | Promise<Response>;
-const __serve = (fn: any, _opts?: any) => {
+const __serve = (fn: Untyped, _opts?: Untyped) => {
   __handler = fn;
 };
 
@@ -122,8 +123,8 @@ async function verifyDiscordSignature(
 function waitUntil(promise: Promise<unknown>) {
   // Supabase Edge Runtime exposes EdgeRuntime.waitUntil for background work.
   // Fallback keeps behavior in local/unknown runtimes.
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const er = (globalThis as any)?.EdgeRuntime;
+
+  const er = (globalThis as Untyped)?.EdgeRuntime;
   if (er?.waitUntil) {
     er.waitUntil(promise);
     return;
@@ -145,7 +146,7 @@ function deferredEphemeral(content: string): Response {
   );
 }
 
-async function sendFollowupEphemeral(interaction: any, content: string) {
+async function sendFollowupEphemeral(interaction: Untyped, content: string) {
   const applicationId = interaction.application_id;
   const token = interaction.token;
   if (!applicationId || !token) {
@@ -169,7 +170,7 @@ async function sendFollowupEphemeral(interaction: any, content: string) {
 }
 
 async function getBotTokenForGuild(
-  innerSupabase: any,
+  innerSupabase: Untyped,
   discordGuildId: string,
 ): Promise<string> {
   let botToken = __env("DISCORD_BOT_TOKEN")!;
@@ -210,7 +211,7 @@ function getGiveawayWinners(winners: unknown): string[] {
     : [];
 }
 
-function buildGiveawayMessagePayload(giveaway: any) {
+function buildGiveawayMessagePayload(giveaway: Untyped) {
   const entries = getGiveawayEntries(giveaway.entries);
   const winners = getGiveawayWinners(giveaway.winners);
   const hasEnded = giveaway.ended || new Date(giveaway.ends_at) <= new Date();
@@ -290,14 +291,14 @@ function buildGiveawayMessagePayload(giveaway: any) {
 
 // Show modal with questions for any category (support or application)
 async function showTicketModal(
-  interaction: any,
+  interaction: Untyped,
   categoryId: string,
-  category: any,
+  category: Untyped,
 ): Promise<Response> {
   const questions = category.questions || [];
 
   // Build modal components (text inputs) from questions
-  const components = questions.slice(0, 5).map((q: any, index: number) => ({
+  const components = questions.slice(0, 5).map((q: Untyped, index: number) => ({
     type: 1, // Action row
     components: [
       {
@@ -334,7 +335,7 @@ async function showTicketModal(
 
 // Create a ticket thread (work function - do NOT use as direct interaction response)
 async function createTicketThreadWork(
-  interaction: any,
+  interaction: Untyped,
   categoryId: string,
   applicationAnswers?: { question: string; answer: string }[],
 ): Promise<{ threadId: string }> {
@@ -602,7 +603,7 @@ async function createTicketThreadWork(
 }
 
 function deferAndCreateTicket(
-  interaction: any,
+  interaction: Untyped,
   categoryId: string,
   applicationAnswers?: { question: string; answer: string }[],
 ): Response {
@@ -619,7 +620,7 @@ function deferAndCreateTicket(
           interaction,
           `✅ Your ticket has been created! View it here: <#${threadId}>`,
         );
-      } catch (e: any) {
+      } catch (e: Untyped) {
         console.error("Background ticket creation failed:", e);
         const msg =
           typeof e?.message === "string" && e.message.length
@@ -634,7 +635,7 @@ function deferAndCreateTicket(
 }
 
 // Handle modal submission for all ticket types
-async function handleModalSubmit(interaction: any): Promise<Response> {
+async function handleModalSubmit(interaction: Untyped): Promise<Response> {
   const customId = interaction.data?.custom_id || "";
 
   if (!customId.startsWith("ticket_modal_")) {
@@ -685,7 +686,7 @@ async function handleModalSubmit(interaction: any): Promise<Response> {
   const answers: { question: string; answer: string }[] = [];
   const components = interaction.data?.components || [];
 
-  components.forEach((row: any, index: number) => {
+  components.forEach((row: Untyped, index: number) => {
     const input = row.components?.[0];
     if (input) {
       const question = questions[index]?.label || `Question ${index + 1}`;
@@ -704,7 +705,7 @@ async function handleModalSubmit(interaction: any): Promise<Response> {
 
 // Handle claim ticket
 async function handleClaimTicket(
-  interaction: any,
+  interaction: Untyped,
   threadId: string,
 ): Promise<Response> {
   const supabase = createClient(
@@ -734,9 +735,9 @@ async function handleClaimTicket(
     JSON.stringify({
       type: InteractionResponseType.UPDATE_MESSAGE,
       data: {
-        embeds: interaction.message.embeds.map((embed: any) => ({
+        embeds: interaction.message.embeds.map((embed: Untyped) => ({
           ...embed,
-          fields: embed.fields?.map((field: any) =>
+          fields: embed.fields?.map((field: Untyped) =>
             field.name === "Status"
               ? {
                   name: "Status",
@@ -783,7 +784,7 @@ async function handleClaimTicket(
 
 // Handle close ticket (archive or delete)
 async function handleCloseTicket(
-  interaction: any,
+  interaction: Untyped,
   threadId: string,
   deleteThread: boolean = false,
 ): Promise<Response> {
@@ -838,13 +839,13 @@ async function handleCloseTicket(
 
             const recentMessages = messages
               .sort(
-                (a: any, b: any) =>
+                (a: Untyped, b: Untyped) =>
                   new Date(a.created_at).getTime() -
                   new Date(b.created_at).getTime(),
               )
               .slice(-10)
               .map(
-                (m: any) =>
+                (m: Untyped) =>
                   `**${m.author_name || m.author_id}:** ${(m.content || "").slice(0, 100)}${(m.content || "").length > 100 ? "..." : ""}`,
               )
               .join("\n");
@@ -962,10 +963,10 @@ async function handleCloseTicket(
     JSON.stringify({
       type: InteractionResponseType.UPDATE_MESSAGE,
       data: {
-        embeds: interaction.message.embeds.map((embed: any) => ({
+        embeds: interaction.message.embeds.map((embed: Untyped) => ({
           ...embed,
           color: 0xed4245,
-          fields: embed.fields?.map((field: any) =>
+          fields: embed.fields?.map((field: Untyped) =>
             field.name === "Status"
               ? {
                   name: "Status",
@@ -998,7 +999,7 @@ async function handleCloseTicket(
 
 // Handle approve application
 async function handleApproveApplication(
-  interaction: any,
+  interaction: Untyped,
   threadId: string,
 ): Promise<Response> {
   const supabase = createClient(
@@ -1103,10 +1104,10 @@ async function handleApproveApplication(
     JSON.stringify({
       type: InteractionResponseType.UPDATE_MESSAGE,
       data: {
-        embeds: interaction.message.embeds.map((embed: any) => ({
+        embeds: interaction.message.embeds.map((embed: Untyped) => ({
           ...embed,
           color: 0x57f287,
-          fields: embed.fields?.map((field: any) =>
+          fields: embed.fields?.map((field: Untyped) =>
             field.name === "Status"
               ? {
                   name: "Status",
@@ -1139,7 +1140,7 @@ async function handleApproveApplication(
 
 // Handle deny application
 async function handleDenyApplication(
-  interaction: any,
+  interaction: Untyped,
   threadId: string,
 ): Promise<Response> {
   const supabase = createClient(
@@ -1226,10 +1227,10 @@ async function handleDenyApplication(
     JSON.stringify({
       type: InteractionResponseType.UPDATE_MESSAGE,
       data: {
-        embeds: interaction.message.embeds.map((embed: any) => ({
+        embeds: interaction.message.embeds.map((embed: Untyped) => ({
           ...embed,
           color: 0xed4245,
-          fields: embed.fields?.map((field: any) =>
+          fields: embed.fields?.map((field: Untyped) =>
             field.name === "Status"
               ? {
                   name: "Status",
@@ -1261,7 +1262,7 @@ async function handleDenyApplication(
 }
 
 // Handle modmail claim button
-async function handleModmailClaim(interaction: any): Promise<Response> {
+async function handleModmailClaim(interaction: Untyped): Promise<Response> {
   const supabase = createClient(
     __env("SUPABASE_URL")!,
     __env("SUPABASE_SERVICE_ROLE_KEY")!,
@@ -1374,7 +1375,7 @@ async function handleModmailClaim(interaction: any): Promise<Response> {
 }
 
 // Handle modmail close button
-async function handleModmailClose(interaction: any): Promise<Response> {
+async function handleModmailClose(interaction: Untyped): Promise<Response> {
   const supabase = createClient(
     __env("SUPABASE_URL")!,
     __env("SUPABASE_SERVICE_ROLE_KEY")!,
@@ -1507,7 +1508,7 @@ async function handleModmailClose(interaction: any): Promise<Response> {
 
 // NEW APPLICATION SYSTEM: Handle submission approve from log channel buttons
 async function handleSubmissionApprove(
-  interaction: any,
+  interaction: Untyped,
   submissionId: string,
 ): Promise<Response> {
   const supabase = createClient(
@@ -1694,7 +1695,7 @@ async function handleSubmissionApprove(
     JSON.stringify({
       type: InteractionResponseType.UPDATE_MESSAGE,
       data: {
-        embeds: interaction.message.embeds.map((embed: any) => ({
+        embeds: interaction.message.embeds.map((embed: Untyped) => ({
           ...embed,
           color: 0x57f287, // Green
           title: embed.title?.replace("📥", "✅") || "✅ Approved",
@@ -1722,7 +1723,7 @@ async function handleSubmissionApprove(
 
 // NEW APPLICATION SYSTEM: Handle submission deny from log channel buttons
 async function handleSubmissionDeny(
-  interaction: any,
+  interaction: Untyped,
   submissionId: string,
 ): Promise<Response> {
   const supabase = createClient(
@@ -1887,7 +1888,7 @@ async function handleSubmissionDeny(
     JSON.stringify({
       type: InteractionResponseType.UPDATE_MESSAGE,
       data: {
-        embeds: interaction.message.embeds.map((embed: any) => ({
+        embeds: interaction.message.embeds.map((embed: Untyped) => ({
           ...embed,
           color: 0xed4245, // Red
           title: embed.title?.replace("📥", "❌") || "❌ Denied",
@@ -1914,7 +1915,7 @@ async function handleSubmissionDeny(
 }
 
 async function handleApplicationStart(
-  interaction: any,
+  interaction: Untyped,
   formId: string,
 ): Promise<Response> {
   const supabase = createClient(
@@ -1963,7 +1964,7 @@ async function handleApplicationStart(
     );
   }
 
-  const questions = (form.questions || []) as any[];
+  const questions = (form.questions || []) as Untyped[];
 
   // If no questions, just acknowledge
   if (questions.length === 0) {
@@ -1982,7 +1983,7 @@ async function handleApplicationStart(
   // Build modal with questions (Discord max 5 text inputs per modal)
   const modalComponents = questions
     .slice(0, 5)
-    .map((q: any, index: number) => ({
+    .map((q: Untyped, index: number) => ({
       type: 1, // Action row
       components: [
         {
@@ -2016,7 +2017,7 @@ async function handleApplicationStart(
 
 // Handle application form modal submit
 async function handleApplicationFormSubmit(
-  interaction: any,
+  interaction: Untyped,
 ): Promise<Response> {
   const customId = interaction.data?.custom_id || "";
   const formId = customId.replace("application_form_", "");
@@ -2078,19 +2079,19 @@ async function handleApplicationFormSubmit(
         }
 
         const formQuestions = Array.isArray(form.questions)
-          ? (form.questions as any[])
+          ? (form.questions as Untyped[])
           : [];
 
         // Extract answers from modal
         const components = interaction.data?.components || [];
         const answers: { question: string; answer: string }[] = [];
 
-        components.forEach((row: any) => {
+        components.forEach((row: Untyped) => {
           const input = row.components?.[0];
           if (!input) return;
 
           const questionDef = formQuestions.find(
-            (q: any) => q.id === input.custom_id,
+            (q: Untyped) => q.id === input.custom_id,
           );
           answers.push({
             question: questionDef?.label || input.custom_id,
@@ -2258,10 +2259,10 @@ async function handleApplicationFormSubmit(
 // Handle FiveM slash commands - queue for FiveM server execution
 // Now supports subcommand structure: /fivem <group> <subcommand> <options>
 function handleFiveMSlashCommand(
-  interaction: any,
+  interaction: Untyped,
   group: string | null,
   subcommand: string,
-  subcommandOptions: any[],
+  subcommandOptions: Untyped[],
 ): Response {
   // Defer immediately to avoid Discord's 3-second timeout
   waitUntil(
@@ -2277,7 +2278,7 @@ function handleFiveMSlashCommand(
         const userName =
           interaction.member?.user?.username || interaction.user?.username;
 
-        const commandData: Record<string, any> = {
+        const commandData: Record<string, Untyped> = {
           moderatorDiscordId: userId,
           moderatorName: userName,
           group: group || subcommand,
@@ -2360,7 +2361,7 @@ function handleFiveMSlashCommand(
             return;
           }
 
-          const lines = players.map((p: any) => {
+          const lines = players.map((p: Untyped) => {
             const name =
               p.character_name ||
               p.discord_username ||
@@ -2480,7 +2481,7 @@ function handleFiveMSlashCommand(
         if (rawResult)
           responseMessage += `\n\`\`\`\n${rawResult.slice(0, 1800)}\n\`\`\``;
         await sendFollowupEphemeral(interaction, responseMessage);
-      } catch (e: any) {
+      } catch (e: Untyped) {
         console.error("Background FiveM command failed:", e);
         await sendFollowupEphemeral(
           interaction,
@@ -2503,7 +2504,7 @@ function handleFiveMSlashCommand(
 // ===== JTC Control Panel Handlers =====
 
 async function verifyJTCOwner(
-  supabase: any,
+  supabase: Untyped,
   voiceChannelId: string,
   userId: string,
 ) {
@@ -2532,7 +2533,7 @@ function jtcEphemeral(content: string): Response {
 }
 
 async function handleJTCControl(
-  interaction: any,
+  interaction: Untyped,
   customId: string,
 ): Promise<Response> {
   const userId = interaction.member?.user?.id || interaction.user?.id;
@@ -2566,7 +2567,9 @@ async function handleJTCControl(
       const channelData = await channelRes.json();
 
       const overwrites = channelData.permission_overwrites || [];
-      const everyoneOverwrite = overwrites.find((o: any) => o.id === guildId);
+      const everyoneOverwrite = overwrites.find(
+        (o: Untyped) => o.id === guildId,
+      );
       // Check if CONNECT (1048576) is denied
       const connectDenied =
         everyoneOverwrite &&
@@ -2612,7 +2615,9 @@ async function handleJTCControl(
       const channelData = await channelRes.json();
 
       const overwrites = channelData.permission_overwrites || [];
-      const everyoneOverwrite = overwrites.find((o: any) => o.id === guildId);
+      const everyoneOverwrite = overwrites.find(
+        (o: Untyped) => o.id === guildId,
+      );
       const viewDenied =
         everyoneOverwrite &&
         (BigInt(everyoneOverwrite.deny || "0") & BigInt(1024)) !== BigInt(0);
@@ -2801,7 +2806,7 @@ async function handleJTCControl(
 }
 
 async function handleJTCRenameSubmit(
-  interaction: any,
+  interaction: Untyped,
   customId: string,
 ): Promise<Response> {
   const voiceChannelId = customId.replace("jtc_rename_modal_", "");
@@ -2834,7 +2839,7 @@ async function handleJTCRenameSubmit(
 }
 
 async function handleJTCLimitSubmit(
-  interaction: any,
+  interaction: Untyped,
   customId: string,
 ): Promise<Response> {
   const voiceChannelId = customId.replace("jtc_limit_modal_", "");
@@ -2873,7 +2878,7 @@ async function handleJTCLimitSubmit(
 }
 
 async function handleJTCKickSubmit(
-  interaction: any,
+  interaction: Untyped,
   customId: string,
 ): Promise<Response> {
   const voiceChannelId = customId.replace("jtc_kick_modal_", "");
@@ -2914,7 +2919,7 @@ async function handleJTCKickSubmit(
 }
 
 async function handleJTCBlockSubmit(
-  interaction: any,
+  interaction: Untyped,
   customId: string,
 ): Promise<Response> {
   const voiceChannelId = customId.replace("jtc_block_modal_", "");
@@ -2970,7 +2975,7 @@ async function handleJTCBlockSubmit(
 }
 
 async function handleJTCAllowSubmit(
-  interaction: any,
+  interaction: Untyped,
   customId: string,
 ): Promise<Response> {
   const voiceChannelId = customId.replace("jtc_allow_modal_", "");
@@ -3516,7 +3521,7 @@ __serve(async (req) => {
               }
 
               const allowMultiple =
-                (poll.votes as any)?.allow_multiple ?? false;
+                (poll.votes as Untyped)?.allow_multiple ?? false;
               if (!allowMultiple) {
                 for (const opt of pollOptions) {
                   opt.voters = (opt.voters || []).filter(
@@ -3540,11 +3545,11 @@ __serve(async (req) => {
               if (poll.message_id && botToken) {
                 try {
                   const totalVotes = pollOptions.reduce(
-                    (sum: number, o: any) => sum + o.votes,
+                    (sum: number, o: Untyped) => sum + o.votes,
                     0,
                   );
                   const updatedDesc = pollOptions
-                    .map((o: any, i: number) => {
+                    .map((o: Untyped, i: number) => {
                       const pct =
                         totalVotes > 0
                           ? Math.round((o.votes / totalVotes) * 100)
@@ -3591,7 +3596,7 @@ __serve(async (req) => {
                 interaction,
                 `✅ Du stemte på **${pollOptions[optionIndex].label}**!`,
               );
-            } catch (e: any) {
+            } catch (e: Untyped) {
               console.error("[Poll] Vote error:", e);
               await sendFollowupEphemeral(
                 interaction,

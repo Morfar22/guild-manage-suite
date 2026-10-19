@@ -6,6 +6,7 @@ import { ModuleCard, ModuleStatus } from "@/components/dashboard/ModuleCard";
 import { DbModuleType, MODULE_INFO } from "@/types/discord";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
+import type { Untyped } from "@/types/untyped";
 
 const DEFAULT_MODULES: Record<DbModuleType, boolean> = {
   moderation: true,
@@ -26,7 +27,7 @@ export default function Modules() {
     useState<Record<DbModuleType, boolean>>(DEFAULT_MODULES);
   const [statuses, setStatuses] = useState<
     Record<DbModuleType, ModuleStatus | undefined>
-  >({} as any);
+  >({} as Untyped);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState<DbModuleType | null>(null);
 
@@ -46,18 +47,18 @@ export default function Modules() {
           filter: `guild_id=eq.${selectedGuild.id}`,
         },
         (payload) => {
-          const row: any = payload.new ?? payload.old;
+          const row: Untyped = payload.new ?? payload.old;
           if (!row?.module_type) return;
           const mt = row.module_type as DbModuleType;
           if (!(mt in DEFAULT_MODULES)) return;
           setModules((prev) => ({
             ...prev,
-            [mt]: payload.new ? !!(payload.new as any).enabled : prev[mt],
+            [mt]: payload.new ? !!(payload.new as Untyped).enabled : prev[mt],
           }));
           setStatuses((prev) => ({
             ...prev,
             [mt]: payload.new
-              ? (payload.new as any).enabled
+              ? (payload.new as Untyped).enabled
                 ? "enabled"
                 : "disabled"
               : "disabled",
@@ -69,6 +70,7 @@ export default function Modules() {
     return () => {
       supabase.removeChannel(channel);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- subscribe when guild changes
   }, [selectedGuild]);
 
   const fetchModules = async () => {
@@ -80,7 +82,7 @@ export default function Modules() {
         .eq("guild_id", selectedGuild.id);
       if (error) throw error;
       const moduleState: Record<DbModuleType, boolean> = { ...DEFAULT_MODULES };
-      const statusState: Record<DbModuleType, ModuleStatus> = {} as any;
+      const statusState: Record<DbModuleType, ModuleStatus> = {} as Untyped;
       (Object.keys(DEFAULT_MODULES) as DbModuleType[]).forEach((mt) => {
         statusState[mt] = moduleState[mt] ? "enabled" : "disabled";
       });

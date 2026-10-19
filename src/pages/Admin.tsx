@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Navigate, Link } from "@tanstack/react-router";
 import { useAuth } from "@/contexts/AuthContext";
+import type { Untyped } from "@/types/untyped";
 import {
   useIsAdmin,
   useAllUsers,
@@ -425,7 +426,7 @@ export default function Admin() {
                     <>
                       <div className="space-y-2">
                         {userGuilds && userGuilds.length > 0 ? (
-                          userGuilds.map((ug: any) => (
+                          userGuilds.map((ug: Untyped) => (
                             <div
                               key={ug.id}
                               className="flex items-center justify-between p-3 rounded-lg border"
@@ -623,7 +624,9 @@ export default function Admin() {
                               </p>
                               <p>{bot.bot_name}</p>
                             </div>
-                            <Link to={`/guilds?guild=${bot.guild_id}` as any}>
+                            <Link
+                              to={`/guilds?guild=${bot.guild_id}` as Untyped}
+                            >
                               <Button
                                 variant="outline"
                                 size="sm"

@@ -12,6 +12,7 @@ import { toast } from "sonner";
 import { Helmet } from "react-helmet-async";
 import { z } from "zod";
 import { invokeFunction } from "@/lib/functions-client";
+import type { Untyped } from "@/types/untyped";
 
 const DISCORD_ORIGIN = "https://bot.nethost-solutions.dk";
 const DISCORD_REDIRECT_URI = `${DISCORD_ORIGIN}/auth`;
@@ -97,7 +98,7 @@ export default function Auth() {
           `Welcome ${data.user.discord_username}! Check your email to complete sign in.`,
         );
       }
-    } catch (err: any) {
+    } catch (err: Untyped) {
       console.error("Discord OAuth error:", err);
       setError(err.message || "Failed to complete Discord login");
     } finally {
@@ -127,7 +128,7 @@ export default function Auth() {
       const data = response.data;
       if (data.error) throw new Error(data.error);
       window.location.assign(data.url);
-    } catch (err: any) {
+    } catch (err: Untyped) {
       console.error("Discord login error:", err);
       setError(err.message || "Failed to start Discord login");
       setDiscordLoading(false);
@@ -180,7 +181,7 @@ export default function Auth() {
         toast.success(t("auth.accountCreated"));
         setIsLogin(true);
       }
-    } catch (err: any) {
+    } catch (err: Untyped) {
       if (err.message === "User already registered")
         setError(t("auth.emailRegistered"));
       else if (err.message === "Invalid login credentials")

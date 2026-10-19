@@ -1,9 +1,10 @@
-// @ts-nocheck
 // Migrated from Supabase Edge Function `ai-ticket-summary` to a TanStack server route.
+// @ts-nocheck
 import { createFileRoute } from "@tanstack/react-router";
 import { requireUser, requireGuildAdmin } from "@/lib/server/api-auth";
 import { createClient } from "@supabase/supabase-js";
 import { openAIChatCompletion, openAIErrorResponse } from "@/lib/server/openai";
+import type { Untyped } from "@/types/untyped";
 
 const __env = (k: string) =>
   process.env[k] ??
@@ -11,7 +12,7 @@ const __env = (k: string) =>
     ? process.env["SUPABASE_PUBLISHABLE_KEY"]
     : undefined);
 let __handler: (req: Request) => Response | Promise<Response>;
-const __serve = (fn: any, _opts?: any) => {
+const __serve = (fn: Untyped, _opts?: Untyped) => {
   __handler = fn;
 };
 

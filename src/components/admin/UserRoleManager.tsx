@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import type { Untyped } from "@/types/untyped";
 import {
   Card,
   CardContent,
@@ -47,7 +48,7 @@ export function UserRoleManager() {
     mutationFn: async ({ userId, role }: { userId: string; role: string }) => {
       const { error } = await supabase
         .from("user_roles")
-        .insert({ user_id: userId, role } as any);
+        .insert({ user_id: userId, role } as Untyped);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -56,7 +57,7 @@ export function UserRoleManager() {
       setSelectedUserId("");
       setSelectedRole("");
     },
-    onError: (err: any) => {
+    onError: (err: Untyped) => {
       toast({
         title: "Fejl",
         description: err.message,
@@ -156,7 +157,7 @@ export function UserRoleManager() {
           </div>
         ) : filteredRoles.length > 0 ? (
           <div className="space-y-2 max-h-[300px] overflow-y-auto">
-            {filteredRoles.map((r: any) => (
+            {filteredRoles.map((r: Untyped) => (
               <div
                 key={r.id}
                 className="flex items-center justify-between p-3 rounded-lg border"

@@ -1,8 +1,9 @@
-// @ts-nocheck
 // Migrated from Supabase Edge Function `send-verification-panel` to a TanStack server route.
+// @ts-nocheck
 import { createFileRoute } from "@tanstack/react-router";
 import { createClient } from "@supabase/supabase-js";
 import { decryptBotToken } from "@/lib/server/bot-token-crypto";
+import type { Untyped } from "@/types/untyped";
 import {
   requireUser,
   requireGuildAdmin,
@@ -15,7 +16,7 @@ const __env = (k: string) =>
     ? process.env["SUPABASE_PUBLISHABLE_KEY"]
     : undefined);
 let __handler: (req: Request) => Response | Promise<Response>;
-const __serve = (fn: any, _opts?: any) => {
+const __serve = (fn: Untyped, _opts?: Untyped) => {
   __handler = fn;
 };
 

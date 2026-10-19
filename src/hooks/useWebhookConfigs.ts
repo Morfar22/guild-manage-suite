@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useGuild } from "@/contexts/GuildContext";
 import { toast } from "sonner";
+import type { Untyped } from "@/types/untyped";
 
 export interface WebhookConfig {
   id: string;
@@ -43,7 +44,7 @@ export function useWebhookConfigs() {
       if (!selectedGuild?.id) throw new Error("No guild");
       const { error } = await supabase
         .from("webhook_configs")
-        .insert([{ ...config, guild_id: selectedGuild.id } as any]);
+        .insert([{ ...config, guild_id: selectedGuild.id } as Untyped]);
       if (error) throw error;
     },
     onSuccess: () => {

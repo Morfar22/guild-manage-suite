@@ -1,4 +1,5 @@
 import { useState } from "react";
+import type { Untyped } from "@/types/untyped";
 import {
   Card,
   CardContent,
@@ -273,8 +274,8 @@ export default function Honeypot() {
               </Label>
               <div className="flex flex-wrap gap-2 max-h-40 overflow-y-auto rounded-lg border p-2">
                 {roles
-                  .filter((r: any) => r.name !== "@everyone")
-                  .map((r: any) => (
+                  .filter((r: Untyped) => r.name !== "@everyone")
+                  .map((r: Untyped) => (
                     <Badge
                       key={r.id}
                       variant={
@@ -309,7 +310,7 @@ export default function Honeypot() {
             </p>
           ) : (
             <div className="space-y-2">
-              {catches.map((c: any) => (
+              {catches.map((c: Untyped) => (
                 <div
                   key={c.id}
                   className="flex items-start justify-between gap-4 rounded-lg border p-3"

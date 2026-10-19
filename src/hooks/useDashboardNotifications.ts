@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useGuild } from "@/contexts/GuildContext";
 import { useEffect } from "react";
+import type { Untyped } from "@/types/untyped";
 
 export interface DashboardNotification {
   id: string;
@@ -12,7 +13,7 @@ export interface DashboardNotification {
   message: string | null;
   source: string;
   is_read: boolean;
-  metadata: any;
+  metadata: Untyped;
   severity: "info" | "warning" | "error" | "critical";
   status: "open" | "acknowledged" | "resolved";
   acknowledged_at: string | null;

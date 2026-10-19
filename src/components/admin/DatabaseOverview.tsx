@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import type { Untyped } from "@/types/untyped";
 import {
   Card,
   CardContent,
@@ -40,7 +41,7 @@ export function DatabaseOverview() {
       const results = await Promise.all(
         tableNames.map(async (name) => {
           const { count } = await supabase
-            .from(name as any)
+            .from(name as Untyped)
             .select("*", { count: "exact", head: true });
           return { name, count: count || 0 };
         }),

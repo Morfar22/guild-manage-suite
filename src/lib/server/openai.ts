@@ -1,4 +1,5 @@
 // Server-only OpenAI helper shared by all self-hosted AI routes.
+import type { Untyped } from "@/types/untyped";
 
 export const OPENAI_CHAT_COMPLETIONS_URL =
   "https://api.openai.com/v1/chat/completions";
@@ -118,7 +119,7 @@ export class OpenAIRequestError extends Error {
 
 function mapOpenAIError(
   status: number,
-  payload: any,
+  payload: Untyped,
   requestId?: string,
 ): OpenAIRequestError {
   const upstreamCode = String(
@@ -186,7 +187,7 @@ function mapOpenAIError(
 export async function openAIChatCompletion(
   payload: Record<string, unknown>,
   options: { timeoutMs?: number } = {},
-): Promise<any> {
+): Promise<Untyped> {
   const apiKey = (await readRuntimeEnvWithSourceAsync("OPENAI_API_KEY")).value;
   if (!apiKey) {
     throw new OpenAIRequestError(
@@ -221,7 +222,7 @@ export async function openAIChatCompletion(
     const requestId = response.headers.get("x-request-id") || undefined;
     const raw = await response.text();
 
-    let parsed: any = null;
+    let parsed: Untyped = null;
     try {
       parsed = raw ? JSON.parse(raw) : null;
     } catch {

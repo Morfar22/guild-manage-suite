@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useGuild } from "@/contexts/GuildContext";
 import { useToast } from "@/hooks/use-toast";
+import type { Untyped } from "@/types/untyped";
 
 export interface StarboardSettings {
   id: string;
@@ -24,7 +25,7 @@ export interface StarboardEntry {
   author_id: string;
   author_name: string | null;
   content: string | null;
-  attachments: any[];
+  attachments: Untyped[];
   starboard_message_id: string | null;
   star_count: number;
   created_at: string;

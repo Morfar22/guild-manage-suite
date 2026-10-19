@@ -1,5 +1,6 @@
 import { decryptBotToken as simpleDecrypt } from "../_shared/bot-token-crypto.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import type { Untyped } from "../_shared/untyped";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -25,7 +26,7 @@ function getClientIp(req: Request): string {
 
 async function checkIPWhitelist(
   req: Request,
-  supabase: any,
+  supabase: Untyped,
 ): Promise<{ allowed: boolean; ip: string }> {
   const clientIp = getClientIp(req);
 
@@ -92,7 +93,7 @@ interface ApplicationSettings {
 }
 
 async function getBotTokenForGuild(
-  supabase: any,
+  supabase: Untyped,
   guildId: string,
   fallbackToken: string | undefined,
 ): Promise<string | undefined> {
@@ -161,7 +162,7 @@ Deno.serve(async (req) => {
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    let body: any;
+    let body: Untyped;
     try {
       body = await req.json();
     } catch {
@@ -295,7 +296,7 @@ Deno.serve(async (req) => {
           })),
         };
 
-        const components: any[] = [];
+        const components: Untyped[] = [];
 
         if (panelType === "dropdown") {
           const options = forms.map((form: ApplicationForm) => ({
@@ -319,7 +320,7 @@ Deno.serve(async (req) => {
             ],
           });
         } else {
-          let currentRow: any[] = [];
+          let currentRow: Untyped[] = [];
 
           for (let i = 0; i < forms.length; i++) {
             currentRow.push({

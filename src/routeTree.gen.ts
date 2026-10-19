@@ -8,2859 +8,2859 @@
 // You should NOT make any changes in this file as it will be overwritten.
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
-import { Route as rootRouteImport } from "./routes/__root";
-import { Route as IndexRouteImport } from "./routes/index";
-import { Route as SplatRouteImport } from "./routes/$";
-import { Route as AuthRouteImport } from "./routes/auth";
-import { Route as DashboardRouteImport } from "./routes/dashboard";
-import { Route as FeaturesRouteImport } from "./routes/features";
-import { Route as GuildsRouteImport } from "./routes/guilds";
-import { Route as PrivacyRouteImport } from "./routes/privacy";
-import { Route as SecurityRouteImport } from "./routes/security";
-import { Route as TermsRouteImport } from "./routes/terms";
-import { Route as AdminIndexRouteImport } from "./routes/admin.index";
-import { Route as AdminGlobalBansRouteImport } from "./routes/admin.global-bans";
-import { Route as DashboardIndexRouteImport } from "./routes/dashboard/index";
-import { Route as DashboardActivityHeatmapRouteImport } from "./routes/dashboard/activity-heatmap";
-import { Route as DashboardAiAutomodRouteImport } from "./routes/dashboard/ai-automod";
-import { Route as DashboardAiChatRouteImport } from "./routes/dashboard/ai-chat";
-import { Route as DashboardAnalyticsRouteImport } from "./routes/dashboard/analytics";
-import { Route as DashboardAutoReportsRouteImport } from "./routes/dashboard/auto-reports";
-import { Route as DashboardAutoRespondersRouteImport } from "./routes/dashboard/auto-responders";
-import { Route as DashboardAutomodRouteImport } from "./routes/dashboard/automod";
-import { Route as DashboardBackupsRouteImport } from "./routes/dashboard/backups";
-import { Route as DashboardBirthdaysRouteImport } from "./routes/dashboard/birthdays";
-import { Route as DashboardBotHealthRouteImport } from "./routes/dashboard/bot-health";
-import { Route as DashboardBotSettingsRouteImport } from "./routes/dashboard/bot-settings";
-import { Route as DashboardChangelogRouteImport } from "./routes/dashboard/changelog";
-import { Route as DashboardCharactersRouteImport } from "./routes/dashboard/characters";
-import { Route as DashboardCommandsRouteImport } from "./routes/dashboard/commands";
-import { Route as DashboardConfessionsRouteImport } from "./routes/dashboard/confessions";
-import { Route as DashboardCountingRouteImport } from "./routes/dashboard/counting";
-import { Route as DashboardCurrencyShopRouteImport } from "./routes/dashboard/currency-shop";
-import { Route as DashboardCustomCommandsRouteImport } from "./routes/dashboard/custom-commands";
-import { Route as DashboardEconomyRouteImport } from "./routes/dashboard/economy";
-import { Route as DashboardEmbedBuilderRouteImport } from "./routes/dashboard/embed-builder";
-import { Route as DashboardFeaturesRouteImport } from "./routes/dashboard/features";
-import { Route as DashboardFivemRouteImport } from "./routes/dashboard/fivem";
-import { Route as DashboardGiveawaysRouteImport } from "./routes/dashboard/giveaways";
-import { Route as DashboardGlobalBansRouteImport } from "./routes/dashboard/global-bans";
-import { Route as DashboardHoneypotRouteImport } from "./routes/dashboard/honeypot";
-import { Route as DashboardInviteTrackerRouteImport } from "./routes/dashboard/invite-tracker";
-import { Route as DashboardJtcRouteImport } from "./routes/dashboard/jtc";
-import { Route as DashboardLeaderboardRouteImport } from "./routes/dashboard/leaderboard";
-import { Route as DashboardLevelingRouteImport } from "./routes/dashboard/leveling";
-import { Route as DashboardLiveEventsRouteImport } from "./routes/dashboard/live-events";
-import { Route as DashboardLogSettingsRouteImport } from "./routes/dashboard/log-settings";
-import { Route as DashboardLogsRouteImport } from "./routes/dashboard/logs";
-import { Route as DashboardMembersRouteImport } from "./routes/dashboard/members";
-import { Route as DashboardModerationRouteImport } from "./routes/dashboard/moderation";
-import { Route as DashboardModmailRouteImport } from "./routes/dashboard/modmail";
-import { Route as DashboardModulesRouteImport } from "./routes/dashboard/modules";
-import { Route as DashboardMusicQuizRouteImport } from "./routes/dashboard/music-quiz";
-import { Route as DashboardNotificationsRouteImport } from "./routes/dashboard/notifications";
-import { Route as DashboardOperationsRouteImport } from "./routes/dashboard/operations";
-import { Route as DashboardPollsRouteImport } from "./routes/dashboard/polls";
-import { Route as DashboardQuarantineRouteImport } from "./routes/dashboard/quarantine";
-import { Route as DashboardRaidProtectionRouteImport } from "./routes/dashboard/raid-protection";
-import { Route as DashboardReactionRolesRouteImport } from "./routes/dashboard/reaction-roles";
-import { Route as DashboardRemindersRouteImport } from "./routes/dashboard/reminders";
-import { Route as DashboardResourcesRouteImport } from "./routes/dashboard/resources";
-import { Route as DashboardRoleAnalyticsRouteImport } from "./routes/dashboard/role-analytics";
-import { Route as DashboardScheduledActionsRouteImport } from "./routes/dashboard/scheduled-actions";
-import { Route as DashboardSchedulerRouteImport } from "./routes/dashboard/scheduler";
-import { Route as DashboardServerCloneRouteImport } from "./routes/dashboard/server-clone";
-import { Route as DashboardSlowmodeSchedulerRouteImport } from "./routes/dashboard/slowmode-scheduler";
-import { Route as DashboardStarboardRouteImport } from "./routes/dashboard/starboard";
-import { Route as DashboardStatsChannelsRouteImport } from "./routes/dashboard/stats-channels";
-import { Route as DashboardSuggestionsRouteImport } from "./routes/dashboard/suggestions";
-import { Route as DashboardTebexRouteImport } from "./routes/dashboard/tebex";
-import { Route as DashboardTestPanelRouteImport } from "./routes/dashboard/test-panel";
-import { Route as DashboardTiktokRouteImport } from "./routes/dashboard/tiktok";
-import { Route as DashboardTwitchRouteImport } from "./routes/dashboard/twitch";
-import { Route as DashboardVerificationRouteImport } from "./routes/dashboard/verification";
-import { Route as DashboardWarningsRouteImport } from "./routes/dashboard/warnings";
-import { Route as DashboardWebhooksRouteImport } from "./routes/dashboard/webhooks";
-import { Route as DashboardWelcomeRouteImport } from "./routes/dashboard/welcome";
-import { Route as DashboardYoutubeRouteImport } from "./routes/dashboard/youtube";
-import { Route as DocsIndexRouteImport } from "./routes/docs/index";
-import { Route as DocsLayoutRouteImport } from "./routes/docs/_layout";
-import { Route as ApiPublicAdminCheckIpRouteImport } from "./routes/api/public/admin-check-ip";
-import { Route as ApiPublicAdminUsersRouteImport } from "./routes/api/public/admin-users";
-import { Route as ApiPublicAiAutoRespondRouteImport } from "./routes/api/public/ai-auto-respond";
-import { Route as ApiPublicAiAutomodRouteImport } from "./routes/api/public/ai-automod";
-import { Route as ApiPublicAiChatRouteImport } from "./routes/api/public/ai-chat";
-import { Route as ApiPublicAiHealthRouteImport } from "./routes/api/public/ai-health";
-import { Route as ApiPublicAiPolishTextRouteImport } from "./routes/api/public/ai-polish-text";
-import { Route as ApiPublicAiScreenApplicationRouteImport } from "./routes/api/public/ai-screen-application";
-import { Route as ApiPublicAiTicketSummaryRouteImport } from "./routes/api/public/ai-ticket-summary";
-import { Route as ApiPublicAnalyticsAggregateRouteImport } from "./routes/api/public/analytics-aggregate";
-import { Route as ApiPublicApplicationHandlerRouteImport } from "./routes/api/public/application-handler";
-import { Route as ApiPublicAutoReportRouteImport } from "./routes/api/public/auto-report";
-import { Route as ApiPublicAutomodHandlerRouteImport } from "./routes/api/public/automod-handler";
-import { Route as ApiPublicBotCharactersRouteImport } from "./routes/api/public/bot-characters";
-import { Route as ApiPublicBotDeployRouteImport } from "./routes/api/public/bot-deploy";
-import { Route as ApiPublicBotHeartbeatRouteImport } from "./routes/api/public/bot-heartbeat";
-import { Route as ApiPublicBotLogEventsRouteImport } from "./routes/api/public/bot-log-events";
-import { Route as ApiPublicBotSettingsRouteImport } from "./routes/api/public/bot-settings";
-import { Route as ApiPublicBotTicketsRouteImport } from "./routes/api/public/bot-tickets";
-import { Route as ApiPublicBotWelcomeRouteImport } from "./routes/api/public/bot-welcome";
-import { Route as ApiPublicCreateDemoGuildRouteImport } from "./routes/api/public/create-demo-guild";
-import { Route as ApiPublicDeployGuildCommandsRouteImport } from "./routes/api/public/deploy-guild-commands";
-import { Route as ApiPublicDiscordChannelsRouteImport } from "./routes/api/public/discord-channels";
-import { Route as ApiPublicDiscordInteractionsRouteImport } from "./routes/api/public/discord-interactions";
-import { Route as ApiPublicDiscordMembersRouteImport } from "./routes/api/public/discord-members";
-import { Route as ApiPublicDiscordOauthRouteImport } from "./routes/api/public/discord-oauth";
-import { Route as ApiPublicDiscordRolesRouteImport } from "./routes/api/public/discord-roles";
-import { Route as ApiPublicExecuteFivemCommandRouteImport } from "./routes/api/public/execute-fivem-command";
-import { Route as ApiPublicFivemHandlerRouteImport } from "./routes/api/public/fivem-handler";
-import { Route as ApiPublicFivemSetupKeyRouteImport } from "./routes/api/public/fivem-setup-key";
-import { Route as ApiPublicGenerateTicketTranscriptRouteImport } from "./routes/api/public/generate-ticket-transcript";
-import { Route as ApiPublicGiveawayHandlerRouteImport } from "./routes/api/public/giveaway-handler";
-import { Route as ApiPublicGlobalBanHandlerRouteImport } from "./routes/api/public/global-ban-handler";
-import { Route as ApiPublicGuildBotConfigRouteImport } from "./routes/api/public/guild-bot-config";
-import { Route as ApiPublicInviteTrackerRouteImport } from "./routes/api/public/invite-tracker";
-import { Route as ApiPublicJtcHandlerRouteImport } from "./routes/api/public/jtc-handler";
-import { Route as ApiPublicLogActionRouteImport } from "./routes/api/public/log-action";
-import { Route as ApiPublicModmailHandlerRouteImport } from "./routes/api/public/modmail-handler";
-import { Route as ApiPublicPlatformStatsRouteImport } from "./routes/api/public/platform-stats";
-import { Route as ApiPublicPremiumApiRouteImport } from "./routes/api/public/premium-api";
-import { Route as ApiPublicReactionRoleHandlerRouteImport } from "./routes/api/public/reaction-role-handler";
-import { Route as ApiPublicRegisterFivemCommandsRouteImport } from "./routes/api/public/register-fivem-commands";
-import { Route as ApiPublicReviewApplicationRouteImport } from "./routes/api/public/review-application";
-import { Route as ApiPublicSendEmbedRouteImport } from "./routes/api/public/send-embed";
-import { Route as ApiPublicSendPollRouteImport } from "./routes/api/public/send-poll";
-import { Route as ApiPublicSendTicketPanelRouteImport } from "./routes/api/public/send-ticket-panel";
-import { Route as ApiPublicSendVerificationPanelRouteImport } from "./routes/api/public/send-verification-panel";
-import { Route as ApiPublicServerBackupRouteImport } from "./routes/api/public/server-backup";
-import { Route as ApiPublicServerCloneRouteImport } from "./routes/api/public/server-clone";
-import { Route as ApiPublicSubmitTicketRatingRouteImport } from "./routes/api/public/submit-ticket-rating";
-import { Route as ApiPublicTebexHandlerRouteImport } from "./routes/api/public/tebex-handler";
-import { Route as ApiPublicTebexWebhookRouteImport } from "./routes/api/public/tebex-webhook";
-import { Route as ApiPublicTiktokTestNotifyRouteImport } from "./routes/api/public/tiktok-test-notify";
-import { Route as ApiPublicTwitchHandlerRouteImport } from "./routes/api/public/twitch-handler";
-import { Route as ApiPublicXpHandlerRouteImport } from "./routes/api/public/xp-handler";
-import { Route as DashboardApplicationsIndexRouteImport } from "./routes/dashboard/applications.index";
-import { Route as DashboardApplicationsSubmissionIdRouteImport } from "./routes/dashboard/applications.$submissionId";
-import { Route as DashboardApplicationsAnalyticsRouteImport } from "./routes/dashboard/applications.analytics";
-import { Route as DashboardApplicationsSettingsRouteImport } from "./routes/dashboard/applications.settings";
-import { Route as DashboardTicketsIndexRouteImport } from "./routes/dashboard/tickets.index";
-import { Route as DashboardTicketsTicketIdRouteImport } from "./routes/dashboard/tickets.$ticketId";
-import { Route as DashboardTicketsSettingsRouteImport } from "./routes/dashboard/tickets.settings";
-import { Route as DocsCategorySlugRouteImport } from "./routes/docs/$category.$slug";
-import { Route as DashboardApplicationsFormsFormIdRouteImport } from "./routes/dashboard/applications.forms.$formId";
+import { Route as rootRouteImport } from './routes/__root'
+import { Route as IndexRouteImport } from './routes/index'
+import { Route as SplatRouteImport } from './routes/$'
+import { Route as AuthRouteImport } from './routes/auth'
+import { Route as DashboardRouteImport } from './routes/dashboard'
+import { Route as FeaturesRouteImport } from './routes/features'
+import { Route as GuildsRouteImport } from './routes/guilds'
+import { Route as PrivacyRouteImport } from './routes/privacy'
+import { Route as SecurityRouteImport } from './routes/security'
+import { Route as TermsRouteImport } from './routes/terms'
+import { Route as AdminIndexRouteImport } from './routes/admin.index'
+import { Route as AdminGlobalBansRouteImport } from './routes/admin.global-bans'
+import { Route as DashboardIndexRouteImport } from './routes/dashboard/index'
+import { Route as DashboardActivityHeatmapRouteImport } from './routes/dashboard/activity-heatmap'
+import { Route as DashboardAiAutomodRouteImport } from './routes/dashboard/ai-automod'
+import { Route as DashboardAiChatRouteImport } from './routes/dashboard/ai-chat'
+import { Route as DashboardAnalyticsRouteImport } from './routes/dashboard/analytics'
+import { Route as DashboardAutoReportsRouteImport } from './routes/dashboard/auto-reports'
+import { Route as DashboardAutoRespondersRouteImport } from './routes/dashboard/auto-responders'
+import { Route as DashboardAutomodRouteImport } from './routes/dashboard/automod'
+import { Route as DashboardBackupsRouteImport } from './routes/dashboard/backups'
+import { Route as DashboardBirthdaysRouteImport } from './routes/dashboard/birthdays'
+import { Route as DashboardBotHealthRouteImport } from './routes/dashboard/bot-health'
+import { Route as DashboardBotSettingsRouteImport } from './routes/dashboard/bot-settings'
+import { Route as DashboardChangelogRouteImport } from './routes/dashboard/changelog'
+import { Route as DashboardCharactersRouteImport } from './routes/dashboard/characters'
+import { Route as DashboardCommandsRouteImport } from './routes/dashboard/commands'
+import { Route as DashboardConfessionsRouteImport } from './routes/dashboard/confessions'
+import { Route as DashboardCountingRouteImport } from './routes/dashboard/counting'
+import { Route as DashboardCurrencyShopRouteImport } from './routes/dashboard/currency-shop'
+import { Route as DashboardCustomCommandsRouteImport } from './routes/dashboard/custom-commands'
+import { Route as DashboardEconomyRouteImport } from './routes/dashboard/economy'
+import { Route as DashboardEmbedBuilderRouteImport } from './routes/dashboard/embed-builder'
+import { Route as DashboardFeaturesRouteImport } from './routes/dashboard/features'
+import { Route as DashboardFivemRouteImport } from './routes/dashboard/fivem'
+import { Route as DashboardGiveawaysRouteImport } from './routes/dashboard/giveaways'
+import { Route as DashboardGlobalBansRouteImport } from './routes/dashboard/global-bans'
+import { Route as DashboardHoneypotRouteImport } from './routes/dashboard/honeypot'
+import { Route as DashboardInviteTrackerRouteImport } from './routes/dashboard/invite-tracker'
+import { Route as DashboardJtcRouteImport } from './routes/dashboard/jtc'
+import { Route as DashboardLeaderboardRouteImport } from './routes/dashboard/leaderboard'
+import { Route as DashboardLevelingRouteImport } from './routes/dashboard/leveling'
+import { Route as DashboardLiveEventsRouteImport } from './routes/dashboard/live-events'
+import { Route as DashboardLogSettingsRouteImport } from './routes/dashboard/log-settings'
+import { Route as DashboardLogsRouteImport } from './routes/dashboard/logs'
+import { Route as DashboardMembersRouteImport } from './routes/dashboard/members'
+import { Route as DashboardModerationRouteImport } from './routes/dashboard/moderation'
+import { Route as DashboardModmailRouteImport } from './routes/dashboard/modmail'
+import { Route as DashboardModulesRouteImport } from './routes/dashboard/modules'
+import { Route as DashboardMusicQuizRouteImport } from './routes/dashboard/music-quiz'
+import { Route as DashboardNotificationsRouteImport } from './routes/dashboard/notifications'
+import { Route as DashboardOperationsRouteImport } from './routes/dashboard/operations'
+import { Route as DashboardPollsRouteImport } from './routes/dashboard/polls'
+import { Route as DashboardQuarantineRouteImport } from './routes/dashboard/quarantine'
+import { Route as DashboardRaidProtectionRouteImport } from './routes/dashboard/raid-protection'
+import { Route as DashboardReactionRolesRouteImport } from './routes/dashboard/reaction-roles'
+import { Route as DashboardRemindersRouteImport } from './routes/dashboard/reminders'
+import { Route as DashboardResourcesRouteImport } from './routes/dashboard/resources'
+import { Route as DashboardRoleAnalyticsRouteImport } from './routes/dashboard/role-analytics'
+import { Route as DashboardScheduledActionsRouteImport } from './routes/dashboard/scheduled-actions'
+import { Route as DashboardSchedulerRouteImport } from './routes/dashboard/scheduler'
+import { Route as DashboardServerCloneRouteImport } from './routes/dashboard/server-clone'
+import { Route as DashboardSlowmodeSchedulerRouteImport } from './routes/dashboard/slowmode-scheduler'
+import { Route as DashboardStarboardRouteImport } from './routes/dashboard/starboard'
+import { Route as DashboardStatsChannelsRouteImport } from './routes/dashboard/stats-channels'
+import { Route as DashboardSuggestionsRouteImport } from './routes/dashboard/suggestions'
+import { Route as DashboardTebexRouteImport } from './routes/dashboard/tebex'
+import { Route as DashboardTestPanelRouteImport } from './routes/dashboard/test-panel'
+import { Route as DashboardTiktokRouteImport } from './routes/dashboard/tiktok'
+import { Route as DashboardTwitchRouteImport } from './routes/dashboard/twitch'
+import { Route as DashboardVerificationRouteImport } from './routes/dashboard/verification'
+import { Route as DashboardWarningsRouteImport } from './routes/dashboard/warnings'
+import { Route as DashboardWebhooksRouteImport } from './routes/dashboard/webhooks'
+import { Route as DashboardWelcomeRouteImport } from './routes/dashboard/welcome'
+import { Route as DashboardYoutubeRouteImport } from './routes/dashboard/youtube'
+import { Route as DocsIndexRouteImport } from './routes/docs/index'
+import { Route as DocsLayoutRouteImport } from './routes/docs/_layout'
+import { Route as ApiPublicAdminCheckIpRouteImport } from './routes/api/public/admin-check-ip'
+import { Route as ApiPublicAdminUsersRouteImport } from './routes/api/public/admin-users'
+import { Route as ApiPublicAiAutoRespondRouteImport } from './routes/api/public/ai-auto-respond'
+import { Route as ApiPublicAiAutomodRouteImport } from './routes/api/public/ai-automod'
+import { Route as ApiPublicAiChatRouteImport } from './routes/api/public/ai-chat'
+import { Route as ApiPublicAiHealthRouteImport } from './routes/api/public/ai-health'
+import { Route as ApiPublicAiPolishTextRouteImport } from './routes/api/public/ai-polish-text'
+import { Route as ApiPublicAiScreenApplicationRouteImport } from './routes/api/public/ai-screen-application'
+import { Route as ApiPublicAiTicketSummaryRouteImport } from './routes/api/public/ai-ticket-summary'
+import { Route as ApiPublicAnalyticsAggregateRouteImport } from './routes/api/public/analytics-aggregate'
+import { Route as ApiPublicApplicationHandlerRouteImport } from './routes/api/public/application-handler'
+import { Route as ApiPublicAutoReportRouteImport } from './routes/api/public/auto-report'
+import { Route as ApiPublicAutomodHandlerRouteImport } from './routes/api/public/automod-handler'
+import { Route as ApiPublicBotCharactersRouteImport } from './routes/api/public/bot-characters'
+import { Route as ApiPublicBotDeployRouteImport } from './routes/api/public/bot-deploy'
+import { Route as ApiPublicBotHeartbeatRouteImport } from './routes/api/public/bot-heartbeat'
+import { Route as ApiPublicBotLogEventsRouteImport } from './routes/api/public/bot-log-events'
+import { Route as ApiPublicBotSettingsRouteImport } from './routes/api/public/bot-settings'
+import { Route as ApiPublicBotTicketsRouteImport } from './routes/api/public/bot-tickets'
+import { Route as ApiPublicBotWelcomeRouteImport } from './routes/api/public/bot-welcome'
+import { Route as ApiPublicCreateDemoGuildRouteImport } from './routes/api/public/create-demo-guild'
+import { Route as ApiPublicDeployGuildCommandsRouteImport } from './routes/api/public/deploy-guild-commands'
+import { Route as ApiPublicDiscordChannelsRouteImport } from './routes/api/public/discord-channels'
+import { Route as ApiPublicDiscordInteractionsRouteImport } from './routes/api/public/discord-interactions'
+import { Route as ApiPublicDiscordMembersRouteImport } from './routes/api/public/discord-members'
+import { Route as ApiPublicDiscordOauthRouteImport } from './routes/api/public/discord-oauth'
+import { Route as ApiPublicDiscordRolesRouteImport } from './routes/api/public/discord-roles'
+import { Route as ApiPublicExecuteFivemCommandRouteImport } from './routes/api/public/execute-fivem-command'
+import { Route as ApiPublicFivemHandlerRouteImport } from './routes/api/public/fivem-handler'
+import { Route as ApiPublicFivemSetupKeyRouteImport } from './routes/api/public/fivem-setup-key'
+import { Route as ApiPublicGenerateTicketTranscriptRouteImport } from './routes/api/public/generate-ticket-transcript'
+import { Route as ApiPublicGiveawayHandlerRouteImport } from './routes/api/public/giveaway-handler'
+import { Route as ApiPublicGlobalBanHandlerRouteImport } from './routes/api/public/global-ban-handler'
+import { Route as ApiPublicGuildBotConfigRouteImport } from './routes/api/public/guild-bot-config'
+import { Route as ApiPublicInviteTrackerRouteImport } from './routes/api/public/invite-tracker'
+import { Route as ApiPublicJtcHandlerRouteImport } from './routes/api/public/jtc-handler'
+import { Route as ApiPublicLogActionRouteImport } from './routes/api/public/log-action'
+import { Route as ApiPublicModmailHandlerRouteImport } from './routes/api/public/modmail-handler'
+import { Route as ApiPublicPlatformStatsRouteImport } from './routes/api/public/platform-stats'
+import { Route as ApiPublicPremiumApiRouteImport } from './routes/api/public/premium-api'
+import { Route as ApiPublicReactionRoleHandlerRouteImport } from './routes/api/public/reaction-role-handler'
+import { Route as ApiPublicRegisterFivemCommandsRouteImport } from './routes/api/public/register-fivem-commands'
+import { Route as ApiPublicReviewApplicationRouteImport } from './routes/api/public/review-application'
+import { Route as ApiPublicSendEmbedRouteImport } from './routes/api/public/send-embed'
+import { Route as ApiPublicSendPollRouteImport } from './routes/api/public/send-poll'
+import { Route as ApiPublicSendTicketPanelRouteImport } from './routes/api/public/send-ticket-panel'
+import { Route as ApiPublicSendVerificationPanelRouteImport } from './routes/api/public/send-verification-panel'
+import { Route as ApiPublicServerBackupRouteImport } from './routes/api/public/server-backup'
+import { Route as ApiPublicServerCloneRouteImport } from './routes/api/public/server-clone'
+import { Route as ApiPublicSubmitTicketRatingRouteImport } from './routes/api/public/submit-ticket-rating'
+import { Route as ApiPublicTebexHandlerRouteImport } from './routes/api/public/tebex-handler'
+import { Route as ApiPublicTebexWebhookRouteImport } from './routes/api/public/tebex-webhook'
+import { Route as ApiPublicTiktokTestNotifyRouteImport } from './routes/api/public/tiktok-test-notify'
+import { Route as ApiPublicTwitchHandlerRouteImport } from './routes/api/public/twitch-handler'
+import { Route as ApiPublicXpHandlerRouteImport } from './routes/api/public/xp-handler'
+import { Route as DashboardApplicationsIndexRouteImport } from './routes/dashboard/applications.index'
+import { Route as DashboardApplicationsSubmissionIdRouteImport } from './routes/dashboard/applications.$submissionId'
+import { Route as DashboardApplicationsAnalyticsRouteImport } from './routes/dashboard/applications.analytics'
+import { Route as DashboardApplicationsSettingsRouteImport } from './routes/dashboard/applications.settings'
+import { Route as DashboardTicketsIndexRouteImport } from './routes/dashboard/tickets.index'
+import { Route as DashboardTicketsTicketIdRouteImport } from './routes/dashboard/tickets.$ticketId'
+import { Route as DashboardTicketsSettingsRouteImport } from './routes/dashboard/tickets.settings'
+import { Route as DocsCategorySlugRouteImport } from './routes/docs/$category.$slug'
+import { Route as DashboardApplicationsFormsFormIdRouteImport } from './routes/dashboard/applications.forms.$formId'
 
 const IndexRoute = IndexRouteImport.update({
-  id: "/",
-  path: "/",
+  id: '/',
+  path: '/',
   getParentRoute: () => rootRouteImport,
-} as any);
+} as any)
 const SplatRoute = SplatRouteImport.update({
-  id: "/$",
-  path: "/$",
+  id: '/$',
+  path: '/$',
   getParentRoute: () => rootRouteImport,
-} as any);
+} as any)
 const AuthRoute = AuthRouteImport.update({
-  id: "/auth",
-  path: "/auth",
+  id: '/auth',
+  path: '/auth',
   getParentRoute: () => rootRouteImport,
-} as any);
+} as any)
 const DashboardRoute = DashboardRouteImport.update({
-  id: "/dashboard",
-  path: "/dashboard",
+  id: '/dashboard',
+  path: '/dashboard',
   getParentRoute: () => rootRouteImport,
-} as any);
+} as any)
 const FeaturesRoute = FeaturesRouteImport.update({
-  id: "/features",
-  path: "/features",
+  id: '/features',
+  path: '/features',
   getParentRoute: () => rootRouteImport,
-} as any);
+} as any)
 const GuildsRoute = GuildsRouteImport.update({
-  id: "/guilds",
-  path: "/guilds",
+  id: '/guilds',
+  path: '/guilds',
   getParentRoute: () => rootRouteImport,
-} as any);
+} as any)
 const PrivacyRoute = PrivacyRouteImport.update({
-  id: "/privacy",
-  path: "/privacy",
+  id: '/privacy',
+  path: '/privacy',
   getParentRoute: () => rootRouteImport,
-} as any);
+} as any)
 const SecurityRoute = SecurityRouteImport.update({
-  id: "/security",
-  path: "/security",
+  id: '/security',
+  path: '/security',
   getParentRoute: () => rootRouteImport,
-} as any);
+} as any)
 const TermsRoute = TermsRouteImport.update({
-  id: "/terms",
-  path: "/terms",
+  id: '/terms',
+  path: '/terms',
   getParentRoute: () => rootRouteImport,
-} as any);
+} as any)
 const AdminIndexRoute = AdminIndexRouteImport.update({
-  id: "/admin/",
-  path: "/admin/",
+  id: '/admin/',
+  path: '/admin/',
   getParentRoute: () => rootRouteImport,
-} as any);
+} as any)
 const AdminGlobalBansRoute = AdminGlobalBansRouteImport.update({
-  id: "/admin/global-bans",
-  path: "/admin/global-bans",
+  id: '/admin/global-bans',
+  path: '/admin/global-bans',
   getParentRoute: () => rootRouteImport,
-} as any);
+} as any)
 const DashboardIndexRoute = DashboardIndexRouteImport.update({
-  id: "/",
-  path: "/",
+  id: '/',
+  path: '/',
   getParentRoute: () => DashboardRoute,
-} as any);
+} as any)
 const DashboardActivityHeatmapRoute =
   DashboardActivityHeatmapRouteImport.update({
-    id: "/activity-heatmap",
-    path: "/activity-heatmap",
+    id: '/activity-heatmap',
+    path: '/activity-heatmap',
     getParentRoute: () => DashboardRoute,
-  } as any);
+  } as any)
 const DashboardAiAutomodRoute = DashboardAiAutomodRouteImport.update({
-  id: "/ai-automod",
-  path: "/ai-automod",
+  id: '/ai-automod',
+  path: '/ai-automod',
   getParentRoute: () => DashboardRoute,
-} as any);
+} as any)
 const DashboardAiChatRoute = DashboardAiChatRouteImport.update({
-  id: "/ai-chat",
-  path: "/ai-chat",
+  id: '/ai-chat',
+  path: '/ai-chat',
   getParentRoute: () => DashboardRoute,
-} as any);
+} as any)
 const DashboardAnalyticsRoute = DashboardAnalyticsRouteImport.update({
-  id: "/analytics",
-  path: "/analytics",
+  id: '/analytics',
+  path: '/analytics',
   getParentRoute: () => DashboardRoute,
-} as any);
+} as any)
 const DashboardAutoReportsRoute = DashboardAutoReportsRouteImport.update({
-  id: "/auto-reports",
-  path: "/auto-reports",
+  id: '/auto-reports',
+  path: '/auto-reports',
   getParentRoute: () => DashboardRoute,
-} as any);
+} as any)
 const DashboardAutoRespondersRoute = DashboardAutoRespondersRouteImport.update({
-  id: "/auto-responders",
-  path: "/auto-responders",
+  id: '/auto-responders',
+  path: '/auto-responders',
   getParentRoute: () => DashboardRoute,
-} as any);
+} as any)
 const DashboardAutomodRoute = DashboardAutomodRouteImport.update({
-  id: "/automod",
-  path: "/automod",
+  id: '/automod',
+  path: '/automod',
   getParentRoute: () => DashboardRoute,
-} as any);
+} as any)
 const DashboardBackupsRoute = DashboardBackupsRouteImport.update({
-  id: "/backups",
-  path: "/backups",
+  id: '/backups',
+  path: '/backups',
   getParentRoute: () => DashboardRoute,
-} as any);
+} as any)
 const DashboardBirthdaysRoute = DashboardBirthdaysRouteImport.update({
-  id: "/birthdays",
-  path: "/birthdays",
+  id: '/birthdays',
+  path: '/birthdays',
   getParentRoute: () => DashboardRoute,
-} as any);
+} as any)
 const DashboardBotHealthRoute = DashboardBotHealthRouteImport.update({
-  id: "/bot-health",
-  path: "/bot-health",
+  id: '/bot-health',
+  path: '/bot-health',
   getParentRoute: () => DashboardRoute,
-} as any);
+} as any)
 const DashboardBotSettingsRoute = DashboardBotSettingsRouteImport.update({
-  id: "/bot-settings",
-  path: "/bot-settings",
+  id: '/bot-settings',
+  path: '/bot-settings',
   getParentRoute: () => DashboardRoute,
-} as any);
+} as any)
 const DashboardChangelogRoute = DashboardChangelogRouteImport.update({
-  id: "/changelog",
-  path: "/changelog",
+  id: '/changelog',
+  path: '/changelog',
   getParentRoute: () => DashboardRoute,
-} as any);
+} as any)
 const DashboardCharactersRoute = DashboardCharactersRouteImport.update({
-  id: "/characters",
-  path: "/characters",
+  id: '/characters',
+  path: '/characters',
   getParentRoute: () => DashboardRoute,
-} as any);
+} as any)
 const DashboardCommandsRoute = DashboardCommandsRouteImport.update({
-  id: "/commands",
-  path: "/commands",
+  id: '/commands',
+  path: '/commands',
   getParentRoute: () => DashboardRoute,
-} as any);
+} as any)
 const DashboardConfessionsRoute = DashboardConfessionsRouteImport.update({
-  id: "/confessions",
-  path: "/confessions",
+  id: '/confessions',
+  path: '/confessions',
   getParentRoute: () => DashboardRoute,
-} as any);
+} as any)
 const DashboardCountingRoute = DashboardCountingRouteImport.update({
-  id: "/counting",
-  path: "/counting",
+  id: '/counting',
+  path: '/counting',
   getParentRoute: () => DashboardRoute,
-} as any);
+} as any)
 const DashboardCurrencyShopRoute = DashboardCurrencyShopRouteImport.update({
-  id: "/currency-shop",
-  path: "/currency-shop",
+  id: '/currency-shop',
+  path: '/currency-shop',
   getParentRoute: () => DashboardRoute,
-} as any);
+} as any)
 const DashboardCustomCommandsRoute = DashboardCustomCommandsRouteImport.update({
-  id: "/custom-commands",
-  path: "/custom-commands",
+  id: '/custom-commands',
+  path: '/custom-commands',
   getParentRoute: () => DashboardRoute,
-} as any);
+} as any)
 const DashboardEconomyRoute = DashboardEconomyRouteImport.update({
-  id: "/economy",
-  path: "/economy",
+  id: '/economy',
+  path: '/economy',
   getParentRoute: () => DashboardRoute,
-} as any);
+} as any)
 const DashboardEmbedBuilderRoute = DashboardEmbedBuilderRouteImport.update({
-  id: "/embed-builder",
-  path: "/embed-builder",
+  id: '/embed-builder',
+  path: '/embed-builder',
   getParentRoute: () => DashboardRoute,
-} as any);
+} as any)
 const DashboardFeaturesRoute = DashboardFeaturesRouteImport.update({
-  id: "/features",
-  path: "/features",
+  id: '/features',
+  path: '/features',
   getParentRoute: () => DashboardRoute,
-} as any);
+} as any)
 const DashboardFivemRoute = DashboardFivemRouteImport.update({
-  id: "/fivem",
-  path: "/fivem",
+  id: '/fivem',
+  path: '/fivem',
   getParentRoute: () => DashboardRoute,
-} as any);
+} as any)
 const DashboardGiveawaysRoute = DashboardGiveawaysRouteImport.update({
-  id: "/giveaways",
-  path: "/giveaways",
+  id: '/giveaways',
+  path: '/giveaways',
   getParentRoute: () => DashboardRoute,
-} as any);
+} as any)
 const DashboardGlobalBansRoute = DashboardGlobalBansRouteImport.update({
-  id: "/global-bans",
-  path: "/global-bans",
+  id: '/global-bans',
+  path: '/global-bans',
   getParentRoute: () => DashboardRoute,
-} as any);
+} as any)
 const DashboardHoneypotRoute = DashboardHoneypotRouteImport.update({
-  id: "/honeypot",
-  path: "/honeypot",
+  id: '/honeypot',
+  path: '/honeypot',
   getParentRoute: () => DashboardRoute,
-} as any);
+} as any)
 const DashboardInviteTrackerRoute = DashboardInviteTrackerRouteImport.update({
-  id: "/invite-tracker",
-  path: "/invite-tracker",
+  id: '/invite-tracker',
+  path: '/invite-tracker',
   getParentRoute: () => DashboardRoute,
-} as any);
+} as any)
 const DashboardJtcRoute = DashboardJtcRouteImport.update({
-  id: "/jtc",
-  path: "/jtc",
+  id: '/jtc',
+  path: '/jtc',
   getParentRoute: () => DashboardRoute,
-} as any);
+} as any)
 const DashboardLeaderboardRoute = DashboardLeaderboardRouteImport.update({
-  id: "/leaderboard",
-  path: "/leaderboard",
+  id: '/leaderboard',
+  path: '/leaderboard',
   getParentRoute: () => DashboardRoute,
-} as any);
+} as any)
 const DashboardLevelingRoute = DashboardLevelingRouteImport.update({
-  id: "/leveling",
-  path: "/leveling",
+  id: '/leveling',
+  path: '/leveling',
   getParentRoute: () => DashboardRoute,
-} as any);
+} as any)
 const DashboardLiveEventsRoute = DashboardLiveEventsRouteImport.update({
-  id: "/live-events",
-  path: "/live-events",
+  id: '/live-events',
+  path: '/live-events',
   getParentRoute: () => DashboardRoute,
-} as any);
+} as any)
 const DashboardLogSettingsRoute = DashboardLogSettingsRouteImport.update({
-  id: "/log-settings",
-  path: "/log-settings",
+  id: '/log-settings',
+  path: '/log-settings',
   getParentRoute: () => DashboardRoute,
-} as any);
+} as any)
 const DashboardLogsRoute = DashboardLogsRouteImport.update({
-  id: "/logs",
-  path: "/logs",
+  id: '/logs',
+  path: '/logs',
   getParentRoute: () => DashboardRoute,
-} as any);
+} as any)
 const DashboardMembersRoute = DashboardMembersRouteImport.update({
-  id: "/members",
-  path: "/members",
+  id: '/members',
+  path: '/members',
   getParentRoute: () => DashboardRoute,
-} as any);
+} as any)
 const DashboardModerationRoute = DashboardModerationRouteImport.update({
-  id: "/moderation",
-  path: "/moderation",
+  id: '/moderation',
+  path: '/moderation',
   getParentRoute: () => DashboardRoute,
-} as any);
+} as any)
 const DashboardModmailRoute = DashboardModmailRouteImport.update({
-  id: "/modmail",
-  path: "/modmail",
+  id: '/modmail',
+  path: '/modmail',
   getParentRoute: () => DashboardRoute,
-} as any);
+} as any)
 const DashboardModulesRoute = DashboardModulesRouteImport.update({
-  id: "/modules",
-  path: "/modules",
+  id: '/modules',
+  path: '/modules',
   getParentRoute: () => DashboardRoute,
-} as any);
+} as any)
 const DashboardMusicQuizRoute = DashboardMusicQuizRouteImport.update({
-  id: "/music-quiz",
-  path: "/music-quiz",
+  id: '/music-quiz',
+  path: '/music-quiz',
   getParentRoute: () => DashboardRoute,
-} as any);
+} as any)
 const DashboardNotificationsRoute = DashboardNotificationsRouteImport.update({
-  id: "/notifications",
-  path: "/notifications",
+  id: '/notifications',
+  path: '/notifications',
   getParentRoute: () => DashboardRoute,
-} as any);
+} as any)
 const DashboardOperationsRoute = DashboardOperationsRouteImport.update({
-  id: "/operations",
-  path: "/operations",
+  id: '/operations',
+  path: '/operations',
   getParentRoute: () => DashboardRoute,
-} as any);
+} as any)
 const DashboardPollsRoute = DashboardPollsRouteImport.update({
-  id: "/polls",
-  path: "/polls",
+  id: '/polls',
+  path: '/polls',
   getParentRoute: () => DashboardRoute,
-} as any);
+} as any)
 const DashboardQuarantineRoute = DashboardQuarantineRouteImport.update({
-  id: "/quarantine",
-  path: "/quarantine",
+  id: '/quarantine',
+  path: '/quarantine',
   getParentRoute: () => DashboardRoute,
-} as any);
+} as any)
 const DashboardRaidProtectionRoute = DashboardRaidProtectionRouteImport.update({
-  id: "/raid-protection",
-  path: "/raid-protection",
+  id: '/raid-protection',
+  path: '/raid-protection',
   getParentRoute: () => DashboardRoute,
-} as any);
+} as any)
 const DashboardReactionRolesRoute = DashboardReactionRolesRouteImport.update({
-  id: "/reaction-roles",
-  path: "/reaction-roles",
+  id: '/reaction-roles',
+  path: '/reaction-roles',
   getParentRoute: () => DashboardRoute,
-} as any);
+} as any)
 const DashboardRemindersRoute = DashboardRemindersRouteImport.update({
-  id: "/reminders",
-  path: "/reminders",
+  id: '/reminders',
+  path: '/reminders',
   getParentRoute: () => DashboardRoute,
-} as any);
+} as any)
 const DashboardResourcesRoute = DashboardResourcesRouteImport.update({
-  id: "/resources",
-  path: "/resources",
+  id: '/resources',
+  path: '/resources',
   getParentRoute: () => DashboardRoute,
-} as any);
+} as any)
 const DashboardRoleAnalyticsRoute = DashboardRoleAnalyticsRouteImport.update({
-  id: "/role-analytics",
-  path: "/role-analytics",
+  id: '/role-analytics',
+  path: '/role-analytics',
   getParentRoute: () => DashboardRoute,
-} as any);
+} as any)
 const DashboardScheduledActionsRoute =
   DashboardScheduledActionsRouteImport.update({
-    id: "/scheduled-actions",
-    path: "/scheduled-actions",
+    id: '/scheduled-actions',
+    path: '/scheduled-actions',
     getParentRoute: () => DashboardRoute,
-  } as any);
+  } as any)
 const DashboardSchedulerRoute = DashboardSchedulerRouteImport.update({
-  id: "/scheduler",
-  path: "/scheduler",
+  id: '/scheduler',
+  path: '/scheduler',
   getParentRoute: () => DashboardRoute,
-} as any);
+} as any)
 const DashboardServerCloneRoute = DashboardServerCloneRouteImport.update({
-  id: "/server-clone",
-  path: "/server-clone",
+  id: '/server-clone',
+  path: '/server-clone',
   getParentRoute: () => DashboardRoute,
-} as any);
+} as any)
 const DashboardSlowmodeSchedulerRoute =
   DashboardSlowmodeSchedulerRouteImport.update({
-    id: "/slowmode-scheduler",
-    path: "/slowmode-scheduler",
+    id: '/slowmode-scheduler',
+    path: '/slowmode-scheduler',
     getParentRoute: () => DashboardRoute,
-  } as any);
+  } as any)
 const DashboardStarboardRoute = DashboardStarboardRouteImport.update({
-  id: "/starboard",
-  path: "/starboard",
+  id: '/starboard',
+  path: '/starboard',
   getParentRoute: () => DashboardRoute,
-} as any);
+} as any)
 const DashboardStatsChannelsRoute = DashboardStatsChannelsRouteImport.update({
-  id: "/stats-channels",
-  path: "/stats-channels",
+  id: '/stats-channels',
+  path: '/stats-channels',
   getParentRoute: () => DashboardRoute,
-} as any);
+} as any)
 const DashboardSuggestionsRoute = DashboardSuggestionsRouteImport.update({
-  id: "/suggestions",
-  path: "/suggestions",
+  id: '/suggestions',
+  path: '/suggestions',
   getParentRoute: () => DashboardRoute,
-} as any);
+} as any)
 const DashboardTebexRoute = DashboardTebexRouteImport.update({
-  id: "/tebex",
-  path: "/tebex",
+  id: '/tebex',
+  path: '/tebex',
   getParentRoute: () => DashboardRoute,
-} as any);
+} as any)
 const DashboardTestPanelRoute = DashboardTestPanelRouteImport.update({
-  id: "/test-panel",
-  path: "/test-panel",
+  id: '/test-panel',
+  path: '/test-panel',
   getParentRoute: () => DashboardRoute,
-} as any);
+} as any)
 const DashboardTiktokRoute = DashboardTiktokRouteImport.update({
-  id: "/tiktok",
-  path: "/tiktok",
+  id: '/tiktok',
+  path: '/tiktok',
   getParentRoute: () => DashboardRoute,
-} as any);
+} as any)
 const DashboardTwitchRoute = DashboardTwitchRouteImport.update({
-  id: "/twitch",
-  path: "/twitch",
+  id: '/twitch',
+  path: '/twitch',
   getParentRoute: () => DashboardRoute,
-} as any);
+} as any)
 const DashboardVerificationRoute = DashboardVerificationRouteImport.update({
-  id: "/verification",
-  path: "/verification",
+  id: '/verification',
+  path: '/verification',
   getParentRoute: () => DashboardRoute,
-} as any);
+} as any)
 const DashboardWarningsRoute = DashboardWarningsRouteImport.update({
-  id: "/warnings",
-  path: "/warnings",
+  id: '/warnings',
+  path: '/warnings',
   getParentRoute: () => DashboardRoute,
-} as any);
+} as any)
 const DashboardWebhooksRoute = DashboardWebhooksRouteImport.update({
-  id: "/webhooks",
-  path: "/webhooks",
+  id: '/webhooks',
+  path: '/webhooks',
   getParentRoute: () => DashboardRoute,
-} as any);
+} as any)
 const DashboardWelcomeRoute = DashboardWelcomeRouteImport.update({
-  id: "/welcome",
-  path: "/welcome",
+  id: '/welcome',
+  path: '/welcome',
   getParentRoute: () => DashboardRoute,
-} as any);
+} as any)
 const DashboardYoutubeRoute = DashboardYoutubeRouteImport.update({
-  id: "/youtube",
-  path: "/youtube",
+  id: '/youtube',
+  path: '/youtube',
   getParentRoute: () => DashboardRoute,
-} as any);
+} as any)
 const DocsIndexRoute = DocsIndexRouteImport.update({
-  id: "/docs/",
-  path: "/docs/",
+  id: '/docs/',
+  path: '/docs/',
   getParentRoute: () => rootRouteImport,
-} as any);
+} as any)
 const DocsLayoutRoute = DocsLayoutRouteImport.update({
-  id: "/docs/_layout",
-  path: "/docs",
+  id: '/docs/_layout',
+  path: '/docs',
   getParentRoute: () => rootRouteImport,
-} as any);
+} as any)
 const ApiPublicAdminCheckIpRoute = ApiPublicAdminCheckIpRouteImport.update({
-  id: "/api/public/admin-check-ip",
-  path: "/api/public/admin-check-ip",
+  id: '/api/public/admin-check-ip',
+  path: '/api/public/admin-check-ip',
   getParentRoute: () => rootRouteImport,
-} as any);
+} as any)
 const ApiPublicAdminUsersRoute = ApiPublicAdminUsersRouteImport.update({
-  id: "/api/public/admin-users",
-  path: "/api/public/admin-users",
+  id: '/api/public/admin-users',
+  path: '/api/public/admin-users',
   getParentRoute: () => rootRouteImport,
-} as any);
+} as any)
 const ApiPublicAiAutoRespondRoute = ApiPublicAiAutoRespondRouteImport.update({
-  id: "/api/public/ai-auto-respond",
-  path: "/api/public/ai-auto-respond",
+  id: '/api/public/ai-auto-respond',
+  path: '/api/public/ai-auto-respond',
   getParentRoute: () => rootRouteImport,
-} as any);
+} as any)
 const ApiPublicAiAutomodRoute = ApiPublicAiAutomodRouteImport.update({
-  id: "/api/public/ai-automod",
-  path: "/api/public/ai-automod",
+  id: '/api/public/ai-automod',
+  path: '/api/public/ai-automod',
   getParentRoute: () => rootRouteImport,
-} as any);
+} as any)
 const ApiPublicAiChatRoute = ApiPublicAiChatRouteImport.update({
-  id: "/api/public/ai-chat",
-  path: "/api/public/ai-chat",
+  id: '/api/public/ai-chat',
+  path: '/api/public/ai-chat',
   getParentRoute: () => rootRouteImport,
-} as any);
+} as any)
 const ApiPublicAiHealthRoute = ApiPublicAiHealthRouteImport.update({
-  id: "/api/public/ai-health",
-  path: "/api/public/ai-health",
+  id: '/api/public/ai-health',
+  path: '/api/public/ai-health',
   getParentRoute: () => rootRouteImport,
-} as any);
+} as any)
 const ApiPublicAiPolishTextRoute = ApiPublicAiPolishTextRouteImport.update({
-  id: "/api/public/ai-polish-text",
-  path: "/api/public/ai-polish-text",
+  id: '/api/public/ai-polish-text',
+  path: '/api/public/ai-polish-text',
   getParentRoute: () => rootRouteImport,
-} as any);
+} as any)
 const ApiPublicAiScreenApplicationRoute =
   ApiPublicAiScreenApplicationRouteImport.update({
-    id: "/api/public/ai-screen-application",
-    path: "/api/public/ai-screen-application",
+    id: '/api/public/ai-screen-application',
+    path: '/api/public/ai-screen-application',
     getParentRoute: () => rootRouteImport,
-  } as any);
+  } as any)
 const ApiPublicAiTicketSummaryRoute =
   ApiPublicAiTicketSummaryRouteImport.update({
-    id: "/api/public/ai-ticket-summary",
-    path: "/api/public/ai-ticket-summary",
+    id: '/api/public/ai-ticket-summary',
+    path: '/api/public/ai-ticket-summary',
     getParentRoute: () => rootRouteImport,
-  } as any);
+  } as any)
 const ApiPublicAnalyticsAggregateRoute =
   ApiPublicAnalyticsAggregateRouteImport.update({
-    id: "/api/public/analytics-aggregate",
-    path: "/api/public/analytics-aggregate",
+    id: '/api/public/analytics-aggregate',
+    path: '/api/public/analytics-aggregate',
     getParentRoute: () => rootRouteImport,
-  } as any);
+  } as any)
 const ApiPublicApplicationHandlerRoute =
   ApiPublicApplicationHandlerRouteImport.update({
-    id: "/api/public/application-handler",
-    path: "/api/public/application-handler",
+    id: '/api/public/application-handler',
+    path: '/api/public/application-handler',
     getParentRoute: () => rootRouteImport,
-  } as any);
+  } as any)
 const ApiPublicAutoReportRoute = ApiPublicAutoReportRouteImport.update({
-  id: "/api/public/auto-report",
-  path: "/api/public/auto-report",
+  id: '/api/public/auto-report',
+  path: '/api/public/auto-report',
   getParentRoute: () => rootRouteImport,
-} as any);
+} as any)
 const ApiPublicAutomodHandlerRoute = ApiPublicAutomodHandlerRouteImport.update({
-  id: "/api/public/automod-handler",
-  path: "/api/public/automod-handler",
+  id: '/api/public/automod-handler',
+  path: '/api/public/automod-handler',
   getParentRoute: () => rootRouteImport,
-} as any);
+} as any)
 const ApiPublicBotCharactersRoute = ApiPublicBotCharactersRouteImport.update({
-  id: "/api/public/bot-characters",
-  path: "/api/public/bot-characters",
+  id: '/api/public/bot-characters',
+  path: '/api/public/bot-characters',
   getParentRoute: () => rootRouteImport,
-} as any);
+} as any)
 const ApiPublicBotDeployRoute = ApiPublicBotDeployRouteImport.update({
-  id: "/api/public/bot-deploy",
-  path: "/api/public/bot-deploy",
+  id: '/api/public/bot-deploy',
+  path: '/api/public/bot-deploy',
   getParentRoute: () => rootRouteImport,
-} as any);
+} as any)
 const ApiPublicBotHeartbeatRoute = ApiPublicBotHeartbeatRouteImport.update({
-  id: "/api/public/bot-heartbeat",
-  path: "/api/public/bot-heartbeat",
+  id: '/api/public/bot-heartbeat',
+  path: '/api/public/bot-heartbeat',
   getParentRoute: () => rootRouteImport,
-} as any);
+} as any)
 const ApiPublicBotLogEventsRoute = ApiPublicBotLogEventsRouteImport.update({
-  id: "/api/public/bot-log-events",
-  path: "/api/public/bot-log-events",
+  id: '/api/public/bot-log-events',
+  path: '/api/public/bot-log-events',
   getParentRoute: () => rootRouteImport,
-} as any);
+} as any)
 const ApiPublicBotSettingsRoute = ApiPublicBotSettingsRouteImport.update({
-  id: "/api/public/bot-settings",
-  path: "/api/public/bot-settings",
+  id: '/api/public/bot-settings',
+  path: '/api/public/bot-settings',
   getParentRoute: () => rootRouteImport,
-} as any);
+} as any)
 const ApiPublicBotTicketsRoute = ApiPublicBotTicketsRouteImport.update({
-  id: "/api/public/bot-tickets",
-  path: "/api/public/bot-tickets",
+  id: '/api/public/bot-tickets',
+  path: '/api/public/bot-tickets',
   getParentRoute: () => rootRouteImport,
-} as any);
+} as any)
 const ApiPublicBotWelcomeRoute = ApiPublicBotWelcomeRouteImport.update({
-  id: "/api/public/bot-welcome",
-  path: "/api/public/bot-welcome",
+  id: '/api/public/bot-welcome',
+  path: '/api/public/bot-welcome',
   getParentRoute: () => rootRouteImport,
-} as any);
+} as any)
 const ApiPublicCreateDemoGuildRoute =
   ApiPublicCreateDemoGuildRouteImport.update({
-    id: "/api/public/create-demo-guild",
-    path: "/api/public/create-demo-guild",
+    id: '/api/public/create-demo-guild',
+    path: '/api/public/create-demo-guild',
     getParentRoute: () => rootRouteImport,
-  } as any);
+  } as any)
 const ApiPublicDeployGuildCommandsRoute =
   ApiPublicDeployGuildCommandsRouteImport.update({
-    id: "/api/public/deploy-guild-commands",
-    path: "/api/public/deploy-guild-commands",
+    id: '/api/public/deploy-guild-commands',
+    path: '/api/public/deploy-guild-commands',
     getParentRoute: () => rootRouteImport,
-  } as any);
+  } as any)
 const ApiPublicDiscordChannelsRoute =
   ApiPublicDiscordChannelsRouteImport.update({
-    id: "/api/public/discord-channels",
-    path: "/api/public/discord-channels",
+    id: '/api/public/discord-channels',
+    path: '/api/public/discord-channels',
     getParentRoute: () => rootRouteImport,
-  } as any);
+  } as any)
 const ApiPublicDiscordInteractionsRoute =
   ApiPublicDiscordInteractionsRouteImport.update({
-    id: "/api/public/discord-interactions",
-    path: "/api/public/discord-interactions",
+    id: '/api/public/discord-interactions',
+    path: '/api/public/discord-interactions',
     getParentRoute: () => rootRouteImport,
-  } as any);
+  } as any)
 const ApiPublicDiscordMembersRoute = ApiPublicDiscordMembersRouteImport.update({
-  id: "/api/public/discord-members",
-  path: "/api/public/discord-members",
+  id: '/api/public/discord-members',
+  path: '/api/public/discord-members',
   getParentRoute: () => rootRouteImport,
-} as any);
+} as any)
 const ApiPublicDiscordOauthRoute = ApiPublicDiscordOauthRouteImport.update({
-  id: "/api/public/discord-oauth",
-  path: "/api/public/discord-oauth",
+  id: '/api/public/discord-oauth',
+  path: '/api/public/discord-oauth',
   getParentRoute: () => rootRouteImport,
-} as any);
+} as any)
 const ApiPublicDiscordRolesRoute = ApiPublicDiscordRolesRouteImport.update({
-  id: "/api/public/discord-roles",
-  path: "/api/public/discord-roles",
+  id: '/api/public/discord-roles',
+  path: '/api/public/discord-roles',
   getParentRoute: () => rootRouteImport,
-} as any);
+} as any)
 const ApiPublicExecuteFivemCommandRoute =
   ApiPublicExecuteFivemCommandRouteImport.update({
-    id: "/api/public/execute-fivem-command",
-    path: "/api/public/execute-fivem-command",
+    id: '/api/public/execute-fivem-command',
+    path: '/api/public/execute-fivem-command',
     getParentRoute: () => rootRouteImport,
-  } as any);
+  } as any)
 const ApiPublicFivemHandlerRoute = ApiPublicFivemHandlerRouteImport.update({
-  id: "/api/public/fivem-handler",
-  path: "/api/public/fivem-handler",
+  id: '/api/public/fivem-handler',
+  path: '/api/public/fivem-handler',
   getParentRoute: () => rootRouteImport,
-} as any);
+} as any)
 const ApiPublicFivemSetupKeyRoute = ApiPublicFivemSetupKeyRouteImport.update({
-  id: "/api/public/fivem-setup-key",
-  path: "/api/public/fivem-setup-key",
+  id: '/api/public/fivem-setup-key',
+  path: '/api/public/fivem-setup-key',
   getParentRoute: () => rootRouteImport,
-} as any);
+} as any)
 const ApiPublicGenerateTicketTranscriptRoute =
   ApiPublicGenerateTicketTranscriptRouteImport.update({
-    id: "/api/public/generate-ticket-transcript",
-    path: "/api/public/generate-ticket-transcript",
+    id: '/api/public/generate-ticket-transcript',
+    path: '/api/public/generate-ticket-transcript',
     getParentRoute: () => rootRouteImport,
-  } as any);
+  } as any)
 const ApiPublicGiveawayHandlerRoute =
   ApiPublicGiveawayHandlerRouteImport.update({
-    id: "/api/public/giveaway-handler",
-    path: "/api/public/giveaway-handler",
+    id: '/api/public/giveaway-handler',
+    path: '/api/public/giveaway-handler',
     getParentRoute: () => rootRouteImport,
-  } as any);
+  } as any)
 const ApiPublicGlobalBanHandlerRoute =
   ApiPublicGlobalBanHandlerRouteImport.update({
-    id: "/api/public/global-ban-handler",
-    path: "/api/public/global-ban-handler",
+    id: '/api/public/global-ban-handler',
+    path: '/api/public/global-ban-handler',
     getParentRoute: () => rootRouteImport,
-  } as any);
+  } as any)
 const ApiPublicGuildBotConfigRoute = ApiPublicGuildBotConfigRouteImport.update({
-  id: "/api/public/guild-bot-config",
-  path: "/api/public/guild-bot-config",
+  id: '/api/public/guild-bot-config',
+  path: '/api/public/guild-bot-config',
   getParentRoute: () => rootRouteImport,
-} as any);
+} as any)
 const ApiPublicInviteTrackerRoute = ApiPublicInviteTrackerRouteImport.update({
-  id: "/api/public/invite-tracker",
-  path: "/api/public/invite-tracker",
+  id: '/api/public/invite-tracker',
+  path: '/api/public/invite-tracker',
   getParentRoute: () => rootRouteImport,
-} as any);
+} as any)
 const ApiPublicJtcHandlerRoute = ApiPublicJtcHandlerRouteImport.update({
-  id: "/api/public/jtc-handler",
-  path: "/api/public/jtc-handler",
+  id: '/api/public/jtc-handler',
+  path: '/api/public/jtc-handler',
   getParentRoute: () => rootRouteImport,
-} as any);
+} as any)
 const ApiPublicLogActionRoute = ApiPublicLogActionRouteImport.update({
-  id: "/api/public/log-action",
-  path: "/api/public/log-action",
+  id: '/api/public/log-action',
+  path: '/api/public/log-action',
   getParentRoute: () => rootRouteImport,
-} as any);
+} as any)
 const ApiPublicModmailHandlerRoute = ApiPublicModmailHandlerRouteImport.update({
-  id: "/api/public/modmail-handler",
-  path: "/api/public/modmail-handler",
+  id: '/api/public/modmail-handler',
+  path: '/api/public/modmail-handler',
   getParentRoute: () => rootRouteImport,
-} as any);
+} as any)
 const ApiPublicPlatformStatsRoute = ApiPublicPlatformStatsRouteImport.update({
-  id: "/api/public/platform-stats",
-  path: "/api/public/platform-stats",
+  id: '/api/public/platform-stats',
+  path: '/api/public/platform-stats',
   getParentRoute: () => rootRouteImport,
-} as any);
+} as any)
 const ApiPublicPremiumApiRoute = ApiPublicPremiumApiRouteImport.update({
-  id: "/api/public/premium-api",
-  path: "/api/public/premium-api",
+  id: '/api/public/premium-api',
+  path: '/api/public/premium-api',
   getParentRoute: () => rootRouteImport,
-} as any);
+} as any)
 const ApiPublicReactionRoleHandlerRoute =
   ApiPublicReactionRoleHandlerRouteImport.update({
-    id: "/api/public/reaction-role-handler",
-    path: "/api/public/reaction-role-handler",
+    id: '/api/public/reaction-role-handler',
+    path: '/api/public/reaction-role-handler',
     getParentRoute: () => rootRouteImport,
-  } as any);
+  } as any)
 const ApiPublicRegisterFivemCommandsRoute =
   ApiPublicRegisterFivemCommandsRouteImport.update({
-    id: "/api/public/register-fivem-commands",
-    path: "/api/public/register-fivem-commands",
+    id: '/api/public/register-fivem-commands',
+    path: '/api/public/register-fivem-commands',
     getParentRoute: () => rootRouteImport,
-  } as any);
+  } as any)
 const ApiPublicReviewApplicationRoute =
   ApiPublicReviewApplicationRouteImport.update({
-    id: "/api/public/review-application",
-    path: "/api/public/review-application",
+    id: '/api/public/review-application',
+    path: '/api/public/review-application',
     getParentRoute: () => rootRouteImport,
-  } as any);
+  } as any)
 const ApiPublicSendEmbedRoute = ApiPublicSendEmbedRouteImport.update({
-  id: "/api/public/send-embed",
-  path: "/api/public/send-embed",
+  id: '/api/public/send-embed',
+  path: '/api/public/send-embed',
   getParentRoute: () => rootRouteImport,
-} as any);
+} as any)
 const ApiPublicSendPollRoute = ApiPublicSendPollRouteImport.update({
-  id: "/api/public/send-poll",
-  path: "/api/public/send-poll",
+  id: '/api/public/send-poll',
+  path: '/api/public/send-poll',
   getParentRoute: () => rootRouteImport,
-} as any);
+} as any)
 const ApiPublicSendTicketPanelRoute =
   ApiPublicSendTicketPanelRouteImport.update({
-    id: "/api/public/send-ticket-panel",
-    path: "/api/public/send-ticket-panel",
+    id: '/api/public/send-ticket-panel',
+    path: '/api/public/send-ticket-panel',
     getParentRoute: () => rootRouteImport,
-  } as any);
+  } as any)
 const ApiPublicSendVerificationPanelRoute =
   ApiPublicSendVerificationPanelRouteImport.update({
-    id: "/api/public/send-verification-panel",
-    path: "/api/public/send-verification-panel",
+    id: '/api/public/send-verification-panel',
+    path: '/api/public/send-verification-panel',
     getParentRoute: () => rootRouteImport,
-  } as any);
+  } as any)
 const ApiPublicServerBackupRoute = ApiPublicServerBackupRouteImport.update({
-  id: "/api/public/server-backup",
-  path: "/api/public/server-backup",
+  id: '/api/public/server-backup',
+  path: '/api/public/server-backup',
   getParentRoute: () => rootRouteImport,
-} as any);
+} as any)
 const ApiPublicServerCloneRoute = ApiPublicServerCloneRouteImport.update({
-  id: "/api/public/server-clone",
-  path: "/api/public/server-clone",
+  id: '/api/public/server-clone',
+  path: '/api/public/server-clone',
   getParentRoute: () => rootRouteImport,
-} as any);
+} as any)
 const ApiPublicSubmitTicketRatingRoute =
   ApiPublicSubmitTicketRatingRouteImport.update({
-    id: "/api/public/submit-ticket-rating",
-    path: "/api/public/submit-ticket-rating",
+    id: '/api/public/submit-ticket-rating',
+    path: '/api/public/submit-ticket-rating',
     getParentRoute: () => rootRouteImport,
-  } as any);
+  } as any)
 const ApiPublicTebexHandlerRoute = ApiPublicTebexHandlerRouteImport.update({
-  id: "/api/public/tebex-handler",
-  path: "/api/public/tebex-handler",
+  id: '/api/public/tebex-handler',
+  path: '/api/public/tebex-handler',
   getParentRoute: () => rootRouteImport,
-} as any);
+} as any)
 const ApiPublicTebexWebhookRoute = ApiPublicTebexWebhookRouteImport.update({
-  id: "/api/public/tebex-webhook",
-  path: "/api/public/tebex-webhook",
+  id: '/api/public/tebex-webhook',
+  path: '/api/public/tebex-webhook',
   getParentRoute: () => rootRouteImport,
-} as any);
+} as any)
 const ApiPublicTiktokTestNotifyRoute =
   ApiPublicTiktokTestNotifyRouteImport.update({
-    id: "/api/public/tiktok-test-notify",
-    path: "/api/public/tiktok-test-notify",
+    id: '/api/public/tiktok-test-notify',
+    path: '/api/public/tiktok-test-notify',
     getParentRoute: () => rootRouteImport,
-  } as any);
+  } as any)
 const ApiPublicTwitchHandlerRoute = ApiPublicTwitchHandlerRouteImport.update({
-  id: "/api/public/twitch-handler",
-  path: "/api/public/twitch-handler",
+  id: '/api/public/twitch-handler',
+  path: '/api/public/twitch-handler',
   getParentRoute: () => rootRouteImport,
-} as any);
+} as any)
 const ApiPublicXpHandlerRoute = ApiPublicXpHandlerRouteImport.update({
-  id: "/api/public/xp-handler",
-  path: "/api/public/xp-handler",
+  id: '/api/public/xp-handler',
+  path: '/api/public/xp-handler',
   getParentRoute: () => rootRouteImport,
-} as any);
+} as any)
 const DashboardApplicationsIndexRoute =
   DashboardApplicationsIndexRouteImport.update({
-    id: "/applications/",
-    path: "/applications/",
+    id: '/applications/',
+    path: '/applications/',
     getParentRoute: () => DashboardRoute,
-  } as any);
+  } as any)
 const DashboardApplicationsSubmissionIdRoute =
   DashboardApplicationsSubmissionIdRouteImport.update({
-    id: "/applications/$submissionId",
-    path: "/applications/$submissionId",
+    id: '/applications/$submissionId',
+    path: '/applications/$submissionId',
     getParentRoute: () => DashboardRoute,
-  } as any);
+  } as any)
 const DashboardApplicationsAnalyticsRoute =
   DashboardApplicationsAnalyticsRouteImport.update({
-    id: "/applications/analytics",
-    path: "/applications/analytics",
+    id: '/applications/analytics',
+    path: '/applications/analytics',
     getParentRoute: () => DashboardRoute,
-  } as any);
+  } as any)
 const DashboardApplicationsSettingsRoute =
   DashboardApplicationsSettingsRouteImport.update({
-    id: "/applications/settings",
-    path: "/applications/settings",
+    id: '/applications/settings',
+    path: '/applications/settings',
     getParentRoute: () => DashboardRoute,
-  } as any);
+  } as any)
 const DashboardTicketsIndexRoute = DashboardTicketsIndexRouteImport.update({
-  id: "/tickets/",
-  path: "/tickets/",
+  id: '/tickets/',
+  path: '/tickets/',
   getParentRoute: () => DashboardRoute,
-} as any);
+} as any)
 const DashboardTicketsTicketIdRoute =
   DashboardTicketsTicketIdRouteImport.update({
-    id: "/tickets/$ticketId",
-    path: "/tickets/$ticketId",
+    id: '/tickets/$ticketId',
+    path: '/tickets/$ticketId',
     getParentRoute: () => DashboardRoute,
-  } as any);
+  } as any)
 const DashboardTicketsSettingsRoute =
   DashboardTicketsSettingsRouteImport.update({
-    id: "/tickets/settings",
-    path: "/tickets/settings",
+    id: '/tickets/settings',
+    path: '/tickets/settings',
     getParentRoute: () => DashboardRoute,
-  } as any);
+  } as any)
 const DocsCategorySlugRoute = DocsCategorySlugRouteImport.update({
-  id: "/docs/$category/$slug",
-  path: "/docs/$category/$slug",
+  id: '/docs/$category/$slug',
+  path: '/docs/$category/$slug',
   getParentRoute: () => rootRouteImport,
-} as any);
+} as any)
 const DashboardApplicationsFormsFormIdRoute =
   DashboardApplicationsFormsFormIdRouteImport.update({
-    id: "/applications/forms/$formId",
-    path: "/applications/forms/$formId",
+    id: '/applications/forms/$formId',
+    path: '/applications/forms/$formId',
     getParentRoute: () => DashboardRoute,
-  } as any);
+  } as any)
 
 export interface FileRoutesByFullPath {
-  "/": typeof IndexRoute;
-  "/$": typeof SplatRoute;
-  "/auth": typeof AuthRoute;
-  "/dashboard": typeof DashboardRouteWithChildren;
-  "/features": typeof FeaturesRoute;
-  "/guilds": typeof GuildsRoute;
-  "/privacy": typeof PrivacyRoute;
-  "/security": typeof SecurityRoute;
-  "/terms": typeof TermsRoute;
-  "/admin/global-bans": typeof AdminGlobalBansRoute;
-  "/dashboard/activity-heatmap": typeof DashboardActivityHeatmapRoute;
-  "/dashboard/ai-automod": typeof DashboardAiAutomodRoute;
-  "/dashboard/ai-chat": typeof DashboardAiChatRoute;
-  "/dashboard/analytics": typeof DashboardAnalyticsRoute;
-  "/dashboard/auto-reports": typeof DashboardAutoReportsRoute;
-  "/dashboard/auto-responders": typeof DashboardAutoRespondersRoute;
-  "/dashboard/automod": typeof DashboardAutomodRoute;
-  "/dashboard/backups": typeof DashboardBackupsRoute;
-  "/dashboard/birthdays": typeof DashboardBirthdaysRoute;
-  "/dashboard/bot-health": typeof DashboardBotHealthRoute;
-  "/dashboard/bot-settings": typeof DashboardBotSettingsRoute;
-  "/dashboard/changelog": typeof DashboardChangelogRoute;
-  "/dashboard/characters": typeof DashboardCharactersRoute;
-  "/dashboard/commands": typeof DashboardCommandsRoute;
-  "/dashboard/confessions": typeof DashboardConfessionsRoute;
-  "/dashboard/counting": typeof DashboardCountingRoute;
-  "/dashboard/currency-shop": typeof DashboardCurrencyShopRoute;
-  "/dashboard/custom-commands": typeof DashboardCustomCommandsRoute;
-  "/dashboard/economy": typeof DashboardEconomyRoute;
-  "/dashboard/embed-builder": typeof DashboardEmbedBuilderRoute;
-  "/dashboard/features": typeof DashboardFeaturesRoute;
-  "/dashboard/fivem": typeof DashboardFivemRoute;
-  "/dashboard/giveaways": typeof DashboardGiveawaysRoute;
-  "/dashboard/global-bans": typeof DashboardGlobalBansRoute;
-  "/dashboard/honeypot": typeof DashboardHoneypotRoute;
-  "/dashboard/invite-tracker": typeof DashboardInviteTrackerRoute;
-  "/dashboard/jtc": typeof DashboardJtcRoute;
-  "/dashboard/leaderboard": typeof DashboardLeaderboardRoute;
-  "/dashboard/leveling": typeof DashboardLevelingRoute;
-  "/dashboard/live-events": typeof DashboardLiveEventsRoute;
-  "/dashboard/log-settings": typeof DashboardLogSettingsRoute;
-  "/dashboard/logs": typeof DashboardLogsRoute;
-  "/dashboard/members": typeof DashboardMembersRoute;
-  "/dashboard/moderation": typeof DashboardModerationRoute;
-  "/dashboard/modmail": typeof DashboardModmailRoute;
-  "/dashboard/modules": typeof DashboardModulesRoute;
-  "/dashboard/music-quiz": typeof DashboardMusicQuizRoute;
-  "/dashboard/notifications": typeof DashboardNotificationsRoute;
-  "/dashboard/operations": typeof DashboardOperationsRoute;
-  "/dashboard/polls": typeof DashboardPollsRoute;
-  "/dashboard/quarantine": typeof DashboardQuarantineRoute;
-  "/dashboard/raid-protection": typeof DashboardRaidProtectionRoute;
-  "/dashboard/reaction-roles": typeof DashboardReactionRolesRoute;
-  "/dashboard/reminders": typeof DashboardRemindersRoute;
-  "/dashboard/resources": typeof DashboardResourcesRoute;
-  "/dashboard/role-analytics": typeof DashboardRoleAnalyticsRoute;
-  "/dashboard/scheduled-actions": typeof DashboardScheduledActionsRoute;
-  "/dashboard/scheduler": typeof DashboardSchedulerRoute;
-  "/dashboard/server-clone": typeof DashboardServerCloneRoute;
-  "/dashboard/slowmode-scheduler": typeof DashboardSlowmodeSchedulerRoute;
-  "/dashboard/starboard": typeof DashboardStarboardRoute;
-  "/dashboard/stats-channels": typeof DashboardStatsChannelsRoute;
-  "/dashboard/suggestions": typeof DashboardSuggestionsRoute;
-  "/dashboard/tebex": typeof DashboardTebexRoute;
-  "/dashboard/test-panel": typeof DashboardTestPanelRoute;
-  "/dashboard/tiktok": typeof DashboardTiktokRoute;
-  "/dashboard/twitch": typeof DashboardTwitchRoute;
-  "/dashboard/verification": typeof DashboardVerificationRoute;
-  "/dashboard/warnings": typeof DashboardWarningsRoute;
-  "/dashboard/webhooks": typeof DashboardWebhooksRoute;
-  "/dashboard/welcome": typeof DashboardWelcomeRoute;
-  "/dashboard/youtube": typeof DashboardYoutubeRoute;
-  "/docs": typeof DocsLayoutRoute;
-  "/admin/": typeof AdminIndexRoute;
-  "/dashboard/": typeof DashboardIndexRoute;
-  "/docs/": typeof DocsIndexRoute;
-  "/api/public/admin-check-ip": typeof ApiPublicAdminCheckIpRoute;
-  "/api/public/admin-users": typeof ApiPublicAdminUsersRoute;
-  "/api/public/ai-auto-respond": typeof ApiPublicAiAutoRespondRoute;
-  "/api/public/ai-automod": typeof ApiPublicAiAutomodRoute;
-  "/api/public/ai-chat": typeof ApiPublicAiChatRoute;
-  "/api/public/ai-health": typeof ApiPublicAiHealthRoute;
-  "/api/public/ai-polish-text": typeof ApiPublicAiPolishTextRoute;
-  "/api/public/ai-screen-application": typeof ApiPublicAiScreenApplicationRoute;
-  "/api/public/ai-ticket-summary": typeof ApiPublicAiTicketSummaryRoute;
-  "/api/public/analytics-aggregate": typeof ApiPublicAnalyticsAggregateRoute;
-  "/api/public/application-handler": typeof ApiPublicApplicationHandlerRoute;
-  "/api/public/auto-report": typeof ApiPublicAutoReportRoute;
-  "/api/public/automod-handler": typeof ApiPublicAutomodHandlerRoute;
-  "/api/public/bot-characters": typeof ApiPublicBotCharactersRoute;
-  "/api/public/bot-deploy": typeof ApiPublicBotDeployRoute;
-  "/api/public/bot-heartbeat": typeof ApiPublicBotHeartbeatRoute;
-  "/api/public/bot-log-events": typeof ApiPublicBotLogEventsRoute;
-  "/api/public/bot-settings": typeof ApiPublicBotSettingsRoute;
-  "/api/public/bot-tickets": typeof ApiPublicBotTicketsRoute;
-  "/api/public/bot-welcome": typeof ApiPublicBotWelcomeRoute;
-  "/api/public/create-demo-guild": typeof ApiPublicCreateDemoGuildRoute;
-  "/api/public/deploy-guild-commands": typeof ApiPublicDeployGuildCommandsRoute;
-  "/api/public/discord-channels": typeof ApiPublicDiscordChannelsRoute;
-  "/api/public/discord-interactions": typeof ApiPublicDiscordInteractionsRoute;
-  "/api/public/discord-members": typeof ApiPublicDiscordMembersRoute;
-  "/api/public/discord-oauth": typeof ApiPublicDiscordOauthRoute;
-  "/api/public/discord-roles": typeof ApiPublicDiscordRolesRoute;
-  "/api/public/execute-fivem-command": typeof ApiPublicExecuteFivemCommandRoute;
-  "/api/public/fivem-handler": typeof ApiPublicFivemHandlerRoute;
-  "/api/public/fivem-setup-key": typeof ApiPublicFivemSetupKeyRoute;
-  "/api/public/generate-ticket-transcript": typeof ApiPublicGenerateTicketTranscriptRoute;
-  "/api/public/giveaway-handler": typeof ApiPublicGiveawayHandlerRoute;
-  "/api/public/global-ban-handler": typeof ApiPublicGlobalBanHandlerRoute;
-  "/api/public/guild-bot-config": typeof ApiPublicGuildBotConfigRoute;
-  "/api/public/invite-tracker": typeof ApiPublicInviteTrackerRoute;
-  "/api/public/jtc-handler": typeof ApiPublicJtcHandlerRoute;
-  "/api/public/log-action": typeof ApiPublicLogActionRoute;
-  "/api/public/modmail-handler": typeof ApiPublicModmailHandlerRoute;
-  "/api/public/platform-stats": typeof ApiPublicPlatformStatsRoute;
-  "/api/public/premium-api": typeof ApiPublicPremiumApiRoute;
-  "/api/public/reaction-role-handler": typeof ApiPublicReactionRoleHandlerRoute;
-  "/api/public/register-fivem-commands": typeof ApiPublicRegisterFivemCommandsRoute;
-  "/api/public/review-application": typeof ApiPublicReviewApplicationRoute;
-  "/api/public/send-embed": typeof ApiPublicSendEmbedRoute;
-  "/api/public/send-poll": typeof ApiPublicSendPollRoute;
-  "/api/public/send-ticket-panel": typeof ApiPublicSendTicketPanelRoute;
-  "/api/public/send-verification-panel": typeof ApiPublicSendVerificationPanelRoute;
-  "/api/public/server-backup": typeof ApiPublicServerBackupRoute;
-  "/api/public/server-clone": typeof ApiPublicServerCloneRoute;
-  "/api/public/submit-ticket-rating": typeof ApiPublicSubmitTicketRatingRoute;
-  "/api/public/tebex-handler": typeof ApiPublicTebexHandlerRoute;
-  "/api/public/tebex-webhook": typeof ApiPublicTebexWebhookRoute;
-  "/api/public/tiktok-test-notify": typeof ApiPublicTiktokTestNotifyRoute;
-  "/api/public/twitch-handler": typeof ApiPublicTwitchHandlerRoute;
-  "/api/public/xp-handler": typeof ApiPublicXpHandlerRoute;
-  "/dashboard/applications/$submissionId": typeof DashboardApplicationsSubmissionIdRoute;
-  "/dashboard/applications/analytics": typeof DashboardApplicationsAnalyticsRoute;
-  "/dashboard/applications/settings": typeof DashboardApplicationsSettingsRoute;
-  "/dashboard/tickets/$ticketId": typeof DashboardTicketsTicketIdRoute;
-  "/dashboard/tickets/settings": typeof DashboardTicketsSettingsRoute;
-  "/docs/$category/$slug": typeof DocsCategorySlugRoute;
-  "/dashboard/applications/": typeof DashboardApplicationsIndexRoute;
-  "/dashboard/tickets/": typeof DashboardTicketsIndexRoute;
-  "/dashboard/applications/forms/$formId": typeof DashboardApplicationsFormsFormIdRoute;
+  '/': typeof IndexRoute
+  '/$': typeof SplatRoute
+  '/auth': typeof AuthRoute
+  '/dashboard': typeof DashboardRouteWithChildren
+  '/features': typeof FeaturesRoute
+  '/guilds': typeof GuildsRoute
+  '/privacy': typeof PrivacyRoute
+  '/security': typeof SecurityRoute
+  '/terms': typeof TermsRoute
+  '/admin/global-bans': typeof AdminGlobalBansRoute
+  '/dashboard/activity-heatmap': typeof DashboardActivityHeatmapRoute
+  '/dashboard/ai-automod': typeof DashboardAiAutomodRoute
+  '/dashboard/ai-chat': typeof DashboardAiChatRoute
+  '/dashboard/analytics': typeof DashboardAnalyticsRoute
+  '/dashboard/auto-reports': typeof DashboardAutoReportsRoute
+  '/dashboard/auto-responders': typeof DashboardAutoRespondersRoute
+  '/dashboard/automod': typeof DashboardAutomodRoute
+  '/dashboard/backups': typeof DashboardBackupsRoute
+  '/dashboard/birthdays': typeof DashboardBirthdaysRoute
+  '/dashboard/bot-health': typeof DashboardBotHealthRoute
+  '/dashboard/bot-settings': typeof DashboardBotSettingsRoute
+  '/dashboard/changelog': typeof DashboardChangelogRoute
+  '/dashboard/characters': typeof DashboardCharactersRoute
+  '/dashboard/commands': typeof DashboardCommandsRoute
+  '/dashboard/confessions': typeof DashboardConfessionsRoute
+  '/dashboard/counting': typeof DashboardCountingRoute
+  '/dashboard/currency-shop': typeof DashboardCurrencyShopRoute
+  '/dashboard/custom-commands': typeof DashboardCustomCommandsRoute
+  '/dashboard/economy': typeof DashboardEconomyRoute
+  '/dashboard/embed-builder': typeof DashboardEmbedBuilderRoute
+  '/dashboard/features': typeof DashboardFeaturesRoute
+  '/dashboard/fivem': typeof DashboardFivemRoute
+  '/dashboard/giveaways': typeof DashboardGiveawaysRoute
+  '/dashboard/global-bans': typeof DashboardGlobalBansRoute
+  '/dashboard/honeypot': typeof DashboardHoneypotRoute
+  '/dashboard/invite-tracker': typeof DashboardInviteTrackerRoute
+  '/dashboard/jtc': typeof DashboardJtcRoute
+  '/dashboard/leaderboard': typeof DashboardLeaderboardRoute
+  '/dashboard/leveling': typeof DashboardLevelingRoute
+  '/dashboard/live-events': typeof DashboardLiveEventsRoute
+  '/dashboard/log-settings': typeof DashboardLogSettingsRoute
+  '/dashboard/logs': typeof DashboardLogsRoute
+  '/dashboard/members': typeof DashboardMembersRoute
+  '/dashboard/moderation': typeof DashboardModerationRoute
+  '/dashboard/modmail': typeof DashboardModmailRoute
+  '/dashboard/modules': typeof DashboardModulesRoute
+  '/dashboard/music-quiz': typeof DashboardMusicQuizRoute
+  '/dashboard/notifications': typeof DashboardNotificationsRoute
+  '/dashboard/operations': typeof DashboardOperationsRoute
+  '/dashboard/polls': typeof DashboardPollsRoute
+  '/dashboard/quarantine': typeof DashboardQuarantineRoute
+  '/dashboard/raid-protection': typeof DashboardRaidProtectionRoute
+  '/dashboard/reaction-roles': typeof DashboardReactionRolesRoute
+  '/dashboard/reminders': typeof DashboardRemindersRoute
+  '/dashboard/resources': typeof DashboardResourcesRoute
+  '/dashboard/role-analytics': typeof DashboardRoleAnalyticsRoute
+  '/dashboard/scheduled-actions': typeof DashboardScheduledActionsRoute
+  '/dashboard/scheduler': typeof DashboardSchedulerRoute
+  '/dashboard/server-clone': typeof DashboardServerCloneRoute
+  '/dashboard/slowmode-scheduler': typeof DashboardSlowmodeSchedulerRoute
+  '/dashboard/starboard': typeof DashboardStarboardRoute
+  '/dashboard/stats-channels': typeof DashboardStatsChannelsRoute
+  '/dashboard/suggestions': typeof DashboardSuggestionsRoute
+  '/dashboard/tebex': typeof DashboardTebexRoute
+  '/dashboard/test-panel': typeof DashboardTestPanelRoute
+  '/dashboard/tiktok': typeof DashboardTiktokRoute
+  '/dashboard/twitch': typeof DashboardTwitchRoute
+  '/dashboard/verification': typeof DashboardVerificationRoute
+  '/dashboard/warnings': typeof DashboardWarningsRoute
+  '/dashboard/webhooks': typeof DashboardWebhooksRoute
+  '/dashboard/welcome': typeof DashboardWelcomeRoute
+  '/dashboard/youtube': typeof DashboardYoutubeRoute
+  '/docs': typeof DocsLayoutRoute
+  '/admin/': typeof AdminIndexRoute
+  '/dashboard/': typeof DashboardIndexRoute
+  '/docs/': typeof DocsIndexRoute
+  '/api/public/admin-check-ip': typeof ApiPublicAdminCheckIpRoute
+  '/api/public/admin-users': typeof ApiPublicAdminUsersRoute
+  '/api/public/ai-auto-respond': typeof ApiPublicAiAutoRespondRoute
+  '/api/public/ai-automod': typeof ApiPublicAiAutomodRoute
+  '/api/public/ai-chat': typeof ApiPublicAiChatRoute
+  '/api/public/ai-health': typeof ApiPublicAiHealthRoute
+  '/api/public/ai-polish-text': typeof ApiPublicAiPolishTextRoute
+  '/api/public/ai-screen-application': typeof ApiPublicAiScreenApplicationRoute
+  '/api/public/ai-ticket-summary': typeof ApiPublicAiTicketSummaryRoute
+  '/api/public/analytics-aggregate': typeof ApiPublicAnalyticsAggregateRoute
+  '/api/public/application-handler': typeof ApiPublicApplicationHandlerRoute
+  '/api/public/auto-report': typeof ApiPublicAutoReportRoute
+  '/api/public/automod-handler': typeof ApiPublicAutomodHandlerRoute
+  '/api/public/bot-characters': typeof ApiPublicBotCharactersRoute
+  '/api/public/bot-deploy': typeof ApiPublicBotDeployRoute
+  '/api/public/bot-heartbeat': typeof ApiPublicBotHeartbeatRoute
+  '/api/public/bot-log-events': typeof ApiPublicBotLogEventsRoute
+  '/api/public/bot-settings': typeof ApiPublicBotSettingsRoute
+  '/api/public/bot-tickets': typeof ApiPublicBotTicketsRoute
+  '/api/public/bot-welcome': typeof ApiPublicBotWelcomeRoute
+  '/api/public/create-demo-guild': typeof ApiPublicCreateDemoGuildRoute
+  '/api/public/deploy-guild-commands': typeof ApiPublicDeployGuildCommandsRoute
+  '/api/public/discord-channels': typeof ApiPublicDiscordChannelsRoute
+  '/api/public/discord-interactions': typeof ApiPublicDiscordInteractionsRoute
+  '/api/public/discord-members': typeof ApiPublicDiscordMembersRoute
+  '/api/public/discord-oauth': typeof ApiPublicDiscordOauthRoute
+  '/api/public/discord-roles': typeof ApiPublicDiscordRolesRoute
+  '/api/public/execute-fivem-command': typeof ApiPublicExecuteFivemCommandRoute
+  '/api/public/fivem-handler': typeof ApiPublicFivemHandlerRoute
+  '/api/public/fivem-setup-key': typeof ApiPublicFivemSetupKeyRoute
+  '/api/public/generate-ticket-transcript': typeof ApiPublicGenerateTicketTranscriptRoute
+  '/api/public/giveaway-handler': typeof ApiPublicGiveawayHandlerRoute
+  '/api/public/global-ban-handler': typeof ApiPublicGlobalBanHandlerRoute
+  '/api/public/guild-bot-config': typeof ApiPublicGuildBotConfigRoute
+  '/api/public/invite-tracker': typeof ApiPublicInviteTrackerRoute
+  '/api/public/jtc-handler': typeof ApiPublicJtcHandlerRoute
+  '/api/public/log-action': typeof ApiPublicLogActionRoute
+  '/api/public/modmail-handler': typeof ApiPublicModmailHandlerRoute
+  '/api/public/platform-stats': typeof ApiPublicPlatformStatsRoute
+  '/api/public/premium-api': typeof ApiPublicPremiumApiRoute
+  '/api/public/reaction-role-handler': typeof ApiPublicReactionRoleHandlerRoute
+  '/api/public/register-fivem-commands': typeof ApiPublicRegisterFivemCommandsRoute
+  '/api/public/review-application': typeof ApiPublicReviewApplicationRoute
+  '/api/public/send-embed': typeof ApiPublicSendEmbedRoute
+  '/api/public/send-poll': typeof ApiPublicSendPollRoute
+  '/api/public/send-ticket-panel': typeof ApiPublicSendTicketPanelRoute
+  '/api/public/send-verification-panel': typeof ApiPublicSendVerificationPanelRoute
+  '/api/public/server-backup': typeof ApiPublicServerBackupRoute
+  '/api/public/server-clone': typeof ApiPublicServerCloneRoute
+  '/api/public/submit-ticket-rating': typeof ApiPublicSubmitTicketRatingRoute
+  '/api/public/tebex-handler': typeof ApiPublicTebexHandlerRoute
+  '/api/public/tebex-webhook': typeof ApiPublicTebexWebhookRoute
+  '/api/public/tiktok-test-notify': typeof ApiPublicTiktokTestNotifyRoute
+  '/api/public/twitch-handler': typeof ApiPublicTwitchHandlerRoute
+  '/api/public/xp-handler': typeof ApiPublicXpHandlerRoute
+  '/dashboard/applications/$submissionId': typeof DashboardApplicationsSubmissionIdRoute
+  '/dashboard/applications/analytics': typeof DashboardApplicationsAnalyticsRoute
+  '/dashboard/applications/settings': typeof DashboardApplicationsSettingsRoute
+  '/dashboard/tickets/$ticketId': typeof DashboardTicketsTicketIdRoute
+  '/dashboard/tickets/settings': typeof DashboardTicketsSettingsRoute
+  '/docs/$category/$slug': typeof DocsCategorySlugRoute
+  '/dashboard/applications/': typeof DashboardApplicationsIndexRoute
+  '/dashboard/tickets/': typeof DashboardTicketsIndexRoute
+  '/dashboard/applications/forms/$formId': typeof DashboardApplicationsFormsFormIdRoute
 }
 export interface FileRoutesByTo {
-  "/": typeof IndexRoute;
-  "/$": typeof SplatRoute;
-  "/auth": typeof AuthRoute;
-  "/features": typeof FeaturesRoute;
-  "/guilds": typeof GuildsRoute;
-  "/privacy": typeof PrivacyRoute;
-  "/security": typeof SecurityRoute;
-  "/terms": typeof TermsRoute;
-  "/admin/global-bans": typeof AdminGlobalBansRoute;
-  "/dashboard/activity-heatmap": typeof DashboardActivityHeatmapRoute;
-  "/dashboard/ai-automod": typeof DashboardAiAutomodRoute;
-  "/dashboard/ai-chat": typeof DashboardAiChatRoute;
-  "/dashboard/analytics": typeof DashboardAnalyticsRoute;
-  "/dashboard/auto-reports": typeof DashboardAutoReportsRoute;
-  "/dashboard/auto-responders": typeof DashboardAutoRespondersRoute;
-  "/dashboard/automod": typeof DashboardAutomodRoute;
-  "/dashboard/backups": typeof DashboardBackupsRoute;
-  "/dashboard/birthdays": typeof DashboardBirthdaysRoute;
-  "/dashboard/bot-health": typeof DashboardBotHealthRoute;
-  "/dashboard/bot-settings": typeof DashboardBotSettingsRoute;
-  "/dashboard/changelog": typeof DashboardChangelogRoute;
-  "/dashboard/characters": typeof DashboardCharactersRoute;
-  "/dashboard/commands": typeof DashboardCommandsRoute;
-  "/dashboard/confessions": typeof DashboardConfessionsRoute;
-  "/dashboard/counting": typeof DashboardCountingRoute;
-  "/dashboard/currency-shop": typeof DashboardCurrencyShopRoute;
-  "/dashboard/custom-commands": typeof DashboardCustomCommandsRoute;
-  "/dashboard/economy": typeof DashboardEconomyRoute;
-  "/dashboard/embed-builder": typeof DashboardEmbedBuilderRoute;
-  "/dashboard/features": typeof DashboardFeaturesRoute;
-  "/dashboard/fivem": typeof DashboardFivemRoute;
-  "/dashboard/giveaways": typeof DashboardGiveawaysRoute;
-  "/dashboard/global-bans": typeof DashboardGlobalBansRoute;
-  "/dashboard/honeypot": typeof DashboardHoneypotRoute;
-  "/dashboard/invite-tracker": typeof DashboardInviteTrackerRoute;
-  "/dashboard/jtc": typeof DashboardJtcRoute;
-  "/dashboard/leaderboard": typeof DashboardLeaderboardRoute;
-  "/dashboard/leveling": typeof DashboardLevelingRoute;
-  "/dashboard/live-events": typeof DashboardLiveEventsRoute;
-  "/dashboard/log-settings": typeof DashboardLogSettingsRoute;
-  "/dashboard/logs": typeof DashboardLogsRoute;
-  "/dashboard/members": typeof DashboardMembersRoute;
-  "/dashboard/moderation": typeof DashboardModerationRoute;
-  "/dashboard/modmail": typeof DashboardModmailRoute;
-  "/dashboard/modules": typeof DashboardModulesRoute;
-  "/dashboard/music-quiz": typeof DashboardMusicQuizRoute;
-  "/dashboard/notifications": typeof DashboardNotificationsRoute;
-  "/dashboard/operations": typeof DashboardOperationsRoute;
-  "/dashboard/polls": typeof DashboardPollsRoute;
-  "/dashboard/quarantine": typeof DashboardQuarantineRoute;
-  "/dashboard/raid-protection": typeof DashboardRaidProtectionRoute;
-  "/dashboard/reaction-roles": typeof DashboardReactionRolesRoute;
-  "/dashboard/reminders": typeof DashboardRemindersRoute;
-  "/dashboard/resources": typeof DashboardResourcesRoute;
-  "/dashboard/role-analytics": typeof DashboardRoleAnalyticsRoute;
-  "/dashboard/scheduled-actions": typeof DashboardScheduledActionsRoute;
-  "/dashboard/scheduler": typeof DashboardSchedulerRoute;
-  "/dashboard/server-clone": typeof DashboardServerCloneRoute;
-  "/dashboard/slowmode-scheduler": typeof DashboardSlowmodeSchedulerRoute;
-  "/dashboard/starboard": typeof DashboardStarboardRoute;
-  "/dashboard/stats-channels": typeof DashboardStatsChannelsRoute;
-  "/dashboard/suggestions": typeof DashboardSuggestionsRoute;
-  "/dashboard/tebex": typeof DashboardTebexRoute;
-  "/dashboard/test-panel": typeof DashboardTestPanelRoute;
-  "/dashboard/tiktok": typeof DashboardTiktokRoute;
-  "/dashboard/twitch": typeof DashboardTwitchRoute;
-  "/dashboard/verification": typeof DashboardVerificationRoute;
-  "/dashboard/warnings": typeof DashboardWarningsRoute;
-  "/dashboard/webhooks": typeof DashboardWebhooksRoute;
-  "/dashboard/welcome": typeof DashboardWelcomeRoute;
-  "/dashboard/youtube": typeof DashboardYoutubeRoute;
-  "/docs": typeof DocsIndexRoute;
-  "/admin": typeof AdminIndexRoute;
-  "/dashboard": typeof DashboardIndexRoute;
-  "/api/public/admin-check-ip": typeof ApiPublicAdminCheckIpRoute;
-  "/api/public/admin-users": typeof ApiPublicAdminUsersRoute;
-  "/api/public/ai-auto-respond": typeof ApiPublicAiAutoRespondRoute;
-  "/api/public/ai-automod": typeof ApiPublicAiAutomodRoute;
-  "/api/public/ai-chat": typeof ApiPublicAiChatRoute;
-  "/api/public/ai-health": typeof ApiPublicAiHealthRoute;
-  "/api/public/ai-polish-text": typeof ApiPublicAiPolishTextRoute;
-  "/api/public/ai-screen-application": typeof ApiPublicAiScreenApplicationRoute;
-  "/api/public/ai-ticket-summary": typeof ApiPublicAiTicketSummaryRoute;
-  "/api/public/analytics-aggregate": typeof ApiPublicAnalyticsAggregateRoute;
-  "/api/public/application-handler": typeof ApiPublicApplicationHandlerRoute;
-  "/api/public/auto-report": typeof ApiPublicAutoReportRoute;
-  "/api/public/automod-handler": typeof ApiPublicAutomodHandlerRoute;
-  "/api/public/bot-characters": typeof ApiPublicBotCharactersRoute;
-  "/api/public/bot-deploy": typeof ApiPublicBotDeployRoute;
-  "/api/public/bot-heartbeat": typeof ApiPublicBotHeartbeatRoute;
-  "/api/public/bot-log-events": typeof ApiPublicBotLogEventsRoute;
-  "/api/public/bot-settings": typeof ApiPublicBotSettingsRoute;
-  "/api/public/bot-tickets": typeof ApiPublicBotTicketsRoute;
-  "/api/public/bot-welcome": typeof ApiPublicBotWelcomeRoute;
-  "/api/public/create-demo-guild": typeof ApiPublicCreateDemoGuildRoute;
-  "/api/public/deploy-guild-commands": typeof ApiPublicDeployGuildCommandsRoute;
-  "/api/public/discord-channels": typeof ApiPublicDiscordChannelsRoute;
-  "/api/public/discord-interactions": typeof ApiPublicDiscordInteractionsRoute;
-  "/api/public/discord-members": typeof ApiPublicDiscordMembersRoute;
-  "/api/public/discord-oauth": typeof ApiPublicDiscordOauthRoute;
-  "/api/public/discord-roles": typeof ApiPublicDiscordRolesRoute;
-  "/api/public/execute-fivem-command": typeof ApiPublicExecuteFivemCommandRoute;
-  "/api/public/fivem-handler": typeof ApiPublicFivemHandlerRoute;
-  "/api/public/fivem-setup-key": typeof ApiPublicFivemSetupKeyRoute;
-  "/api/public/generate-ticket-transcript": typeof ApiPublicGenerateTicketTranscriptRoute;
-  "/api/public/giveaway-handler": typeof ApiPublicGiveawayHandlerRoute;
-  "/api/public/global-ban-handler": typeof ApiPublicGlobalBanHandlerRoute;
-  "/api/public/guild-bot-config": typeof ApiPublicGuildBotConfigRoute;
-  "/api/public/invite-tracker": typeof ApiPublicInviteTrackerRoute;
-  "/api/public/jtc-handler": typeof ApiPublicJtcHandlerRoute;
-  "/api/public/log-action": typeof ApiPublicLogActionRoute;
-  "/api/public/modmail-handler": typeof ApiPublicModmailHandlerRoute;
-  "/api/public/platform-stats": typeof ApiPublicPlatformStatsRoute;
-  "/api/public/premium-api": typeof ApiPublicPremiumApiRoute;
-  "/api/public/reaction-role-handler": typeof ApiPublicReactionRoleHandlerRoute;
-  "/api/public/register-fivem-commands": typeof ApiPublicRegisterFivemCommandsRoute;
-  "/api/public/review-application": typeof ApiPublicReviewApplicationRoute;
-  "/api/public/send-embed": typeof ApiPublicSendEmbedRoute;
-  "/api/public/send-poll": typeof ApiPublicSendPollRoute;
-  "/api/public/send-ticket-panel": typeof ApiPublicSendTicketPanelRoute;
-  "/api/public/send-verification-panel": typeof ApiPublicSendVerificationPanelRoute;
-  "/api/public/server-backup": typeof ApiPublicServerBackupRoute;
-  "/api/public/server-clone": typeof ApiPublicServerCloneRoute;
-  "/api/public/submit-ticket-rating": typeof ApiPublicSubmitTicketRatingRoute;
-  "/api/public/tebex-handler": typeof ApiPublicTebexHandlerRoute;
-  "/api/public/tebex-webhook": typeof ApiPublicTebexWebhookRoute;
-  "/api/public/tiktok-test-notify": typeof ApiPublicTiktokTestNotifyRoute;
-  "/api/public/twitch-handler": typeof ApiPublicTwitchHandlerRoute;
-  "/api/public/xp-handler": typeof ApiPublicXpHandlerRoute;
-  "/dashboard/applications/$submissionId": typeof DashboardApplicationsSubmissionIdRoute;
-  "/dashboard/applications/analytics": typeof DashboardApplicationsAnalyticsRoute;
-  "/dashboard/applications/settings": typeof DashboardApplicationsSettingsRoute;
-  "/dashboard/tickets/$ticketId": typeof DashboardTicketsTicketIdRoute;
-  "/dashboard/tickets/settings": typeof DashboardTicketsSettingsRoute;
-  "/docs/$category/$slug": typeof DocsCategorySlugRoute;
-  "/dashboard/applications": typeof DashboardApplicationsIndexRoute;
-  "/dashboard/tickets": typeof DashboardTicketsIndexRoute;
-  "/dashboard/applications/forms/$formId": typeof DashboardApplicationsFormsFormIdRoute;
+  '/': typeof IndexRoute
+  '/$': typeof SplatRoute
+  '/auth': typeof AuthRoute
+  '/features': typeof FeaturesRoute
+  '/guilds': typeof GuildsRoute
+  '/privacy': typeof PrivacyRoute
+  '/security': typeof SecurityRoute
+  '/terms': typeof TermsRoute
+  '/admin/global-bans': typeof AdminGlobalBansRoute
+  '/dashboard/activity-heatmap': typeof DashboardActivityHeatmapRoute
+  '/dashboard/ai-automod': typeof DashboardAiAutomodRoute
+  '/dashboard/ai-chat': typeof DashboardAiChatRoute
+  '/dashboard/analytics': typeof DashboardAnalyticsRoute
+  '/dashboard/auto-reports': typeof DashboardAutoReportsRoute
+  '/dashboard/auto-responders': typeof DashboardAutoRespondersRoute
+  '/dashboard/automod': typeof DashboardAutomodRoute
+  '/dashboard/backups': typeof DashboardBackupsRoute
+  '/dashboard/birthdays': typeof DashboardBirthdaysRoute
+  '/dashboard/bot-health': typeof DashboardBotHealthRoute
+  '/dashboard/bot-settings': typeof DashboardBotSettingsRoute
+  '/dashboard/changelog': typeof DashboardChangelogRoute
+  '/dashboard/characters': typeof DashboardCharactersRoute
+  '/dashboard/commands': typeof DashboardCommandsRoute
+  '/dashboard/confessions': typeof DashboardConfessionsRoute
+  '/dashboard/counting': typeof DashboardCountingRoute
+  '/dashboard/currency-shop': typeof DashboardCurrencyShopRoute
+  '/dashboard/custom-commands': typeof DashboardCustomCommandsRoute
+  '/dashboard/economy': typeof DashboardEconomyRoute
+  '/dashboard/embed-builder': typeof DashboardEmbedBuilderRoute
+  '/dashboard/features': typeof DashboardFeaturesRoute
+  '/dashboard/fivem': typeof DashboardFivemRoute
+  '/dashboard/giveaways': typeof DashboardGiveawaysRoute
+  '/dashboard/global-bans': typeof DashboardGlobalBansRoute
+  '/dashboard/honeypot': typeof DashboardHoneypotRoute
+  '/dashboard/invite-tracker': typeof DashboardInviteTrackerRoute
+  '/dashboard/jtc': typeof DashboardJtcRoute
+  '/dashboard/leaderboard': typeof DashboardLeaderboardRoute
+  '/dashboard/leveling': typeof DashboardLevelingRoute
+  '/dashboard/live-events': typeof DashboardLiveEventsRoute
+  '/dashboard/log-settings': typeof DashboardLogSettingsRoute
+  '/dashboard/logs': typeof DashboardLogsRoute
+  '/dashboard/members': typeof DashboardMembersRoute
+  '/dashboard/moderation': typeof DashboardModerationRoute
+  '/dashboard/modmail': typeof DashboardModmailRoute
+  '/dashboard/modules': typeof DashboardModulesRoute
+  '/dashboard/music-quiz': typeof DashboardMusicQuizRoute
+  '/dashboard/notifications': typeof DashboardNotificationsRoute
+  '/dashboard/operations': typeof DashboardOperationsRoute
+  '/dashboard/polls': typeof DashboardPollsRoute
+  '/dashboard/quarantine': typeof DashboardQuarantineRoute
+  '/dashboard/raid-protection': typeof DashboardRaidProtectionRoute
+  '/dashboard/reaction-roles': typeof DashboardReactionRolesRoute
+  '/dashboard/reminders': typeof DashboardRemindersRoute
+  '/dashboard/resources': typeof DashboardResourcesRoute
+  '/dashboard/role-analytics': typeof DashboardRoleAnalyticsRoute
+  '/dashboard/scheduled-actions': typeof DashboardScheduledActionsRoute
+  '/dashboard/scheduler': typeof DashboardSchedulerRoute
+  '/dashboard/server-clone': typeof DashboardServerCloneRoute
+  '/dashboard/slowmode-scheduler': typeof DashboardSlowmodeSchedulerRoute
+  '/dashboard/starboard': typeof DashboardStarboardRoute
+  '/dashboard/stats-channels': typeof DashboardStatsChannelsRoute
+  '/dashboard/suggestions': typeof DashboardSuggestionsRoute
+  '/dashboard/tebex': typeof DashboardTebexRoute
+  '/dashboard/test-panel': typeof DashboardTestPanelRoute
+  '/dashboard/tiktok': typeof DashboardTiktokRoute
+  '/dashboard/twitch': typeof DashboardTwitchRoute
+  '/dashboard/verification': typeof DashboardVerificationRoute
+  '/dashboard/warnings': typeof DashboardWarningsRoute
+  '/dashboard/webhooks': typeof DashboardWebhooksRoute
+  '/dashboard/welcome': typeof DashboardWelcomeRoute
+  '/dashboard/youtube': typeof DashboardYoutubeRoute
+  '/docs': typeof DocsIndexRoute
+  '/admin': typeof AdminIndexRoute
+  '/dashboard': typeof DashboardIndexRoute
+  '/api/public/admin-check-ip': typeof ApiPublicAdminCheckIpRoute
+  '/api/public/admin-users': typeof ApiPublicAdminUsersRoute
+  '/api/public/ai-auto-respond': typeof ApiPublicAiAutoRespondRoute
+  '/api/public/ai-automod': typeof ApiPublicAiAutomodRoute
+  '/api/public/ai-chat': typeof ApiPublicAiChatRoute
+  '/api/public/ai-health': typeof ApiPublicAiHealthRoute
+  '/api/public/ai-polish-text': typeof ApiPublicAiPolishTextRoute
+  '/api/public/ai-screen-application': typeof ApiPublicAiScreenApplicationRoute
+  '/api/public/ai-ticket-summary': typeof ApiPublicAiTicketSummaryRoute
+  '/api/public/analytics-aggregate': typeof ApiPublicAnalyticsAggregateRoute
+  '/api/public/application-handler': typeof ApiPublicApplicationHandlerRoute
+  '/api/public/auto-report': typeof ApiPublicAutoReportRoute
+  '/api/public/automod-handler': typeof ApiPublicAutomodHandlerRoute
+  '/api/public/bot-characters': typeof ApiPublicBotCharactersRoute
+  '/api/public/bot-deploy': typeof ApiPublicBotDeployRoute
+  '/api/public/bot-heartbeat': typeof ApiPublicBotHeartbeatRoute
+  '/api/public/bot-log-events': typeof ApiPublicBotLogEventsRoute
+  '/api/public/bot-settings': typeof ApiPublicBotSettingsRoute
+  '/api/public/bot-tickets': typeof ApiPublicBotTicketsRoute
+  '/api/public/bot-welcome': typeof ApiPublicBotWelcomeRoute
+  '/api/public/create-demo-guild': typeof ApiPublicCreateDemoGuildRoute
+  '/api/public/deploy-guild-commands': typeof ApiPublicDeployGuildCommandsRoute
+  '/api/public/discord-channels': typeof ApiPublicDiscordChannelsRoute
+  '/api/public/discord-interactions': typeof ApiPublicDiscordInteractionsRoute
+  '/api/public/discord-members': typeof ApiPublicDiscordMembersRoute
+  '/api/public/discord-oauth': typeof ApiPublicDiscordOauthRoute
+  '/api/public/discord-roles': typeof ApiPublicDiscordRolesRoute
+  '/api/public/execute-fivem-command': typeof ApiPublicExecuteFivemCommandRoute
+  '/api/public/fivem-handler': typeof ApiPublicFivemHandlerRoute
+  '/api/public/fivem-setup-key': typeof ApiPublicFivemSetupKeyRoute
+  '/api/public/generate-ticket-transcript': typeof ApiPublicGenerateTicketTranscriptRoute
+  '/api/public/giveaway-handler': typeof ApiPublicGiveawayHandlerRoute
+  '/api/public/global-ban-handler': typeof ApiPublicGlobalBanHandlerRoute
+  '/api/public/guild-bot-config': typeof ApiPublicGuildBotConfigRoute
+  '/api/public/invite-tracker': typeof ApiPublicInviteTrackerRoute
+  '/api/public/jtc-handler': typeof ApiPublicJtcHandlerRoute
+  '/api/public/log-action': typeof ApiPublicLogActionRoute
+  '/api/public/modmail-handler': typeof ApiPublicModmailHandlerRoute
+  '/api/public/platform-stats': typeof ApiPublicPlatformStatsRoute
+  '/api/public/premium-api': typeof ApiPublicPremiumApiRoute
+  '/api/public/reaction-role-handler': typeof ApiPublicReactionRoleHandlerRoute
+  '/api/public/register-fivem-commands': typeof ApiPublicRegisterFivemCommandsRoute
+  '/api/public/review-application': typeof ApiPublicReviewApplicationRoute
+  '/api/public/send-embed': typeof ApiPublicSendEmbedRoute
+  '/api/public/send-poll': typeof ApiPublicSendPollRoute
+  '/api/public/send-ticket-panel': typeof ApiPublicSendTicketPanelRoute
+  '/api/public/send-verification-panel': typeof ApiPublicSendVerificationPanelRoute
+  '/api/public/server-backup': typeof ApiPublicServerBackupRoute
+  '/api/public/server-clone': typeof ApiPublicServerCloneRoute
+  '/api/public/submit-ticket-rating': typeof ApiPublicSubmitTicketRatingRoute
+  '/api/public/tebex-handler': typeof ApiPublicTebexHandlerRoute
+  '/api/public/tebex-webhook': typeof ApiPublicTebexWebhookRoute
+  '/api/public/tiktok-test-notify': typeof ApiPublicTiktokTestNotifyRoute
+  '/api/public/twitch-handler': typeof ApiPublicTwitchHandlerRoute
+  '/api/public/xp-handler': typeof ApiPublicXpHandlerRoute
+  '/dashboard/applications/$submissionId': typeof DashboardApplicationsSubmissionIdRoute
+  '/dashboard/applications/analytics': typeof DashboardApplicationsAnalyticsRoute
+  '/dashboard/applications/settings': typeof DashboardApplicationsSettingsRoute
+  '/dashboard/tickets/$ticketId': typeof DashboardTicketsTicketIdRoute
+  '/dashboard/tickets/settings': typeof DashboardTicketsSettingsRoute
+  '/docs/$category/$slug': typeof DocsCategorySlugRoute
+  '/dashboard/applications': typeof DashboardApplicationsIndexRoute
+  '/dashboard/tickets': typeof DashboardTicketsIndexRoute
+  '/dashboard/applications/forms/$formId': typeof DashboardApplicationsFormsFormIdRoute
 }
 export interface FileRoutesById {
-  __root__: typeof rootRouteImport;
-  "/": typeof IndexRoute;
-  "/$": typeof SplatRoute;
-  "/auth": typeof AuthRoute;
-  "/dashboard": typeof DashboardRouteWithChildren;
-  "/features": typeof FeaturesRoute;
-  "/guilds": typeof GuildsRoute;
-  "/privacy": typeof PrivacyRoute;
-  "/security": typeof SecurityRoute;
-  "/terms": typeof TermsRoute;
-  "/admin/global-bans": typeof AdminGlobalBansRoute;
-  "/dashboard/activity-heatmap": typeof DashboardActivityHeatmapRoute;
-  "/dashboard/ai-automod": typeof DashboardAiAutomodRoute;
-  "/dashboard/ai-chat": typeof DashboardAiChatRoute;
-  "/dashboard/analytics": typeof DashboardAnalyticsRoute;
-  "/dashboard/auto-reports": typeof DashboardAutoReportsRoute;
-  "/dashboard/auto-responders": typeof DashboardAutoRespondersRoute;
-  "/dashboard/automod": typeof DashboardAutomodRoute;
-  "/dashboard/backups": typeof DashboardBackupsRoute;
-  "/dashboard/birthdays": typeof DashboardBirthdaysRoute;
-  "/dashboard/bot-health": typeof DashboardBotHealthRoute;
-  "/dashboard/bot-settings": typeof DashboardBotSettingsRoute;
-  "/dashboard/changelog": typeof DashboardChangelogRoute;
-  "/dashboard/characters": typeof DashboardCharactersRoute;
-  "/dashboard/commands": typeof DashboardCommandsRoute;
-  "/dashboard/confessions": typeof DashboardConfessionsRoute;
-  "/dashboard/counting": typeof DashboardCountingRoute;
-  "/dashboard/currency-shop": typeof DashboardCurrencyShopRoute;
-  "/dashboard/custom-commands": typeof DashboardCustomCommandsRoute;
-  "/dashboard/economy": typeof DashboardEconomyRoute;
-  "/dashboard/embed-builder": typeof DashboardEmbedBuilderRoute;
-  "/dashboard/features": typeof DashboardFeaturesRoute;
-  "/dashboard/fivem": typeof DashboardFivemRoute;
-  "/dashboard/giveaways": typeof DashboardGiveawaysRoute;
-  "/dashboard/global-bans": typeof DashboardGlobalBansRoute;
-  "/dashboard/honeypot": typeof DashboardHoneypotRoute;
-  "/dashboard/invite-tracker": typeof DashboardInviteTrackerRoute;
-  "/dashboard/jtc": typeof DashboardJtcRoute;
-  "/dashboard/leaderboard": typeof DashboardLeaderboardRoute;
-  "/dashboard/leveling": typeof DashboardLevelingRoute;
-  "/dashboard/live-events": typeof DashboardLiveEventsRoute;
-  "/dashboard/log-settings": typeof DashboardLogSettingsRoute;
-  "/dashboard/logs": typeof DashboardLogsRoute;
-  "/dashboard/members": typeof DashboardMembersRoute;
-  "/dashboard/moderation": typeof DashboardModerationRoute;
-  "/dashboard/modmail": typeof DashboardModmailRoute;
-  "/dashboard/modules": typeof DashboardModulesRoute;
-  "/dashboard/music-quiz": typeof DashboardMusicQuizRoute;
-  "/dashboard/notifications": typeof DashboardNotificationsRoute;
-  "/dashboard/operations": typeof DashboardOperationsRoute;
-  "/dashboard/polls": typeof DashboardPollsRoute;
-  "/dashboard/quarantine": typeof DashboardQuarantineRoute;
-  "/dashboard/raid-protection": typeof DashboardRaidProtectionRoute;
-  "/dashboard/reaction-roles": typeof DashboardReactionRolesRoute;
-  "/dashboard/reminders": typeof DashboardRemindersRoute;
-  "/dashboard/resources": typeof DashboardResourcesRoute;
-  "/dashboard/role-analytics": typeof DashboardRoleAnalyticsRoute;
-  "/dashboard/scheduled-actions": typeof DashboardScheduledActionsRoute;
-  "/dashboard/scheduler": typeof DashboardSchedulerRoute;
-  "/dashboard/server-clone": typeof DashboardServerCloneRoute;
-  "/dashboard/slowmode-scheduler": typeof DashboardSlowmodeSchedulerRoute;
-  "/dashboard/starboard": typeof DashboardStarboardRoute;
-  "/dashboard/stats-channels": typeof DashboardStatsChannelsRoute;
-  "/dashboard/suggestions": typeof DashboardSuggestionsRoute;
-  "/dashboard/tebex": typeof DashboardTebexRoute;
-  "/dashboard/test-panel": typeof DashboardTestPanelRoute;
-  "/dashboard/tiktok": typeof DashboardTiktokRoute;
-  "/dashboard/twitch": typeof DashboardTwitchRoute;
-  "/dashboard/verification": typeof DashboardVerificationRoute;
-  "/dashboard/warnings": typeof DashboardWarningsRoute;
-  "/dashboard/webhooks": typeof DashboardWebhooksRoute;
-  "/dashboard/welcome": typeof DashboardWelcomeRoute;
-  "/dashboard/youtube": typeof DashboardYoutubeRoute;
-  "/docs/_layout": typeof DocsLayoutRoute;
-  "/admin/": typeof AdminIndexRoute;
-  "/dashboard/": typeof DashboardIndexRoute;
-  "/docs/": typeof DocsIndexRoute;
-  "/api/public/admin-check-ip": typeof ApiPublicAdminCheckIpRoute;
-  "/api/public/admin-users": typeof ApiPublicAdminUsersRoute;
-  "/api/public/ai-auto-respond": typeof ApiPublicAiAutoRespondRoute;
-  "/api/public/ai-automod": typeof ApiPublicAiAutomodRoute;
-  "/api/public/ai-chat": typeof ApiPublicAiChatRoute;
-  "/api/public/ai-health": typeof ApiPublicAiHealthRoute;
-  "/api/public/ai-polish-text": typeof ApiPublicAiPolishTextRoute;
-  "/api/public/ai-screen-application": typeof ApiPublicAiScreenApplicationRoute;
-  "/api/public/ai-ticket-summary": typeof ApiPublicAiTicketSummaryRoute;
-  "/api/public/analytics-aggregate": typeof ApiPublicAnalyticsAggregateRoute;
-  "/api/public/application-handler": typeof ApiPublicApplicationHandlerRoute;
-  "/api/public/auto-report": typeof ApiPublicAutoReportRoute;
-  "/api/public/automod-handler": typeof ApiPublicAutomodHandlerRoute;
-  "/api/public/bot-characters": typeof ApiPublicBotCharactersRoute;
-  "/api/public/bot-deploy": typeof ApiPublicBotDeployRoute;
-  "/api/public/bot-heartbeat": typeof ApiPublicBotHeartbeatRoute;
-  "/api/public/bot-log-events": typeof ApiPublicBotLogEventsRoute;
-  "/api/public/bot-settings": typeof ApiPublicBotSettingsRoute;
-  "/api/public/bot-tickets": typeof ApiPublicBotTicketsRoute;
-  "/api/public/bot-welcome": typeof ApiPublicBotWelcomeRoute;
-  "/api/public/create-demo-guild": typeof ApiPublicCreateDemoGuildRoute;
-  "/api/public/deploy-guild-commands": typeof ApiPublicDeployGuildCommandsRoute;
-  "/api/public/discord-channels": typeof ApiPublicDiscordChannelsRoute;
-  "/api/public/discord-interactions": typeof ApiPublicDiscordInteractionsRoute;
-  "/api/public/discord-members": typeof ApiPublicDiscordMembersRoute;
-  "/api/public/discord-oauth": typeof ApiPublicDiscordOauthRoute;
-  "/api/public/discord-roles": typeof ApiPublicDiscordRolesRoute;
-  "/api/public/execute-fivem-command": typeof ApiPublicExecuteFivemCommandRoute;
-  "/api/public/fivem-handler": typeof ApiPublicFivemHandlerRoute;
-  "/api/public/fivem-setup-key": typeof ApiPublicFivemSetupKeyRoute;
-  "/api/public/generate-ticket-transcript": typeof ApiPublicGenerateTicketTranscriptRoute;
-  "/api/public/giveaway-handler": typeof ApiPublicGiveawayHandlerRoute;
-  "/api/public/global-ban-handler": typeof ApiPublicGlobalBanHandlerRoute;
-  "/api/public/guild-bot-config": typeof ApiPublicGuildBotConfigRoute;
-  "/api/public/invite-tracker": typeof ApiPublicInviteTrackerRoute;
-  "/api/public/jtc-handler": typeof ApiPublicJtcHandlerRoute;
-  "/api/public/log-action": typeof ApiPublicLogActionRoute;
-  "/api/public/modmail-handler": typeof ApiPublicModmailHandlerRoute;
-  "/api/public/platform-stats": typeof ApiPublicPlatformStatsRoute;
-  "/api/public/premium-api": typeof ApiPublicPremiumApiRoute;
-  "/api/public/reaction-role-handler": typeof ApiPublicReactionRoleHandlerRoute;
-  "/api/public/register-fivem-commands": typeof ApiPublicRegisterFivemCommandsRoute;
-  "/api/public/review-application": typeof ApiPublicReviewApplicationRoute;
-  "/api/public/send-embed": typeof ApiPublicSendEmbedRoute;
-  "/api/public/send-poll": typeof ApiPublicSendPollRoute;
-  "/api/public/send-ticket-panel": typeof ApiPublicSendTicketPanelRoute;
-  "/api/public/send-verification-panel": typeof ApiPublicSendVerificationPanelRoute;
-  "/api/public/server-backup": typeof ApiPublicServerBackupRoute;
-  "/api/public/server-clone": typeof ApiPublicServerCloneRoute;
-  "/api/public/submit-ticket-rating": typeof ApiPublicSubmitTicketRatingRoute;
-  "/api/public/tebex-handler": typeof ApiPublicTebexHandlerRoute;
-  "/api/public/tebex-webhook": typeof ApiPublicTebexWebhookRoute;
-  "/api/public/tiktok-test-notify": typeof ApiPublicTiktokTestNotifyRoute;
-  "/api/public/twitch-handler": typeof ApiPublicTwitchHandlerRoute;
-  "/api/public/xp-handler": typeof ApiPublicXpHandlerRoute;
-  "/dashboard/applications/$submissionId": typeof DashboardApplicationsSubmissionIdRoute;
-  "/dashboard/applications/analytics": typeof DashboardApplicationsAnalyticsRoute;
-  "/dashboard/applications/settings": typeof DashboardApplicationsSettingsRoute;
-  "/dashboard/tickets/$ticketId": typeof DashboardTicketsTicketIdRoute;
-  "/dashboard/tickets/settings": typeof DashboardTicketsSettingsRoute;
-  "/docs/$category/$slug": typeof DocsCategorySlugRoute;
-  "/dashboard/applications/": typeof DashboardApplicationsIndexRoute;
-  "/dashboard/tickets/": typeof DashboardTicketsIndexRoute;
-  "/dashboard/applications/forms/$formId": typeof DashboardApplicationsFormsFormIdRoute;
+  __root__: typeof rootRouteImport
+  '/': typeof IndexRoute
+  '/$': typeof SplatRoute
+  '/auth': typeof AuthRoute
+  '/dashboard': typeof DashboardRouteWithChildren
+  '/features': typeof FeaturesRoute
+  '/guilds': typeof GuildsRoute
+  '/privacy': typeof PrivacyRoute
+  '/security': typeof SecurityRoute
+  '/terms': typeof TermsRoute
+  '/admin/global-bans': typeof AdminGlobalBansRoute
+  '/dashboard/activity-heatmap': typeof DashboardActivityHeatmapRoute
+  '/dashboard/ai-automod': typeof DashboardAiAutomodRoute
+  '/dashboard/ai-chat': typeof DashboardAiChatRoute
+  '/dashboard/analytics': typeof DashboardAnalyticsRoute
+  '/dashboard/auto-reports': typeof DashboardAutoReportsRoute
+  '/dashboard/auto-responders': typeof DashboardAutoRespondersRoute
+  '/dashboard/automod': typeof DashboardAutomodRoute
+  '/dashboard/backups': typeof DashboardBackupsRoute
+  '/dashboard/birthdays': typeof DashboardBirthdaysRoute
+  '/dashboard/bot-health': typeof DashboardBotHealthRoute
+  '/dashboard/bot-settings': typeof DashboardBotSettingsRoute
+  '/dashboard/changelog': typeof DashboardChangelogRoute
+  '/dashboard/characters': typeof DashboardCharactersRoute
+  '/dashboard/commands': typeof DashboardCommandsRoute
+  '/dashboard/confessions': typeof DashboardConfessionsRoute
+  '/dashboard/counting': typeof DashboardCountingRoute
+  '/dashboard/currency-shop': typeof DashboardCurrencyShopRoute
+  '/dashboard/custom-commands': typeof DashboardCustomCommandsRoute
+  '/dashboard/economy': typeof DashboardEconomyRoute
+  '/dashboard/embed-builder': typeof DashboardEmbedBuilderRoute
+  '/dashboard/features': typeof DashboardFeaturesRoute
+  '/dashboard/fivem': typeof DashboardFivemRoute
+  '/dashboard/giveaways': typeof DashboardGiveawaysRoute
+  '/dashboard/global-bans': typeof DashboardGlobalBansRoute
+  '/dashboard/honeypot': typeof DashboardHoneypotRoute
+  '/dashboard/invite-tracker': typeof DashboardInviteTrackerRoute
+  '/dashboard/jtc': typeof DashboardJtcRoute
+  '/dashboard/leaderboard': typeof DashboardLeaderboardRoute
+  '/dashboard/leveling': typeof DashboardLevelingRoute
+  '/dashboard/live-events': typeof DashboardLiveEventsRoute
+  '/dashboard/log-settings': typeof DashboardLogSettingsRoute
+  '/dashboard/logs': typeof DashboardLogsRoute
+  '/dashboard/members': typeof DashboardMembersRoute
+  '/dashboard/moderation': typeof DashboardModerationRoute
+  '/dashboard/modmail': typeof DashboardModmailRoute
+  '/dashboard/modules': typeof DashboardModulesRoute
+  '/dashboard/music-quiz': typeof DashboardMusicQuizRoute
+  '/dashboard/notifications': typeof DashboardNotificationsRoute
+  '/dashboard/operations': typeof DashboardOperationsRoute
+  '/dashboard/polls': typeof DashboardPollsRoute
+  '/dashboard/quarantine': typeof DashboardQuarantineRoute
+  '/dashboard/raid-protection': typeof DashboardRaidProtectionRoute
+  '/dashboard/reaction-roles': typeof DashboardReactionRolesRoute
+  '/dashboard/reminders': typeof DashboardRemindersRoute
+  '/dashboard/resources': typeof DashboardResourcesRoute
+  '/dashboard/role-analytics': typeof DashboardRoleAnalyticsRoute
+  '/dashboard/scheduled-actions': typeof DashboardScheduledActionsRoute
+  '/dashboard/scheduler': typeof DashboardSchedulerRoute
+  '/dashboard/server-clone': typeof DashboardServerCloneRoute
+  '/dashboard/slowmode-scheduler': typeof DashboardSlowmodeSchedulerRoute
+  '/dashboard/starboard': typeof DashboardStarboardRoute
+  '/dashboard/stats-channels': typeof DashboardStatsChannelsRoute
+  '/dashboard/suggestions': typeof DashboardSuggestionsRoute
+  '/dashboard/tebex': typeof DashboardTebexRoute
+  '/dashboard/test-panel': typeof DashboardTestPanelRoute
+  '/dashboard/tiktok': typeof DashboardTiktokRoute
+  '/dashboard/twitch': typeof DashboardTwitchRoute
+  '/dashboard/verification': typeof DashboardVerificationRoute
+  '/dashboard/warnings': typeof DashboardWarningsRoute
+  '/dashboard/webhooks': typeof DashboardWebhooksRoute
+  '/dashboard/welcome': typeof DashboardWelcomeRoute
+  '/dashboard/youtube': typeof DashboardYoutubeRoute
+  '/docs/_layout': typeof DocsLayoutRoute
+  '/admin/': typeof AdminIndexRoute
+  '/dashboard/': typeof DashboardIndexRoute
+  '/docs/': typeof DocsIndexRoute
+  '/api/public/admin-check-ip': typeof ApiPublicAdminCheckIpRoute
+  '/api/public/admin-users': typeof ApiPublicAdminUsersRoute
+  '/api/public/ai-auto-respond': typeof ApiPublicAiAutoRespondRoute
+  '/api/public/ai-automod': typeof ApiPublicAiAutomodRoute
+  '/api/public/ai-chat': typeof ApiPublicAiChatRoute
+  '/api/public/ai-health': typeof ApiPublicAiHealthRoute
+  '/api/public/ai-polish-text': typeof ApiPublicAiPolishTextRoute
+  '/api/public/ai-screen-application': typeof ApiPublicAiScreenApplicationRoute
+  '/api/public/ai-ticket-summary': typeof ApiPublicAiTicketSummaryRoute
+  '/api/public/analytics-aggregate': typeof ApiPublicAnalyticsAggregateRoute
+  '/api/public/application-handler': typeof ApiPublicApplicationHandlerRoute
+  '/api/public/auto-report': typeof ApiPublicAutoReportRoute
+  '/api/public/automod-handler': typeof ApiPublicAutomodHandlerRoute
+  '/api/public/bot-characters': typeof ApiPublicBotCharactersRoute
+  '/api/public/bot-deploy': typeof ApiPublicBotDeployRoute
+  '/api/public/bot-heartbeat': typeof ApiPublicBotHeartbeatRoute
+  '/api/public/bot-log-events': typeof ApiPublicBotLogEventsRoute
+  '/api/public/bot-settings': typeof ApiPublicBotSettingsRoute
+  '/api/public/bot-tickets': typeof ApiPublicBotTicketsRoute
+  '/api/public/bot-welcome': typeof ApiPublicBotWelcomeRoute
+  '/api/public/create-demo-guild': typeof ApiPublicCreateDemoGuildRoute
+  '/api/public/deploy-guild-commands': typeof ApiPublicDeployGuildCommandsRoute
+  '/api/public/discord-channels': typeof ApiPublicDiscordChannelsRoute
+  '/api/public/discord-interactions': typeof ApiPublicDiscordInteractionsRoute
+  '/api/public/discord-members': typeof ApiPublicDiscordMembersRoute
+  '/api/public/discord-oauth': typeof ApiPublicDiscordOauthRoute
+  '/api/public/discord-roles': typeof ApiPublicDiscordRolesRoute
+  '/api/public/execute-fivem-command': typeof ApiPublicExecuteFivemCommandRoute
+  '/api/public/fivem-handler': typeof ApiPublicFivemHandlerRoute
+  '/api/public/fivem-setup-key': typeof ApiPublicFivemSetupKeyRoute
+  '/api/public/generate-ticket-transcript': typeof ApiPublicGenerateTicketTranscriptRoute
+  '/api/public/giveaway-handler': typeof ApiPublicGiveawayHandlerRoute
+  '/api/public/global-ban-handler': typeof ApiPublicGlobalBanHandlerRoute
+  '/api/public/guild-bot-config': typeof ApiPublicGuildBotConfigRoute
+  '/api/public/invite-tracker': typeof ApiPublicInviteTrackerRoute
+  '/api/public/jtc-handler': typeof ApiPublicJtcHandlerRoute
+  '/api/public/log-action': typeof ApiPublicLogActionRoute
+  '/api/public/modmail-handler': typeof ApiPublicModmailHandlerRoute
+  '/api/public/platform-stats': typeof ApiPublicPlatformStatsRoute
+  '/api/public/premium-api': typeof ApiPublicPremiumApiRoute
+  '/api/public/reaction-role-handler': typeof ApiPublicReactionRoleHandlerRoute
+  '/api/public/register-fivem-commands': typeof ApiPublicRegisterFivemCommandsRoute
+  '/api/public/review-application': typeof ApiPublicReviewApplicationRoute
+  '/api/public/send-embed': typeof ApiPublicSendEmbedRoute
+  '/api/public/send-poll': typeof ApiPublicSendPollRoute
+  '/api/public/send-ticket-panel': typeof ApiPublicSendTicketPanelRoute
+  '/api/public/send-verification-panel': typeof ApiPublicSendVerificationPanelRoute
+  '/api/public/server-backup': typeof ApiPublicServerBackupRoute
+  '/api/public/server-clone': typeof ApiPublicServerCloneRoute
+  '/api/public/submit-ticket-rating': typeof ApiPublicSubmitTicketRatingRoute
+  '/api/public/tebex-handler': typeof ApiPublicTebexHandlerRoute
+  '/api/public/tebex-webhook': typeof ApiPublicTebexWebhookRoute
+  '/api/public/tiktok-test-notify': typeof ApiPublicTiktokTestNotifyRoute
+  '/api/public/twitch-handler': typeof ApiPublicTwitchHandlerRoute
+  '/api/public/xp-handler': typeof ApiPublicXpHandlerRoute
+  '/dashboard/applications/$submissionId': typeof DashboardApplicationsSubmissionIdRoute
+  '/dashboard/applications/analytics': typeof DashboardApplicationsAnalyticsRoute
+  '/dashboard/applications/settings': typeof DashboardApplicationsSettingsRoute
+  '/dashboard/tickets/$ticketId': typeof DashboardTicketsTicketIdRoute
+  '/dashboard/tickets/settings': typeof DashboardTicketsSettingsRoute
+  '/docs/$category/$slug': typeof DocsCategorySlugRoute
+  '/dashboard/applications/': typeof DashboardApplicationsIndexRoute
+  '/dashboard/tickets/': typeof DashboardTicketsIndexRoute
+  '/dashboard/applications/forms/$formId': typeof DashboardApplicationsFormsFormIdRoute
 }
 export interface FileRouteTypes {
-  fileRoutesByFullPath: FileRoutesByFullPath;
+  fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
-    | "/"
-    | "/$"
-    | "/auth"
-    | "/dashboard"
-    | "/features"
-    | "/guilds"
-    | "/privacy"
-    | "/security"
-    | "/terms"
-    | "/admin/global-bans"
-    | "/dashboard/activity-heatmap"
-    | "/dashboard/ai-automod"
-    | "/dashboard/ai-chat"
-    | "/dashboard/analytics"
-    | "/dashboard/auto-reports"
-    | "/dashboard/auto-responders"
-    | "/dashboard/automod"
-    | "/dashboard/backups"
-    | "/dashboard/birthdays"
-    | "/dashboard/bot-health"
-    | "/dashboard/bot-settings"
-    | "/dashboard/changelog"
-    | "/dashboard/characters"
-    | "/dashboard/commands"
-    | "/dashboard/confessions"
-    | "/dashboard/counting"
-    | "/dashboard/currency-shop"
-    | "/dashboard/custom-commands"
-    | "/dashboard/economy"
-    | "/dashboard/embed-builder"
-    | "/dashboard/features"
-    | "/dashboard/fivem"
-    | "/dashboard/giveaways"
-    | "/dashboard/global-bans"
-    | "/dashboard/honeypot"
-    | "/dashboard/invite-tracker"
-    | "/dashboard/jtc"
-    | "/dashboard/leaderboard"
-    | "/dashboard/leveling"
-    | "/dashboard/live-events"
-    | "/dashboard/log-settings"
-    | "/dashboard/logs"
-    | "/dashboard/members"
-    | "/dashboard/moderation"
-    | "/dashboard/modmail"
-    | "/dashboard/modules"
-    | "/dashboard/music-quiz"
-    | "/dashboard/notifications"
-    | "/dashboard/operations"
-    | "/dashboard/polls"
-    | "/dashboard/quarantine"
-    | "/dashboard/raid-protection"
-    | "/dashboard/reaction-roles"
-    | "/dashboard/reminders"
-    | "/dashboard/resources"
-    | "/dashboard/role-analytics"
-    | "/dashboard/scheduled-actions"
-    | "/dashboard/scheduler"
-    | "/dashboard/server-clone"
-    | "/dashboard/slowmode-scheduler"
-    | "/dashboard/starboard"
-    | "/dashboard/stats-channels"
-    | "/dashboard/suggestions"
-    | "/dashboard/tebex"
-    | "/dashboard/test-panel"
-    | "/dashboard/tiktok"
-    | "/dashboard/twitch"
-    | "/dashboard/verification"
-    | "/dashboard/warnings"
-    | "/dashboard/webhooks"
-    | "/dashboard/welcome"
-    | "/dashboard/youtube"
-    | "/docs"
-    | "/admin/"
-    | "/dashboard/"
-    | "/docs/"
-    | "/api/public/admin-check-ip"
-    | "/api/public/admin-users"
-    | "/api/public/ai-auto-respond"
-    | "/api/public/ai-automod"
-    | "/api/public/ai-chat"
-    | "/api/public/ai-health"
-    | "/api/public/ai-polish-text"
-    | "/api/public/ai-screen-application"
-    | "/api/public/ai-ticket-summary"
-    | "/api/public/analytics-aggregate"
-    | "/api/public/application-handler"
-    | "/api/public/auto-report"
-    | "/api/public/automod-handler"
-    | "/api/public/bot-characters"
-    | "/api/public/bot-deploy"
-    | "/api/public/bot-heartbeat"
-    | "/api/public/bot-log-events"
-    | "/api/public/bot-settings"
-    | "/api/public/bot-tickets"
-    | "/api/public/bot-welcome"
-    | "/api/public/create-demo-guild"
-    | "/api/public/deploy-guild-commands"
-    | "/api/public/discord-channels"
-    | "/api/public/discord-interactions"
-    | "/api/public/discord-members"
-    | "/api/public/discord-oauth"
-    | "/api/public/discord-roles"
-    | "/api/public/execute-fivem-command"
-    | "/api/public/fivem-handler"
-    | "/api/public/fivem-setup-key"
-    | "/api/public/generate-ticket-transcript"
-    | "/api/public/giveaway-handler"
-    | "/api/public/global-ban-handler"
-    | "/api/public/guild-bot-config"
-    | "/api/public/invite-tracker"
-    | "/api/public/jtc-handler"
-    | "/api/public/log-action"
-    | "/api/public/modmail-handler"
-    | "/api/public/platform-stats"
-    | "/api/public/premium-api"
-    | "/api/public/reaction-role-handler"
-    | "/api/public/register-fivem-commands"
-    | "/api/public/review-application"
-    | "/api/public/send-embed"
-    | "/api/public/send-poll"
-    | "/api/public/send-ticket-panel"
-    | "/api/public/send-verification-panel"
-    | "/api/public/server-backup"
-    | "/api/public/server-clone"
-    | "/api/public/submit-ticket-rating"
-    | "/api/public/tebex-handler"
-    | "/api/public/tebex-webhook"
-    | "/api/public/tiktok-test-notify"
-    | "/api/public/twitch-handler"
-    | "/api/public/xp-handler"
-    | "/dashboard/applications/$submissionId"
-    | "/dashboard/applications/analytics"
-    | "/dashboard/applications/settings"
-    | "/dashboard/tickets/$ticketId"
-    | "/dashboard/tickets/settings"
-    | "/docs/$category/$slug"
-    | "/dashboard/applications/"
-    | "/dashboard/tickets/"
-    | "/dashboard/applications/forms/$formId";
-  fileRoutesByTo: FileRoutesByTo;
+    | '/'
+    | '/$'
+    | '/auth'
+    | '/dashboard'
+    | '/features'
+    | '/guilds'
+    | '/privacy'
+    | '/security'
+    | '/terms'
+    | '/admin/global-bans'
+    | '/dashboard/activity-heatmap'
+    | '/dashboard/ai-automod'
+    | '/dashboard/ai-chat'
+    | '/dashboard/analytics'
+    | '/dashboard/auto-reports'
+    | '/dashboard/auto-responders'
+    | '/dashboard/automod'
+    | '/dashboard/backups'
+    | '/dashboard/birthdays'
+    | '/dashboard/bot-health'
+    | '/dashboard/bot-settings'
+    | '/dashboard/changelog'
+    | '/dashboard/characters'
+    | '/dashboard/commands'
+    | '/dashboard/confessions'
+    | '/dashboard/counting'
+    | '/dashboard/currency-shop'
+    | '/dashboard/custom-commands'
+    | '/dashboard/economy'
+    | '/dashboard/embed-builder'
+    | '/dashboard/features'
+    | '/dashboard/fivem'
+    | '/dashboard/giveaways'
+    | '/dashboard/global-bans'
+    | '/dashboard/honeypot'
+    | '/dashboard/invite-tracker'
+    | '/dashboard/jtc'
+    | '/dashboard/leaderboard'
+    | '/dashboard/leveling'
+    | '/dashboard/live-events'
+    | '/dashboard/log-settings'
+    | '/dashboard/logs'
+    | '/dashboard/members'
+    | '/dashboard/moderation'
+    | '/dashboard/modmail'
+    | '/dashboard/modules'
+    | '/dashboard/music-quiz'
+    | '/dashboard/notifications'
+    | '/dashboard/operations'
+    | '/dashboard/polls'
+    | '/dashboard/quarantine'
+    | '/dashboard/raid-protection'
+    | '/dashboard/reaction-roles'
+    | '/dashboard/reminders'
+    | '/dashboard/resources'
+    | '/dashboard/role-analytics'
+    | '/dashboard/scheduled-actions'
+    | '/dashboard/scheduler'
+    | '/dashboard/server-clone'
+    | '/dashboard/slowmode-scheduler'
+    | '/dashboard/starboard'
+    | '/dashboard/stats-channels'
+    | '/dashboard/suggestions'
+    | '/dashboard/tebex'
+    | '/dashboard/test-panel'
+    | '/dashboard/tiktok'
+    | '/dashboard/twitch'
+    | '/dashboard/verification'
+    | '/dashboard/warnings'
+    | '/dashboard/webhooks'
+    | '/dashboard/welcome'
+    | '/dashboard/youtube'
+    | '/docs'
+    | '/admin/'
+    | '/dashboard/'
+    | '/docs/'
+    | '/api/public/admin-check-ip'
+    | '/api/public/admin-users'
+    | '/api/public/ai-auto-respond'
+    | '/api/public/ai-automod'
+    | '/api/public/ai-chat'
+    | '/api/public/ai-health'
+    | '/api/public/ai-polish-text'
+    | '/api/public/ai-screen-application'
+    | '/api/public/ai-ticket-summary'
+    | '/api/public/analytics-aggregate'
+    | '/api/public/application-handler'
+    | '/api/public/auto-report'
+    | '/api/public/automod-handler'
+    | '/api/public/bot-characters'
+    | '/api/public/bot-deploy'
+    | '/api/public/bot-heartbeat'
+    | '/api/public/bot-log-events'
+    | '/api/public/bot-settings'
+    | '/api/public/bot-tickets'
+    | '/api/public/bot-welcome'
+    | '/api/public/create-demo-guild'
+    | '/api/public/deploy-guild-commands'
+    | '/api/public/discord-channels'
+    | '/api/public/discord-interactions'
+    | '/api/public/discord-members'
+    | '/api/public/discord-oauth'
+    | '/api/public/discord-roles'
+    | '/api/public/execute-fivem-command'
+    | '/api/public/fivem-handler'
+    | '/api/public/fivem-setup-key'
+    | '/api/public/generate-ticket-transcript'
+    | '/api/public/giveaway-handler'
+    | '/api/public/global-ban-handler'
+    | '/api/public/guild-bot-config'
+    | '/api/public/invite-tracker'
+    | '/api/public/jtc-handler'
+    | '/api/public/log-action'
+    | '/api/public/modmail-handler'
+    | '/api/public/platform-stats'
+    | '/api/public/premium-api'
+    | '/api/public/reaction-role-handler'
+    | '/api/public/register-fivem-commands'
+    | '/api/public/review-application'
+    | '/api/public/send-embed'
+    | '/api/public/send-poll'
+    | '/api/public/send-ticket-panel'
+    | '/api/public/send-verification-panel'
+    | '/api/public/server-backup'
+    | '/api/public/server-clone'
+    | '/api/public/submit-ticket-rating'
+    | '/api/public/tebex-handler'
+    | '/api/public/tebex-webhook'
+    | '/api/public/tiktok-test-notify'
+    | '/api/public/twitch-handler'
+    | '/api/public/xp-handler'
+    | '/dashboard/applications/$submissionId'
+    | '/dashboard/applications/analytics'
+    | '/dashboard/applications/settings'
+    | '/dashboard/tickets/$ticketId'
+    | '/dashboard/tickets/settings'
+    | '/docs/$category/$slug'
+    | '/dashboard/applications/'
+    | '/dashboard/tickets/'
+    | '/dashboard/applications/forms/$formId'
+  fileRoutesByTo: FileRoutesByTo
   to:
-    | "/"
-    | "/$"
-    | "/auth"
-    | "/features"
-    | "/guilds"
-    | "/privacy"
-    | "/security"
-    | "/terms"
-    | "/admin/global-bans"
-    | "/dashboard/activity-heatmap"
-    | "/dashboard/ai-automod"
-    | "/dashboard/ai-chat"
-    | "/dashboard/analytics"
-    | "/dashboard/auto-reports"
-    | "/dashboard/auto-responders"
-    | "/dashboard/automod"
-    | "/dashboard/backups"
-    | "/dashboard/birthdays"
-    | "/dashboard/bot-health"
-    | "/dashboard/bot-settings"
-    | "/dashboard/changelog"
-    | "/dashboard/characters"
-    | "/dashboard/commands"
-    | "/dashboard/confessions"
-    | "/dashboard/counting"
-    | "/dashboard/currency-shop"
-    | "/dashboard/custom-commands"
-    | "/dashboard/economy"
-    | "/dashboard/embed-builder"
-    | "/dashboard/features"
-    | "/dashboard/fivem"
-    | "/dashboard/giveaways"
-    | "/dashboard/global-bans"
-    | "/dashboard/honeypot"
-    | "/dashboard/invite-tracker"
-    | "/dashboard/jtc"
-    | "/dashboard/leaderboard"
-    | "/dashboard/leveling"
-    | "/dashboard/live-events"
-    | "/dashboard/log-settings"
-    | "/dashboard/logs"
-    | "/dashboard/members"
-    | "/dashboard/moderation"
-    | "/dashboard/modmail"
-    | "/dashboard/modules"
-    | "/dashboard/music-quiz"
-    | "/dashboard/notifications"
-    | "/dashboard/operations"
-    | "/dashboard/polls"
-    | "/dashboard/quarantine"
-    | "/dashboard/raid-protection"
-    | "/dashboard/reaction-roles"
-    | "/dashboard/reminders"
-    | "/dashboard/resources"
-    | "/dashboard/role-analytics"
-    | "/dashboard/scheduled-actions"
-    | "/dashboard/scheduler"
-    | "/dashboard/server-clone"
-    | "/dashboard/slowmode-scheduler"
-    | "/dashboard/starboard"
-    | "/dashboard/stats-channels"
-    | "/dashboard/suggestions"
-    | "/dashboard/tebex"
-    | "/dashboard/test-panel"
-    | "/dashboard/tiktok"
-    | "/dashboard/twitch"
-    | "/dashboard/verification"
-    | "/dashboard/warnings"
-    | "/dashboard/webhooks"
-    | "/dashboard/welcome"
-    | "/dashboard/youtube"
-    | "/docs"
-    | "/admin"
-    | "/dashboard"
-    | "/api/public/admin-check-ip"
-    | "/api/public/admin-users"
-    | "/api/public/ai-auto-respond"
-    | "/api/public/ai-automod"
-    | "/api/public/ai-chat"
-    | "/api/public/ai-health"
-    | "/api/public/ai-polish-text"
-    | "/api/public/ai-screen-application"
-    | "/api/public/ai-ticket-summary"
-    | "/api/public/analytics-aggregate"
-    | "/api/public/application-handler"
-    | "/api/public/auto-report"
-    | "/api/public/automod-handler"
-    | "/api/public/bot-characters"
-    | "/api/public/bot-deploy"
-    | "/api/public/bot-heartbeat"
-    | "/api/public/bot-log-events"
-    | "/api/public/bot-settings"
-    | "/api/public/bot-tickets"
-    | "/api/public/bot-welcome"
-    | "/api/public/create-demo-guild"
-    | "/api/public/deploy-guild-commands"
-    | "/api/public/discord-channels"
-    | "/api/public/discord-interactions"
-    | "/api/public/discord-members"
-    | "/api/public/discord-oauth"
-    | "/api/public/discord-roles"
-    | "/api/public/execute-fivem-command"
-    | "/api/public/fivem-handler"
-    | "/api/public/fivem-setup-key"
-    | "/api/public/generate-ticket-transcript"
-    | "/api/public/giveaway-handler"
-    | "/api/public/global-ban-handler"
-    | "/api/public/guild-bot-config"
-    | "/api/public/invite-tracker"
-    | "/api/public/jtc-handler"
-    | "/api/public/log-action"
-    | "/api/public/modmail-handler"
-    | "/api/public/platform-stats"
-    | "/api/public/premium-api"
-    | "/api/public/reaction-role-handler"
-    | "/api/public/register-fivem-commands"
-    | "/api/public/review-application"
-    | "/api/public/send-embed"
-    | "/api/public/send-poll"
-    | "/api/public/send-ticket-panel"
-    | "/api/public/send-verification-panel"
-    | "/api/public/server-backup"
-    | "/api/public/server-clone"
-    | "/api/public/submit-ticket-rating"
-    | "/api/public/tebex-handler"
-    | "/api/public/tebex-webhook"
-    | "/api/public/tiktok-test-notify"
-    | "/api/public/twitch-handler"
-    | "/api/public/xp-handler"
-    | "/dashboard/applications/$submissionId"
-    | "/dashboard/applications/analytics"
-    | "/dashboard/applications/settings"
-    | "/dashboard/tickets/$ticketId"
-    | "/dashboard/tickets/settings"
-    | "/docs/$category/$slug"
-    | "/dashboard/applications"
-    | "/dashboard/tickets"
-    | "/dashboard/applications/forms/$formId";
+    | '/'
+    | '/$'
+    | '/auth'
+    | '/features'
+    | '/guilds'
+    | '/privacy'
+    | '/security'
+    | '/terms'
+    | '/admin/global-bans'
+    | '/dashboard/activity-heatmap'
+    | '/dashboard/ai-automod'
+    | '/dashboard/ai-chat'
+    | '/dashboard/analytics'
+    | '/dashboard/auto-reports'
+    | '/dashboard/auto-responders'
+    | '/dashboard/automod'
+    | '/dashboard/backups'
+    | '/dashboard/birthdays'
+    | '/dashboard/bot-health'
+    | '/dashboard/bot-settings'
+    | '/dashboard/changelog'
+    | '/dashboard/characters'
+    | '/dashboard/commands'
+    | '/dashboard/confessions'
+    | '/dashboard/counting'
+    | '/dashboard/currency-shop'
+    | '/dashboard/custom-commands'
+    | '/dashboard/economy'
+    | '/dashboard/embed-builder'
+    | '/dashboard/features'
+    | '/dashboard/fivem'
+    | '/dashboard/giveaways'
+    | '/dashboard/global-bans'
+    | '/dashboard/honeypot'
+    | '/dashboard/invite-tracker'
+    | '/dashboard/jtc'
+    | '/dashboard/leaderboard'
+    | '/dashboard/leveling'
+    | '/dashboard/live-events'
+    | '/dashboard/log-settings'
+    | '/dashboard/logs'
+    | '/dashboard/members'
+    | '/dashboard/moderation'
+    | '/dashboard/modmail'
+    | '/dashboard/modules'
+    | '/dashboard/music-quiz'
+    | '/dashboard/notifications'
+    | '/dashboard/operations'
+    | '/dashboard/polls'
+    | '/dashboard/quarantine'
+    | '/dashboard/raid-protection'
+    | '/dashboard/reaction-roles'
+    | '/dashboard/reminders'
+    | '/dashboard/resources'
+    | '/dashboard/role-analytics'
+    | '/dashboard/scheduled-actions'
+    | '/dashboard/scheduler'
+    | '/dashboard/server-clone'
+    | '/dashboard/slowmode-scheduler'
+    | '/dashboard/starboard'
+    | '/dashboard/stats-channels'
+    | '/dashboard/suggestions'
+    | '/dashboard/tebex'
+    | '/dashboard/test-panel'
+    | '/dashboard/tiktok'
+    | '/dashboard/twitch'
+    | '/dashboard/verification'
+    | '/dashboard/warnings'
+    | '/dashboard/webhooks'
+    | '/dashboard/welcome'
+    | '/dashboard/youtube'
+    | '/docs'
+    | '/admin'
+    | '/dashboard'
+    | '/api/public/admin-check-ip'
+    | '/api/public/admin-users'
+    | '/api/public/ai-auto-respond'
+    | '/api/public/ai-automod'
+    | '/api/public/ai-chat'
+    | '/api/public/ai-health'
+    | '/api/public/ai-polish-text'
+    | '/api/public/ai-screen-application'
+    | '/api/public/ai-ticket-summary'
+    | '/api/public/analytics-aggregate'
+    | '/api/public/application-handler'
+    | '/api/public/auto-report'
+    | '/api/public/automod-handler'
+    | '/api/public/bot-characters'
+    | '/api/public/bot-deploy'
+    | '/api/public/bot-heartbeat'
+    | '/api/public/bot-log-events'
+    | '/api/public/bot-settings'
+    | '/api/public/bot-tickets'
+    | '/api/public/bot-welcome'
+    | '/api/public/create-demo-guild'
+    | '/api/public/deploy-guild-commands'
+    | '/api/public/discord-channels'
+    | '/api/public/discord-interactions'
+    | '/api/public/discord-members'
+    | '/api/public/discord-oauth'
+    | '/api/public/discord-roles'
+    | '/api/public/execute-fivem-command'
+    | '/api/public/fivem-handler'
+    | '/api/public/fivem-setup-key'
+    | '/api/public/generate-ticket-transcript'
+    | '/api/public/giveaway-handler'
+    | '/api/public/global-ban-handler'
+    | '/api/public/guild-bot-config'
+    | '/api/public/invite-tracker'
+    | '/api/public/jtc-handler'
+    | '/api/public/log-action'
+    | '/api/public/modmail-handler'
+    | '/api/public/platform-stats'
+    | '/api/public/premium-api'
+    | '/api/public/reaction-role-handler'
+    | '/api/public/register-fivem-commands'
+    | '/api/public/review-application'
+    | '/api/public/send-embed'
+    | '/api/public/send-poll'
+    | '/api/public/send-ticket-panel'
+    | '/api/public/send-verification-panel'
+    | '/api/public/server-backup'
+    | '/api/public/server-clone'
+    | '/api/public/submit-ticket-rating'
+    | '/api/public/tebex-handler'
+    | '/api/public/tebex-webhook'
+    | '/api/public/tiktok-test-notify'
+    | '/api/public/twitch-handler'
+    | '/api/public/xp-handler'
+    | '/dashboard/applications/$submissionId'
+    | '/dashboard/applications/analytics'
+    | '/dashboard/applications/settings'
+    | '/dashboard/tickets/$ticketId'
+    | '/dashboard/tickets/settings'
+    | '/docs/$category/$slug'
+    | '/dashboard/applications'
+    | '/dashboard/tickets'
+    | '/dashboard/applications/forms/$formId'
   id:
-    | "__root__"
-    | "/"
-    | "/$"
-    | "/auth"
-    | "/dashboard"
-    | "/features"
-    | "/guilds"
-    | "/privacy"
-    | "/security"
-    | "/terms"
-    | "/admin/global-bans"
-    | "/dashboard/activity-heatmap"
-    | "/dashboard/ai-automod"
-    | "/dashboard/ai-chat"
-    | "/dashboard/analytics"
-    | "/dashboard/auto-reports"
-    | "/dashboard/auto-responders"
-    | "/dashboard/automod"
-    | "/dashboard/backups"
-    | "/dashboard/birthdays"
-    | "/dashboard/bot-health"
-    | "/dashboard/bot-settings"
-    | "/dashboard/changelog"
-    | "/dashboard/characters"
-    | "/dashboard/commands"
-    | "/dashboard/confessions"
-    | "/dashboard/counting"
-    | "/dashboard/currency-shop"
-    | "/dashboard/custom-commands"
-    | "/dashboard/economy"
-    | "/dashboard/embed-builder"
-    | "/dashboard/features"
-    | "/dashboard/fivem"
-    | "/dashboard/giveaways"
-    | "/dashboard/global-bans"
-    | "/dashboard/honeypot"
-    | "/dashboard/invite-tracker"
-    | "/dashboard/jtc"
-    | "/dashboard/leaderboard"
-    | "/dashboard/leveling"
-    | "/dashboard/live-events"
-    | "/dashboard/log-settings"
-    | "/dashboard/logs"
-    | "/dashboard/members"
-    | "/dashboard/moderation"
-    | "/dashboard/modmail"
-    | "/dashboard/modules"
-    | "/dashboard/music-quiz"
-    | "/dashboard/notifications"
-    | "/dashboard/operations"
-    | "/dashboard/polls"
-    | "/dashboard/quarantine"
-    | "/dashboard/raid-protection"
-    | "/dashboard/reaction-roles"
-    | "/dashboard/reminders"
-    | "/dashboard/resources"
-    | "/dashboard/role-analytics"
-    | "/dashboard/scheduled-actions"
-    | "/dashboard/scheduler"
-    | "/dashboard/server-clone"
-    | "/dashboard/slowmode-scheduler"
-    | "/dashboard/starboard"
-    | "/dashboard/stats-channels"
-    | "/dashboard/suggestions"
-    | "/dashboard/tebex"
-    | "/dashboard/test-panel"
-    | "/dashboard/tiktok"
-    | "/dashboard/twitch"
-    | "/dashboard/verification"
-    | "/dashboard/warnings"
-    | "/dashboard/webhooks"
-    | "/dashboard/welcome"
-    | "/dashboard/youtube"
-    | "/docs/_layout"
-    | "/admin/"
-    | "/dashboard/"
-    | "/docs/"
-    | "/api/public/admin-check-ip"
-    | "/api/public/admin-users"
-    | "/api/public/ai-auto-respond"
-    | "/api/public/ai-automod"
-    | "/api/public/ai-chat"
-    | "/api/public/ai-health"
-    | "/api/public/ai-polish-text"
-    | "/api/public/ai-screen-application"
-    | "/api/public/ai-ticket-summary"
-    | "/api/public/analytics-aggregate"
-    | "/api/public/application-handler"
-    | "/api/public/auto-report"
-    | "/api/public/automod-handler"
-    | "/api/public/bot-characters"
-    | "/api/public/bot-deploy"
-    | "/api/public/bot-heartbeat"
-    | "/api/public/bot-log-events"
-    | "/api/public/bot-settings"
-    | "/api/public/bot-tickets"
-    | "/api/public/bot-welcome"
-    | "/api/public/create-demo-guild"
-    | "/api/public/deploy-guild-commands"
-    | "/api/public/discord-channels"
-    | "/api/public/discord-interactions"
-    | "/api/public/discord-members"
-    | "/api/public/discord-oauth"
-    | "/api/public/discord-roles"
-    | "/api/public/execute-fivem-command"
-    | "/api/public/fivem-handler"
-    | "/api/public/fivem-setup-key"
-    | "/api/public/generate-ticket-transcript"
-    | "/api/public/giveaway-handler"
-    | "/api/public/global-ban-handler"
-    | "/api/public/guild-bot-config"
-    | "/api/public/invite-tracker"
-    | "/api/public/jtc-handler"
-    | "/api/public/log-action"
-    | "/api/public/modmail-handler"
-    | "/api/public/platform-stats"
-    | "/api/public/premium-api"
-    | "/api/public/reaction-role-handler"
-    | "/api/public/register-fivem-commands"
-    | "/api/public/review-application"
-    | "/api/public/send-embed"
-    | "/api/public/send-poll"
-    | "/api/public/send-ticket-panel"
-    | "/api/public/send-verification-panel"
-    | "/api/public/server-backup"
-    | "/api/public/server-clone"
-    | "/api/public/submit-ticket-rating"
-    | "/api/public/tebex-handler"
-    | "/api/public/tebex-webhook"
-    | "/api/public/tiktok-test-notify"
-    | "/api/public/twitch-handler"
-    | "/api/public/xp-handler"
-    | "/dashboard/applications/$submissionId"
-    | "/dashboard/applications/analytics"
-    | "/dashboard/applications/settings"
-    | "/dashboard/tickets/$ticketId"
-    | "/dashboard/tickets/settings"
-    | "/docs/$category/$slug"
-    | "/dashboard/applications/"
-    | "/dashboard/tickets/"
-    | "/dashboard/applications/forms/$formId";
-  fileRoutesById: FileRoutesById;
+    | '__root__'
+    | '/'
+    | '/$'
+    | '/auth'
+    | '/dashboard'
+    | '/features'
+    | '/guilds'
+    | '/privacy'
+    | '/security'
+    | '/terms'
+    | '/admin/global-bans'
+    | '/dashboard/activity-heatmap'
+    | '/dashboard/ai-automod'
+    | '/dashboard/ai-chat'
+    | '/dashboard/analytics'
+    | '/dashboard/auto-reports'
+    | '/dashboard/auto-responders'
+    | '/dashboard/automod'
+    | '/dashboard/backups'
+    | '/dashboard/birthdays'
+    | '/dashboard/bot-health'
+    | '/dashboard/bot-settings'
+    | '/dashboard/changelog'
+    | '/dashboard/characters'
+    | '/dashboard/commands'
+    | '/dashboard/confessions'
+    | '/dashboard/counting'
+    | '/dashboard/currency-shop'
+    | '/dashboard/custom-commands'
+    | '/dashboard/economy'
+    | '/dashboard/embed-builder'
+    | '/dashboard/features'
+    | '/dashboard/fivem'
+    | '/dashboard/giveaways'
+    | '/dashboard/global-bans'
+    | '/dashboard/honeypot'
+    | '/dashboard/invite-tracker'
+    | '/dashboard/jtc'
+    | '/dashboard/leaderboard'
+    | '/dashboard/leveling'
+    | '/dashboard/live-events'
+    | '/dashboard/log-settings'
+    | '/dashboard/logs'
+    | '/dashboard/members'
+    | '/dashboard/moderation'
+    | '/dashboard/modmail'
+    | '/dashboard/modules'
+    | '/dashboard/music-quiz'
+    | '/dashboard/notifications'
+    | '/dashboard/operations'
+    | '/dashboard/polls'
+    | '/dashboard/quarantine'
+    | '/dashboard/raid-protection'
+    | '/dashboard/reaction-roles'
+    | '/dashboard/reminders'
+    | '/dashboard/resources'
+    | '/dashboard/role-analytics'
+    | '/dashboard/scheduled-actions'
+    | '/dashboard/scheduler'
+    | '/dashboard/server-clone'
+    | '/dashboard/slowmode-scheduler'
+    | '/dashboard/starboard'
+    | '/dashboard/stats-channels'
+    | '/dashboard/suggestions'
+    | '/dashboard/tebex'
+    | '/dashboard/test-panel'
+    | '/dashboard/tiktok'
+    | '/dashboard/twitch'
+    | '/dashboard/verification'
+    | '/dashboard/warnings'
+    | '/dashboard/webhooks'
+    | '/dashboard/welcome'
+    | '/dashboard/youtube'
+    | '/docs/_layout'
+    | '/admin/'
+    | '/dashboard/'
+    | '/docs/'
+    | '/api/public/admin-check-ip'
+    | '/api/public/admin-users'
+    | '/api/public/ai-auto-respond'
+    | '/api/public/ai-automod'
+    | '/api/public/ai-chat'
+    | '/api/public/ai-health'
+    | '/api/public/ai-polish-text'
+    | '/api/public/ai-screen-application'
+    | '/api/public/ai-ticket-summary'
+    | '/api/public/analytics-aggregate'
+    | '/api/public/application-handler'
+    | '/api/public/auto-report'
+    | '/api/public/automod-handler'
+    | '/api/public/bot-characters'
+    | '/api/public/bot-deploy'
+    | '/api/public/bot-heartbeat'
+    | '/api/public/bot-log-events'
+    | '/api/public/bot-settings'
+    | '/api/public/bot-tickets'
+    | '/api/public/bot-welcome'
+    | '/api/public/create-demo-guild'
+    | '/api/public/deploy-guild-commands'
+    | '/api/public/discord-channels'
+    | '/api/public/discord-interactions'
+    | '/api/public/discord-members'
+    | '/api/public/discord-oauth'
+    | '/api/public/discord-roles'
+    | '/api/public/execute-fivem-command'
+    | '/api/public/fivem-handler'
+    | '/api/public/fivem-setup-key'
+    | '/api/public/generate-ticket-transcript'
+    | '/api/public/giveaway-handler'
+    | '/api/public/global-ban-handler'
+    | '/api/public/guild-bot-config'
+    | '/api/public/invite-tracker'
+    | '/api/public/jtc-handler'
+    | '/api/public/log-action'
+    | '/api/public/modmail-handler'
+    | '/api/public/platform-stats'
+    | '/api/public/premium-api'
+    | '/api/public/reaction-role-handler'
+    | '/api/public/register-fivem-commands'
+    | '/api/public/review-application'
+    | '/api/public/send-embed'
+    | '/api/public/send-poll'
+    | '/api/public/send-ticket-panel'
+    | '/api/public/send-verification-panel'
+    | '/api/public/server-backup'
+    | '/api/public/server-clone'
+    | '/api/public/submit-ticket-rating'
+    | '/api/public/tebex-handler'
+    | '/api/public/tebex-webhook'
+    | '/api/public/tiktok-test-notify'
+    | '/api/public/twitch-handler'
+    | '/api/public/xp-handler'
+    | '/dashboard/applications/$submissionId'
+    | '/dashboard/applications/analytics'
+    | '/dashboard/applications/settings'
+    | '/dashboard/tickets/$ticketId'
+    | '/dashboard/tickets/settings'
+    | '/docs/$category/$slug'
+    | '/dashboard/applications/'
+    | '/dashboard/tickets/'
+    | '/dashboard/applications/forms/$formId'
+  fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
-  IndexRoute: typeof IndexRoute;
-  SplatRoute: typeof SplatRoute;
-  AuthRoute: typeof AuthRoute;
-  DashboardRoute: typeof DashboardRouteWithChildren;
-  FeaturesRoute: typeof FeaturesRoute;
-  GuildsRoute: typeof GuildsRoute;
-  PrivacyRoute: typeof PrivacyRoute;
-  SecurityRoute: typeof SecurityRoute;
-  TermsRoute: typeof TermsRoute;
-  AdminGlobalBansRoute: typeof AdminGlobalBansRoute;
-  DocsLayoutRoute: typeof DocsLayoutRoute;
-  AdminIndexRoute: typeof AdminIndexRoute;
-  DocsIndexRoute: typeof DocsIndexRoute;
-  ApiPublicAdminCheckIpRoute: typeof ApiPublicAdminCheckIpRoute;
-  ApiPublicAdminUsersRoute: typeof ApiPublicAdminUsersRoute;
-  ApiPublicAiAutoRespondRoute: typeof ApiPublicAiAutoRespondRoute;
-  ApiPublicAiAutomodRoute: typeof ApiPublicAiAutomodRoute;
-  ApiPublicAiChatRoute: typeof ApiPublicAiChatRoute;
-  ApiPublicAiHealthRoute: typeof ApiPublicAiHealthRoute;
-  ApiPublicAiPolishTextRoute: typeof ApiPublicAiPolishTextRoute;
-  ApiPublicAiScreenApplicationRoute: typeof ApiPublicAiScreenApplicationRoute;
-  ApiPublicAiTicketSummaryRoute: typeof ApiPublicAiTicketSummaryRoute;
-  ApiPublicAnalyticsAggregateRoute: typeof ApiPublicAnalyticsAggregateRoute;
-  ApiPublicApplicationHandlerRoute: typeof ApiPublicApplicationHandlerRoute;
-  ApiPublicAutoReportRoute: typeof ApiPublicAutoReportRoute;
-  ApiPublicAutomodHandlerRoute: typeof ApiPublicAutomodHandlerRoute;
-  ApiPublicBotCharactersRoute: typeof ApiPublicBotCharactersRoute;
-  ApiPublicBotDeployRoute: typeof ApiPublicBotDeployRoute;
-  ApiPublicBotHeartbeatRoute: typeof ApiPublicBotHeartbeatRoute;
-  ApiPublicBotLogEventsRoute: typeof ApiPublicBotLogEventsRoute;
-  ApiPublicBotSettingsRoute: typeof ApiPublicBotSettingsRoute;
-  ApiPublicBotTicketsRoute: typeof ApiPublicBotTicketsRoute;
-  ApiPublicBotWelcomeRoute: typeof ApiPublicBotWelcomeRoute;
-  ApiPublicCreateDemoGuildRoute: typeof ApiPublicCreateDemoGuildRoute;
-  ApiPublicDeployGuildCommandsRoute: typeof ApiPublicDeployGuildCommandsRoute;
-  ApiPublicDiscordChannelsRoute: typeof ApiPublicDiscordChannelsRoute;
-  ApiPublicDiscordInteractionsRoute: typeof ApiPublicDiscordInteractionsRoute;
-  ApiPublicDiscordMembersRoute: typeof ApiPublicDiscordMembersRoute;
-  ApiPublicDiscordOauthRoute: typeof ApiPublicDiscordOauthRoute;
-  ApiPublicDiscordRolesRoute: typeof ApiPublicDiscordRolesRoute;
-  ApiPublicExecuteFivemCommandRoute: typeof ApiPublicExecuteFivemCommandRoute;
-  ApiPublicFivemHandlerRoute: typeof ApiPublicFivemHandlerRoute;
-  ApiPublicFivemSetupKeyRoute: typeof ApiPublicFivemSetupKeyRoute;
-  ApiPublicGenerateTicketTranscriptRoute: typeof ApiPublicGenerateTicketTranscriptRoute;
-  ApiPublicGiveawayHandlerRoute: typeof ApiPublicGiveawayHandlerRoute;
-  ApiPublicGlobalBanHandlerRoute: typeof ApiPublicGlobalBanHandlerRoute;
-  ApiPublicGuildBotConfigRoute: typeof ApiPublicGuildBotConfigRoute;
-  ApiPublicInviteTrackerRoute: typeof ApiPublicInviteTrackerRoute;
-  ApiPublicJtcHandlerRoute: typeof ApiPublicJtcHandlerRoute;
-  ApiPublicLogActionRoute: typeof ApiPublicLogActionRoute;
-  ApiPublicModmailHandlerRoute: typeof ApiPublicModmailHandlerRoute;
-  ApiPublicPlatformStatsRoute: typeof ApiPublicPlatformStatsRoute;
-  ApiPublicPremiumApiRoute: typeof ApiPublicPremiumApiRoute;
-  ApiPublicReactionRoleHandlerRoute: typeof ApiPublicReactionRoleHandlerRoute;
-  ApiPublicRegisterFivemCommandsRoute: typeof ApiPublicRegisterFivemCommandsRoute;
-  ApiPublicReviewApplicationRoute: typeof ApiPublicReviewApplicationRoute;
-  ApiPublicSendEmbedRoute: typeof ApiPublicSendEmbedRoute;
-  ApiPublicSendPollRoute: typeof ApiPublicSendPollRoute;
-  ApiPublicSendTicketPanelRoute: typeof ApiPublicSendTicketPanelRoute;
-  ApiPublicSendVerificationPanelRoute: typeof ApiPublicSendVerificationPanelRoute;
-  ApiPublicServerBackupRoute: typeof ApiPublicServerBackupRoute;
-  ApiPublicServerCloneRoute: typeof ApiPublicServerCloneRoute;
-  ApiPublicSubmitTicketRatingRoute: typeof ApiPublicSubmitTicketRatingRoute;
-  ApiPublicTebexHandlerRoute: typeof ApiPublicTebexHandlerRoute;
-  ApiPublicTebexWebhookRoute: typeof ApiPublicTebexWebhookRoute;
-  ApiPublicTiktokTestNotifyRoute: typeof ApiPublicTiktokTestNotifyRoute;
-  ApiPublicTwitchHandlerRoute: typeof ApiPublicTwitchHandlerRoute;
-  ApiPublicXpHandlerRoute: typeof ApiPublicXpHandlerRoute;
-  DocsCategorySlugRoute: typeof DocsCategorySlugRoute;
+  IndexRoute: typeof IndexRoute
+  SplatRoute: typeof SplatRoute
+  AuthRoute: typeof AuthRoute
+  DashboardRoute: typeof DashboardRouteWithChildren
+  FeaturesRoute: typeof FeaturesRoute
+  GuildsRoute: typeof GuildsRoute
+  PrivacyRoute: typeof PrivacyRoute
+  SecurityRoute: typeof SecurityRoute
+  TermsRoute: typeof TermsRoute
+  AdminGlobalBansRoute: typeof AdminGlobalBansRoute
+  DocsLayoutRoute: typeof DocsLayoutRoute
+  AdminIndexRoute: typeof AdminIndexRoute
+  DocsIndexRoute: typeof DocsIndexRoute
+  ApiPublicAdminCheckIpRoute: typeof ApiPublicAdminCheckIpRoute
+  ApiPublicAdminUsersRoute: typeof ApiPublicAdminUsersRoute
+  ApiPublicAiAutoRespondRoute: typeof ApiPublicAiAutoRespondRoute
+  ApiPublicAiAutomodRoute: typeof ApiPublicAiAutomodRoute
+  ApiPublicAiChatRoute: typeof ApiPublicAiChatRoute
+  ApiPublicAiHealthRoute: typeof ApiPublicAiHealthRoute
+  ApiPublicAiPolishTextRoute: typeof ApiPublicAiPolishTextRoute
+  ApiPublicAiScreenApplicationRoute: typeof ApiPublicAiScreenApplicationRoute
+  ApiPublicAiTicketSummaryRoute: typeof ApiPublicAiTicketSummaryRoute
+  ApiPublicAnalyticsAggregateRoute: typeof ApiPublicAnalyticsAggregateRoute
+  ApiPublicApplicationHandlerRoute: typeof ApiPublicApplicationHandlerRoute
+  ApiPublicAutoReportRoute: typeof ApiPublicAutoReportRoute
+  ApiPublicAutomodHandlerRoute: typeof ApiPublicAutomodHandlerRoute
+  ApiPublicBotCharactersRoute: typeof ApiPublicBotCharactersRoute
+  ApiPublicBotDeployRoute: typeof ApiPublicBotDeployRoute
+  ApiPublicBotHeartbeatRoute: typeof ApiPublicBotHeartbeatRoute
+  ApiPublicBotLogEventsRoute: typeof ApiPublicBotLogEventsRoute
+  ApiPublicBotSettingsRoute: typeof ApiPublicBotSettingsRoute
+  ApiPublicBotTicketsRoute: typeof ApiPublicBotTicketsRoute
+  ApiPublicBotWelcomeRoute: typeof ApiPublicBotWelcomeRoute
+  ApiPublicCreateDemoGuildRoute: typeof ApiPublicCreateDemoGuildRoute
+  ApiPublicDeployGuildCommandsRoute: typeof ApiPublicDeployGuildCommandsRoute
+  ApiPublicDiscordChannelsRoute: typeof ApiPublicDiscordChannelsRoute
+  ApiPublicDiscordInteractionsRoute: typeof ApiPublicDiscordInteractionsRoute
+  ApiPublicDiscordMembersRoute: typeof ApiPublicDiscordMembersRoute
+  ApiPublicDiscordOauthRoute: typeof ApiPublicDiscordOauthRoute
+  ApiPublicDiscordRolesRoute: typeof ApiPublicDiscordRolesRoute
+  ApiPublicExecuteFivemCommandRoute: typeof ApiPublicExecuteFivemCommandRoute
+  ApiPublicFivemHandlerRoute: typeof ApiPublicFivemHandlerRoute
+  ApiPublicFivemSetupKeyRoute: typeof ApiPublicFivemSetupKeyRoute
+  ApiPublicGenerateTicketTranscriptRoute: typeof ApiPublicGenerateTicketTranscriptRoute
+  ApiPublicGiveawayHandlerRoute: typeof ApiPublicGiveawayHandlerRoute
+  ApiPublicGlobalBanHandlerRoute: typeof ApiPublicGlobalBanHandlerRoute
+  ApiPublicGuildBotConfigRoute: typeof ApiPublicGuildBotConfigRoute
+  ApiPublicInviteTrackerRoute: typeof ApiPublicInviteTrackerRoute
+  ApiPublicJtcHandlerRoute: typeof ApiPublicJtcHandlerRoute
+  ApiPublicLogActionRoute: typeof ApiPublicLogActionRoute
+  ApiPublicModmailHandlerRoute: typeof ApiPublicModmailHandlerRoute
+  ApiPublicPlatformStatsRoute: typeof ApiPublicPlatformStatsRoute
+  ApiPublicPremiumApiRoute: typeof ApiPublicPremiumApiRoute
+  ApiPublicReactionRoleHandlerRoute: typeof ApiPublicReactionRoleHandlerRoute
+  ApiPublicRegisterFivemCommandsRoute: typeof ApiPublicRegisterFivemCommandsRoute
+  ApiPublicReviewApplicationRoute: typeof ApiPublicReviewApplicationRoute
+  ApiPublicSendEmbedRoute: typeof ApiPublicSendEmbedRoute
+  ApiPublicSendPollRoute: typeof ApiPublicSendPollRoute
+  ApiPublicSendTicketPanelRoute: typeof ApiPublicSendTicketPanelRoute
+  ApiPublicSendVerificationPanelRoute: typeof ApiPublicSendVerificationPanelRoute
+  ApiPublicServerBackupRoute: typeof ApiPublicServerBackupRoute
+  ApiPublicServerCloneRoute: typeof ApiPublicServerCloneRoute
+  ApiPublicSubmitTicketRatingRoute: typeof ApiPublicSubmitTicketRatingRoute
+  ApiPublicTebexHandlerRoute: typeof ApiPublicTebexHandlerRoute
+  ApiPublicTebexWebhookRoute: typeof ApiPublicTebexWebhookRoute
+  ApiPublicTiktokTestNotifyRoute: typeof ApiPublicTiktokTestNotifyRoute
+  ApiPublicTwitchHandlerRoute: typeof ApiPublicTwitchHandlerRoute
+  ApiPublicXpHandlerRoute: typeof ApiPublicXpHandlerRoute
+  DocsCategorySlugRoute: typeof DocsCategorySlugRoute
 }
 
-declare module "@tanstack/react-router" {
+declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    "/": {
-      id: "/";
-      path: "/";
-      fullPath: "/";
-      preLoaderRoute: typeof IndexRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    "/$": {
-      id: "/$";
-      path: "/$";
-      fullPath: "/$";
-      preLoaderRoute: typeof SplatRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    "/auth": {
-      id: "/auth";
-      path: "/auth";
-      fullPath: "/auth";
-      preLoaderRoute: typeof AuthRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    "/dashboard": {
-      id: "/dashboard";
-      path: "/dashboard";
-      fullPath: "/dashboard";
-      preLoaderRoute: typeof DashboardRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    "/features": {
-      id: "/features";
-      path: "/features";
-      fullPath: "/features";
-      preLoaderRoute: typeof FeaturesRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    "/guilds": {
-      id: "/guilds";
-      path: "/guilds";
-      fullPath: "/guilds";
-      preLoaderRoute: typeof GuildsRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    "/privacy": {
-      id: "/privacy";
-      path: "/privacy";
-      fullPath: "/privacy";
-      preLoaderRoute: typeof PrivacyRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    "/security": {
-      id: "/security";
-      path: "/security";
-      fullPath: "/security";
-      preLoaderRoute: typeof SecurityRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    "/terms": {
-      id: "/terms";
-      path: "/terms";
-      fullPath: "/terms";
-      preLoaderRoute: typeof TermsRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    "/admin/": {
-      id: "/admin/";
-      path: "/admin";
-      fullPath: "/admin/";
-      preLoaderRoute: typeof AdminIndexRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    "/admin/global-bans": {
-      id: "/admin/global-bans";
-      path: "/admin/global-bans";
-      fullPath: "/admin/global-bans";
-      preLoaderRoute: typeof AdminGlobalBansRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    "/dashboard/": {
-      id: "/dashboard/";
-      path: "/";
-      fullPath: "/dashboard/";
-      preLoaderRoute: typeof DashboardIndexRouteImport;
-      parentRoute: typeof DashboardRoute;
-    };
-    "/dashboard/activity-heatmap": {
-      id: "/dashboard/activity-heatmap";
-      path: "/activity-heatmap";
-      fullPath: "/dashboard/activity-heatmap";
-      preLoaderRoute: typeof DashboardActivityHeatmapRouteImport;
-      parentRoute: typeof DashboardRoute;
-    };
-    "/dashboard/ai-automod": {
-      id: "/dashboard/ai-automod";
-      path: "/ai-automod";
-      fullPath: "/dashboard/ai-automod";
-      preLoaderRoute: typeof DashboardAiAutomodRouteImport;
-      parentRoute: typeof DashboardRoute;
-    };
-    "/dashboard/ai-chat": {
-      id: "/dashboard/ai-chat";
-      path: "/ai-chat";
-      fullPath: "/dashboard/ai-chat";
-      preLoaderRoute: typeof DashboardAiChatRouteImport;
-      parentRoute: typeof DashboardRoute;
-    };
-    "/dashboard/analytics": {
-      id: "/dashboard/analytics";
-      path: "/analytics";
-      fullPath: "/dashboard/analytics";
-      preLoaderRoute: typeof DashboardAnalyticsRouteImport;
-      parentRoute: typeof DashboardRoute;
-    };
-    "/dashboard/auto-reports": {
-      id: "/dashboard/auto-reports";
-      path: "/auto-reports";
-      fullPath: "/dashboard/auto-reports";
-      preLoaderRoute: typeof DashboardAutoReportsRouteImport;
-      parentRoute: typeof DashboardRoute;
-    };
-    "/dashboard/auto-responders": {
-      id: "/dashboard/auto-responders";
-      path: "/auto-responders";
-      fullPath: "/dashboard/auto-responders";
-      preLoaderRoute: typeof DashboardAutoRespondersRouteImport;
-      parentRoute: typeof DashboardRoute;
-    };
-    "/dashboard/automod": {
-      id: "/dashboard/automod";
-      path: "/automod";
-      fullPath: "/dashboard/automod";
-      preLoaderRoute: typeof DashboardAutomodRouteImport;
-      parentRoute: typeof DashboardRoute;
-    };
-    "/dashboard/backups": {
-      id: "/dashboard/backups";
-      path: "/backups";
-      fullPath: "/dashboard/backups";
-      preLoaderRoute: typeof DashboardBackupsRouteImport;
-      parentRoute: typeof DashboardRoute;
-    };
-    "/dashboard/birthdays": {
-      id: "/dashboard/birthdays";
-      path: "/birthdays";
-      fullPath: "/dashboard/birthdays";
-      preLoaderRoute: typeof DashboardBirthdaysRouteImport;
-      parentRoute: typeof DashboardRoute;
-    };
-    "/dashboard/bot-health": {
-      id: "/dashboard/bot-health";
-      path: "/bot-health";
-      fullPath: "/dashboard/bot-health";
-      preLoaderRoute: typeof DashboardBotHealthRouteImport;
-      parentRoute: typeof DashboardRoute;
-    };
-    "/dashboard/bot-settings": {
-      id: "/dashboard/bot-settings";
-      path: "/bot-settings";
-      fullPath: "/dashboard/bot-settings";
-      preLoaderRoute: typeof DashboardBotSettingsRouteImport;
-      parentRoute: typeof DashboardRoute;
-    };
-    "/dashboard/changelog": {
-      id: "/dashboard/changelog";
-      path: "/changelog";
-      fullPath: "/dashboard/changelog";
-      preLoaderRoute: typeof DashboardChangelogRouteImport;
-      parentRoute: typeof DashboardRoute;
-    };
-    "/dashboard/characters": {
-      id: "/dashboard/characters";
-      path: "/characters";
-      fullPath: "/dashboard/characters";
-      preLoaderRoute: typeof DashboardCharactersRouteImport;
-      parentRoute: typeof DashboardRoute;
-    };
-    "/dashboard/commands": {
-      id: "/dashboard/commands";
-      path: "/commands";
-      fullPath: "/dashboard/commands";
-      preLoaderRoute: typeof DashboardCommandsRouteImport;
-      parentRoute: typeof DashboardRoute;
-    };
-    "/dashboard/confessions": {
-      id: "/dashboard/confessions";
-      path: "/confessions";
-      fullPath: "/dashboard/confessions";
-      preLoaderRoute: typeof DashboardConfessionsRouteImport;
-      parentRoute: typeof DashboardRoute;
-    };
-    "/dashboard/counting": {
-      id: "/dashboard/counting";
-      path: "/counting";
-      fullPath: "/dashboard/counting";
-      preLoaderRoute: typeof DashboardCountingRouteImport;
-      parentRoute: typeof DashboardRoute;
-    };
-    "/dashboard/currency-shop": {
-      id: "/dashboard/currency-shop";
-      path: "/currency-shop";
-      fullPath: "/dashboard/currency-shop";
-      preLoaderRoute: typeof DashboardCurrencyShopRouteImport;
-      parentRoute: typeof DashboardRoute;
-    };
-    "/dashboard/custom-commands": {
-      id: "/dashboard/custom-commands";
-      path: "/custom-commands";
-      fullPath: "/dashboard/custom-commands";
-      preLoaderRoute: typeof DashboardCustomCommandsRouteImport;
-      parentRoute: typeof DashboardRoute;
-    };
-    "/dashboard/economy": {
-      id: "/dashboard/economy";
-      path: "/economy";
-      fullPath: "/dashboard/economy";
-      preLoaderRoute: typeof DashboardEconomyRouteImport;
-      parentRoute: typeof DashboardRoute;
-    };
-    "/dashboard/embed-builder": {
-      id: "/dashboard/embed-builder";
-      path: "/embed-builder";
-      fullPath: "/dashboard/embed-builder";
-      preLoaderRoute: typeof DashboardEmbedBuilderRouteImport;
-      parentRoute: typeof DashboardRoute;
-    };
-    "/dashboard/features": {
-      id: "/dashboard/features";
-      path: "/features";
-      fullPath: "/dashboard/features";
-      preLoaderRoute: typeof DashboardFeaturesRouteImport;
-      parentRoute: typeof DashboardRoute;
-    };
-    "/dashboard/fivem": {
-      id: "/dashboard/fivem";
-      path: "/fivem";
-      fullPath: "/dashboard/fivem";
-      preLoaderRoute: typeof DashboardFivemRouteImport;
-      parentRoute: typeof DashboardRoute;
-    };
-    "/dashboard/giveaways": {
-      id: "/dashboard/giveaways";
-      path: "/giveaways";
-      fullPath: "/dashboard/giveaways";
-      preLoaderRoute: typeof DashboardGiveawaysRouteImport;
-      parentRoute: typeof DashboardRoute;
-    };
-    "/dashboard/global-bans": {
-      id: "/dashboard/global-bans";
-      path: "/global-bans";
-      fullPath: "/dashboard/global-bans";
-      preLoaderRoute: typeof DashboardGlobalBansRouteImport;
-      parentRoute: typeof DashboardRoute;
-    };
-    "/dashboard/honeypot": {
-      id: "/dashboard/honeypot";
-      path: "/honeypot";
-      fullPath: "/dashboard/honeypot";
-      preLoaderRoute: typeof DashboardHoneypotRouteImport;
-      parentRoute: typeof DashboardRoute;
-    };
-    "/dashboard/invite-tracker": {
-      id: "/dashboard/invite-tracker";
-      path: "/invite-tracker";
-      fullPath: "/dashboard/invite-tracker";
-      preLoaderRoute: typeof DashboardInviteTrackerRouteImport;
-      parentRoute: typeof DashboardRoute;
-    };
-    "/dashboard/jtc": {
-      id: "/dashboard/jtc";
-      path: "/jtc";
-      fullPath: "/dashboard/jtc";
-      preLoaderRoute: typeof DashboardJtcRouteImport;
-      parentRoute: typeof DashboardRoute;
-    };
-    "/dashboard/leaderboard": {
-      id: "/dashboard/leaderboard";
-      path: "/leaderboard";
-      fullPath: "/dashboard/leaderboard";
-      preLoaderRoute: typeof DashboardLeaderboardRouteImport;
-      parentRoute: typeof DashboardRoute;
-    };
-    "/dashboard/leveling": {
-      id: "/dashboard/leveling";
-      path: "/leveling";
-      fullPath: "/dashboard/leveling";
-      preLoaderRoute: typeof DashboardLevelingRouteImport;
-      parentRoute: typeof DashboardRoute;
-    };
-    "/dashboard/live-events": {
-      id: "/dashboard/live-events";
-      path: "/live-events";
-      fullPath: "/dashboard/live-events";
-      preLoaderRoute: typeof DashboardLiveEventsRouteImport;
-      parentRoute: typeof DashboardRoute;
-    };
-    "/dashboard/log-settings": {
-      id: "/dashboard/log-settings";
-      path: "/log-settings";
-      fullPath: "/dashboard/log-settings";
-      preLoaderRoute: typeof DashboardLogSettingsRouteImport;
-      parentRoute: typeof DashboardRoute;
-    };
-    "/dashboard/logs": {
-      id: "/dashboard/logs";
-      path: "/logs";
-      fullPath: "/dashboard/logs";
-      preLoaderRoute: typeof DashboardLogsRouteImport;
-      parentRoute: typeof DashboardRoute;
-    };
-    "/dashboard/members": {
-      id: "/dashboard/members";
-      path: "/members";
-      fullPath: "/dashboard/members";
-      preLoaderRoute: typeof DashboardMembersRouteImport;
-      parentRoute: typeof DashboardRoute;
-    };
-    "/dashboard/moderation": {
-      id: "/dashboard/moderation";
-      path: "/moderation";
-      fullPath: "/dashboard/moderation";
-      preLoaderRoute: typeof DashboardModerationRouteImport;
-      parentRoute: typeof DashboardRoute;
-    };
-    "/dashboard/modmail": {
-      id: "/dashboard/modmail";
-      path: "/modmail";
-      fullPath: "/dashboard/modmail";
-      preLoaderRoute: typeof DashboardModmailRouteImport;
-      parentRoute: typeof DashboardRoute;
-    };
-    "/dashboard/modules": {
-      id: "/dashboard/modules";
-      path: "/modules";
-      fullPath: "/dashboard/modules";
-      preLoaderRoute: typeof DashboardModulesRouteImport;
-      parentRoute: typeof DashboardRoute;
-    };
-    "/dashboard/music-quiz": {
-      id: "/dashboard/music-quiz";
-      path: "/music-quiz";
-      fullPath: "/dashboard/music-quiz";
-      preLoaderRoute: typeof DashboardMusicQuizRouteImport;
-      parentRoute: typeof DashboardRoute;
-    };
-    "/dashboard/notifications": {
-      id: "/dashboard/notifications";
-      path: "/notifications";
-      fullPath: "/dashboard/notifications";
-      preLoaderRoute: typeof DashboardNotificationsRouteImport;
-      parentRoute: typeof DashboardRoute;
-    };
-    "/dashboard/operations": {
-      id: "/dashboard/operations";
-      path: "/operations";
-      fullPath: "/dashboard/operations";
-      preLoaderRoute: typeof DashboardOperationsRouteImport;
-      parentRoute: typeof DashboardRoute;
-    };
-    "/dashboard/polls": {
-      id: "/dashboard/polls";
-      path: "/polls";
-      fullPath: "/dashboard/polls";
-      preLoaderRoute: typeof DashboardPollsRouteImport;
-      parentRoute: typeof DashboardRoute;
-    };
-    "/dashboard/quarantine": {
-      id: "/dashboard/quarantine";
-      path: "/quarantine";
-      fullPath: "/dashboard/quarantine";
-      preLoaderRoute: typeof DashboardQuarantineRouteImport;
-      parentRoute: typeof DashboardRoute;
-    };
-    "/dashboard/raid-protection": {
-      id: "/dashboard/raid-protection";
-      path: "/raid-protection";
-      fullPath: "/dashboard/raid-protection";
-      preLoaderRoute: typeof DashboardRaidProtectionRouteImport;
-      parentRoute: typeof DashboardRoute;
-    };
-    "/dashboard/reaction-roles": {
-      id: "/dashboard/reaction-roles";
-      path: "/reaction-roles";
-      fullPath: "/dashboard/reaction-roles";
-      preLoaderRoute: typeof DashboardReactionRolesRouteImport;
-      parentRoute: typeof DashboardRoute;
-    };
-    "/dashboard/reminders": {
-      id: "/dashboard/reminders";
-      path: "/reminders";
-      fullPath: "/dashboard/reminders";
-      preLoaderRoute: typeof DashboardRemindersRouteImport;
-      parentRoute: typeof DashboardRoute;
-    };
-    "/dashboard/resources": {
-      id: "/dashboard/resources";
-      path: "/resources";
-      fullPath: "/dashboard/resources";
-      preLoaderRoute: typeof DashboardResourcesRouteImport;
-      parentRoute: typeof DashboardRoute;
-    };
-    "/dashboard/role-analytics": {
-      id: "/dashboard/role-analytics";
-      path: "/role-analytics";
-      fullPath: "/dashboard/role-analytics";
-      preLoaderRoute: typeof DashboardRoleAnalyticsRouteImport;
-      parentRoute: typeof DashboardRoute;
-    };
-    "/dashboard/scheduled-actions": {
-      id: "/dashboard/scheduled-actions";
-      path: "/scheduled-actions";
-      fullPath: "/dashboard/scheduled-actions";
-      preLoaderRoute: typeof DashboardScheduledActionsRouteImport;
-      parentRoute: typeof DashboardRoute;
-    };
-    "/dashboard/scheduler": {
-      id: "/dashboard/scheduler";
-      path: "/scheduler";
-      fullPath: "/dashboard/scheduler";
-      preLoaderRoute: typeof DashboardSchedulerRouteImport;
-      parentRoute: typeof DashboardRoute;
-    };
-    "/dashboard/server-clone": {
-      id: "/dashboard/server-clone";
-      path: "/server-clone";
-      fullPath: "/dashboard/server-clone";
-      preLoaderRoute: typeof DashboardServerCloneRouteImport;
-      parentRoute: typeof DashboardRoute;
-    };
-    "/dashboard/slowmode-scheduler": {
-      id: "/dashboard/slowmode-scheduler";
-      path: "/slowmode-scheduler";
-      fullPath: "/dashboard/slowmode-scheduler";
-      preLoaderRoute: typeof DashboardSlowmodeSchedulerRouteImport;
-      parentRoute: typeof DashboardRoute;
-    };
-    "/dashboard/starboard": {
-      id: "/dashboard/starboard";
-      path: "/starboard";
-      fullPath: "/dashboard/starboard";
-      preLoaderRoute: typeof DashboardStarboardRouteImport;
-      parentRoute: typeof DashboardRoute;
-    };
-    "/dashboard/stats-channels": {
-      id: "/dashboard/stats-channels";
-      path: "/stats-channels";
-      fullPath: "/dashboard/stats-channels";
-      preLoaderRoute: typeof DashboardStatsChannelsRouteImport;
-      parentRoute: typeof DashboardRoute;
-    };
-    "/dashboard/suggestions": {
-      id: "/dashboard/suggestions";
-      path: "/suggestions";
-      fullPath: "/dashboard/suggestions";
-      preLoaderRoute: typeof DashboardSuggestionsRouteImport;
-      parentRoute: typeof DashboardRoute;
-    };
-    "/dashboard/tebex": {
-      id: "/dashboard/tebex";
-      path: "/tebex";
-      fullPath: "/dashboard/tebex";
-      preLoaderRoute: typeof DashboardTebexRouteImport;
-      parentRoute: typeof DashboardRoute;
-    };
-    "/dashboard/test-panel": {
-      id: "/dashboard/test-panel";
-      path: "/test-panel";
-      fullPath: "/dashboard/test-panel";
-      preLoaderRoute: typeof DashboardTestPanelRouteImport;
-      parentRoute: typeof DashboardRoute;
-    };
-    "/dashboard/tiktok": {
-      id: "/dashboard/tiktok";
-      path: "/tiktok";
-      fullPath: "/dashboard/tiktok";
-      preLoaderRoute: typeof DashboardTiktokRouteImport;
-      parentRoute: typeof DashboardRoute;
-    };
-    "/dashboard/twitch": {
-      id: "/dashboard/twitch";
-      path: "/twitch";
-      fullPath: "/dashboard/twitch";
-      preLoaderRoute: typeof DashboardTwitchRouteImport;
-      parentRoute: typeof DashboardRoute;
-    };
-    "/dashboard/verification": {
-      id: "/dashboard/verification";
-      path: "/verification";
-      fullPath: "/dashboard/verification";
-      preLoaderRoute: typeof DashboardVerificationRouteImport;
-      parentRoute: typeof DashboardRoute;
-    };
-    "/dashboard/warnings": {
-      id: "/dashboard/warnings";
-      path: "/warnings";
-      fullPath: "/dashboard/warnings";
-      preLoaderRoute: typeof DashboardWarningsRouteImport;
-      parentRoute: typeof DashboardRoute;
-    };
-    "/dashboard/webhooks": {
-      id: "/dashboard/webhooks";
-      path: "/webhooks";
-      fullPath: "/dashboard/webhooks";
-      preLoaderRoute: typeof DashboardWebhooksRouteImport;
-      parentRoute: typeof DashboardRoute;
-    };
-    "/dashboard/welcome": {
-      id: "/dashboard/welcome";
-      path: "/welcome";
-      fullPath: "/dashboard/welcome";
-      preLoaderRoute: typeof DashboardWelcomeRouteImport;
-      parentRoute: typeof DashboardRoute;
-    };
-    "/dashboard/youtube": {
-      id: "/dashboard/youtube";
-      path: "/youtube";
-      fullPath: "/dashboard/youtube";
-      preLoaderRoute: typeof DashboardYoutubeRouteImport;
-      parentRoute: typeof DashboardRoute;
-    };
-    "/docs/": {
-      id: "/docs/";
-      path: "/docs";
-      fullPath: "/docs/";
-      preLoaderRoute: typeof DocsIndexRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    "/docs/_layout": {
-      id: "/docs/_layout";
-      path: "/docs";
-      fullPath: "/docs";
-      preLoaderRoute: typeof DocsLayoutRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    "/api/public/admin-check-ip": {
-      id: "/api/public/admin-check-ip";
-      path: "/api/public/admin-check-ip";
-      fullPath: "/api/public/admin-check-ip";
-      preLoaderRoute: typeof ApiPublicAdminCheckIpRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    "/api/public/admin-users": {
-      id: "/api/public/admin-users";
-      path: "/api/public/admin-users";
-      fullPath: "/api/public/admin-users";
-      preLoaderRoute: typeof ApiPublicAdminUsersRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    "/api/public/ai-auto-respond": {
-      id: "/api/public/ai-auto-respond";
-      path: "/api/public/ai-auto-respond";
-      fullPath: "/api/public/ai-auto-respond";
-      preLoaderRoute: typeof ApiPublicAiAutoRespondRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    "/api/public/ai-automod": {
-      id: "/api/public/ai-automod";
-      path: "/api/public/ai-automod";
-      fullPath: "/api/public/ai-automod";
-      preLoaderRoute: typeof ApiPublicAiAutomodRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    "/api/public/ai-chat": {
-      id: "/api/public/ai-chat";
-      path: "/api/public/ai-chat";
-      fullPath: "/api/public/ai-chat";
-      preLoaderRoute: typeof ApiPublicAiChatRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    "/api/public/ai-health": {
-      id: "/api/public/ai-health";
-      path: "/api/public/ai-health";
-      fullPath: "/api/public/ai-health";
-      preLoaderRoute: typeof ApiPublicAiHealthRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    "/api/public/ai-polish-text": {
-      id: "/api/public/ai-polish-text";
-      path: "/api/public/ai-polish-text";
-      fullPath: "/api/public/ai-polish-text";
-      preLoaderRoute: typeof ApiPublicAiPolishTextRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    "/api/public/ai-screen-application": {
-      id: "/api/public/ai-screen-application";
-      path: "/api/public/ai-screen-application";
-      fullPath: "/api/public/ai-screen-application";
-      preLoaderRoute: typeof ApiPublicAiScreenApplicationRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    "/api/public/ai-ticket-summary": {
-      id: "/api/public/ai-ticket-summary";
-      path: "/api/public/ai-ticket-summary";
-      fullPath: "/api/public/ai-ticket-summary";
-      preLoaderRoute: typeof ApiPublicAiTicketSummaryRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    "/api/public/analytics-aggregate": {
-      id: "/api/public/analytics-aggregate";
-      path: "/api/public/analytics-aggregate";
-      fullPath: "/api/public/analytics-aggregate";
-      preLoaderRoute: typeof ApiPublicAnalyticsAggregateRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    "/api/public/application-handler": {
-      id: "/api/public/application-handler";
-      path: "/api/public/application-handler";
-      fullPath: "/api/public/application-handler";
-      preLoaderRoute: typeof ApiPublicApplicationHandlerRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    "/api/public/auto-report": {
-      id: "/api/public/auto-report";
-      path: "/api/public/auto-report";
-      fullPath: "/api/public/auto-report";
-      preLoaderRoute: typeof ApiPublicAutoReportRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    "/api/public/automod-handler": {
-      id: "/api/public/automod-handler";
-      path: "/api/public/automod-handler";
-      fullPath: "/api/public/automod-handler";
-      preLoaderRoute: typeof ApiPublicAutomodHandlerRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    "/api/public/bot-characters": {
-      id: "/api/public/bot-characters";
-      path: "/api/public/bot-characters";
-      fullPath: "/api/public/bot-characters";
-      preLoaderRoute: typeof ApiPublicBotCharactersRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    "/api/public/bot-deploy": {
-      id: "/api/public/bot-deploy";
-      path: "/api/public/bot-deploy";
-      fullPath: "/api/public/bot-deploy";
-      preLoaderRoute: typeof ApiPublicBotDeployRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    "/api/public/bot-heartbeat": {
-      id: "/api/public/bot-heartbeat";
-      path: "/api/public/bot-heartbeat";
-      fullPath: "/api/public/bot-heartbeat";
-      preLoaderRoute: typeof ApiPublicBotHeartbeatRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    "/api/public/bot-log-events": {
-      id: "/api/public/bot-log-events";
-      path: "/api/public/bot-log-events";
-      fullPath: "/api/public/bot-log-events";
-      preLoaderRoute: typeof ApiPublicBotLogEventsRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    "/api/public/bot-settings": {
-      id: "/api/public/bot-settings";
-      path: "/api/public/bot-settings";
-      fullPath: "/api/public/bot-settings";
-      preLoaderRoute: typeof ApiPublicBotSettingsRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    "/api/public/bot-tickets": {
-      id: "/api/public/bot-tickets";
-      path: "/api/public/bot-tickets";
-      fullPath: "/api/public/bot-tickets";
-      preLoaderRoute: typeof ApiPublicBotTicketsRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    "/api/public/bot-welcome": {
-      id: "/api/public/bot-welcome";
-      path: "/api/public/bot-welcome";
-      fullPath: "/api/public/bot-welcome";
-      preLoaderRoute: typeof ApiPublicBotWelcomeRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    "/api/public/create-demo-guild": {
-      id: "/api/public/create-demo-guild";
-      path: "/api/public/create-demo-guild";
-      fullPath: "/api/public/create-demo-guild";
-      preLoaderRoute: typeof ApiPublicCreateDemoGuildRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    "/api/public/deploy-guild-commands": {
-      id: "/api/public/deploy-guild-commands";
-      path: "/api/public/deploy-guild-commands";
-      fullPath: "/api/public/deploy-guild-commands";
-      preLoaderRoute: typeof ApiPublicDeployGuildCommandsRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    "/api/public/discord-channels": {
-      id: "/api/public/discord-channels";
-      path: "/api/public/discord-channels";
-      fullPath: "/api/public/discord-channels";
-      preLoaderRoute: typeof ApiPublicDiscordChannelsRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    "/api/public/discord-interactions": {
-      id: "/api/public/discord-interactions";
-      path: "/api/public/discord-interactions";
-      fullPath: "/api/public/discord-interactions";
-      preLoaderRoute: typeof ApiPublicDiscordInteractionsRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    "/api/public/discord-members": {
-      id: "/api/public/discord-members";
-      path: "/api/public/discord-members";
-      fullPath: "/api/public/discord-members";
-      preLoaderRoute: typeof ApiPublicDiscordMembersRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    "/api/public/discord-oauth": {
-      id: "/api/public/discord-oauth";
-      path: "/api/public/discord-oauth";
-      fullPath: "/api/public/discord-oauth";
-      preLoaderRoute: typeof ApiPublicDiscordOauthRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    "/api/public/discord-roles": {
-      id: "/api/public/discord-roles";
-      path: "/api/public/discord-roles";
-      fullPath: "/api/public/discord-roles";
-      preLoaderRoute: typeof ApiPublicDiscordRolesRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    "/api/public/execute-fivem-command": {
-      id: "/api/public/execute-fivem-command";
-      path: "/api/public/execute-fivem-command";
-      fullPath: "/api/public/execute-fivem-command";
-      preLoaderRoute: typeof ApiPublicExecuteFivemCommandRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    "/api/public/fivem-handler": {
-      id: "/api/public/fivem-handler";
-      path: "/api/public/fivem-handler";
-      fullPath: "/api/public/fivem-handler";
-      preLoaderRoute: typeof ApiPublicFivemHandlerRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    "/api/public/fivem-setup-key": {
-      id: "/api/public/fivem-setup-key";
-      path: "/api/public/fivem-setup-key";
-      fullPath: "/api/public/fivem-setup-key";
-      preLoaderRoute: typeof ApiPublicFivemSetupKeyRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    "/api/public/generate-ticket-transcript": {
-      id: "/api/public/generate-ticket-transcript";
-      path: "/api/public/generate-ticket-transcript";
-      fullPath: "/api/public/generate-ticket-transcript";
-      preLoaderRoute: typeof ApiPublicGenerateTicketTranscriptRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    "/api/public/giveaway-handler": {
-      id: "/api/public/giveaway-handler";
-      path: "/api/public/giveaway-handler";
-      fullPath: "/api/public/giveaway-handler";
-      preLoaderRoute: typeof ApiPublicGiveawayHandlerRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    "/api/public/global-ban-handler": {
-      id: "/api/public/global-ban-handler";
-      path: "/api/public/global-ban-handler";
-      fullPath: "/api/public/global-ban-handler";
-      preLoaderRoute: typeof ApiPublicGlobalBanHandlerRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    "/api/public/guild-bot-config": {
-      id: "/api/public/guild-bot-config";
-      path: "/api/public/guild-bot-config";
-      fullPath: "/api/public/guild-bot-config";
-      preLoaderRoute: typeof ApiPublicGuildBotConfigRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    "/api/public/invite-tracker": {
-      id: "/api/public/invite-tracker";
-      path: "/api/public/invite-tracker";
-      fullPath: "/api/public/invite-tracker";
-      preLoaderRoute: typeof ApiPublicInviteTrackerRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    "/api/public/jtc-handler": {
-      id: "/api/public/jtc-handler";
-      path: "/api/public/jtc-handler";
-      fullPath: "/api/public/jtc-handler";
-      preLoaderRoute: typeof ApiPublicJtcHandlerRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    "/api/public/log-action": {
-      id: "/api/public/log-action";
-      path: "/api/public/log-action";
-      fullPath: "/api/public/log-action";
-      preLoaderRoute: typeof ApiPublicLogActionRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    "/api/public/modmail-handler": {
-      id: "/api/public/modmail-handler";
-      path: "/api/public/modmail-handler";
-      fullPath: "/api/public/modmail-handler";
-      preLoaderRoute: typeof ApiPublicModmailHandlerRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    "/api/public/platform-stats": {
-      id: "/api/public/platform-stats";
-      path: "/api/public/platform-stats";
-      fullPath: "/api/public/platform-stats";
-      preLoaderRoute: typeof ApiPublicPlatformStatsRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    "/api/public/premium-api": {
-      id: "/api/public/premium-api";
-      path: "/api/public/premium-api";
-      fullPath: "/api/public/premium-api";
-      preLoaderRoute: typeof ApiPublicPremiumApiRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    "/api/public/reaction-role-handler": {
-      id: "/api/public/reaction-role-handler";
-      path: "/api/public/reaction-role-handler";
-      fullPath: "/api/public/reaction-role-handler";
-      preLoaderRoute: typeof ApiPublicReactionRoleHandlerRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    "/api/public/register-fivem-commands": {
-      id: "/api/public/register-fivem-commands";
-      path: "/api/public/register-fivem-commands";
-      fullPath: "/api/public/register-fivem-commands";
-      preLoaderRoute: typeof ApiPublicRegisterFivemCommandsRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    "/api/public/review-application": {
-      id: "/api/public/review-application";
-      path: "/api/public/review-application";
-      fullPath: "/api/public/review-application";
-      preLoaderRoute: typeof ApiPublicReviewApplicationRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    "/api/public/send-embed": {
-      id: "/api/public/send-embed";
-      path: "/api/public/send-embed";
-      fullPath: "/api/public/send-embed";
-      preLoaderRoute: typeof ApiPublicSendEmbedRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    "/api/public/send-poll": {
-      id: "/api/public/send-poll";
-      path: "/api/public/send-poll";
-      fullPath: "/api/public/send-poll";
-      preLoaderRoute: typeof ApiPublicSendPollRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    "/api/public/send-ticket-panel": {
-      id: "/api/public/send-ticket-panel";
-      path: "/api/public/send-ticket-panel";
-      fullPath: "/api/public/send-ticket-panel";
-      preLoaderRoute: typeof ApiPublicSendTicketPanelRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    "/api/public/send-verification-panel": {
-      id: "/api/public/send-verification-panel";
-      path: "/api/public/send-verification-panel";
-      fullPath: "/api/public/send-verification-panel";
-      preLoaderRoute: typeof ApiPublicSendVerificationPanelRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    "/api/public/server-backup": {
-      id: "/api/public/server-backup";
-      path: "/api/public/server-backup";
-      fullPath: "/api/public/server-backup";
-      preLoaderRoute: typeof ApiPublicServerBackupRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    "/api/public/server-clone": {
-      id: "/api/public/server-clone";
-      path: "/api/public/server-clone";
-      fullPath: "/api/public/server-clone";
-      preLoaderRoute: typeof ApiPublicServerCloneRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    "/api/public/submit-ticket-rating": {
-      id: "/api/public/submit-ticket-rating";
-      path: "/api/public/submit-ticket-rating";
-      fullPath: "/api/public/submit-ticket-rating";
-      preLoaderRoute: typeof ApiPublicSubmitTicketRatingRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    "/api/public/tebex-handler": {
-      id: "/api/public/tebex-handler";
-      path: "/api/public/tebex-handler";
-      fullPath: "/api/public/tebex-handler";
-      preLoaderRoute: typeof ApiPublicTebexHandlerRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    "/api/public/tebex-webhook": {
-      id: "/api/public/tebex-webhook";
-      path: "/api/public/tebex-webhook";
-      fullPath: "/api/public/tebex-webhook";
-      preLoaderRoute: typeof ApiPublicTebexWebhookRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    "/api/public/tiktok-test-notify": {
-      id: "/api/public/tiktok-test-notify";
-      path: "/api/public/tiktok-test-notify";
-      fullPath: "/api/public/tiktok-test-notify";
-      preLoaderRoute: typeof ApiPublicTiktokTestNotifyRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    "/api/public/twitch-handler": {
-      id: "/api/public/twitch-handler";
-      path: "/api/public/twitch-handler";
-      fullPath: "/api/public/twitch-handler";
-      preLoaderRoute: typeof ApiPublicTwitchHandlerRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    "/api/public/xp-handler": {
-      id: "/api/public/xp-handler";
-      path: "/api/public/xp-handler";
-      fullPath: "/api/public/xp-handler";
-      preLoaderRoute: typeof ApiPublicXpHandlerRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    "/dashboard/applications/": {
-      id: "/dashboard/applications/";
-      path: "/applications";
-      fullPath: "/dashboard/applications/";
-      preLoaderRoute: typeof DashboardApplicationsIndexRouteImport;
-      parentRoute: typeof DashboardRoute;
-    };
-    "/dashboard/applications/$submissionId": {
-      id: "/dashboard/applications/$submissionId";
-      path: "/applications/$submissionId";
-      fullPath: "/dashboard/applications/$submissionId";
-      preLoaderRoute: typeof DashboardApplicationsSubmissionIdRouteImport;
-      parentRoute: typeof DashboardRoute;
-    };
-    "/dashboard/applications/analytics": {
-      id: "/dashboard/applications/analytics";
-      path: "/applications/analytics";
-      fullPath: "/dashboard/applications/analytics";
-      preLoaderRoute: typeof DashboardApplicationsAnalyticsRouteImport;
-      parentRoute: typeof DashboardRoute;
-    };
-    "/dashboard/applications/settings": {
-      id: "/dashboard/applications/settings";
-      path: "/applications/settings";
-      fullPath: "/dashboard/applications/settings";
-      preLoaderRoute: typeof DashboardApplicationsSettingsRouteImport;
-      parentRoute: typeof DashboardRoute;
-    };
-    "/dashboard/tickets/": {
-      id: "/dashboard/tickets/";
-      path: "/tickets";
-      fullPath: "/dashboard/tickets/";
-      preLoaderRoute: typeof DashboardTicketsIndexRouteImport;
-      parentRoute: typeof DashboardRoute;
-    };
-    "/dashboard/tickets/$ticketId": {
-      id: "/dashboard/tickets/$ticketId";
-      path: "/tickets/$ticketId";
-      fullPath: "/dashboard/tickets/$ticketId";
-      preLoaderRoute: typeof DashboardTicketsTicketIdRouteImport;
-      parentRoute: typeof DashboardRoute;
-    };
-    "/dashboard/tickets/settings": {
-      id: "/dashboard/tickets/settings";
-      path: "/tickets/settings";
-      fullPath: "/dashboard/tickets/settings";
-      preLoaderRoute: typeof DashboardTicketsSettingsRouteImport;
-      parentRoute: typeof DashboardRoute;
-    };
-    "/docs/$category/$slug": {
-      id: "/docs/$category/$slug";
-      path: "/docs/$category/$slug";
-      fullPath: "/docs/$category/$slug";
-      preLoaderRoute: typeof DocsCategorySlugRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    "/dashboard/applications/forms/$formId": {
-      id: "/dashboard/applications/forms/$formId";
-      path: "/applications/forms/$formId";
-      fullPath: "/dashboard/applications/forms/$formId";
-      preLoaderRoute: typeof DashboardApplicationsFormsFormIdRouteImport;
-      parentRoute: typeof DashboardRoute;
-    };
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/$': {
+      id: '/$'
+      path: '/$'
+      fullPath: '/$'
+      preLoaderRoute: typeof SplatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/dashboard': {
+      id: '/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof DashboardRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/features': {
+      id: '/features'
+      path: '/features'
+      fullPath: '/features'
+      preLoaderRoute: typeof FeaturesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/guilds': {
+      id: '/guilds'
+      path: '/guilds'
+      fullPath: '/guilds'
+      preLoaderRoute: typeof GuildsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/privacy': {
+      id: '/privacy'
+      path: '/privacy'
+      fullPath: '/privacy'
+      preLoaderRoute: typeof PrivacyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/security': {
+      id: '/security'
+      path: '/security'
+      fullPath: '/security'
+      preLoaderRoute: typeof SecurityRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/terms': {
+      id: '/terms'
+      path: '/terms'
+      fullPath: '/terms'
+      preLoaderRoute: typeof TermsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/': {
+      id: '/admin/'
+      path: '/admin'
+      fullPath: '/admin/'
+      preLoaderRoute: typeof AdminIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/global-bans': {
+      id: '/admin/global-bans'
+      path: '/admin/global-bans'
+      fullPath: '/admin/global-bans'
+      preLoaderRoute: typeof AdminGlobalBansRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/dashboard/': {
+      id: '/dashboard/'
+      path: '/'
+      fullPath: '/dashboard/'
+      preLoaderRoute: typeof DashboardIndexRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/activity-heatmap': {
+      id: '/dashboard/activity-heatmap'
+      path: '/activity-heatmap'
+      fullPath: '/dashboard/activity-heatmap'
+      preLoaderRoute: typeof DashboardActivityHeatmapRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/ai-automod': {
+      id: '/dashboard/ai-automod'
+      path: '/ai-automod'
+      fullPath: '/dashboard/ai-automod'
+      preLoaderRoute: typeof DashboardAiAutomodRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/ai-chat': {
+      id: '/dashboard/ai-chat'
+      path: '/ai-chat'
+      fullPath: '/dashboard/ai-chat'
+      preLoaderRoute: typeof DashboardAiChatRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/analytics': {
+      id: '/dashboard/analytics'
+      path: '/analytics'
+      fullPath: '/dashboard/analytics'
+      preLoaderRoute: typeof DashboardAnalyticsRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/auto-reports': {
+      id: '/dashboard/auto-reports'
+      path: '/auto-reports'
+      fullPath: '/dashboard/auto-reports'
+      preLoaderRoute: typeof DashboardAutoReportsRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/auto-responders': {
+      id: '/dashboard/auto-responders'
+      path: '/auto-responders'
+      fullPath: '/dashboard/auto-responders'
+      preLoaderRoute: typeof DashboardAutoRespondersRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/automod': {
+      id: '/dashboard/automod'
+      path: '/automod'
+      fullPath: '/dashboard/automod'
+      preLoaderRoute: typeof DashboardAutomodRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/backups': {
+      id: '/dashboard/backups'
+      path: '/backups'
+      fullPath: '/dashboard/backups'
+      preLoaderRoute: typeof DashboardBackupsRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/birthdays': {
+      id: '/dashboard/birthdays'
+      path: '/birthdays'
+      fullPath: '/dashboard/birthdays'
+      preLoaderRoute: typeof DashboardBirthdaysRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/bot-health': {
+      id: '/dashboard/bot-health'
+      path: '/bot-health'
+      fullPath: '/dashboard/bot-health'
+      preLoaderRoute: typeof DashboardBotHealthRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/bot-settings': {
+      id: '/dashboard/bot-settings'
+      path: '/bot-settings'
+      fullPath: '/dashboard/bot-settings'
+      preLoaderRoute: typeof DashboardBotSettingsRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/changelog': {
+      id: '/dashboard/changelog'
+      path: '/changelog'
+      fullPath: '/dashboard/changelog'
+      preLoaderRoute: typeof DashboardChangelogRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/characters': {
+      id: '/dashboard/characters'
+      path: '/characters'
+      fullPath: '/dashboard/characters'
+      preLoaderRoute: typeof DashboardCharactersRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/commands': {
+      id: '/dashboard/commands'
+      path: '/commands'
+      fullPath: '/dashboard/commands'
+      preLoaderRoute: typeof DashboardCommandsRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/confessions': {
+      id: '/dashboard/confessions'
+      path: '/confessions'
+      fullPath: '/dashboard/confessions'
+      preLoaderRoute: typeof DashboardConfessionsRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/counting': {
+      id: '/dashboard/counting'
+      path: '/counting'
+      fullPath: '/dashboard/counting'
+      preLoaderRoute: typeof DashboardCountingRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/currency-shop': {
+      id: '/dashboard/currency-shop'
+      path: '/currency-shop'
+      fullPath: '/dashboard/currency-shop'
+      preLoaderRoute: typeof DashboardCurrencyShopRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/custom-commands': {
+      id: '/dashboard/custom-commands'
+      path: '/custom-commands'
+      fullPath: '/dashboard/custom-commands'
+      preLoaderRoute: typeof DashboardCustomCommandsRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/economy': {
+      id: '/dashboard/economy'
+      path: '/economy'
+      fullPath: '/dashboard/economy'
+      preLoaderRoute: typeof DashboardEconomyRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/embed-builder': {
+      id: '/dashboard/embed-builder'
+      path: '/embed-builder'
+      fullPath: '/dashboard/embed-builder'
+      preLoaderRoute: typeof DashboardEmbedBuilderRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/features': {
+      id: '/dashboard/features'
+      path: '/features'
+      fullPath: '/dashboard/features'
+      preLoaderRoute: typeof DashboardFeaturesRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/fivem': {
+      id: '/dashboard/fivem'
+      path: '/fivem'
+      fullPath: '/dashboard/fivem'
+      preLoaderRoute: typeof DashboardFivemRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/giveaways': {
+      id: '/dashboard/giveaways'
+      path: '/giveaways'
+      fullPath: '/dashboard/giveaways'
+      preLoaderRoute: typeof DashboardGiveawaysRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/global-bans': {
+      id: '/dashboard/global-bans'
+      path: '/global-bans'
+      fullPath: '/dashboard/global-bans'
+      preLoaderRoute: typeof DashboardGlobalBansRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/honeypot': {
+      id: '/dashboard/honeypot'
+      path: '/honeypot'
+      fullPath: '/dashboard/honeypot'
+      preLoaderRoute: typeof DashboardHoneypotRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/invite-tracker': {
+      id: '/dashboard/invite-tracker'
+      path: '/invite-tracker'
+      fullPath: '/dashboard/invite-tracker'
+      preLoaderRoute: typeof DashboardInviteTrackerRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/jtc': {
+      id: '/dashboard/jtc'
+      path: '/jtc'
+      fullPath: '/dashboard/jtc'
+      preLoaderRoute: typeof DashboardJtcRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/leaderboard': {
+      id: '/dashboard/leaderboard'
+      path: '/leaderboard'
+      fullPath: '/dashboard/leaderboard'
+      preLoaderRoute: typeof DashboardLeaderboardRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/leveling': {
+      id: '/dashboard/leveling'
+      path: '/leveling'
+      fullPath: '/dashboard/leveling'
+      preLoaderRoute: typeof DashboardLevelingRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/live-events': {
+      id: '/dashboard/live-events'
+      path: '/live-events'
+      fullPath: '/dashboard/live-events'
+      preLoaderRoute: typeof DashboardLiveEventsRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/log-settings': {
+      id: '/dashboard/log-settings'
+      path: '/log-settings'
+      fullPath: '/dashboard/log-settings'
+      preLoaderRoute: typeof DashboardLogSettingsRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/logs': {
+      id: '/dashboard/logs'
+      path: '/logs'
+      fullPath: '/dashboard/logs'
+      preLoaderRoute: typeof DashboardLogsRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/members': {
+      id: '/dashboard/members'
+      path: '/members'
+      fullPath: '/dashboard/members'
+      preLoaderRoute: typeof DashboardMembersRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/moderation': {
+      id: '/dashboard/moderation'
+      path: '/moderation'
+      fullPath: '/dashboard/moderation'
+      preLoaderRoute: typeof DashboardModerationRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/modmail': {
+      id: '/dashboard/modmail'
+      path: '/modmail'
+      fullPath: '/dashboard/modmail'
+      preLoaderRoute: typeof DashboardModmailRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/modules': {
+      id: '/dashboard/modules'
+      path: '/modules'
+      fullPath: '/dashboard/modules'
+      preLoaderRoute: typeof DashboardModulesRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/music-quiz': {
+      id: '/dashboard/music-quiz'
+      path: '/music-quiz'
+      fullPath: '/dashboard/music-quiz'
+      preLoaderRoute: typeof DashboardMusicQuizRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/notifications': {
+      id: '/dashboard/notifications'
+      path: '/notifications'
+      fullPath: '/dashboard/notifications'
+      preLoaderRoute: typeof DashboardNotificationsRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/operations': {
+      id: '/dashboard/operations'
+      path: '/operations'
+      fullPath: '/dashboard/operations'
+      preLoaderRoute: typeof DashboardOperationsRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/polls': {
+      id: '/dashboard/polls'
+      path: '/polls'
+      fullPath: '/dashboard/polls'
+      preLoaderRoute: typeof DashboardPollsRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/quarantine': {
+      id: '/dashboard/quarantine'
+      path: '/quarantine'
+      fullPath: '/dashboard/quarantine'
+      preLoaderRoute: typeof DashboardQuarantineRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/raid-protection': {
+      id: '/dashboard/raid-protection'
+      path: '/raid-protection'
+      fullPath: '/dashboard/raid-protection'
+      preLoaderRoute: typeof DashboardRaidProtectionRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/reaction-roles': {
+      id: '/dashboard/reaction-roles'
+      path: '/reaction-roles'
+      fullPath: '/dashboard/reaction-roles'
+      preLoaderRoute: typeof DashboardReactionRolesRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/reminders': {
+      id: '/dashboard/reminders'
+      path: '/reminders'
+      fullPath: '/dashboard/reminders'
+      preLoaderRoute: typeof DashboardRemindersRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/resources': {
+      id: '/dashboard/resources'
+      path: '/resources'
+      fullPath: '/dashboard/resources'
+      preLoaderRoute: typeof DashboardResourcesRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/role-analytics': {
+      id: '/dashboard/role-analytics'
+      path: '/role-analytics'
+      fullPath: '/dashboard/role-analytics'
+      preLoaderRoute: typeof DashboardRoleAnalyticsRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/scheduled-actions': {
+      id: '/dashboard/scheduled-actions'
+      path: '/scheduled-actions'
+      fullPath: '/dashboard/scheduled-actions'
+      preLoaderRoute: typeof DashboardScheduledActionsRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/scheduler': {
+      id: '/dashboard/scheduler'
+      path: '/scheduler'
+      fullPath: '/dashboard/scheduler'
+      preLoaderRoute: typeof DashboardSchedulerRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/server-clone': {
+      id: '/dashboard/server-clone'
+      path: '/server-clone'
+      fullPath: '/dashboard/server-clone'
+      preLoaderRoute: typeof DashboardServerCloneRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/slowmode-scheduler': {
+      id: '/dashboard/slowmode-scheduler'
+      path: '/slowmode-scheduler'
+      fullPath: '/dashboard/slowmode-scheduler'
+      preLoaderRoute: typeof DashboardSlowmodeSchedulerRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/starboard': {
+      id: '/dashboard/starboard'
+      path: '/starboard'
+      fullPath: '/dashboard/starboard'
+      preLoaderRoute: typeof DashboardStarboardRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/stats-channels': {
+      id: '/dashboard/stats-channels'
+      path: '/stats-channels'
+      fullPath: '/dashboard/stats-channels'
+      preLoaderRoute: typeof DashboardStatsChannelsRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/suggestions': {
+      id: '/dashboard/suggestions'
+      path: '/suggestions'
+      fullPath: '/dashboard/suggestions'
+      preLoaderRoute: typeof DashboardSuggestionsRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/tebex': {
+      id: '/dashboard/tebex'
+      path: '/tebex'
+      fullPath: '/dashboard/tebex'
+      preLoaderRoute: typeof DashboardTebexRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/test-panel': {
+      id: '/dashboard/test-panel'
+      path: '/test-panel'
+      fullPath: '/dashboard/test-panel'
+      preLoaderRoute: typeof DashboardTestPanelRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/tiktok': {
+      id: '/dashboard/tiktok'
+      path: '/tiktok'
+      fullPath: '/dashboard/tiktok'
+      preLoaderRoute: typeof DashboardTiktokRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/twitch': {
+      id: '/dashboard/twitch'
+      path: '/twitch'
+      fullPath: '/dashboard/twitch'
+      preLoaderRoute: typeof DashboardTwitchRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/verification': {
+      id: '/dashboard/verification'
+      path: '/verification'
+      fullPath: '/dashboard/verification'
+      preLoaderRoute: typeof DashboardVerificationRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/warnings': {
+      id: '/dashboard/warnings'
+      path: '/warnings'
+      fullPath: '/dashboard/warnings'
+      preLoaderRoute: typeof DashboardWarningsRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/webhooks': {
+      id: '/dashboard/webhooks'
+      path: '/webhooks'
+      fullPath: '/dashboard/webhooks'
+      preLoaderRoute: typeof DashboardWebhooksRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/welcome': {
+      id: '/dashboard/welcome'
+      path: '/welcome'
+      fullPath: '/dashboard/welcome'
+      preLoaderRoute: typeof DashboardWelcomeRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/youtube': {
+      id: '/dashboard/youtube'
+      path: '/youtube'
+      fullPath: '/dashboard/youtube'
+      preLoaderRoute: typeof DashboardYoutubeRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/docs/': {
+      id: '/docs/'
+      path: '/docs'
+      fullPath: '/docs/'
+      preLoaderRoute: typeof DocsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/docs/_layout': {
+      id: '/docs/_layout'
+      path: '/docs'
+      fullPath: '/docs'
+      preLoaderRoute: typeof DocsLayoutRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/admin-check-ip': {
+      id: '/api/public/admin-check-ip'
+      path: '/api/public/admin-check-ip'
+      fullPath: '/api/public/admin-check-ip'
+      preLoaderRoute: typeof ApiPublicAdminCheckIpRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/admin-users': {
+      id: '/api/public/admin-users'
+      path: '/api/public/admin-users'
+      fullPath: '/api/public/admin-users'
+      preLoaderRoute: typeof ApiPublicAdminUsersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/ai-auto-respond': {
+      id: '/api/public/ai-auto-respond'
+      path: '/api/public/ai-auto-respond'
+      fullPath: '/api/public/ai-auto-respond'
+      preLoaderRoute: typeof ApiPublicAiAutoRespondRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/ai-automod': {
+      id: '/api/public/ai-automod'
+      path: '/api/public/ai-automod'
+      fullPath: '/api/public/ai-automod'
+      preLoaderRoute: typeof ApiPublicAiAutomodRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/ai-chat': {
+      id: '/api/public/ai-chat'
+      path: '/api/public/ai-chat'
+      fullPath: '/api/public/ai-chat'
+      preLoaderRoute: typeof ApiPublicAiChatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/ai-health': {
+      id: '/api/public/ai-health'
+      path: '/api/public/ai-health'
+      fullPath: '/api/public/ai-health'
+      preLoaderRoute: typeof ApiPublicAiHealthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/ai-polish-text': {
+      id: '/api/public/ai-polish-text'
+      path: '/api/public/ai-polish-text'
+      fullPath: '/api/public/ai-polish-text'
+      preLoaderRoute: typeof ApiPublicAiPolishTextRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/ai-screen-application': {
+      id: '/api/public/ai-screen-application'
+      path: '/api/public/ai-screen-application'
+      fullPath: '/api/public/ai-screen-application'
+      preLoaderRoute: typeof ApiPublicAiScreenApplicationRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/ai-ticket-summary': {
+      id: '/api/public/ai-ticket-summary'
+      path: '/api/public/ai-ticket-summary'
+      fullPath: '/api/public/ai-ticket-summary'
+      preLoaderRoute: typeof ApiPublicAiTicketSummaryRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/analytics-aggregate': {
+      id: '/api/public/analytics-aggregate'
+      path: '/api/public/analytics-aggregate'
+      fullPath: '/api/public/analytics-aggregate'
+      preLoaderRoute: typeof ApiPublicAnalyticsAggregateRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/application-handler': {
+      id: '/api/public/application-handler'
+      path: '/api/public/application-handler'
+      fullPath: '/api/public/application-handler'
+      preLoaderRoute: typeof ApiPublicApplicationHandlerRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/auto-report': {
+      id: '/api/public/auto-report'
+      path: '/api/public/auto-report'
+      fullPath: '/api/public/auto-report'
+      preLoaderRoute: typeof ApiPublicAutoReportRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/automod-handler': {
+      id: '/api/public/automod-handler'
+      path: '/api/public/automod-handler'
+      fullPath: '/api/public/automod-handler'
+      preLoaderRoute: typeof ApiPublicAutomodHandlerRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/bot-characters': {
+      id: '/api/public/bot-characters'
+      path: '/api/public/bot-characters'
+      fullPath: '/api/public/bot-characters'
+      preLoaderRoute: typeof ApiPublicBotCharactersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/bot-deploy': {
+      id: '/api/public/bot-deploy'
+      path: '/api/public/bot-deploy'
+      fullPath: '/api/public/bot-deploy'
+      preLoaderRoute: typeof ApiPublicBotDeployRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/bot-heartbeat': {
+      id: '/api/public/bot-heartbeat'
+      path: '/api/public/bot-heartbeat'
+      fullPath: '/api/public/bot-heartbeat'
+      preLoaderRoute: typeof ApiPublicBotHeartbeatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/bot-log-events': {
+      id: '/api/public/bot-log-events'
+      path: '/api/public/bot-log-events'
+      fullPath: '/api/public/bot-log-events'
+      preLoaderRoute: typeof ApiPublicBotLogEventsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/bot-settings': {
+      id: '/api/public/bot-settings'
+      path: '/api/public/bot-settings'
+      fullPath: '/api/public/bot-settings'
+      preLoaderRoute: typeof ApiPublicBotSettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/bot-tickets': {
+      id: '/api/public/bot-tickets'
+      path: '/api/public/bot-tickets'
+      fullPath: '/api/public/bot-tickets'
+      preLoaderRoute: typeof ApiPublicBotTicketsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/bot-welcome': {
+      id: '/api/public/bot-welcome'
+      path: '/api/public/bot-welcome'
+      fullPath: '/api/public/bot-welcome'
+      preLoaderRoute: typeof ApiPublicBotWelcomeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/create-demo-guild': {
+      id: '/api/public/create-demo-guild'
+      path: '/api/public/create-demo-guild'
+      fullPath: '/api/public/create-demo-guild'
+      preLoaderRoute: typeof ApiPublicCreateDemoGuildRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/deploy-guild-commands': {
+      id: '/api/public/deploy-guild-commands'
+      path: '/api/public/deploy-guild-commands'
+      fullPath: '/api/public/deploy-guild-commands'
+      preLoaderRoute: typeof ApiPublicDeployGuildCommandsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/discord-channels': {
+      id: '/api/public/discord-channels'
+      path: '/api/public/discord-channels'
+      fullPath: '/api/public/discord-channels'
+      preLoaderRoute: typeof ApiPublicDiscordChannelsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/discord-interactions': {
+      id: '/api/public/discord-interactions'
+      path: '/api/public/discord-interactions'
+      fullPath: '/api/public/discord-interactions'
+      preLoaderRoute: typeof ApiPublicDiscordInteractionsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/discord-members': {
+      id: '/api/public/discord-members'
+      path: '/api/public/discord-members'
+      fullPath: '/api/public/discord-members'
+      preLoaderRoute: typeof ApiPublicDiscordMembersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/discord-oauth': {
+      id: '/api/public/discord-oauth'
+      path: '/api/public/discord-oauth'
+      fullPath: '/api/public/discord-oauth'
+      preLoaderRoute: typeof ApiPublicDiscordOauthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/discord-roles': {
+      id: '/api/public/discord-roles'
+      path: '/api/public/discord-roles'
+      fullPath: '/api/public/discord-roles'
+      preLoaderRoute: typeof ApiPublicDiscordRolesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/execute-fivem-command': {
+      id: '/api/public/execute-fivem-command'
+      path: '/api/public/execute-fivem-command'
+      fullPath: '/api/public/execute-fivem-command'
+      preLoaderRoute: typeof ApiPublicExecuteFivemCommandRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/fivem-handler': {
+      id: '/api/public/fivem-handler'
+      path: '/api/public/fivem-handler'
+      fullPath: '/api/public/fivem-handler'
+      preLoaderRoute: typeof ApiPublicFivemHandlerRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/fivem-setup-key': {
+      id: '/api/public/fivem-setup-key'
+      path: '/api/public/fivem-setup-key'
+      fullPath: '/api/public/fivem-setup-key'
+      preLoaderRoute: typeof ApiPublicFivemSetupKeyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/generate-ticket-transcript': {
+      id: '/api/public/generate-ticket-transcript'
+      path: '/api/public/generate-ticket-transcript'
+      fullPath: '/api/public/generate-ticket-transcript'
+      preLoaderRoute: typeof ApiPublicGenerateTicketTranscriptRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/giveaway-handler': {
+      id: '/api/public/giveaway-handler'
+      path: '/api/public/giveaway-handler'
+      fullPath: '/api/public/giveaway-handler'
+      preLoaderRoute: typeof ApiPublicGiveawayHandlerRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/global-ban-handler': {
+      id: '/api/public/global-ban-handler'
+      path: '/api/public/global-ban-handler'
+      fullPath: '/api/public/global-ban-handler'
+      preLoaderRoute: typeof ApiPublicGlobalBanHandlerRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/guild-bot-config': {
+      id: '/api/public/guild-bot-config'
+      path: '/api/public/guild-bot-config'
+      fullPath: '/api/public/guild-bot-config'
+      preLoaderRoute: typeof ApiPublicGuildBotConfigRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/invite-tracker': {
+      id: '/api/public/invite-tracker'
+      path: '/api/public/invite-tracker'
+      fullPath: '/api/public/invite-tracker'
+      preLoaderRoute: typeof ApiPublicInviteTrackerRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/jtc-handler': {
+      id: '/api/public/jtc-handler'
+      path: '/api/public/jtc-handler'
+      fullPath: '/api/public/jtc-handler'
+      preLoaderRoute: typeof ApiPublicJtcHandlerRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/log-action': {
+      id: '/api/public/log-action'
+      path: '/api/public/log-action'
+      fullPath: '/api/public/log-action'
+      preLoaderRoute: typeof ApiPublicLogActionRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/modmail-handler': {
+      id: '/api/public/modmail-handler'
+      path: '/api/public/modmail-handler'
+      fullPath: '/api/public/modmail-handler'
+      preLoaderRoute: typeof ApiPublicModmailHandlerRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/platform-stats': {
+      id: '/api/public/platform-stats'
+      path: '/api/public/platform-stats'
+      fullPath: '/api/public/platform-stats'
+      preLoaderRoute: typeof ApiPublicPlatformStatsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/premium-api': {
+      id: '/api/public/premium-api'
+      path: '/api/public/premium-api'
+      fullPath: '/api/public/premium-api'
+      preLoaderRoute: typeof ApiPublicPremiumApiRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/reaction-role-handler': {
+      id: '/api/public/reaction-role-handler'
+      path: '/api/public/reaction-role-handler'
+      fullPath: '/api/public/reaction-role-handler'
+      preLoaderRoute: typeof ApiPublicReactionRoleHandlerRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/register-fivem-commands': {
+      id: '/api/public/register-fivem-commands'
+      path: '/api/public/register-fivem-commands'
+      fullPath: '/api/public/register-fivem-commands'
+      preLoaderRoute: typeof ApiPublicRegisterFivemCommandsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/review-application': {
+      id: '/api/public/review-application'
+      path: '/api/public/review-application'
+      fullPath: '/api/public/review-application'
+      preLoaderRoute: typeof ApiPublicReviewApplicationRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/send-embed': {
+      id: '/api/public/send-embed'
+      path: '/api/public/send-embed'
+      fullPath: '/api/public/send-embed'
+      preLoaderRoute: typeof ApiPublicSendEmbedRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/send-poll': {
+      id: '/api/public/send-poll'
+      path: '/api/public/send-poll'
+      fullPath: '/api/public/send-poll'
+      preLoaderRoute: typeof ApiPublicSendPollRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/send-ticket-panel': {
+      id: '/api/public/send-ticket-panel'
+      path: '/api/public/send-ticket-panel'
+      fullPath: '/api/public/send-ticket-panel'
+      preLoaderRoute: typeof ApiPublicSendTicketPanelRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/send-verification-panel': {
+      id: '/api/public/send-verification-panel'
+      path: '/api/public/send-verification-panel'
+      fullPath: '/api/public/send-verification-panel'
+      preLoaderRoute: typeof ApiPublicSendVerificationPanelRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/server-backup': {
+      id: '/api/public/server-backup'
+      path: '/api/public/server-backup'
+      fullPath: '/api/public/server-backup'
+      preLoaderRoute: typeof ApiPublicServerBackupRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/server-clone': {
+      id: '/api/public/server-clone'
+      path: '/api/public/server-clone'
+      fullPath: '/api/public/server-clone'
+      preLoaderRoute: typeof ApiPublicServerCloneRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/submit-ticket-rating': {
+      id: '/api/public/submit-ticket-rating'
+      path: '/api/public/submit-ticket-rating'
+      fullPath: '/api/public/submit-ticket-rating'
+      preLoaderRoute: typeof ApiPublicSubmitTicketRatingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/tebex-handler': {
+      id: '/api/public/tebex-handler'
+      path: '/api/public/tebex-handler'
+      fullPath: '/api/public/tebex-handler'
+      preLoaderRoute: typeof ApiPublicTebexHandlerRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/tebex-webhook': {
+      id: '/api/public/tebex-webhook'
+      path: '/api/public/tebex-webhook'
+      fullPath: '/api/public/tebex-webhook'
+      preLoaderRoute: typeof ApiPublicTebexWebhookRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/tiktok-test-notify': {
+      id: '/api/public/tiktok-test-notify'
+      path: '/api/public/tiktok-test-notify'
+      fullPath: '/api/public/tiktok-test-notify'
+      preLoaderRoute: typeof ApiPublicTiktokTestNotifyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/twitch-handler': {
+      id: '/api/public/twitch-handler'
+      path: '/api/public/twitch-handler'
+      fullPath: '/api/public/twitch-handler'
+      preLoaderRoute: typeof ApiPublicTwitchHandlerRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/xp-handler': {
+      id: '/api/public/xp-handler'
+      path: '/api/public/xp-handler'
+      fullPath: '/api/public/xp-handler'
+      preLoaderRoute: typeof ApiPublicXpHandlerRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/dashboard/applications/': {
+      id: '/dashboard/applications/'
+      path: '/applications'
+      fullPath: '/dashboard/applications/'
+      preLoaderRoute: typeof DashboardApplicationsIndexRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/applications/$submissionId': {
+      id: '/dashboard/applications/$submissionId'
+      path: '/applications/$submissionId'
+      fullPath: '/dashboard/applications/$submissionId'
+      preLoaderRoute: typeof DashboardApplicationsSubmissionIdRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/applications/analytics': {
+      id: '/dashboard/applications/analytics'
+      path: '/applications/analytics'
+      fullPath: '/dashboard/applications/analytics'
+      preLoaderRoute: typeof DashboardApplicationsAnalyticsRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/applications/settings': {
+      id: '/dashboard/applications/settings'
+      path: '/applications/settings'
+      fullPath: '/dashboard/applications/settings'
+      preLoaderRoute: typeof DashboardApplicationsSettingsRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/tickets/': {
+      id: '/dashboard/tickets/'
+      path: '/tickets'
+      fullPath: '/dashboard/tickets/'
+      preLoaderRoute: typeof DashboardTicketsIndexRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/tickets/$ticketId': {
+      id: '/dashboard/tickets/$ticketId'
+      path: '/tickets/$ticketId'
+      fullPath: '/dashboard/tickets/$ticketId'
+      preLoaderRoute: typeof DashboardTicketsTicketIdRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/tickets/settings': {
+      id: '/dashboard/tickets/settings'
+      path: '/tickets/settings'
+      fullPath: '/dashboard/tickets/settings'
+      preLoaderRoute: typeof DashboardTicketsSettingsRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/docs/$category/$slug': {
+      id: '/docs/$category/$slug'
+      path: '/docs/$category/$slug'
+      fullPath: '/docs/$category/$slug'
+      preLoaderRoute: typeof DocsCategorySlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/dashboard/applications/forms/$formId': {
+      id: '/dashboard/applications/forms/$formId'
+      path: '/applications/forms/$formId'
+      fullPath: '/dashboard/applications/forms/$formId'
+      preLoaderRoute: typeof DashboardApplicationsFormsFormIdRouteImport
+      parentRoute: typeof DashboardRoute
+    }
   }
 }
 
 interface DashboardRouteChildren {
-  DashboardActivityHeatmapRoute: typeof DashboardActivityHeatmapRoute;
-  DashboardAiAutomodRoute: typeof DashboardAiAutomodRoute;
-  DashboardAiChatRoute: typeof DashboardAiChatRoute;
-  DashboardAnalyticsRoute: typeof DashboardAnalyticsRoute;
-  DashboardAutoReportsRoute: typeof DashboardAutoReportsRoute;
-  DashboardAutoRespondersRoute: typeof DashboardAutoRespondersRoute;
-  DashboardAutomodRoute: typeof DashboardAutomodRoute;
-  DashboardBackupsRoute: typeof DashboardBackupsRoute;
-  DashboardBirthdaysRoute: typeof DashboardBirthdaysRoute;
-  DashboardBotHealthRoute: typeof DashboardBotHealthRoute;
-  DashboardBotSettingsRoute: typeof DashboardBotSettingsRoute;
-  DashboardChangelogRoute: typeof DashboardChangelogRoute;
-  DashboardCharactersRoute: typeof DashboardCharactersRoute;
-  DashboardCommandsRoute: typeof DashboardCommandsRoute;
-  DashboardConfessionsRoute: typeof DashboardConfessionsRoute;
-  DashboardCountingRoute: typeof DashboardCountingRoute;
-  DashboardCurrencyShopRoute: typeof DashboardCurrencyShopRoute;
-  DashboardCustomCommandsRoute: typeof DashboardCustomCommandsRoute;
-  DashboardEconomyRoute: typeof DashboardEconomyRoute;
-  DashboardEmbedBuilderRoute: typeof DashboardEmbedBuilderRoute;
-  DashboardFeaturesRoute: typeof DashboardFeaturesRoute;
-  DashboardFivemRoute: typeof DashboardFivemRoute;
-  DashboardGiveawaysRoute: typeof DashboardGiveawaysRoute;
-  DashboardGlobalBansRoute: typeof DashboardGlobalBansRoute;
-  DashboardHoneypotRoute: typeof DashboardHoneypotRoute;
-  DashboardInviteTrackerRoute: typeof DashboardInviteTrackerRoute;
-  DashboardJtcRoute: typeof DashboardJtcRoute;
-  DashboardLeaderboardRoute: typeof DashboardLeaderboardRoute;
-  DashboardLevelingRoute: typeof DashboardLevelingRoute;
-  DashboardLiveEventsRoute: typeof DashboardLiveEventsRoute;
-  DashboardLogSettingsRoute: typeof DashboardLogSettingsRoute;
-  DashboardLogsRoute: typeof DashboardLogsRoute;
-  DashboardMembersRoute: typeof DashboardMembersRoute;
-  DashboardModerationRoute: typeof DashboardModerationRoute;
-  DashboardModmailRoute: typeof DashboardModmailRoute;
-  DashboardModulesRoute: typeof DashboardModulesRoute;
-  DashboardMusicQuizRoute: typeof DashboardMusicQuizRoute;
-  DashboardNotificationsRoute: typeof DashboardNotificationsRoute;
-  DashboardOperationsRoute: typeof DashboardOperationsRoute;
-  DashboardPollsRoute: typeof DashboardPollsRoute;
-  DashboardQuarantineRoute: typeof DashboardQuarantineRoute;
-  DashboardRaidProtectionRoute: typeof DashboardRaidProtectionRoute;
-  DashboardReactionRolesRoute: typeof DashboardReactionRolesRoute;
-  DashboardRemindersRoute: typeof DashboardRemindersRoute;
-  DashboardResourcesRoute: typeof DashboardResourcesRoute;
-  DashboardRoleAnalyticsRoute: typeof DashboardRoleAnalyticsRoute;
-  DashboardScheduledActionsRoute: typeof DashboardScheduledActionsRoute;
-  DashboardSchedulerRoute: typeof DashboardSchedulerRoute;
-  DashboardServerCloneRoute: typeof DashboardServerCloneRoute;
-  DashboardSlowmodeSchedulerRoute: typeof DashboardSlowmodeSchedulerRoute;
-  DashboardStarboardRoute: typeof DashboardStarboardRoute;
-  DashboardStatsChannelsRoute: typeof DashboardStatsChannelsRoute;
-  DashboardSuggestionsRoute: typeof DashboardSuggestionsRoute;
-  DashboardTebexRoute: typeof DashboardTebexRoute;
-  DashboardTestPanelRoute: typeof DashboardTestPanelRoute;
-  DashboardTiktokRoute: typeof DashboardTiktokRoute;
-  DashboardTwitchRoute: typeof DashboardTwitchRoute;
-  DashboardVerificationRoute: typeof DashboardVerificationRoute;
-  DashboardWarningsRoute: typeof DashboardWarningsRoute;
-  DashboardWebhooksRoute: typeof DashboardWebhooksRoute;
-  DashboardWelcomeRoute: typeof DashboardWelcomeRoute;
-  DashboardYoutubeRoute: typeof DashboardYoutubeRoute;
-  DashboardIndexRoute: typeof DashboardIndexRoute;
-  DashboardApplicationsSubmissionIdRoute: typeof DashboardApplicationsSubmissionIdRoute;
-  DashboardApplicationsAnalyticsRoute: typeof DashboardApplicationsAnalyticsRoute;
-  DashboardApplicationsSettingsRoute: typeof DashboardApplicationsSettingsRoute;
-  DashboardTicketsTicketIdRoute: typeof DashboardTicketsTicketIdRoute;
-  DashboardTicketsSettingsRoute: typeof DashboardTicketsSettingsRoute;
-  DashboardApplicationsIndexRoute: typeof DashboardApplicationsIndexRoute;
-  DashboardTicketsIndexRoute: typeof DashboardTicketsIndexRoute;
-  DashboardApplicationsFormsFormIdRoute: typeof DashboardApplicationsFormsFormIdRoute;
+  DashboardActivityHeatmapRoute: typeof DashboardActivityHeatmapRoute
+  DashboardAiAutomodRoute: typeof DashboardAiAutomodRoute
+  DashboardAiChatRoute: typeof DashboardAiChatRoute
+  DashboardAnalyticsRoute: typeof DashboardAnalyticsRoute
+  DashboardAutoReportsRoute: typeof DashboardAutoReportsRoute
+  DashboardAutoRespondersRoute: typeof DashboardAutoRespondersRoute
+  DashboardAutomodRoute: typeof DashboardAutomodRoute
+  DashboardBackupsRoute: typeof DashboardBackupsRoute
+  DashboardBirthdaysRoute: typeof DashboardBirthdaysRoute
+  DashboardBotHealthRoute: typeof DashboardBotHealthRoute
+  DashboardBotSettingsRoute: typeof DashboardBotSettingsRoute
+  DashboardChangelogRoute: typeof DashboardChangelogRoute
+  DashboardCharactersRoute: typeof DashboardCharactersRoute
+  DashboardCommandsRoute: typeof DashboardCommandsRoute
+  DashboardConfessionsRoute: typeof DashboardConfessionsRoute
+  DashboardCountingRoute: typeof DashboardCountingRoute
+  DashboardCurrencyShopRoute: typeof DashboardCurrencyShopRoute
+  DashboardCustomCommandsRoute: typeof DashboardCustomCommandsRoute
+  DashboardEconomyRoute: typeof DashboardEconomyRoute
+  DashboardEmbedBuilderRoute: typeof DashboardEmbedBuilderRoute
+  DashboardFeaturesRoute: typeof DashboardFeaturesRoute
+  DashboardFivemRoute: typeof DashboardFivemRoute
+  DashboardGiveawaysRoute: typeof DashboardGiveawaysRoute
+  DashboardGlobalBansRoute: typeof DashboardGlobalBansRoute
+  DashboardHoneypotRoute: typeof DashboardHoneypotRoute
+  DashboardInviteTrackerRoute: typeof DashboardInviteTrackerRoute
+  DashboardJtcRoute: typeof DashboardJtcRoute
+  DashboardLeaderboardRoute: typeof DashboardLeaderboardRoute
+  DashboardLevelingRoute: typeof DashboardLevelingRoute
+  DashboardLiveEventsRoute: typeof DashboardLiveEventsRoute
+  DashboardLogSettingsRoute: typeof DashboardLogSettingsRoute
+  DashboardLogsRoute: typeof DashboardLogsRoute
+  DashboardMembersRoute: typeof DashboardMembersRoute
+  DashboardModerationRoute: typeof DashboardModerationRoute
+  DashboardModmailRoute: typeof DashboardModmailRoute
+  DashboardModulesRoute: typeof DashboardModulesRoute
+  DashboardMusicQuizRoute: typeof DashboardMusicQuizRoute
+  DashboardNotificationsRoute: typeof DashboardNotificationsRoute
+  DashboardOperationsRoute: typeof DashboardOperationsRoute
+  DashboardPollsRoute: typeof DashboardPollsRoute
+  DashboardQuarantineRoute: typeof DashboardQuarantineRoute
+  DashboardRaidProtectionRoute: typeof DashboardRaidProtectionRoute
+  DashboardReactionRolesRoute: typeof DashboardReactionRolesRoute
+  DashboardRemindersRoute: typeof DashboardRemindersRoute
+  DashboardResourcesRoute: typeof DashboardResourcesRoute
+  DashboardRoleAnalyticsRoute: typeof DashboardRoleAnalyticsRoute
+  DashboardScheduledActionsRoute: typeof DashboardScheduledActionsRoute
+  DashboardSchedulerRoute: typeof DashboardSchedulerRoute
+  DashboardServerCloneRoute: typeof DashboardServerCloneRoute
+  DashboardSlowmodeSchedulerRoute: typeof DashboardSlowmodeSchedulerRoute
+  DashboardStarboardRoute: typeof DashboardStarboardRoute
+  DashboardStatsChannelsRoute: typeof DashboardStatsChannelsRoute
+  DashboardSuggestionsRoute: typeof DashboardSuggestionsRoute
+  DashboardTebexRoute: typeof DashboardTebexRoute
+  DashboardTestPanelRoute: typeof DashboardTestPanelRoute
+  DashboardTiktokRoute: typeof DashboardTiktokRoute
+  DashboardTwitchRoute: typeof DashboardTwitchRoute
+  DashboardVerificationRoute: typeof DashboardVerificationRoute
+  DashboardWarningsRoute: typeof DashboardWarningsRoute
+  DashboardWebhooksRoute: typeof DashboardWebhooksRoute
+  DashboardWelcomeRoute: typeof DashboardWelcomeRoute
+  DashboardYoutubeRoute: typeof DashboardYoutubeRoute
+  DashboardIndexRoute: typeof DashboardIndexRoute
+  DashboardApplicationsSubmissionIdRoute: typeof DashboardApplicationsSubmissionIdRoute
+  DashboardApplicationsAnalyticsRoute: typeof DashboardApplicationsAnalyticsRoute
+  DashboardApplicationsSettingsRoute: typeof DashboardApplicationsSettingsRoute
+  DashboardTicketsTicketIdRoute: typeof DashboardTicketsTicketIdRoute
+  DashboardTicketsSettingsRoute: typeof DashboardTicketsSettingsRoute
+  DashboardApplicationsIndexRoute: typeof DashboardApplicationsIndexRoute
+  DashboardTicketsIndexRoute: typeof DashboardTicketsIndexRoute
+  DashboardApplicationsFormsFormIdRoute: typeof DashboardApplicationsFormsFormIdRoute
 }
 
 const DashboardRouteChildren: DashboardRouteChildren = {
@@ -2936,11 +2936,11 @@ const DashboardRouteChildren: DashboardRouteChildren = {
   DashboardApplicationsIndexRoute: DashboardApplicationsIndexRoute,
   DashboardTicketsIndexRoute: DashboardTicketsIndexRoute,
   DashboardApplicationsFormsFormIdRoute: DashboardApplicationsFormsFormIdRoute,
-};
+}
 
 const DashboardRouteWithChildren = DashboardRoute._addFileChildren(
   DashboardRouteChildren,
-);
+)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
@@ -3013,17 +3013,17 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicTwitchHandlerRoute: ApiPublicTwitchHandlerRoute,
   ApiPublicXpHandlerRoute: ApiPublicXpHandlerRoute,
   DocsCategorySlugRoute: DocsCategorySlugRoute,
-};
+}
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
-  ._addFileTypes<FileRouteTypes>();
+  ._addFileTypes<FileRouteTypes>()
 
-import type { getRouter } from "./router.tsx";
-import type { startInstance } from "./start.ts";
-declare module "@tanstack/react-start" {
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
   interface Register {
-    ssr: true;
-    router: Awaited<ReturnType<typeof getRouter>>;
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>;
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
   }
 }

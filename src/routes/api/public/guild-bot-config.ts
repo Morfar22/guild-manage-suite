@@ -1,4 +1,5 @@
 // @ts-nocheck
+import type { Untyped } from "@/types/untyped";
 import {
   decryptBotToken as simpleDecrypt,
   encryptBotToken as simpleEncrypt,
@@ -13,7 +14,7 @@ const __env = (k: string) =>
     ? process.env["SUPABASE_PUBLISHABLE_KEY"]
     : undefined);
 let __handler: (req: Request) => Response | Promise<Response>;
-const __serve = (fn: any, _opts?: any) => {
+const __serve = (fn: Untyped, _opts?: Untyped) => {
   __handler = fn;
 };
 
@@ -102,7 +103,7 @@ __serve(async (req) => {
         // Decrypt tokens for bot manager
         const decryptedConfigs = (configs || []).map((config) => ({
           ...config,
-          discord_guild_id: (config as any).guilds?.guild_id || null,
+          discord_guild_id: (config as Untyped).guilds?.guild_id || null,
           guilds: undefined,
           bot_token: config.bot_token_encrypted
             ? simpleDecrypt(config.bot_token_encrypted, encryptionKey)
@@ -452,11 +453,11 @@ __serve(async (req) => {
 
     // Handle dashboard utility actions that don't map to a single guild_id
     // Use service role for reads to avoid RLS coupling, but limit results to the guilds the user admins.
-    if (body && typeof (body as any).action === "string") {
-      const action = (body as any).action as string;
+    if (body && typeof (body as Untyped).action === "string") {
+      const action = (body as Untyped).action as string;
 
       if (action === "test_token") {
-        const tokenToTest = (body as any).token as string | undefined;
+        const tokenToTest = (body as Untyped).token as string | undefined;
         if (!tokenToTest) {
           return new Response(JSON.stringify({ error: "Missing token" }), {
             status: 400,
@@ -664,7 +665,7 @@ __serve(async (req) => {
           );
         }
 
-        const targetGuildId = (body as any).guild_id as string | undefined;
+        const targetGuildId = (body as Untyped).guild_id as string | undefined;
         if (!targetGuildId) {
           return new Response(JSON.stringify({ error: "Missing guild_id" }), {
             status: 400,

@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "@tanstack/react-router";
 import { ArrowLeft, Plus, Trash2, GripVertical, Save } from "lucide-react";
+import type { Untyped } from "@/types/untyped";
 import {
   Card,
   CardContent,
@@ -399,7 +400,7 @@ export default function ApplicationFormEdit() {
                       <Select
                         value={question.type}
                         onValueChange={(v) =>
-                          handleUpdateQuestion(index, { type: v as any })
+                          handleUpdateQuestion(index, { type: v as Untyped })
                         }
                       >
                         <SelectTrigger>

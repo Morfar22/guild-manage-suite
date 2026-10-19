@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useGuild } from "@/contexts/GuildContext";
 import { toast } from "sonner";
+import type { Untyped } from "@/types/untyped";
 
 export interface EmbedButton {
   label: string;
@@ -62,7 +63,7 @@ export function useSavedEmbeds() {
       const { error } = await supabase.from("saved_embeds").insert({
         guild_id: selectedGuild.id,
         name,
-        embed_data: embed_data as any,
+        embed_data: embed_data as Untyped,
       });
       if (error) throw error;
     },
@@ -87,7 +88,7 @@ export function useSavedEmbeds() {
         .from("saved_embeds")
         .update({
           name,
-          embed_data: embed_data as any,
+          embed_data: embed_data as Untyped,
         })
         .eq("id", id);
       if (error) throw error;

@@ -4,6 +4,7 @@
 
 import { requireUser, requireGuildAdmin } from "../_shared/api-auth.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import type { Untyped } from "../_shared/untyped";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -61,7 +62,7 @@ Deno.serve(async (req) => {
 
     await requireGuildAdmin(supabase, user.id, sub.guild_id);
 
-    const form = sub.form as any;
+    const form = sub.form as Untyped;
     if (!form?.ai_screening_enabled) {
       return json({ skipped: true, reason: "AI screening disabled on form" });
     }
@@ -82,9 +83,9 @@ Deno.serve(async (req) => {
       form.ai_screening_prompt?.trim() ||
       "Du er en streng men retfærdig moderator der vurderer ansøgninger. Vær kritisk overfor svar der virker copy/pastede, korte eller mangelfulde.";
 
-    const answersText = (sub.answers as any[])
+    const answersText = (sub.answers as Untyped[])
       .map(
-        (a: any) =>
+        (a: Untyped) =>
           `Q: ${a.question || a.label}\nA: ${a.answer || a.value || "(tomt)"}`,
       )
       .join("\n\n");

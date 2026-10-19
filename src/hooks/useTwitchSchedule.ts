@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useGuild } from "@/contexts/GuildContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import type { Untyped } from "@/types/untyped";
 
 export interface TwitchScheduleEntry {
   id: string;
@@ -79,7 +80,7 @@ export function useTwitchSchedule() {
 
       if (error) throw error;
       setEntries(
-        (data || []).map((e: any) => ({
+        (data || []).map((e: Untyped) => ({
           ...e,
           streamer_name: e.twitch_streamers?.display_name,
           streamer_avatar: e.twitch_streamers?.profile_image_url,

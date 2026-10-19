@@ -3,6 +3,7 @@ import { decryptBotToken as simpleDecrypt } from "@/lib/server/bot-token-crypto"
 // Migrated from Supabase Edge Function `deploy-guild-commands` to a TanStack server route.
 import { createFileRoute } from "@tanstack/react-router";
 import { createClient } from "@supabase/supabase-js";
+import type { Untyped } from "@/types/untyped";
 import {
   groupFlatCommandDefinitions,
   canonicalLogicalCommands,
@@ -14,7 +15,7 @@ const __env = (k: string) =>
     ? process.env["SUPABASE_PUBLISHABLE_KEY"]
     : undefined);
 let __handler: (req: Request) => Response | Promise<Response>;
-const __serve = (fn: any, _opts?: any) => {
+const __serve = (fn: Untyped, _opts?: Untyped) => {
   __handler = fn;
 };
 
@@ -1672,7 +1673,7 @@ __serve(async (req) => {
     // /fivem is registered by the dedicated FiveM command route.
     // Bulk-overwrite normally deletes commands that are not included, so preserve
     // an existing /fivem definition when redeploying the main catalog.
-    let commandsToDeploy: any[] = groupFlatCommandDefinitions(COMMANDS);
+    const commandsToDeploy: Untyped[] = groupFlatCommandDefinitions(COMMANDS);
     try {
       const existingRes = await fetch(
         `https://discord.com/api/v10/applications/${appId}/guilds/${discordGuildId}/commands`,
@@ -1682,7 +1683,7 @@ __serve(async (req) => {
       if (existingRes.ok) {
         const existingCommands = await existingRes.json();
         const existingFiveM = existingCommands.find(
-          (command: any) => command.name === "fivem",
+          (command: Untyped) => command.name === "fivem",
         );
         if (existingFiveM) {
           commandsToDeploy.push({
@@ -1742,7 +1743,7 @@ __serve(async (req) => {
         success: true,
         deployed: deployed.length,
         logicalCommands: canonicalLogicalCommands.length,
-        commands: deployed.map((c: any) => c.name),
+        commands: deployed.map((c: Untyped) => c.name),
         usingCustomBot: isCustomBot,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },

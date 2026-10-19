@@ -1,11 +1,12 @@
 import { supabase } from "@/integrations/supabase/client";
+import type { Untyped } from "@/types/untyped";
 
 /**
  * Drop-in replacement for `supabase.functions.invoke()` that calls the
  * migrated TanStack server routes under `/api/public/*` instead of
  * Supabase Edge Functions.
  */
-export async function invokeFunction<T = any>(
+export async function invokeFunction<T = Untyped>(
   name: string,
   options?: {
     body?: unknown;
@@ -34,7 +35,7 @@ export async function invokeFunction<T = any>(
     });
 
     const text = await res.text();
-    let parsed: any = null;
+    let parsed: Untyped = null;
     try {
       parsed = text ? JSON.parse(text) : null;
     } catch {

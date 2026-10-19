@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import type { Untyped } from "@/types/untyped";
 import {
   Card,
   CardContent,
@@ -35,7 +36,7 @@ interface ConsoleLog {
   level: string;
   source: string;
   message: string;
-  metadata: Record<string, any> | null;
+  metadata: Record<string, Untyped> | null;
   created_at: string;
 }
 

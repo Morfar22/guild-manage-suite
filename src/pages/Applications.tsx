@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { PremiumGate } from "@/components/premium/PremiumGate";
+import type { Untyped } from "@/types/untyped";
 import {
   Card,
   CardContent,
@@ -152,7 +153,7 @@ function ApplicationCard({
             </Button>
             {expanded && (
               <div className="space-y-2 mt-2">
-                {application.answers.map((qa: any, i: number) => (
+                {application.answers.map((qa: Untyped, i: number) => (
                   <div key={i} className="bg-muted/50 rounded-md p-2">
                     <p className="text-xs font-medium text-muted-foreground">
                       {qa.question}

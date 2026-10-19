@@ -4,6 +4,7 @@ import { decryptBotToken as simpleDecrypt } from "@/lib/server/bot-token-crypto"
 import { createFileRoute } from "@tanstack/react-router";
 import { createClient } from "@supabase/supabase-js";
 import { vpsDiscordRequest } from "@/lib/vps-discord-bridge";
+import type { Untyped } from "@/types/untyped";
 
 const __env = (k: string) =>
   process.env[k] ??
@@ -11,7 +12,7 @@ const __env = (k: string) =>
     ? process.env["SUPABASE_PUBLISHABLE_KEY"]
     : undefined);
 let __handler: (req: Request) => Response | Promise<Response>;
-const __serve = (fn: any, _opts?: any) => {
+const __serve = (fn: Untyped, _opts?: Untyped) => {
   __handler = fn;
 };
 
@@ -22,7 +23,7 @@ const corsHeaders = {
 };
 
 async function getBotToken(
-  supabaseAdmin: any,
+  supabaseAdmin: Untyped,
   guildId: string,
 ): Promise<string> {
   const { data: customBotSettings } = await supabaseAdmin
@@ -70,7 +71,7 @@ async function verifyAccess(req: Request) {
 }
 
 async function verifyGuildAccess(
-  supabaseAdmin: any,
+  supabaseAdmin: Untyped,
   guildId: string,
   userId: string,
 ) {

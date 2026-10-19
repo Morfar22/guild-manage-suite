@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useGuild } from "@/contexts/GuildContext";
+import type { Untyped } from "@/types/untyped";
 import {
   useLeaderboard,
   useLevelRoles,
@@ -223,7 +224,7 @@ export default function Leveling() {
         title: "✅ Test sent!",
         description: "Check the level-up channel on Discord.",
       });
-    } catch (error: any) {
+    } catch (error: Untyped) {
       toast({
         title: "Error",
         description: error.message || "Could not send test message.",

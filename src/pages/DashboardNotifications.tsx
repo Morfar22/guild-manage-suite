@@ -1,6 +1,7 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import type { Untyped } from "@/types/untyped";
 import {
   Bell,
   BellOff,
@@ -17,7 +18,7 @@ import { useDashboardNotifications } from "@/hooks/useDashboardNotifications";
 import { formatDistanceToNow } from "date-fns";
 import { da } from "date-fns/locale";
 
-const typeIcons: Record<string, any> = {
+const typeIcons: Record<string, Untyped> = {
   moderation: Shield,
   member: Users,
   message: MessageSquare,

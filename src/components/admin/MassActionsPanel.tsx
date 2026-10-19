@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import type { Untyped } from "@/types/untyped";
 import {
   Card,
   CardContent,
@@ -48,7 +49,7 @@ export function MassActionsPanel() {
         description: `Fandt ${result.cleaned} inaktive guilds (30+ dage offline)`,
       });
     },
-    onError: (err: any) => {
+    onError: (err: Untyped) => {
       toast({
         title: "Fejl",
         description: err.message,
@@ -75,7 +76,7 @@ export function MassActionsPanel() {
         description: `${result.deleted} gamle analytics events slettet`,
       });
     },
-    onError: (err: any) => {
+    onError: (err: Untyped) => {
       toast({
         title: "Fejl",
         description: err.message,
@@ -102,7 +103,7 @@ export function MassActionsPanel() {
         description: `${result.deleted} gamle moderation logs slettet`,
       });
     },
-    onError: (err: any) => {
+    onError: (err: Untyped) => {
       toast({
         title: "Fejl",
         description: err.message,

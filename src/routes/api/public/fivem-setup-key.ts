@@ -1,6 +1,7 @@
 // @ts-nocheck
 import { createFileRoute } from "@tanstack/react-router";
 import { createClient } from "@supabase/supabase-js";
+import type { Untyped } from "@/types/untyped";
 
 const __env = (key: string) =>
   process.env[key] ??
@@ -8,7 +9,7 @@ const __env = (key: string) =>
     ? process.env["SUPABASE_PUBLISHABLE_KEY"]
     : undefined);
 let __handler: (req: Request) => Response | Promise<Response>;
-const __serve = (fn: any) => {
+const __serve = (fn: Untyped) => {
   __handler = fn;
 };
 
@@ -41,7 +42,7 @@ function createBridgeToken() {
   return `gms_${value}`;
 }
 
-function isMissingBridgeSchema(error: any) {
+function isMissingBridgeSchema(error: Untyped) {
   const message = String(error?.message || "");
   const details = String(error?.details || "");
   const hint = String(error?.hint || "");
@@ -54,7 +55,7 @@ function isMissingBridgeSchema(error: any) {
   );
 }
 
-function databaseErrorBody(error: any, fallback: string) {
+function databaseErrorBody(error: Untyped, fallback: string) {
   if (isMissingBridgeSchema(error)) {
     return {
       error:

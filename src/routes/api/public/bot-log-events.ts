@@ -3,6 +3,7 @@ import { decryptBotToken as simpleDecrypt } from "@/lib/server/bot-token-crypto"
 // Migrated from Supabase Edge Function `bot-log-events` to a TanStack server route.
 import { createFileRoute } from "@tanstack/react-router";
 import { createClient } from "@supabase/supabase-js";
+import type { Untyped } from "@/types/untyped";
 
 const __env = (k: string) =>
   process.env[k] ??
@@ -10,7 +11,7 @@ const __env = (k: string) =>
     ? process.env["SUPABASE_PUBLISHABLE_KEY"]
     : undefined);
 let __handler: (req: Request) => Response | Promise<Response>;
-const __serve = (fn: any, _opts?: any) => {
+const __serve = (fn: Untyped, _opts?: Untyped) => {
   __handler = fn;
 };
 
@@ -21,7 +22,7 @@ const corsHeaders = {
 };
 
 async function getBotTokenForGuild(
-  supabase: any,
+  supabase: Untyped,
   guildId: string,
 ): Promise<string> {
   const { data: settings } = await supabase
@@ -52,7 +53,7 @@ async function getBotTokenForGuild(
 
 async function checkIPWhitelist(
   req: Request,
-  supabase: any,
+  supabase: Untyped,
 ): Promise<{ allowed: boolean; ip: string }> {
   const clientIp =
     req.headers.get("cf-connecting-ip") ||
@@ -78,13 +79,13 @@ async function checkIPWhitelist(
 interface LogEventPayload {
   guild_id: string;
   event_type: string;
-  data: Record<string, any>;
+  data: Record<string, Untyped>;
 }
 
 function generateEventHash(
   guildId: string,
   eventType: string,
-  data: Record<string, any>,
+  data: Record<string, Untyped>,
 ): string {
   const parts = [guildId, eventType];
   if (data.user_id) parts.push(data.user_id);
@@ -302,9 +303,9 @@ function truncate(value: unknown, max = 1024): string {
 }
 
 function normalizeEmbed(
-  embed: any,
+  embed: Untyped,
   eventType: string,
-  data: Record<string, any>,
+  data: Record<string, Untyped>,
 ) {
   embed.title = truncate(embed.title || eventType, 256);
   if (embed.description) embed.description = truncate(embed.description, 4096);
@@ -312,11 +313,11 @@ function normalizeEmbed(
   const fields = Array.isArray(embed.fields) ? embed.fields : [];
   const normalizedFields = fields
     .filter(
-      (field: any) =>
+      (field: Untyped) =>
         field?.name && field?.value !== undefined && field?.value !== null,
     )
     .slice(0, 25)
-    .map((field: any) => ({
+    .map((field: Untyped) => ({
       name: truncate(field.name, 256),
       value: truncate(field.value, 1024),
       inline: Boolean(field.inline),
@@ -368,7 +369,7 @@ const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 async function sendDiscordLog(
   token: string,
   channelId: string,
-  payload: Record<string, any>,
+  payload: Record<string, Untyped>,
   eventId: string,
 ) {
   const maxAttempts = 3;
@@ -412,7 +413,9 @@ async function sendDiscordLog(
             waitMs,
             Math.ceil(Number(body.retry_after || 0) * 1000),
           );
-        } catch {}
+        } catch {
+          /* ignore */
+        }
       }
       await sleep(Math.min(waitMs, 5000));
     } catch (error) {
@@ -428,8 +431,8 @@ async function sendDiscordLog(
   );
 }
 
-function buildEmbed(eventType: string, data: Record<string, any>): object {
-  const embed: any = {
+function buildEmbed(eventType: string, data: Record<string, Untyped>): object {
+  const embed: Untyped = {
     title: EVENT_TITLES[eventType] || eventType,
     color: EVENT_COLORS[eventType] || 0x5865f2,
     timestamp: data.occurred_at || new Date().toISOString(),

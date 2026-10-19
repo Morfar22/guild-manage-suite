@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useGuild } from "@/contexts/GuildContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import type { Untyped } from "@/types/untyped";
 
 export interface TikTokAccount {
   id: string;
@@ -129,7 +130,7 @@ export function useTikTokAccounts() {
         display_name: username,
         notification_channel_id: channelId,
         mention_role_id: mentionRoleId || null,
-      } as any);
+      } as Untyped);
       if (error) throw error;
       toast({
         title: "TikTok konto tilføjet",
@@ -187,7 +188,7 @@ export function useTikTokAccounts() {
     try {
       const { error } = await supabase
         .from("tiktok_accounts")
-        .update(updates as any)
+        .update(updates as Untyped)
         .eq("id", id);
       if (error) throw error;
       toast({
@@ -217,13 +218,13 @@ export function useTikTokAccounts() {
       if (settings?.id) {
         const { error } = await supabase
           .from("tiktok_settings")
-          .update(newSettings as any)
+          .update(newSettings as Untyped)
           .eq("id", settings.id);
         if (error) throw error;
       } else {
         const { error } = await supabase
           .from("tiktok_settings")
-          .insert({ guild_id: selectedGuild.id, ...newSettings } as any);
+          .insert({ guild_id: selectedGuild.id, ...newSettings } as Untyped);
         if (error) throw error;
       }
       toast({ title: "Gemt", description: "TikTok indstillinger blev gemt." });

@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useGuild } from "@/contexts/GuildContext";
 import { useAuth } from "@/contexts/AuthContext";
+import type { Untyped } from "@/types/untyped";
 import {
   Card,
   CardContent,
@@ -58,19 +59,19 @@ export default function Reminders() {
     queryKey: ["reminders", selectedGuild?.id],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("reminders" as any)
+        .from("reminders" as Untyped)
         .select("*")
         .eq("guild_id", selectedGuild!.id)
         .order("remind_at", { ascending: true });
       if (error) throw error;
-      return data as any[];
+      return data as Untyped[];
     },
     enabled: !!selectedGuild?.id,
   });
 
   const createReminder = useMutation({
     mutationFn: async () => {
-      const { error } = await supabase.from("reminders" as any).insert({
+      const { error } = await supabase.from("reminders" as Untyped).insert({
         guild_id: selectedGuild!.id,
         created_by_user_id: user!.id,
         message,
@@ -96,7 +97,7 @@ export default function Reminders() {
   const deleteReminder = useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase
-        .from("reminders" as any)
+        .from("reminders" as Untyped)
         .delete()
         .eq("id", id);
       if (error) throw error;

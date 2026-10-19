@@ -3,6 +3,7 @@ import { decryptBotToken as decryptToken } from "@/lib/server/bot-token-crypto";
 // Migrated from Supabase Edge Function `twitch-handler` to a TanStack server route.
 import { createFileRoute } from "@tanstack/react-router";
 import { createClient } from "@supabase/supabase-js";
+import type { Untyped } from "@/types/untyped";
 
 const __env = (k: string) =>
   process.env[k] ??
@@ -10,7 +11,7 @@ const __env = (k: string) =>
     ? process.env["SUPABASE_PUBLISHABLE_KEY"]
     : undefined);
 let __handler: (req: Request) => Response | Promise<Response>;
-const __serve = (fn: any, _opts?: any) => {
+const __serve = (fn: Untyped, _opts?: Untyped) => {
   __handler = fn;
 };
 
@@ -23,7 +24,7 @@ const corsHeaders = {
 // Helper function to check if IP is whitelisted
 async function checkIPWhitelist(
   req: Request,
-  supabase: any,
+  supabase: Untyped,
 ): Promise<{ allowed: boolean; ip: string }> {
   const clientIp =
     req.headers.get("cf-connecting-ip") ||
@@ -200,7 +201,7 @@ async function getClips(
   // Only get clips from the last 2 minutes to catch new ones
   const startedAt = new Date(Date.now() - 2 * 60 * 1000).toISOString();
 
-  let url = `https://api.twitch.tv/helix/clips?broadcaster_id=${broadcasterId}&started_at=${startedAt}&first=5`;
+  const url = `https://api.twitch.tv/helix/clips?broadcaster_id=${broadcasterId}&started_at=${startedAt}&first=5`;
 
   const response = await fetch(url, {
     headers: {
@@ -343,7 +344,7 @@ function getWeekStartDate(date: Date = new Date()): string {
 }
 
 // Compute progress / goal display string for a partner
-function describeProgress(streamer: any): {
+function describeProgress(streamer: Untyped): {
   progress: string;
   goal: string;
   met: boolean;
@@ -422,7 +423,7 @@ async function sendDiscordNotification(
 
 // Resolve the correct bot token for a guild (custom bot or default)
 async function resolveGuildBotToken(
-  supabase: any,
+  supabase: Untyped,
   guildId: string,
 ): Promise<string | null> {
   try {
@@ -2010,8 +2011,8 @@ __serve(async (req) => {
         const day = entry.day_of_week;
         if (!dayGroups[day]) dayGroups[day] = [];
         const name =
-          (entry as any).twitch_streamers?.display_name ||
-          (entry as any).twitch_streamers?.twitch_username ||
+          (entry as Untyped).twitch_streamers?.display_name ||
+          (entry as Untyped).twitch_streamers?.twitch_username ||
           "Ukendt";
         const time = `${entry.start_time.slice(0, 5)} - ${entry.end_time.slice(0, 5)}`;
         const game = entry.game_name ? ` • ${entry.game_name}` : "";

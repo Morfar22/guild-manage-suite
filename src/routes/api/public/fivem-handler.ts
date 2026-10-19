@@ -3,6 +3,7 @@ import { decryptBotToken as simpleDecrypt } from "@/lib/server/bot-token-crypto"
 // Migrated from Supabase Edge Function `fivem-handler` to a TanStack server route.
 import { createFileRoute } from "@tanstack/react-router";
 import { createClient } from "@supabase/supabase-js";
+import type { Untyped } from "@/types/untyped";
 
 const __env = (k: string) =>
   process.env[k] ??
@@ -10,7 +11,7 @@ const __env = (k: string) =>
     ? process.env["SUPABASE_PUBLISHABLE_KEY"]
     : undefined);
 let __handler: (req: Request) => Response | Promise<Response>;
-const __serve = (fn: any, _opts?: any) => {
+const __serve = (fn: Untyped, _opts?: Untyped) => {
   __handler = fn;
 };
 
@@ -31,7 +32,7 @@ async function sha256Hex(value: string): Promise<string> {
 // IP whitelist check function
 async function checkIPWhitelist(
   req: Request,
-  supabaseClient: any,
+  supabaseClient: Untyped,
 ): Promise<{ allowed: boolean; ip: string }> {
   const forwarded = req.headers.get("x-forwarded-for");
   const ip = forwarded ? forwarded.split(",")[0].trim() : "unknown";
@@ -56,7 +57,7 @@ async function checkIPWhitelist(
 }
 
 async function getDiscordBotToken(
-  supabase: any,
+  supabase: Untyped,
   internalGuildId: string,
   encryptionKey?: string,
 ) {
@@ -82,7 +83,7 @@ async function getDiscordBotToken(
 }
 
 async function getDiscordMemberRoles(
-  supabase: any,
+  supabase: Untyped,
   internalGuildId: string,
   discordGuildId: string,
   discordUserId: string,
@@ -108,7 +109,7 @@ async function getDiscordMemberRoles(
 }
 
 async function syncDiscordWhitelistRole(
-  supabase: any,
+  supabase: Untyped,
   internalGuildId: string,
   discordGuildId: string,
   discordUserId: string,
@@ -137,10 +138,10 @@ async function syncDiscordWhitelistRole(
 
 // Helper to log actions
 async function logAction(
-  supabase: any,
+  supabase: Untyped,
   guildId: string,
   actionType: string,
-  data: any,
+  data: Untyped,
 ) {
   await supabase.from("fivem_action_logs").insert({
     guild_id: guildId,
@@ -237,10 +238,10 @@ function getNextRestartTime(
 // Send or update Discord status embed via webhook (txAdmin style)
 async function sendDiscordStatusEmbed(
   webhookUrl: string,
-  status: any,
+  status: Untyped,
   isOnline: boolean,
   existingMessageId?: string | null,
-  settings?: any,
+  settings?: Untyped,
 ): Promise<string | null> {
   // Build the embed in txAdmin style
   const serverName =
@@ -325,7 +326,7 @@ async function sendDiscordStatusEmbed(
       let res = await fetch(url, opts);
       if (res.status === 429) {
         const retryData = await res.json().catch(() => ({}));
-        const retryAfter = ((retryData as any).retry_after || 2) * 1000;
+        const retryAfter = ((retryData as Untyped).retry_after || 2) * 1000;
         console.log(`Discord rate limited, retrying after ${retryAfter}ms`);
         await new Promise((r) => setTimeout(r, retryAfter));
         res = await fetch(url, opts);
@@ -500,7 +501,7 @@ __serve(async (req) => {
           .eq("is_active", true);
 
         const matchingBan = (activeBans || []).find(
-          (ban: any) =>
+          (ban: Untyped) =>
             (discordId && ban.discord_user_id === discordId) ||
             (steamHex && ban.steam_hex === steamHex) ||
             (license && ban.license === license),
@@ -1072,8 +1073,8 @@ __serve(async (req) => {
         const now = new Date().toISOString();
 
         const rows = players
-          .filter((player: any) => Number.isFinite(Number(player.playerId)))
-          .map((player: any) => ({
+          .filter((player: Untyped) => Number.isFinite(Number(player.playerId)))
+          .map((player: Untyped) => ({
             guild_id: internalGuildId,
             server_id: serverId,
             player_id: Number(player.playerId),
@@ -1105,7 +1106,7 @@ __serve(async (req) => {
             );
           }
 
-          const ids = rows.map((row: any) => row.player_id);
+          const ids = rows.map((row: Untyped) => row.player_id);
           await supabase
             .from("fivem_online_players")
             .delete()
@@ -1238,7 +1239,7 @@ __serve(async (req) => {
       case "checkBan": {
         const { discordId, steamHex, license, ipAddress } = data;
 
-        let query = supabase
+        const query = supabase
           .from("fivem_bans")
           .select("*")
           .eq("guild_id", internalGuildId)

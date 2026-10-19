@@ -5,6 +5,7 @@ import { useGuild } from "@/contexts/GuildContext";
 import { useGuildPremiumFeatures } from "@/hooks/useGuildPremiumFeatures";
 import { PremiumFeatureKey } from "@/lib/premium-features";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import type { Untyped } from "@/types/untyped";
 import {
   Bot,
   ChevronDown,
@@ -76,7 +77,7 @@ export function DashboardSidebarContent({
       if (hasActive) openSet.add(idx);
     });
     return openSet;
-  }, []);
+  }, [location.pathname]);
 
   const [openGroups, setOpenGroups] = useState<Set<number>>(getInitialOpen);
 
@@ -124,7 +125,7 @@ export function DashboardSidebarContent({
     return (
       <div key={item.to} className="group relative flex items-center">
         <NavLink
-          to={item.to as any}
+          to={item.to as Untyped}
           onClick={onNavigate}
           className={cn(
             "flex flex-1 items-center gap-2.5 rounded-md px-2.5 py-2 text-sm transition-all",
@@ -191,7 +192,7 @@ export function DashboardSidebarContent({
       {selectedGuild && (
         <div className="border-b border-sidebar-border p-4">
           <NavLink
-            to={"/guilds" as any}
+            to={"/guilds" as Untyped}
             onClick={onNavigate}
             className="flex items-center gap-3 rounded-lg p-2 transition-colors hover:bg-sidebar-accent"
           >

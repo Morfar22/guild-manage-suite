@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useGuild } from "@/contexts/GuildContext";
 import { toast } from "sonner";
+import type { Untyped } from "@/types/untyped";
 
 export interface StatsChannel {
   id: string;
@@ -39,7 +40,7 @@ export function useStatsChannels() {
       const { error } = await supabase.from("stats_channels").insert({
         guild_id: selectedGuild.id,
         ...channel,
-      } as any);
+      } as Untyped);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -56,7 +57,7 @@ export function useStatsChannels() {
     }: Partial<StatsChannel> & { id: string }) => {
       const { error } = await supabase
         .from("stats_channels")
-        .update(updates as any)
+        .update(updates as Untyped)
         .eq("id", id);
       if (error) throw error;
     },
