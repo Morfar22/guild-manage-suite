@@ -72,6 +72,7 @@ export default function TebexSettings() {
 
   const [enabled, setEnabled] = useState<boolean | null>(null);
   const [secret, setSecret] = useState("");
+  const [webhookSecret, setWebhookSecret] = useState("");
   const [notifChannel, setNotifChannel] = useState<string | undefined>(
     undefined,
   );
@@ -99,9 +100,11 @@ export default function TebexSettings() {
     saveSettings.mutate({
       enabled: currentEnabled,
       tebex_secret: secret || undefined,
+      webhook_secret: webhookSecret || undefined,
       notification_channel_id: notifChannel,
     });
     setSecret("");
+    setWebhookSecret("");
   };
 
   const handleSearch = () => {
@@ -264,6 +267,9 @@ export default function TebexSettings() {
             setEnabled={setEnabled}
             secret={secret}
             setSecret={setSecret}
+            webhookSecret={webhookSecret}
+            setWebhookSecret={setWebhookSecret}
+            hasWebhookSecret={Boolean(settings?.has_webhook_secret)}
             notifChannel={
               notifChannel ?? settings?.notification_channel_id ?? ""
             }
@@ -817,6 +823,9 @@ function SettingsTab({
   setEnabled,
   secret,
   setSecret,
+  webhookSecret,
+  setWebhookSecret,
+  hasWebhookSecret,
   notifChannel,
   setNotifChannel,
   handleSave,
@@ -828,6 +837,9 @@ function SettingsTab({
   setEnabled: (v: boolean) => void;
   secret: string;
   setSecret: (v: string) => void;
+  webhookSecret: string;
+  setWebhookSecret: (v: string) => void;
+  hasWebhookSecret: boolean;
   notifChannel: string;
   setNotifChannel: (v: string) => void;
   handleSave: () => void;
@@ -870,6 +882,24 @@ function SettingsTab({
                 <p className="text-xs text-muted-foreground">
                   Find den under Tebex Dashboard → Game Servers → Din server →
                   Secret Key
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Tebex Webhook Secret</Label>
+                <Input
+                  type="password"
+                  placeholder={
+                    hasWebhookSecret
+                      ? "Gemt — indtast en ny for at erstatte"
+                      : "Indtast webhook secret..."
+                  }
+                  value={webhookSecret}
+                  onChange={(e) => setWebhookSecret(e.target.value)}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Påkrævet: findes under Tebex → Developers → Webhooks →
+                  Endpoints. Webhooks uden gyldig signatur afvises.
                 </p>
               </div>
 

@@ -489,3 +489,18 @@ test("edge functions import _shared modules with explicit .ts extensions", () =>
   );
   assert.deepEqual(bad, []);
 });
+
+test("tebex webhook verifies X-Signature and fails closed without secret", () => {
+  for (const f of [
+    "src/routes/api/public/tebex-webhook.ts",
+    "supabase/functions/tebex-webhook/index.ts",
+  ]) {
+    const src = read(f);
+    assert.match(src, /verifyTebexSignature\(/, f);
+    assert.match(src, /Webhook secret not configured/, f);
+    assert.ok(
+      src.indexOf("verifyTebexSignature(") < src.indexOf("handleRoleGrant("),
+      f,
+    );
+  }
+});

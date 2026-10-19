@@ -93,12 +93,18 @@ async function handleGet(
     const { data, error } = await supabase
       .from("tebex_settings")
       .select(
-        "id, guild_id, enabled, notification_channel_id, created_at, updated_at",
+        "id, guild_id, enabled, notification_channel_id, webhook_secret, created_at, updated_at",
       )
       .eq("guild_id", guildId)
       .maybeSingle();
     if (error) throw error;
-    return jsonResponse({ settings: data });
+    // Never return the secret itself; only whether one is set.
+    const { webhook_secret, ...rest } = (data || {}) as Record<string, unknown>;
+    return jsonResponse({
+      settings: data
+        ? { ...rest, has_webhook_secret: Boolean(webhook_secret) }
+        : null,
+    });
   }
 
   if (action === "lookup_payment") {
@@ -306,11 +312,15 @@ async function handlePost(
   const { action } = body;
 
   if (action === "save_settings") {
-    const { enabled, tebex_secret, notification_channel_id } = body;
+    const { enabled, tebex_secret, webhook_secret, notification_channel_id } =
+      body;
 
     const updateData: Record<string, unknown> = { enabled };
     if (tebex_secret !== undefined && tebex_secret !== "") {
       updateData.tebex_secret_encrypted = tebex_secret;
+    }
+    if (typeof webhook_secret === "string" && webhook_secret.trim() !== "") {
+      updateData.webhook_secret = webhook_secret.trim();
     }
     if (notification_channel_id !== undefined) {
       updateData.notification_channel_id = notification_channel_id;

@@ -1,5 +1,6 @@
 // Migrated from Supabase Edge Function `tebex-webhook` to a TanStack server route.
 // @ts-nocheck
+import { verifyTebexSignature } from "@/lib/server/tebex-signature";
 import { createFileRoute } from "@tanstack/react-router";
 import { createClient } from "@supabase/supabase-js";
 import type { Untyped } from "@/types/untyped";
@@ -54,8 +55,49 @@ __serve(async (req) => {
       });
     }
 
-    const body = await req.json();
-    const eventType = body.type || "payment.completed";
+    // Authenticity: Tebex signs every webhook with the endpoint secret.
+    // Fail closed when no secret is configured — otherwise anyone could
+    // forge payment.completed and be granted paid roles.
+    const rawBody = await req.text();
+    if (!settings.webhook_secret) {
+      return new Response(
+        JSON.stringify({ error: "Webhook secret not configured" }),
+        {
+          status: 401,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
+    }
+    const validSignature = await verifyTebexSignature(
+      rawBody,
+      req.headers.get("x-signature"),
+      settings.webhook_secret,
+    );
+    if (!validSignature) {
+      return new Response(JSON.stringify({ error: "Invalid signature" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    let body: Untyped;
+    try {
+      body = JSON.parse(rawBody);
+    } catch {
+      return new Response(JSON.stringify({ error: "Invalid JSON" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Endpoint validation handshake.
+    if (body?.type === "validation.webhook") {
+      return new Response(JSON.stringify({ id: body.id }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const eventType = String(body.type || "");
     const subject = body.subject || {};
 
     // Extract payment info

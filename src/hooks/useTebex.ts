@@ -55,6 +55,7 @@ export function useTebexSettings() {
         guild_id: string;
         enabled: boolean;
         notification_channel_id: string | null;
+        has_webhook_secret?: boolean;
       } | null;
     },
     enabled: !!selectedGuild?.id,
@@ -64,6 +65,7 @@ export function useTebexSettings() {
     mutationFn: async (params: {
       enabled: boolean;
       tebex_secret?: string;
+      webhook_secret?: string;
       notification_channel_id?: string;
     }) => {
       if (!selectedGuild?.id) throw new Error("No guild selected");

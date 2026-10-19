@@ -50,3 +50,23 @@ describe("safeHref", () => {
     expect(safeHref(null)).toBeUndefined();
   });
 });
+
+describe("tebex webhook signature", () => {
+  it("matches the documented sha256 -> hmac-sha256 scheme", async () => {
+    const { createHash, createHmac } = await import("node:crypto");
+    const { computeTebexSignature, verifyTebexSignature } =
+      await import("@/lib/server/tebex-signature");
+    const body = '{"id":"x","type":"payment.completed","subject":{}}';
+    const secret = "s3cret";
+    const expected = createHmac("sha256", secret)
+      .update(createHash("sha256").update(body, "utf8").digest("hex"))
+      .digest("hex");
+    expect(await computeTebexSignature(body, secret)).toBe(expected);
+    expect(await verifyTebexSignature(body, expected, secret)).toBe(true);
+    expect(await verifyTebexSignature(body + " ", expected, secret)).toBe(
+      false,
+    );
+    expect(await verifyTebexSignature(body, expected, null)).toBe(false);
+    expect(await verifyTebexSignature(body, null, secret)).toBe(false);
+  });
+});

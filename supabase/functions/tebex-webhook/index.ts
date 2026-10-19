@@ -1,3 +1,5 @@
+import { verifyTebexSignature } from "../_shared/tebex-signature.ts";
+import type { Untyped } from "../_shared/untyped.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
@@ -41,8 +43,49 @@ serve(async (req) => {
       });
     }
 
-    const body = await req.json();
-    const eventType = body.type || "payment.completed";
+    // Authenticity: Tebex signs every webhook with the endpoint secret.
+    // Fail closed when no secret is configured — otherwise anyone could
+    // forge payment.completed and be granted paid roles.
+    const rawBody = await req.text();
+    if (!settings.webhook_secret) {
+      return new Response(
+        JSON.stringify({ error: "Webhook secret not configured" }),
+        {
+          status: 401,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
+    }
+    const validSignature = await verifyTebexSignature(
+      rawBody,
+      req.headers.get("x-signature"),
+      settings.webhook_secret,
+    );
+    if (!validSignature) {
+      return new Response(JSON.stringify({ error: "Invalid signature" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    let body: Untyped;
+    try {
+      body = JSON.parse(rawBody);
+    } catch {
+      return new Response(JSON.stringify({ error: "Invalid JSON" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Endpoint validation handshake.
+    if (body?.type === "validation.webhook") {
+      return new Response(JSON.stringify({ id: body.id }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const eventType = String(body.type || "");
     const subject = body.subject || {};
 
     // Extract payment info
