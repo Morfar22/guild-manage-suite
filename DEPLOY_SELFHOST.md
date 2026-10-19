@@ -63,8 +63,8 @@ AI-screening, AI-chat, AI-automod, AI auto-responder, tekstforbedring og ticket 
 
 - Opret en OpenAI API-nøgle.
 - Tilføj `OPENAI_API_KEY` som en hemmelig Cloudflare Secret.
-- Valgfrit: sæt `OPENAI_MODEL` for at overskrive standardmodellen (`gpt-4.1-mini`).
-- De aktive AI-ruter bruger én fælles server-side OpenAI-klient med `gpt-4.1-mini` som standardmodel, timeout og ens fejlbehandling.
+- Valgfrit: sæt `OPENAI_MODEL` for at overskrive standardmodellen (`gpt-6-luna`). En eksplicit værdi bruges altid uændret; kun den gamle tastefejl `gpt-5.6-luna` mappes automatisk til `gpt-6-luna`.
+- De aktive AI-ruter bruger én fælles server-side OpenAI-klient med `gpt-6-luna` som standardmodel (styres af `OPENAI_MODEL`), timeout og ens fejlbehandling.
 - OpenAI-nøglen må aldrig bruge `VITE_`-prefix og må aldrig sendes til browseren.
 
 ## 6. Tjekliste efter deploy
