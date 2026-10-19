@@ -14,7 +14,6 @@ interface DiscordRole {
   managed: boolean;
 }
 
-
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -37,7 +36,8 @@ Deno.serve(async (req) => {
       { global: { headers: { Authorization: authHeader } } },
     );
 
-    const { data: claimsData, error: claimsError } = await supabaseAuthed.auth.getClaims(token);
+    const { data: claimsData, error: claimsError } =
+      await supabaseAuthed.auth.getClaims(token);
     if (claimsError || !claimsData?.claims?.sub) {
       console.error("getClaims failed", claimsError);
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
@@ -58,14 +58,20 @@ Deno.serve(async (req) => {
     const guildId = url.searchParams.get("guildId");
 
     if (!guildId) {
-      return new Response(JSON.stringify({ error: "Missing guildId parameter" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return new Response(
+        JSON.stringify({ error: "Missing guildId parameter" }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
     }
 
     // Check if user is a global admin/staff (bypass guild access check)
-    const { data: isGlobalAdmin } = await supabaseAdmin.rpc("has_admin_or_staff_role", { _user_id: userId });
+    const { data: isGlobalAdmin } = await supabaseAdmin.rpc(
+      "has_admin_or_staff_role",
+      { _user_id: userId },
+    );
 
     if (!isGlobalAdmin) {
       // Verify user has access to this guild
@@ -112,8 +118,14 @@ Deno.serve(async (req) => {
     let botToken: string | null = null;
 
     // Use custom bot token if available and active, otherwise fall back to global bot
-    if (customBotSettings?.bot_token_encrypted && customBotSettings.is_custom_bot) {
-      botToken = simpleDecrypt(customBotSettings.bot_token_encrypted, encryptionKey);
+    if (
+      customBotSettings?.bot_token_encrypted &&
+      customBotSettings.is_custom_bot
+    ) {
+      botToken = simpleDecrypt(
+        customBotSettings.bot_token_encrypted,
+        encryptionKey,
+      );
       console.log(`Using custom bot token for guild ${guild.guild_id}`);
     } else {
       botToken = Deno.env.get("DISCORD_BOT_TOKEN") || null;
@@ -121,10 +133,13 @@ Deno.serve(async (req) => {
     }
 
     if (!botToken) {
-      return new Response(JSON.stringify({ error: "No bot token available for this guild" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return new Response(
+        JSON.stringify({ error: "No bot token available for this guild" }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
     }
 
     const discordRes = await fetch(
@@ -139,18 +154,22 @@ Deno.serve(async (req) => {
     if (!discordRes.ok) {
       const errorText = await discordRes.text();
       console.error("Discord API error", discordRes.status, errorText);
-      
+
       // Provide more helpful error message
       if (discordRes.status === 404) {
-        return new Response(JSON.stringify({ 
-          error: "Bot is not a member of this Discord server. Please invite the bot first.",
-          details: "Unknown Guild (404)"
-        }), {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+        return new Response(
+          JSON.stringify({
+            error:
+              "Bot is not a member of this Discord server. Please invite the bot first.",
+            details: "Unknown Guild (404)",
+          }),
+          {
+            status: 400,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          },
+        );
       }
-      
+
       throw new Error(`Discord API error (${discordRes.status})`);
     }
 
@@ -166,7 +185,9 @@ Deno.serve(async (req) => {
         color: role.color,
       }));
 
-    console.log(`Fetched ${filteredRoles.length} roles for guild ${guild.guild_id}`);
+    console.log(
+      `Fetched ${filteredRoles.length} roles for guild ${guild.guild_id}`,
+    );
 
     return new Response(JSON.stringify({ roles: filteredRoles }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },

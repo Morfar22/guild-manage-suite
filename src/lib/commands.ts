@@ -1,6 +1,6 @@
-import { supabase } from '@/integrations/supabase/client';
-import type { Json } from '@/integrations/supabase/types';
-import { COMMANDS_BY_CATEGORY } from '@/types/discord';
+import { supabase } from "@/integrations/supabase/client";
+import type { Json } from "@/integrations/supabase/types";
+import { COMMANDS_BY_CATEGORY } from "@/types/discord";
 
 export interface GuildCommandSettings {
   command_name: string;
@@ -20,7 +20,7 @@ export interface CommandAuditEntry {
 
 export async function recordCommandAudits(
   guildId: string,
-  entries: CommandAuditEntry[]
+  entries: CommandAuditEntry[],
 ): Promise<void> {
   if (!entries.length) return;
 
@@ -29,22 +29,22 @@ export async function recordCommandAudits(
     const user = authData.user;
     if (!user) return;
 
-    const { error } = await supabase.from('dashboard_audit_log').insert(
+    const { error } = await supabase.from("dashboard_audit_log").insert(
       entries.map((entry) => ({
         guild_id: guildId,
         user_id: user.id,
         user_email: user.email ?? null,
         action: entry.action,
-        target_type: 'command',
+        target_type: "command",
         target_id: entry.commandName,
         details: entry.details as Json,
         undo_payload: entry.undoPayload ? (entry.undoPayload as Json) : null,
-      }))
+      })),
     );
 
     if (error) throw error;
   } catch (error) {
-    console.warn('Kunne ikke skrive command audit-log:', error);
+    console.warn("Kunne ikke skrive command audit-log:", error);
   }
 }
 
@@ -67,40 +67,49 @@ const getDefaultCommandSettings = (): Record<string, GuildCommandSettings> => {
 
 export async function initializeGuildCommands(guildId: string): Promise<void> {
   const { data: existingCommands, error: fetchError } = await supabase
-    .from('guild_commands')
-    .select('command_name')
-    .eq('guild_id', guildId);
+    .from("guild_commands")
+    .select("command_name")
+    .eq("guild_id", guildId);
 
   if (fetchError) throw fetchError;
 
-  const existingCommandNames = new Set(existingCommands?.map((c) => c.command_name) || []);
-  const commandsToInsert = Object.entries(COMMANDS_BY_CATEGORY).flatMap(([category, commands]) =>
-    commands
-      .filter((command) => !existingCommandNames.has(command.name))
-      .map((command) => ({
-        guild_id: guildId,
-        command_name: command.name,
-        category,
-        enabled: true,
-        cooldown_seconds: 0,
-        allowed_role_ids: [] as string[],
-        allowed_channel_ids: [] as string[],
-      }))
+  const existingCommandNames = new Set(
+    existingCommands?.map((c) => c.command_name) || [],
+  );
+  const commandsToInsert = Object.entries(COMMANDS_BY_CATEGORY).flatMap(
+    ([category, commands]) =>
+      commands
+        .filter((command) => !existingCommandNames.has(command.name))
+        .map((command) => ({
+          guild_id: guildId,
+          command_name: command.name,
+          category,
+          enabled: true,
+          cooldown_seconds: 0,
+          allowed_role_ids: [] as string[],
+          allowed_channel_ids: [] as string[],
+        })),
   );
 
   if (!commandsToInsert.length) return;
 
-  const { error } = await supabase.from('guild_commands').insert(commandsToInsert);
+  const { error } = await supabase
+    .from("guild_commands")
+    .insert(commandsToInsert);
   if (error) throw error;
 }
 
-export async function getGuildCommandSettings(guildId: string): Promise<Record<string, GuildCommandSettings>> {
+export async function getGuildCommandSettings(
+  guildId: string,
+): Promise<Record<string, GuildCommandSettings>> {
   const defaults = getDefaultCommandSettings();
 
   const { data, error } = await supabase
-    .from('guild_commands')
-    .select('command_name, category, enabled, cooldown_seconds, allowed_role_ids, allowed_channel_ids')
-    .eq('guild_id', guildId);
+    .from("guild_commands")
+    .select(
+      "command_name, category, enabled, cooldown_seconds, allowed_role_ids, allowed_channel_ids",
+    )
+    .eq("guild_id", guildId);
 
   if (error) throw error;
 
@@ -122,13 +131,13 @@ export async function toggleGuildCommand(
   guildId: string,
   commandName: string,
   category: string,
-  enabled: boolean
+  enabled: boolean,
 ): Promise<void> {
   const { error } = await supabase
-    .from('guild_commands')
+    .from("guild_commands")
     .upsert(
       { guild_id: guildId, command_name: commandName, category, enabled },
-      { onConflict: 'guild_id,command_name' }
+      { onConflict: "guild_id,command_name" },
     );
 
   if (error) throw error;
@@ -138,19 +147,25 @@ export async function updateGuildCommandSettings(
   guildId: string,
   commandName: string,
   category: string,
-  updates: Partial<Pick<GuildCommandSettings, 'enabled' | 'cooldown_seconds' | 'allowed_role_ids' | 'allowed_channel_ids'>>
+  updates: Partial<
+    Pick<
+      GuildCommandSettings,
+      | "enabled"
+      | "cooldown_seconds"
+      | "allowed_role_ids"
+      | "allowed_channel_ids"
+    >
+  >,
 ): Promise<void> {
-  const { error } = await supabase
-    .from('guild_commands')
-    .upsert(
-      {
-        guild_id: guildId,
-        command_name: commandName,
-        category,
-        ...updates,
-      },
-      { onConflict: 'guild_id,command_name' }
-    );
+  const { error } = await supabase.from("guild_commands").upsert(
+    {
+      guild_id: guildId,
+      command_name: commandName,
+      category,
+      ...updates,
+    },
+    { onConflict: "guild_id,command_name" },
+  );
 
   if (error) throw error;
 }
@@ -160,22 +175,28 @@ export async function bulkUpdateGuildCommandSettings(
   entries: Array<{
     commandName: string;
     category: string;
-    updates: Partial<Pick<GuildCommandSettings, 'enabled' | 'cooldown_seconds' | 'allowed_role_ids' | 'allowed_channel_ids'>>;
-  }>
+    updates: Partial<
+      Pick<
+        GuildCommandSettings,
+        | "enabled"
+        | "cooldown_seconds"
+        | "allowed_role_ids"
+        | "allowed_channel_ids"
+      >
+    >;
+  }>,
 ): Promise<void> {
   if (!entries.length) return;
 
-  const { error } = await supabase
-    .from('guild_commands')
-    .upsert(
-      entries.map(({ commandName, category, updates }) => ({
-        guild_id: guildId,
-        command_name: commandName,
-        category,
-        ...updates,
-      })),
-      { onConflict: 'guild_id,command_name' }
-    );
+  const { error } = await supabase.from("guild_commands").upsert(
+    entries.map(({ commandName, category, updates }) => ({
+      guild_id: guildId,
+      command_name: commandName,
+      category,
+      ...updates,
+    })),
+    { onConflict: "guild_id,command_name" },
+  );
 
   if (error) throw error;
 }
@@ -183,22 +204,20 @@ export async function bulkUpdateGuildCommandSettings(
 export async function toggleCategoryCommands(
   guildId: string,
   category: string,
-  enabled: boolean
+  enabled: boolean,
 ): Promise<void> {
   const commands = COMMANDS_BY_CATEGORY[category];
   if (!commands) return;
 
-  const { error } = await supabase
-    .from('guild_commands')
-    .upsert(
-      commands.map((cmd) => ({
-        guild_id: guildId,
-        command_name: cmd.name,
-        category,
-        enabled,
-      })),
-      { onConflict: 'guild_id,command_name' }
-    );
+  const { error } = await supabase.from("guild_commands").upsert(
+    commands.map((cmd) => ({
+      guild_id: guildId,
+      command_name: cmd.name,
+      category,
+      enabled,
+    })),
+    { onConflict: "guild_id,command_name" },
+  );
 
   if (error) throw error;
 }

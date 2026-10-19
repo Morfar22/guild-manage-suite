@@ -1,5 +1,5 @@
 // Scheduler Handler - Sends scheduled messages
-const { EmbedBuilder } = require('discord.js');
+const { EmbedBuilder } = require("discord.js");
 
 class SchedulerHandler {
   constructor(client, supabase, config = {}) {
@@ -11,12 +11,15 @@ class SchedulerHandler {
 
   async init() {
     // Check for pending messages every minute
-    this.checkInterval = setInterval(() => this.checkScheduledMessages(), 60000);
-    
+    this.checkInterval = setInterval(
+      () => this.checkScheduledMessages(),
+      60000,
+    );
+
     // Initial check
     setTimeout(() => this.checkScheduledMessages(), 5000);
 
-    console.log('[Scheduler] Handler initialized');
+    console.log("[Scheduler] Handler initialized");
   }
 
   async checkScheduledMessages() {
@@ -25,13 +28,13 @@ class SchedulerHandler {
 
       // Get all pending messages that should be sent
       const { data: messages, error } = await this.supabase
-        .from('scheduled_messages')
-        .select('*, guilds!inner(guild_id)')
-        .eq('sent', false)
-        .lte('scheduled_at', now);
+        .from("scheduled_messages")
+        .select("*, guilds!inner(guild_id)")
+        .eq("sent", false)
+        .lte("scheduled_at", now);
 
       if (error) {
-        console.error('[Scheduler] Error fetching messages:', error);
+        console.error("[Scheduler] Error fetching messages:", error);
         return;
       }
 
@@ -43,16 +46,20 @@ class SchedulerHandler {
         await this.sendScheduledMessage(message);
       }
     } catch (error) {
-      console.error('[Scheduler] Check error:', error);
+      console.error("[Scheduler] Check error:", error);
     }
   }
 
   async sendScheduledMessage(scheduledMessage) {
     try {
-      const channel = await this.client.channels.fetch(scheduledMessage.channel_id);
-      
+      const channel = await this.client.channels.fetch(
+        scheduledMessage.channel_id,
+      );
+
       if (!channel) {
-        console.error(`[Scheduler] Channel not found: ${scheduledMessage.channel_id}`);
+        console.error(
+          `[Scheduler] Channel not found: ${scheduledMessage.channel_id}`,
+        );
         await this.markAsSent(scheduledMessage.id, false);
         return;
       }
@@ -77,7 +84,7 @@ class SchedulerHandler {
         if (embedData.author) {
           embed.setAuthor({
             name: embedData.author.name,
-            iconURL: embedData.author.icon_url
+            iconURL: embedData.author.icon_url,
           });
         }
         if (embedData.fields && Array.isArray(embedData.fields)) {
@@ -90,7 +97,9 @@ class SchedulerHandler {
 
       // Send the message
       await channel.send(messageOptions);
-      console.log(`[Scheduler] Sent message ${scheduledMessage.id} to channel ${scheduledMessage.channel_id}`);
+      console.log(
+        `[Scheduler] Sent message ${scheduledMessage.id} to channel ${scheduledMessage.channel_id}`,
+      );
 
       // Handle repeat interval
       if (scheduledMessage.repeat_interval) {
@@ -99,9 +108,11 @@ class SchedulerHandler {
 
       // Mark as sent
       await this.markAsSent(scheduledMessage.id, true);
-
     } catch (error) {
-      console.error(`[Scheduler] Error sending message ${scheduledMessage.id}:`, error);
+      console.error(
+        `[Scheduler] Error sending message ${scheduledMessage.id}:`,
+        error,
+      );
       // Mark as sent to prevent infinite retry loop
       await this.markAsSent(scheduledMessage.id, false);
     }
@@ -109,12 +120,12 @@ class SchedulerHandler {
 
   async markAsSent(messageId, success) {
     await this.supabase
-      .from('scheduled_messages')
+      .from("scheduled_messages")
       .update({
         sent: true,
-        sent_at: new Date().toISOString()
+        sent_at: new Date().toISOString(),
       })
-      .eq('id', messageId);
+      .eq("id", messageId);
   }
 
   async scheduleNextOccurrence(message) {
@@ -122,15 +133,15 @@ class SchedulerHandler {
     let nextDate;
 
     switch (message.repeat_interval) {
-      case 'daily':
+      case "daily":
         nextDate = new Date(scheduledAt);
         nextDate.setDate(nextDate.getDate() + 1);
         break;
-      case 'weekly':
+      case "weekly":
         nextDate = new Date(scheduledAt);
         nextDate.setDate(nextDate.getDate() + 7);
         break;
-      case 'monthly':
+      case "monthly":
         nextDate = new Date(scheduledAt);
         nextDate.setMonth(nextDate.getMonth() + 1);
         break;
@@ -139,26 +150,35 @@ class SchedulerHandler {
     }
 
     // Create new scheduled message
-    await this.supabase
-      .from('scheduled_messages')
-      .insert({
-        guild_id: message.guild_id,
-        channel_id: message.channel_id,
-        content: message.content,
-        embed: message.embed,
-        scheduled_at: nextDate.toISOString(),
-        repeat_interval: message.repeat_interval,
-        created_by_id: message.created_by_id,
-        created_by_name: message.created_by_name,
-        sent: false
-      });
+    await this.supabase.from("scheduled_messages").insert({
+      guild_id: message.guild_id,
+      channel_id: message.channel_id,
+      content: message.content,
+      embed: message.embed,
+      scheduled_at: nextDate.toISOString(),
+      repeat_interval: message.repeat_interval,
+      created_by_id: message.created_by_id,
+      created_by_name: message.created_by_name,
+      sent: false,
+    });
 
-    console.log(`[Scheduler] Scheduled next occurrence for ${message.id} at ${nextDate.toISOString()}`);
+    console.log(
+      `[Scheduler] Scheduled next occurrence for ${message.id} at ${nextDate.toISOString()}`,
+    );
   }
 
-  async createScheduledMessage(guildId, channelId, content, embed, scheduledAt, repeatInterval, createdById, createdByName) {
+  async createScheduledMessage(
+    guildId,
+    channelId,
+    content,
+    embed,
+    scheduledAt,
+    repeatInterval,
+    createdById,
+    createdByName,
+  ) {
     const { data, error } = await this.supabase
-      .from('scheduled_messages')
+      .from("scheduled_messages")
       .insert({
         guild_id: guildId,
         channel_id: channelId,
@@ -168,13 +188,13 @@ class SchedulerHandler {
         repeat_interval: repeatInterval,
         created_by_id: createdById,
         created_by_name: createdByName,
-        sent: false
+        sent: false,
       })
       .select()
       .single();
 
     if (error) {
-      console.error('[Scheduler] Error creating message:', error);
+      console.error("[Scheduler] Error creating message:", error);
       return null;
     }
 
@@ -183,24 +203,24 @@ class SchedulerHandler {
 
   async deleteScheduledMessage(messageId) {
     const { error } = await this.supabase
-      .from('scheduled_messages')
+      .from("scheduled_messages")
       .delete()
-      .eq('id', messageId);
+      .eq("id", messageId);
 
     return !error;
   }
 
   async getUpcomingMessages(guildId, limit = 10) {
     const { data, error } = await this.supabase
-      .from('scheduled_messages')
-      .select('*')
-      .eq('guild_id', guildId)
-      .eq('sent', false)
-      .order('scheduled_at', { ascending: true })
+      .from("scheduled_messages")
+      .select("*")
+      .eq("guild_id", guildId)
+      .eq("sent", false)
+      .order("scheduled_at", { ascending: true })
       .limit(limit);
 
     if (error) {
-      console.error('[Scheduler] Error fetching upcoming:', error);
+      console.error("[Scheduler] Error fetching upcoming:", error);
       return [];
     }
 

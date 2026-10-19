@@ -1,22 +1,29 @@
-import { useEffect, useState } from 'react';
-import { LayoutDashboard, SlidersHorizontal } from 'lucide-react';
+import { useEffect, useState } from "react";
+import { LayoutDashboard, SlidersHorizontal } from "lucide-react";
 import {
   DEFAULT_DASHBOARD_WIDGETS,
   DashboardWidgetId,
   useDashboardPreferences,
-} from '@/hooks/useDashboardPreferences';
-import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Switch } from '@/components/ui/switch';
+} from "@/hooks/useDashboardPreferences";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Switch } from "@/components/ui/switch";
 
 const LABELS: Record<DashboardWidgetId, string> = {
-  operations: 'Operations Pulse',
-  bot_status: 'Bot status',
-  activity: 'Aktivitet & fordeling',
-  growth: 'Medlemsvækst & moderation',
-  server_stats: 'Server stats & quick actions',
-  recent_activity: 'Config & seneste aktivitet',
+  operations: "Operations Pulse",
+  bot_status: "Bot status",
+  activity: "Aktivitet & fordeling",
+  growth: "Medlemsvækst & moderation",
+  server_stats: "Server stats & quick actions",
+  recent_activity: "Config & seneste aktivitet",
 };
 
 export function DashboardWidgetSettings() {
@@ -32,7 +39,9 @@ export function DashboardWidgetSettings() {
 
   const toggle = (id: string) => {
     setWidgets((current) =>
-      current.includes(id) ? current.filter((item) => item !== id) : [...current, id]
+      current.includes(id)
+        ? current.filter((item) => item !== id)
+        : [...current, id],
     );
   };
 
@@ -68,7 +77,10 @@ export function DashboardWidgetSettings() {
               key={id}
               className="flex cursor-pointer items-center gap-3 rounded-lg border p-3 hover:bg-muted/30"
             >
-              <Checkbox checked={widgets.includes(id)} onCheckedChange={() => toggle(id)} />
+              <Checkbox
+                checked={widgets.includes(id)}
+                onCheckedChange={() => toggle(id)}
+              />
               <span className="text-sm font-medium">{LABELS[id]}</span>
             </label>
           ))}
@@ -77,7 +89,9 @@ export function DashboardWidgetSettings() {
         <label className="flex items-center justify-between rounded-lg border p-3">
           <div>
             <div className="text-sm font-medium">Compact mode</div>
-            <div className="text-xs text-muted-foreground">Mindre spacing på dashboardet.</div>
+            <div className="text-xs text-muted-foreground">
+              Mindre spacing på dashboardet.
+            </div>
           </div>
           <Switch checked={compact} onCheckedChange={setCompact} />
         </label>
@@ -92,7 +106,9 @@ export function DashboardWidgetSettings() {
           >
             Reset
           </Button>
-          <Button onClick={save} disabled={prefs.save.isPending}>Gem layout</Button>
+          <Button onClick={save} disabled={prefs.save.isPending}>
+            Gem layout
+          </Button>
         </div>
       </DialogContent>
     </Dialog>

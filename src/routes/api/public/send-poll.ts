@@ -1,83 +1,111 @@
 // @ts-nocheck
-import { decryptBotToken as simpleDecrypt } from '@/lib/server/bot-token-crypto'
+import { decryptBotToken as simpleDecrypt } from "@/lib/server/bot-token-crypto";
 // Migrated from Supabase Edge Function `send-poll` to a TanStack server route.
-import { createFileRoute } from '@tanstack/react-router'
-import { createClient } from '@supabase/supabase-js'
-import { requireUser, requireGuildAdmin, requireGuildChannel } from '@/lib/server/api-auth'
+import { createFileRoute } from "@tanstack/react-router";
+import { createClient } from "@supabase/supabase-js";
+import {
+  requireUser,
+  requireGuildAdmin,
+  requireGuildChannel,
+} from "@/lib/server/api-auth";
 
-const __env = (k: string) => process.env[k] ?? (k === 'SUPABASE_ANON_KEY' ? process.env['SUPABASE_PUBLISHABLE_KEY'] : undefined)
-let __handler: (req: Request) => Response | Promise<Response>
-const __serve = (fn: any, _opts?: any) => { __handler = fn }
-
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+const __env = (k: string) =>
+  process.env[k] ??
+  (k === "SUPABASE_ANON_KEY"
+    ? process.env["SUPABASE_PUBLISHABLE_KEY"]
+    : undefined);
+let __handler: (req: Request) => Response | Promise<Response>;
+const __serve = (fn: any, _opts?: any) => {
+  __handler = fn;
 };
 
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type",
+};
 
-async function getBotTokenForGuild(supabase: any, guildId: string): Promise<string> {
+async function getBotTokenForGuild(
+  supabase: any,
+  guildId: string,
+): Promise<string> {
   const { data: settings } = await supabase
-    .from('guild_bot_settings')
-    .select('is_custom_bot, is_active, bot_token_encrypted')
-    .eq('guild_id', guildId)
-    .eq('is_custom_bot', true)
-    .eq('is_active', true)
+    .from("guild_bot_settings")
+    .select("is_custom_bot, is_active, bot_token_encrypted")
+    .eq("guild_id", guildId)
+    .eq("is_custom_bot", true)
+    .eq("is_active", true)
     .maybeSingle();
 
-  const encryptionKey = __env('BOT_SECRET_KEY') || '';
+  const encryptionKey = __env("BOT_SECRET_KEY") || "";
 
   if (settings?.bot_token_encrypted) {
     try {
       return simpleDecrypt(settings.bot_token_encrypted, encryptionKey);
     } catch (e) {
-    if (e instanceof Response) return e;
-      console.error('Failed to decrypt custom bot token, falling back to global:', e instanceof Error ? e.message : String(e));
+      if (e instanceof Response) return e;
+      console.error(
+        "Failed to decrypt custom bot token, falling back to global:",
+        e instanceof Error ? e.message : String(e),
+      );
     }
   }
 
-  const globalToken = __env('DISCORD_BOT_TOKEN');
-  if (!globalToken) throw new Error('Bot token not configured');
+  const globalToken = __env("DISCORD_BOT_TOKEN");
+  if (!globalToken) throw new Error("Bot token not configured");
   return globalToken;
 }
 
 __serve(async (req) => {
-  if (req.method === 'OPTIONS') {
+  if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
     const { pollId } = await req.json();
     if (!pollId) {
-      return new Response(JSON.stringify({ error: 'Missing pollId' }), { status: 400, headers: corsHeaders });
+      return new Response(JSON.stringify({ error: "Missing pollId" }), {
+        status: 400,
+        headers: corsHeaders,
+      });
     }
 
-    const supabaseUrl = __env('SUPABASE_URL')!;
-    const supabaseKey = __env('SUPABASE_SERVICE_ROLE_KEY')!;
+    const supabaseUrl = __env("SUPABASE_URL")!;
+    const supabaseKey = __env("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseKey);
     const user = await requireUser(req, supabase);
 
     // Fetch the poll
     const { data: poll, error: pollError } = await supabase
-      .from('polls')
-      .select('*')
-      .eq('id', pollId)
+      .from("polls")
+      .select("*")
+      .eq("id", pollId)
       .single();
 
     if (pollError || !poll) {
-      return new Response(JSON.stringify({ error: 'Poll not found' }), { status: 404, headers: corsHeaders });
+      return new Response(JSON.stringify({ error: "Poll not found" }), {
+        status: 404,
+        headers: corsHeaders,
+      });
     }
 
     const guild = await requireGuildAdmin(supabase, user.id, poll.guild_id);
 
     if (!poll.channel_id) {
-      return new Response(JSON.stringify({ error: 'No channel_id set' }), { status: 400, headers: corsHeaders });
+      return new Response(JSON.stringify({ error: "No channel_id set" }), {
+        status: 400,
+        headers: corsHeaders,
+      });
     }
 
     if (poll.message_id) {
       return new Response(
-        JSON.stringify({ success: true, alreadyDelivered: true, messageId: poll.message_id }),
-        { headers: corsHeaders }
+        JSON.stringify({
+          success: true,
+          alreadyDelivered: true,
+          messageId: poll.message_id,
+        }),
+        { headers: corsHeaders },
       );
     }
 
@@ -86,24 +114,26 @@ __serve(async (req) => {
 
     const deliveryClaim = `pending:http:${poll.id}:${Date.now()}`;
     const { data: claimedRows, error: claimError } = await supabase
-      .from('polls')
+      .from("polls")
       .update({ message_id: deliveryClaim })
-      .eq('id', poll.id)
-      .is('message_id', null)
-      .select('id');
+      .eq("id", poll.id)
+      .is("message_id", null)
+      .select("id");
 
     if (claimError) {
       return new Response(
-        JSON.stringify({ error: `Failed to claim poll delivery: ${claimError.message}` }),
-        { status: 500, headers: corsHeaders }
+        JSON.stringify({
+          error: `Failed to claim poll delivery: ${claimError.message}`,
+        }),
+        { status: 500, headers: corsHeaders },
       );
     }
 
     if (!claimedRows?.length) {
       const { data: latestPoll } = await supabase
-        .from('polls')
-        .select('message_id')
-        .eq('id', poll.id)
+        .from("polls")
+        .select("message_id")
+        .eq("id", poll.id)
         .maybeSingle();
 
       return new Response(
@@ -112,26 +142,34 @@ __serve(async (req) => {
           alreadyDelivered: true,
           messageId: latestPoll?.message_id ?? null,
         }),
-        { headers: corsHeaders }
+        { headers: corsHeaders },
       );
     }
 
     // Build the embed
-    const options = (poll.options || []) as Array<{ label: string; votes: number; voters: string[] }>;
-    const description = options.map((o: any, i: number) => `**${i + 1}.** ${o.label}`).join('\n');
+    const options = (poll.options || []) as Array<{
+      label: string;
+      votes: number;
+      voters: string[];
+    }>;
+    const description = options
+      .map((o: any, i: number) => `**${i + 1}.** ${o.label}`)
+      .join("\n");
     const votes = (poll.votes || {}) as Record<string, any>;
 
     const embed: any = {
       title: `📊 ${poll.question}`,
       description,
-      color: 0x5865F2,
+      color: 0x5865f2,
       timestamp: new Date().toISOString(),
     };
 
     if (poll.ends_at) {
-      embed.footer = { text: `Slutter: ${new Date(poll.ends_at).toLocaleString('da-DK')}` };
+      embed.footer = {
+        text: `Slutter: ${new Date(poll.ends_at).toLocaleString("da-DK")}`,
+      };
     } else {
-      embed.footer = { text: 'Ingen tidsfrist' };
+      embed.footer = { text: "Ingen tidsfrist" };
     }
 
     if (votes.created_by_name) {
@@ -155,51 +193,63 @@ __serve(async (req) => {
     }
 
     // Send to Discord
-    const response = await fetch(`https://discord.com/api/v10/channels/${poll.channel_id}/messages`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bot ${botToken}`,
-        'Content-Type': 'application/json',
+    const response = await fetch(
+      `https://discord.com/api/v10/channels/${poll.channel_id}/messages`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bot ${botToken}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ embeds: [embed], components }),
       },
-      body: JSON.stringify({ embeds: [embed], components }),
-    });
+    );
 
     if (!response.ok) {
       const err = await response.text();
-      console.error('Discord API error:', err);
+      console.error("Discord API error:", err);
 
       await supabase
-        .from('polls')
+        .from("polls")
         .update({ message_id: null })
-        .eq('id', poll.id)
-        .eq('message_id', deliveryClaim);
+        .eq("id", poll.id)
+        .eq("message_id", deliveryClaim);
 
-      return new Response(JSON.stringify({ error: `Discord API error: ${err}` }), { status: response.status, headers: corsHeaders });
+      return new Response(
+        JSON.stringify({ error: `Discord API error: ${err}` }),
+        { status: response.status, headers: corsHeaders },
+      );
     }
 
     const data = await response.json();
 
     // Save message_id back to the poll
     await supabase
-      .from('polls')
+      .from("polls")
       .update({ message_id: data.id })
-      .eq('id', pollId)
-      .eq('message_id', deliveryClaim);
+      .eq("id", pollId)
+      .eq("message_id", deliveryClaim);
 
-    console.log(`[SendPoll] ✅ Sent poll "${poll.question}" to channel ${poll.channel_id}, message ${data.id}`);
+    console.log(
+      `[SendPoll] ✅ Sent poll "${poll.question}" to channel ${poll.channel_id}, message ${data.id}`,
+    );
 
-    return new Response(JSON.stringify({ success: true, messageId: data.id }), { headers: corsHeaders });
+    return new Response(JSON.stringify({ success: true, messageId: data.id }), {
+      headers: corsHeaders,
+    });
   } catch (e) {
     if (e instanceof Response) return e;
-    console.error('[SendPoll] Error:', e.message);
-    return new Response(JSON.stringify({ error: e.message }), { status: 500, headers: corsHeaders });
+    console.error("[SendPoll] Error:", e.message);
+    return new Response(JSON.stringify({ error: e.message }), {
+      status: 500,
+      headers: corsHeaders,
+    });
   }
 });
 
+const __call = ({ request }: { request: Request }) => __handler(request);
 
-const __call = ({ request }: { request: Request }) => __handler(request)
-
-export const Route = createFileRoute('/api/public/send-poll')({
+export const Route = createFileRoute("/api/public/send-poll")({
   server: {
     handlers: {
       GET: __call,
@@ -210,4 +260,4 @@ export const Route = createFileRoute('/api/public/send-poll')({
       OPTIONS: __call,
     },
   },
-})
+});

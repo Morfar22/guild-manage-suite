@@ -4,10 +4,11 @@
  * so they can be viewed in the admin panel.
  */
 
-const { createClient } = require('@supabase/supabase-js');
+const { createClient } = require("@supabase/supabase-js");
 
 const supabaseUrl = process.env.SUPABASE_URL;
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY;
+const supabaseKey =
+  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY;
 
 let supabase;
 if (supabaseUrl && supabaseKey) {
@@ -20,15 +21,15 @@ let flushTimer = null;
 
 async function flushLogs() {
   if (!supabase || logBuffer.length === 0) return;
-  
+
   const batch = [...logBuffer];
   logBuffer = [];
-  
+
   try {
-    await supabase.from('bot_console_logs').insert(batch);
+    await supabase.from("bot_console_logs").insert(batch);
   } catch (err) {
     // Don't recurse - just print to actual console
-    console.error('[ConsoleLogger] Failed to flush logs:', err.message);
+    console.error("[ConsoleLogger] Failed to flush logs:", err.message);
   }
 }
 
@@ -50,7 +51,7 @@ function scheduleFlush() {
  */
 function botLog(guildId, level, source, message, metadata = null) {
   if (!supabase) return;
-  
+
   logBuffer.push({
     guild_id: guildId,
     level,
@@ -58,16 +59,20 @@ function botLog(guildId, level, source, message, metadata = null) {
     message,
     metadata,
   });
-  
+
   scheduleFlush();
 }
 
 // Convenience methods
 const createGuildLogger = (guildId) => ({
-  info: (source, message, metadata) => botLog(guildId, 'info', source, message, metadata),
-  warn: (source, message, metadata) => botLog(guildId, 'warn', source, message, metadata),
-  error: (source, message, metadata) => botLog(guildId, 'error', source, message, metadata),
-  debug: (source, message, metadata) => botLog(guildId, 'debug', source, message, metadata),
+  info: (source, message, metadata) =>
+    botLog(guildId, "info", source, message, metadata),
+  warn: (source, message, metadata) =>
+    botLog(guildId, "warn", source, message, metadata),
+  error: (source, message, metadata) =>
+    botLog(guildId, "error", source, message, metadata),
+  debug: (source, message, metadata) =>
+    botLog(guildId, "debug", source, message, metadata),
 });
 
 module.exports = { botLog, createGuildLogger, flushLogs };

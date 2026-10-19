@@ -1,34 +1,50 @@
-import { useMemo, useState } from 'react';
-import { Copy, Loader2, ShieldCheck, TimerReset, Users } from 'lucide-react';
-import { COMMANDS_BY_CATEGORY, CommandCategory } from '@/types/discord';
-import { GuildCommandSettings } from '@/lib/commands';
-import { getCommandSlashPath } from '@/lib/commandGrouping';
-import { useDiscordRoles } from '@/hooks/useDiscordRoles';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Checkbox } from '@/components/ui/checkbox';
-import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
+import { useMemo, useState } from "react";
+import { Copy, Loader2, ShieldCheck, TimerReset, Users } from "lucide-react";
+import { COMMANDS_BY_CATEGORY, CommandCategory } from "@/types/discord";
+import { GuildCommandSettings } from "@/lib/commands";
+import { getCommandSlashPath } from "@/lib/commandGrouping";
+import { useDiscordRoles } from "@/hooks/useDiscordRoles";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
+} from "@/components/ui/select";
 
 interface Props {
   commandSettings: Record<string, GuildCommandSettings>;
   updating?: boolean;
   onUpdateCommand: (
     commandName: string,
-    updates: Partial<Pick<GuildCommandSettings, 'cooldown_seconds' | 'allowed_role_ids' | 'allowed_channel_ids'>>
+    updates: Partial<
+      Pick<
+        GuildCommandSettings,
+        "cooldown_seconds" | "allowed_role_ids" | "allowed_channel_ids"
+      >
+    >,
   ) => Promise<void>;
   onBulkUpdate: (
     commandNames: string[],
-    updates: Partial<Pick<GuildCommandSettings, 'enabled' | 'cooldown_seconds' | 'allowed_role_ids' | 'allowed_channel_ids'>>
+    updates: Partial<
+      Pick<
+        GuildCommandSettings,
+        | "enabled"
+        | "cooldown_seconds"
+        | "allowed_role_ids"
+        | "allowed_channel_ids"
+      >
+    >,
   ) => Promise<void>;
-  onCopyRules: (sourceCommand: string, targetCommands: string[]) => Promise<void>;
+  onCopyRules: (
+    sourceCommand: string,
+    targetCommands: string[],
+  ) => Promise<void>;
 }
 
 export function CommandPermissionsMatrix({
@@ -41,31 +57,37 @@ export function CommandPermissionsMatrix({
   const { data: roles = [], isLoading } = useDiscordRoles();
   const categories = Object.keys(COMMANDS_BY_CATEGORY) as CommandCategory[];
 
-  const [category, setCategory] = useState<CommandCategory>('moderation');
+  const [category, setCategory] = useState<CommandCategory>("moderation");
   const [selectedCommands, setSelectedCommands] = useState<string[]>([]);
-  const [bulkRoleId, setBulkRoleId] = useState('');
+  const [bulkRoleId, setBulkRoleId] = useState("");
   const [bulkCooldown, setBulkCooldown] = useState(0);
-  const [copySource, setCopySource] = useState('');
+  const [copySource, setCopySource] = useState("");
 
   const commands = COMMANDS_BY_CATEGORY[category] ?? [];
   const selectableRoles = useMemo(
-    () => roles.filter((role) => role.name !== '@everyone'),
-    [roles]
+    () => roles.filter((role) => role.name !== "@everyone"),
+    [roles],
   );
 
-  const allSelected = commands.length > 0 && commands.every((command) => selectedCommands.includes(command.name));
+  const allSelected =
+    commands.length > 0 &&
+    commands.every((command) => selectedCommands.includes(command.name));
 
   const toggleCommandSelection = (commandName: string) => {
     setSelectedCommands((current) =>
       current.includes(commandName)
         ? current.filter((name) => name !== commandName)
-        : [...current, commandName]
+        : [...current, commandName],
     );
   };
 
   const toggleAll = () => {
     if (allSelected) {
-      setSelectedCommands((current) => current.filter((name) => !commands.some((command) => command.name === name)));
+      setSelectedCommands((current) =>
+        current.filter(
+          (name) => !commands.some((command) => command.name === name),
+        ),
+      );
     } else {
       setSelectedCommands((current) => [
         ...new Set([...current, ...commands.map((command) => command.name)]),
@@ -87,7 +109,7 @@ export function CommandPermissionsMatrix({
   };
 
   const selectedInCategory = selectedCommands.filter((name) =>
-    commands.some((command) => command.name === name)
+    commands.some((command) => command.name === name),
   );
 
   return (
@@ -99,7 +121,8 @@ export function CommandPermissionsMatrix({
             Permissions Matrix
           </h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            Begræns commands til bestemte Discord-roller og redigér flere commands på én gang.
+            Begræns commands til bestemte Discord-roller og redigér flere
+            commands på én gang.
           </p>
         </div>
 
@@ -131,7 +154,9 @@ export function CommandPermissionsMatrix({
               variant="outline"
               size="sm"
               disabled={updating}
-              onClick={() => void onBulkUpdate(selectedInCategory, { enabled: true })}
+              onClick={() =>
+                void onBulkUpdate(selectedInCategory, { enabled: true })
+              }
             >
               Aktiver
             </Button>
@@ -139,7 +164,9 @@ export function CommandPermissionsMatrix({
               variant="outline"
               size="sm"
               disabled={updating}
-              onClick={() => void onBulkUpdate(selectedInCategory, { enabled: false })}
+              onClick={() =>
+                void onBulkUpdate(selectedInCategory, { enabled: false })
+              }
             >
               Deaktiver
             </Button>
@@ -147,7 +174,9 @@ export function CommandPermissionsMatrix({
               variant="outline"
               size="sm"
               disabled={updating}
-              onClick={() => void onBulkUpdate(selectedInCategory, { allowed_role_ids: [] })}
+              onClick={() =>
+                void onBulkUpdate(selectedInCategory, { allowed_role_ids: [] })
+              }
             >
               <Users className="mr-1.5 h-4 w-4" />
               Alle roller
@@ -162,13 +191,19 @@ export function CommandPermissionsMatrix({
                 </SelectTrigger>
                 <SelectContent>
                   {selectableRoles.map((role) => (
-                    <SelectItem key={role.id} value={role.id}>{role.name}</SelectItem>
+                    <SelectItem key={role.id} value={role.id}>
+                      {role.name}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
               <Button
                 disabled={updating || !bulkRoleId}
-                onClick={() => void onBulkUpdate(selectedInCategory, { allowed_role_ids: [bulkRoleId] })}
+                onClick={() =>
+                  void onBulkUpdate(selectedInCategory, {
+                    allowed_role_ids: [bulkRoleId],
+                  })
+                }
                 className="whitespace-nowrap"
               >
                 Kun denne rolle
@@ -181,13 +216,24 @@ export function CommandPermissionsMatrix({
                 min={0}
                 max={86400}
                 value={bulkCooldown}
-                onChange={(event) => setBulkCooldown(Math.max(0, Math.min(86400, Number(event.target.value) || 0)))}
+                onChange={(event) =>
+                  setBulkCooldown(
+                    Math.max(
+                      0,
+                      Math.min(86400, Number(event.target.value) || 0),
+                    ),
+                  )
+                }
                 placeholder="Cooldown"
               />
               <Button
                 variant="outline"
                 disabled={updating}
-                onClick={() => void onBulkUpdate(selectedInCategory, { cooldown_seconds: bulkCooldown })}
+                onClick={() =>
+                  void onBulkUpdate(selectedInCategory, {
+                    cooldown_seconds: bulkCooldown,
+                  })
+                }
                 className="whitespace-nowrap"
               >
                 <TimerReset className="mr-1.5 h-4 w-4" />
@@ -202,7 +248,9 @@ export function CommandPermissionsMatrix({
                 </SelectTrigger>
                 <SelectContent>
                   {commands.map((command) => (
-                    <SelectItem key={command.name} value={command.name}>{getCommandSlashPath(command.name)}</SelectItem>
+                    <SelectItem key={command.name} value={command.name}>
+                      {getCommandSlashPath(command.name)}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -230,15 +278,24 @@ export function CommandPermissionsMatrix({
             <div className="min-w-max">
               <div
                 className="grid border-b border-border bg-muted/40"
-                style={{ gridTemplateColumns: `48px 190px 110px repeat(${selectableRoles.length}, 150px)` }}
+                style={{
+                  gridTemplateColumns: `48px 190px 110px repeat(${selectableRoles.length}, 150px)`,
+                }}
               >
                 <div className="flex items-center justify-center p-3">
                   <Checkbox checked={allSelected} onCheckedChange={toggleAll} />
                 </div>
-                <div className="p-3 text-xs font-medium text-muted-foreground">Command</div>
-                <div className="p-3 text-center text-xs font-medium text-muted-foreground">Alle</div>
+                <div className="p-3 text-xs font-medium text-muted-foreground">
+                  Command
+                </div>
+                <div className="p-3 text-center text-xs font-medium text-muted-foreground">
+                  Alle
+                </div>
                 {selectableRoles.map((role) => (
-                  <div key={role.id} className="truncate border-l border-border p-3 text-center text-xs font-medium text-muted-foreground">
+                  <div
+                    key={role.id}
+                    className="truncate border-l border-border p-3 text-center text-xs font-medium text-muted-foreground"
+                  >
                     {role.name}
                   </div>
                 ))}
@@ -254,22 +311,29 @@ export function CommandPermissionsMatrix({
                   <div
                     key={command.name}
                     className="grid border-b border-border last:border-b-0 hover:bg-muted/20"
-                    style={{ gridTemplateColumns: `48px 190px 110px repeat(${selectableRoles.length}, 150px)` }}
+                    style={{
+                      gridTemplateColumns: `48px 190px 110px repeat(${selectableRoles.length}, 150px)`,
+                    }}
                   >
                     <div className="flex items-center justify-center p-3">
                       <Checkbox
                         checked={selectedCommands.includes(command.name)}
-                        onCheckedChange={() => toggleCommandSelection(command.name)}
+                        onCheckedChange={() =>
+                          toggleCommandSelection(command.name)
+                        }
                       />
                     </div>
                     <div className="flex items-center gap-2 p-3">
-                      <Badge variant={enabled ? 'secondary' : 'outline'} className="font-mono">
+                      <Badge
+                        variant={enabled ? "secondary" : "outline"}
+                        className="font-mono"
+                      >
                         {getCommandSlashPath(command.name)}
                       </Badge>
                     </div>
                     <div className="flex items-center justify-center p-2">
                       <Button
-                        variant={unrestricted ? 'default' : 'outline'}
+                        variant={unrestricted ? "default" : "outline"}
                         size="sm"
                         disabled={updating}
                         onClick={() => void setUnrestricted(command.name)}
@@ -285,12 +349,18 @@ export function CommandPermissionsMatrix({
                         <label
                           key={role.id}
                           className="flex cursor-pointer items-center justify-center border-l border-border p-3 hover:bg-muted/40"
-                          title={unrestricted ? 'Commanden er åben for alle. Klik for kun at tillade denne rolle.' : role.name}
+                          title={
+                            unrestricted
+                              ? "Commanden er åben for alle. Klik for kun at tillade denne rolle."
+                              : role.name
+                          }
                         >
                           <Checkbox
                             checked={checked}
                             disabled={updating}
-                            onCheckedChange={() => void toggleRole(command.name, role.id)}
+                            onCheckedChange={() =>
+                              void toggleRole(command.name, role.id)
+                            }
                           />
                         </label>
                       );
@@ -305,7 +375,8 @@ export function CommandPermissionsMatrix({
       )}
 
       <p className="text-xs text-muted-foreground">
-        “Alle” betyder, at commanden ikke har nogen rollebegrænsning. Vælger du én eller flere roller, er det kun de roller der får adgang.
+        “Alle” betyder, at commanden ikke har nogen rollebegrænsning. Vælger du
+        én eller flere roller, er det kun de roller der får adgang.
       </p>
     </div>
   );

@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback } from 'react';
-import { useGuild } from '@/contexts/GuildContext';
+import { useState, useEffect, useCallback } from "react";
+import { useGuild } from "@/contexts/GuildContext";
 import {
   GuildCommandSettings,
   initializeGuildCommands,
@@ -9,13 +9,15 @@ import {
   updateGuildCommandSettings,
   bulkUpdateGuildCommandSettings,
   recordCommandAudits,
-} from '@/lib/commands';
-import { COMMANDS_BY_CATEGORY } from '@/types/discord';
-import { toast } from 'sonner';
+} from "@/lib/commands";
+import { COMMANDS_BY_CATEGORY } from "@/types/discord";
+import { toast } from "sonner";
 
 export function useCommands() {
   const { selectedGuild } = useGuild();
-  const [commandSettings, setCommandSettings] = useState<Record<string, GuildCommandSettings>>({});
+  const [commandSettings, setCommandSettings] = useState<
+    Record<string, GuildCommandSettings>
+  >({});
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
 
@@ -31,8 +33,8 @@ export function useCommands() {
       await initializeGuildCommands(selectedGuild.id);
       setCommandSettings(await getGuildCommandSettings(selectedGuild.id));
     } catch (err) {
-      console.error('Error fetching commands:', err);
-      toast.error('Kunne ikke hente kommandoer');
+      console.error("Error fetching commands:", err);
+      toast.error("Kunne ikke hente kommandoer");
     } finally {
       setLoading(false);
     }
@@ -44,194 +46,92 @@ export function useCommands() {
 
   const findCategory = useCallback((commandName: string) => {
     for (const [category, commands] of Object.entries(COMMANDS_BY_CATEGORY)) {
-      if (commands.some((command) => command.name === commandName)) return category;
+      if (commands.some((command) => command.name === commandName))
+        return category;
     }
-    return 'utility';
+    return "utility";
   }, []);
 
-  const toggleCommand = useCallback(async (commandName: string, enabled: boolean) => {
-    if (!selectedGuild) return;
-    const category = findCategory(commandName);
-    const previous = commandSettings[commandName];
+  const toggleCommand = useCallback(
+    async (commandName: string, enabled: boolean) => {
+      if (!selectedGuild) return;
+      const category = findCategory(commandName);
+      const previous = commandSettings[commandName];
 
-    setCommandSettings((prev) => ({
-      ...prev,
-      [commandName]: {
-        ...(prev[commandName] || {
-          command_name: commandName,
-          category,
-          cooldown_seconds: 0,
-          allowed_role_ids: [],
-          allowed_channel_ids: [],
-        }),
-        enabled,
-      },
-    }));
-
-    try {
-      setUpdating(true);
-      await toggleGuildCommand(selectedGuild.id, commandName, category, enabled);
-      await recordCommandAudits(selectedGuild.id, [{
-        commandName,
-        action: 'command_enabled_changed',
-        details: {
-          before: { enabled: previous?.enabled ?? true },
-          after: { enabled },
-        },
-        undoPayload: {
-          table: 'guild_commands',
-          command_name: commandName,
-          values: {
-            enabled: previous?.enabled ?? true,
-            cooldown_seconds: previous?.cooldown_seconds ?? 0,
-            allowed_role_ids: previous?.allowed_role_ids ?? [],
-            allowed_channel_ids: previous?.allowed_channel_ids ?? [],
-          },
-        },
-      }]);
-      toast.success(`/${commandName} ${enabled ? 'aktiveret' : 'deaktiveret'}`);
-    } catch {
-      if (previous) setCommandSettings((prev) => ({ ...prev, [commandName]: previous }));
-      toast.error('Kunne ikke opdatere kommandoen');
-    } finally {
-      setUpdating(false);
-    }
-  }, [selectedGuild, findCategory, commandSettings]);
-
-  const updateCommandSettings = useCallback(async (
-    commandName: string,
-    updates: Partial<Pick<GuildCommandSettings, 'cooldown_seconds' | 'allowed_role_ids' | 'allowed_channel_ids'>>
-  ) => {
-    if (!selectedGuild) return;
-    const category = findCategory(commandName);
-    const previous = commandSettings[commandName];
-
-    setCommandSettings((prev) => ({
-      ...prev,
-      [commandName]: {
-        ...(prev[commandName] || {
-          command_name: commandName,
-          category,
-          enabled: true,
-          cooldown_seconds: 0,
-          allowed_role_ids: [],
-          allowed_channel_ids: [],
-        }),
-        ...updates,
-      },
-    }));
-
-    try {
-      setUpdating(true);
-      await updateGuildCommandSettings(selectedGuild.id, commandName, category, updates);
-      await recordCommandAudits(selectedGuild.id, [{
-        commandName,
-        action: 'command_settings_changed',
-        details: {
-          before: previous ?? null,
-          changes: updates,
-          after: {
-            ...(previous || {}),
-            ...updates,
-          },
-        },
-        undoPayload: previous ? {
-          table: 'guild_commands',
-          command_name: commandName,
-          values: {
-            enabled: previous.enabled,
-            cooldown_seconds: previous.cooldown_seconds,
-            allowed_role_ids: previous.allowed_role_ids,
-            allowed_channel_ids: previous.allowed_channel_ids,
-          },
-        } : null,
-      }]);
-      toast.success(`Indstillinger for /${commandName} gemt`);
-    } catch (error) {
-      if (previous) setCommandSettings((prev) => ({ ...prev, [commandName]: previous }));
-      console.error(error);
-      toast.error('Kunne ikke gemme command-indstillinger');
-      throw error;
-    } finally {
-      setUpdating(false);
-    }
-  }, [selectedGuild, findCategory, commandSettings]);
-
-  const toggleCategory = useCallback(async (category: string, enabled: boolean) => {
-    if (!selectedGuild) return;
-    const commands = COMMANDS_BY_CATEGORY[category];
-    if (!commands) return;
-
-    const snapshot = { ...commandSettings };
-    setCommandSettings((prev) => {
-      const next = { ...prev };
-      for (const cmd of commands) {
-        next[cmd.name] = {
-          ...(next[cmd.name] || {
-            command_name: cmd.name,
+      setCommandSettings((prev) => ({
+        ...prev,
+        [commandName]: {
+          ...(prev[commandName] || {
+            command_name: commandName,
             category,
             cooldown_seconds: 0,
             allowed_role_ids: [],
             allowed_channel_ids: [],
           }),
           enabled,
-        };
-      }
-      return next;
-    });
+        },
+      }));
 
-    try {
-      setUpdating(true);
-      await toggleCategoryCommands(selectedGuild.id, category, enabled);
-      await recordCommandAudits(
-        selectedGuild.id,
-        commands.map((cmd) => ({
-          commandName: cmd.name,
-          action: 'command_category_enabled_changed',
-          details: {
-            category,
-            before: { enabled: snapshot[cmd.name]?.enabled ?? true },
-            after: { enabled },
-          },
-          undoPayload: snapshot[cmd.name] ? {
-            table: 'guild_commands',
-            command_name: cmd.name,
-            values: {
-              enabled: snapshot[cmd.name].enabled,
-              cooldown_seconds: snapshot[cmd.name].cooldown_seconds,
-              allowed_role_ids: snapshot[cmd.name].allowed_role_ids,
-              allowed_channel_ids: snapshot[cmd.name].allowed_channel_ids,
+      try {
+        setUpdating(true);
+        await toggleGuildCommand(
+          selectedGuild.id,
+          commandName,
+          category,
+          enabled,
+        );
+        await recordCommandAudits(selectedGuild.id, [
+          {
+            commandName,
+            action: "command_enabled_changed",
+            details: {
+              before: { enabled: previous?.enabled ?? true },
+              after: { enabled },
             },
-          } : null,
-        }))
-      );
-      toast.success(`Alle ${category}-kommandoer ${enabled ? 'aktiveret' : 'deaktiveret'}`);
-    } catch {
-      setCommandSettings(snapshot);
-      toast.error('Kunne ikke opdatere kategorien');
-    } finally {
-      setUpdating(false);
-    }
-  }, [selectedGuild, commandSettings]);
+            undoPayload: {
+              table: "guild_commands",
+              command_name: commandName,
+              values: {
+                enabled: previous?.enabled ?? true,
+                cooldown_seconds: previous?.cooldown_seconds ?? 0,
+                allowed_role_ids: previous?.allowed_role_ids ?? [],
+                allowed_channel_ids: previous?.allowed_channel_ids ?? [],
+              },
+            },
+          },
+        ]);
+        toast.success(
+          `/${commandName} ${enabled ? "aktiveret" : "deaktiveret"}`,
+        );
+      } catch {
+        if (previous)
+          setCommandSettings((prev) => ({ ...prev, [commandName]: previous }));
+        toast.error("Kunne ikke opdatere kommandoen");
+      } finally {
+        setUpdating(false);
+      }
+    },
+    [selectedGuild, findCategory, commandSettings],
+  );
 
-  const bulkUpdateCommands = useCallback(async (
-    commandNames: string[],
-    updates: Partial<Pick<GuildCommandSettings, 'enabled' | 'cooldown_seconds' | 'allowed_role_ids' | 'allowed_channel_ids'>>
-  ) => {
-    if (!selectedGuild || commandNames.length === 0) return;
+  const updateCommandSettings = useCallback(
+    async (
+      commandName: string,
+      updates: Partial<
+        Pick<
+          GuildCommandSettings,
+          "cooldown_seconds" | "allowed_role_ids" | "allowed_channel_ids"
+        >
+      >,
+    ) => {
+      if (!selectedGuild) return;
+      const category = findCategory(commandName);
+      const previous = commandSettings[commandName];
 
-    const snapshot = { ...commandSettings };
-    const entries = commandNames.map((commandName) => ({
-      commandName,
-      category: findCategory(commandName),
-      updates,
-    }));
-
-    setCommandSettings((prev) => {
-      const next = { ...prev };
-      for (const { commandName, category } of entries) {
-        next[commandName] = {
-          ...(next[commandName] || {
+      setCommandSettings((prev) => ({
+        ...prev,
+        [commandName]: {
+          ...(prev[commandName] || {
             command_name: commandName,
             category,
             enabled: true,
@@ -240,74 +140,243 @@ export function useCommands() {
             allowed_channel_ids: [],
           }),
           ...updates,
-        };
-      }
-      return next;
-    });
+        },
+      }));
 
-    try {
-      setUpdating(true);
-      await bulkUpdateGuildCommandSettings(selectedGuild.id, entries);
-      await recordCommandAudits(
-        selectedGuild.id,
-        entries.map(({ commandName, updates }) => ({
+      try {
+        setUpdating(true);
+        await updateGuildCommandSettings(
+          selectedGuild.id,
           commandName,
-          action: 'command_bulk_settings_changed',
-          details: {
-            before: snapshot[commandName] ?? null,
-            changes: updates,
-            after: {
-              ...(snapshot[commandName] || {}),
-              ...updates,
+          category,
+          updates,
+        );
+        await recordCommandAudits(selectedGuild.id, [
+          {
+            commandName,
+            action: "command_settings_changed",
+            details: {
+              before: previous ?? null,
+              changes: updates,
+              after: {
+                ...(previous || {}),
+                ...updates,
+              },
             },
+            undoPayload: previous
+              ? {
+                  table: "guild_commands",
+                  command_name: commandName,
+                  values: {
+                    enabled: previous.enabled,
+                    cooldown_seconds: previous.cooldown_seconds,
+                    allowed_role_ids: previous.allowed_role_ids,
+                    allowed_channel_ids: previous.allowed_channel_ids,
+                  },
+                }
+              : null,
           },
-          undoPayload: snapshot[commandName] ? {
-            table: 'guild_commands',
-            command_name: commandName,
-            values: {
-              enabled: snapshot[commandName].enabled,
-              cooldown_seconds: snapshot[commandName].cooldown_seconds,
-              allowed_role_ids: snapshot[commandName].allowed_role_ids,
-              allowed_channel_ids: snapshot[commandName].allowed_channel_ids,
+        ]);
+        toast.success(`Indstillinger for /${commandName} gemt`);
+      } catch (error) {
+        if (previous)
+          setCommandSettings((prev) => ({ ...prev, [commandName]: previous }));
+        console.error(error);
+        toast.error("Kunne ikke gemme command-indstillinger");
+        throw error;
+      } finally {
+        setUpdating(false);
+      }
+    },
+    [selectedGuild, findCategory, commandSettings],
+  );
+
+  const toggleCategory = useCallback(
+    async (category: string, enabled: boolean) => {
+      if (!selectedGuild) return;
+      const commands = COMMANDS_BY_CATEGORY[category];
+      if (!commands) return;
+
+      const snapshot = { ...commandSettings };
+      setCommandSettings((prev) => {
+        const next = { ...prev };
+        for (const cmd of commands) {
+          next[cmd.name] = {
+            ...(next[cmd.name] || {
+              command_name: cmd.name,
+              category,
+              cooldown_seconds: 0,
+              allowed_role_ids: [],
+              allowed_channel_ids: [],
+            }),
+            enabled,
+          };
+        }
+        return next;
+      });
+
+      try {
+        setUpdating(true);
+        await toggleCategoryCommands(selectedGuild.id, category, enabled);
+        await recordCommandAudits(
+          selectedGuild.id,
+          commands.map((cmd) => ({
+            commandName: cmd.name,
+            action: "command_category_enabled_changed",
+            details: {
+              category,
+              before: { enabled: snapshot[cmd.name]?.enabled ?? true },
+              after: { enabled },
             },
-          } : null,
-        }))
+            undoPayload: snapshot[cmd.name]
+              ? {
+                  table: "guild_commands",
+                  command_name: cmd.name,
+                  values: {
+                    enabled: snapshot[cmd.name].enabled,
+                    cooldown_seconds: snapshot[cmd.name].cooldown_seconds,
+                    allowed_role_ids: snapshot[cmd.name].allowed_role_ids,
+                    allowed_channel_ids: snapshot[cmd.name].allowed_channel_ids,
+                  },
+                }
+              : null,
+          })),
+        );
+        toast.success(
+          `Alle ${category}-kommandoer ${enabled ? "aktiveret" : "deaktiveret"}`,
+        );
+      } catch {
+        setCommandSettings(snapshot);
+        toast.error("Kunne ikke opdatere kategorien");
+      } finally {
+        setUpdating(false);
+      }
+    },
+    [selectedGuild, commandSettings],
+  );
+
+  const bulkUpdateCommands = useCallback(
+    async (
+      commandNames: string[],
+      updates: Partial<
+        Pick<
+          GuildCommandSettings,
+          | "enabled"
+          | "cooldown_seconds"
+          | "allowed_role_ids"
+          | "allowed_channel_ids"
+        >
+      >,
+    ) => {
+      if (!selectedGuild || commandNames.length === 0) return;
+
+      const snapshot = { ...commandSettings };
+      const entries = commandNames.map((commandName) => ({
+        commandName,
+        category: findCategory(commandName),
+        updates,
+      }));
+
+      setCommandSettings((prev) => {
+        const next = { ...prev };
+        for (const { commandName, category } of entries) {
+          next[commandName] = {
+            ...(next[commandName] || {
+              command_name: commandName,
+              category,
+              enabled: true,
+              cooldown_seconds: 0,
+              allowed_role_ids: [],
+              allowed_channel_ids: [],
+            }),
+            ...updates,
+          };
+        }
+        return next;
+      });
+
+      try {
+        setUpdating(true);
+        await bulkUpdateGuildCommandSettings(selectedGuild.id, entries);
+        await recordCommandAudits(
+          selectedGuild.id,
+          entries.map(({ commandName, updates }) => ({
+            commandName,
+            action: "command_bulk_settings_changed",
+            details: {
+              before: snapshot[commandName] ?? null,
+              changes: updates,
+              after: {
+                ...(snapshot[commandName] || {}),
+                ...updates,
+              },
+            },
+            undoPayload: snapshot[commandName]
+              ? {
+                  table: "guild_commands",
+                  command_name: commandName,
+                  values: {
+                    enabled: snapshot[commandName].enabled,
+                    cooldown_seconds: snapshot[commandName].cooldown_seconds,
+                    allowed_role_ids: snapshot[commandName].allowed_role_ids,
+                    allowed_channel_ids:
+                      snapshot[commandName].allowed_channel_ids,
+                  },
+                }
+              : null,
+          })),
+        );
+        toast.success(`${commandNames.length} commands opdateret`);
+      } catch (error) {
+        setCommandSettings(snapshot);
+        console.error(error);
+        toast.error("Kunne ikke bulk-opdatere commands");
+        throw error;
+      } finally {
+        setUpdating(false);
+      }
+    },
+    [selectedGuild, commandSettings, findCategory],
+  );
+
+  const copyCommandRules = useCallback(
+    async (sourceCommand: string, targetCommands: string[]) => {
+      const source = commandSettings[sourceCommand];
+      if (!source || targetCommands.length === 0) return;
+
+      await bulkUpdateCommands(
+        targetCommands.filter((name) => name !== sourceCommand),
+        {
+          cooldown_seconds: source.cooldown_seconds,
+          allowed_role_ids: [...source.allowed_role_ids],
+          allowed_channel_ids: [...source.allowed_channel_ids],
+        },
       );
-      toast.success(`${commandNames.length} commands opdateret`);
-    } catch (error) {
-      setCommandSettings(snapshot);
-      console.error(error);
-      toast.error('Kunne ikke bulk-opdatere commands');
-      throw error;
-    } finally {
-      setUpdating(false);
-    }
-  }, [selectedGuild, commandSettings, findCategory]);
+    },
+    [commandSettings, bulkUpdateCommands],
+  );
 
-  const copyCommandRules = useCallback(async (sourceCommand: string, targetCommands: string[]) => {
-    const source = commandSettings[sourceCommand];
-    if (!source || targetCommands.length === 0) return;
-
-    await bulkUpdateCommands(targetCommands.filter((name) => name !== sourceCommand), {
-      cooldown_seconds: source.cooldown_seconds,
-      allowed_role_ids: [...source.allowed_role_ids],
-      allowed_channel_ids: [...source.allowed_channel_ids],
-    });
-  }, [commandSettings, bulkUpdateCommands]);
-
-  const getCategoryStats = useCallback((category: string) => {
-    const commands = COMMANDS_BY_CATEGORY[category] || [];
-    const enabled = commands.filter((cmd) => commandSettings[cmd.name]?.enabled !== false).length;
-    return {
-      total: commands.length,
-      enabled,
-      allEnabled: enabled === commands.length,
-      noneEnabled: enabled === 0,
-    };
-  }, [commandSettings]);
+  const getCategoryStats = useCallback(
+    (category: string) => {
+      const commands = COMMANDS_BY_CATEGORY[category] || [];
+      const enabled = commands.filter(
+        (cmd) => commandSettings[cmd.name]?.enabled !== false,
+      ).length;
+      return {
+        total: commands.length,
+        enabled,
+        allEnabled: enabled === commands.length,
+        noneEnabled: enabled === 0,
+      };
+    },
+    [commandSettings],
+  );
 
   const enabledCommands = Object.fromEntries(
-    Object.entries(commandSettings).map(([name, settings]) => [name, settings.enabled])
+    Object.entries(commandSettings).map(([name, settings]) => [
+      name,
+      settings.enabled,
+    ]),
   );
 
   return {

@@ -1,22 +1,28 @@
-import { useEffect, useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Skeleton } from '@/components/ui/skeleton';
-import { 
-  Server, 
-  Users, 
-  Clock, 
-  Wifi, 
-  WifiOff, 
+import { useEffect, useState } from "react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Server,
+  Users,
+  Clock,
+  Wifi,
+  WifiOff,
   RefreshCw,
   Activity,
   HardDrive,
-  Globe
-} from 'lucide-react';
-import { useGuild } from '@/contexts/GuildContext';
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+  Globe,
+} from "lucide-react";
+import { useGuild } from "@/contexts/GuildContext";
+import { supabase } from "@/integrations/supabase/client";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 interface ServerStatus {
   id: string;
@@ -43,7 +49,7 @@ function formatUptime(seconds: number): string {
   const days = Math.floor(seconds / 86400);
   const hours = Math.floor((seconds % 86400) / 3600);
   const minutes = Math.floor((seconds % 3600) / 60);
-  
+
   if (days > 0) {
     return `${days}d ${hours}h ${minutes}m`;
   } else if (hours > 0) {
@@ -57,16 +63,24 @@ function getStatusBadge(isOnline: boolean, lastHeartbeat: string | null) {
   if (!lastHeartbeat) {
     return <Badge variant="secondary">Aldrig forbundet</Badge>;
   }
-  
+
   const lastBeat = new Date(lastHeartbeat);
   const now = new Date();
   const diffMs = now.getTime() - lastBeat.getTime();
   const diffSeconds = diffMs / 1000;
-  
+
   if (isOnline && diffSeconds < 120) {
-    return <Badge className="bg-green-500/10 text-green-500 border-green-500/20">Online</Badge>;
+    return (
+      <Badge className="bg-green-500/10 text-green-500 border-green-500/20">
+        Online
+      </Badge>
+    );
   } else if (diffSeconds < 300) {
-    return <Badge className="bg-yellow-500/10 text-yellow-500 border-yellow-500/20">Forbinder...</Badge>;
+    return (
+      <Badge className="bg-yellow-500/10 text-yellow-500 border-yellow-500/20">
+        Forbinder...
+      </Badge>
+    );
   } else {
     return <Badge variant="destructive">Offline</Badge>;
   }
@@ -78,17 +92,17 @@ export default function ServerStatusWidget() {
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   const { data: serverStatus, isLoading } = useQuery({
-    queryKey: ['fivem-server-status', selectedGuild?.id],
+    queryKey: ["fivem-server-status", selectedGuild?.id],
     enabled: !!selectedGuild?.id,
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('fivem_server_status')
-        .select('*')
-        .eq('guild_id', selectedGuild!.id)
-        .order('updated_at', { ascending: false })
+        .from("fivem_server_status")
+        .select("*")
+        .eq("guild_id", selectedGuild!.id)
+        .order("updated_at", { ascending: false })
         .limit(1)
         .maybeSingle();
-      
+
       if (error) throw error;
       return data as ServerStatus | null;
     },
@@ -100,18 +114,20 @@ export default function ServerStatusWidget() {
     if (!selectedGuild?.id) return;
 
     const channel = supabase
-      .channel('fivem-server-status-changes')
+      .channel("fivem-server-status-changes")
       .on(
-        'postgres_changes',
+        "postgres_changes",
         {
-          event: '*',
-          schema: 'public',
-          table: 'fivem_server_status',
+          event: "*",
+          schema: "public",
+          table: "fivem_server_status",
           filter: `guild_id=eq.${selectedGuild.id}`,
         },
         () => {
-          queryClient.invalidateQueries({ queryKey: ['fivem-server-status', selectedGuild.id] });
-        }
+          queryClient.invalidateQueries({
+            queryKey: ["fivem-server-status", selectedGuild.id],
+          });
+        },
       )
       .subscribe();
 
@@ -122,7 +138,9 @@ export default function ServerStatusWidget() {
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
-    await queryClient.invalidateQueries({ queryKey: ['fivem-server-status', selectedGuild?.id] });
+    await queryClient.invalidateQueries({
+      queryKey: ["fivem-server-status", selectedGuild?.id],
+    });
     setTimeout(() => setIsRefreshing(false), 1000);
   };
 
@@ -152,16 +170,15 @@ export default function ServerStatusWidget() {
             <Server className="h-5 w-5 text-primary" />
             Server Status
           </CardTitle>
-          <CardDescription>
-            Ingen server forbundet endnu
-          </CardDescription>
+          <CardDescription>Ingen server forbundet endnu</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="text-center py-8 text-muted-foreground">
             <WifiOff className="h-12 w-12 mx-auto mb-4 opacity-50" />
             <p>Din FiveM server har ikke sendt status data endnu.</p>
             <p className="text-sm mt-2">
-              Åbn fanen Opsætning, installér guild_manage_bridge og kopiér server.cfg-blokken.
+              Åbn fanen Opsætning, installér guild_manage_bridge og kopiér
+              server.cfg-blokken.
             </p>
           </div>
         </CardContent>
@@ -169,9 +186,11 @@ export default function ServerStatusWidget() {
     );
   }
 
-  const isActuallyOnline = serverStatus.is_online && 
-    serverStatus.last_heartbeat && 
-    (new Date().getTime() - new Date(serverStatus.last_heartbeat).getTime()) < 120000;
+  const isActuallyOnline =
+    serverStatus.is_online &&
+    serverStatus.last_heartbeat &&
+    new Date().getTime() - new Date(serverStatus.last_heartbeat).getTime() <
+      120000;
 
   return (
     <Card>
@@ -180,8 +199,11 @@ export default function ServerStatusWidget() {
           <div>
             <CardTitle className="flex items-center gap-2">
               <Server className="h-5 w-5 text-primary" />
-              {serverStatus.server_name || 'FiveM Server'}
-              {getStatusBadge(serverStatus.is_online, serverStatus.last_heartbeat)}
+              {serverStatus.server_name || "FiveM Server"}
+              {getStatusBadge(
+                serverStatus.is_online,
+                serverStatus.last_heartbeat,
+              )}
               <Badge variant="outline">{serverStatus.server_id}</Badge>
             </CardTitle>
             <CardDescription className="flex items-center gap-2 mt-1">
@@ -199,7 +221,9 @@ export default function ServerStatusWidget() {
             onClick={handleRefresh}
             disabled={isRefreshing}
           >
-            <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+            <RefreshCw
+              className={`h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`}
+            />
           </Button>
         </div>
       </CardHeader>
@@ -240,8 +264,10 @@ export default function ServerStatusWidget() {
               )}
               <span className="text-xs">Status</span>
             </div>
-            <div className={`text-2xl font-bold ${isActuallyOnline ? 'text-green-500' : 'text-red-500'}`}>
-              {isActuallyOnline ? 'Online' : 'Offline'}
+            <div
+              className={`text-2xl font-bold ${isActuallyOnline ? "text-green-500" : "text-red-500"}`}
+            >
+              {isActuallyOnline ? "Online" : "Offline"}
             </div>
           </div>
 
@@ -258,7 +284,12 @@ export default function ServerStatusWidget() {
         </div>
 
         {/* Additional Info */}
-        {Boolean(serverStatus.fxserver_version || serverStatus.map_name || serverStatus.metadata?.framework || serverStatus.metadata?.bridgeVersion) && (
+        {Boolean(
+          serverStatus.fxserver_version ||
+          serverStatus.map_name ||
+          serverStatus.metadata?.framework ||
+          serverStatus.metadata?.bridgeVersion,
+        ) && (
           <div className="mt-4 pt-4 border-t border-border flex flex-wrap gap-4 text-sm text-muted-foreground">
             {serverStatus.fxserver_version && (
               <div className="flex items-center gap-1">
@@ -272,11 +303,15 @@ export default function ServerStatusWidget() {
                 Map: {serverStatus.map_name}
               </div>
             )}
-            {typeof serverStatus.metadata?.framework === 'string' && (
-              <Badge variant="outline">Framework: {serverStatus.metadata.framework}</Badge>
+            {typeof serverStatus.metadata?.framework === "string" && (
+              <Badge variant="outline">
+                Framework: {serverStatus.metadata.framework}
+              </Badge>
             )}
-            {typeof serverStatus.metadata?.bridgeVersion === 'string' && (
-              <Badge variant="outline">Bridge v{serverStatus.metadata.bridgeVersion}</Badge>
+            {typeof serverStatus.metadata?.bridgeVersion === "string" && (
+              <Badge variant="outline">
+                Bridge v{serverStatus.metadata.bridgeVersion}
+              </Badge>
             )}
             {serverStatus.metadata?.oxInventory === true && (
               <Badge variant="outline">ox_inventory</Badge>
@@ -292,7 +327,10 @@ export default function ServerStatusWidget() {
             )}
             {serverStatus.last_heartbeat && (
               <div className="flex items-center gap-1 ml-auto">
-                Sidst opdateret: {new Date(serverStatus.last_heartbeat).toLocaleTimeString('da-DK')}
+                Sidst opdateret:{" "}
+                {new Date(serverStatus.last_heartbeat).toLocaleTimeString(
+                  "da-DK",
+                )}
               </div>
             )}
           </div>

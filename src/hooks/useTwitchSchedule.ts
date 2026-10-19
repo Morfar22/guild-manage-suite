@@ -1,8 +1,8 @@
-import type { TablesUpdate } from '@/integrations/supabase/types';
-import { useState, useEffect, useCallback } from 'react';
-import { useGuild } from '@/contexts/GuildContext';
-import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
+import type { TablesUpdate } from "@/integrations/supabase/types";
+import { useState, useEffect, useCallback } from "react";
+import { useGuild } from "@/contexts/GuildContext";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 export interface TwitchScheduleEntry {
   id: string;
@@ -45,7 +45,15 @@ export interface TwitchUpcomingSegment {
   canceled_until: string | null;
 }
 
-const DAY_NAMES = ['Søndag', 'Mandag', 'Tirsdag', 'Onsdag', 'Torsdag', 'Fredag', 'Lørdag'];
+const DAY_NAMES = [
+  "Søndag",
+  "Mandag",
+  "Tirsdag",
+  "Onsdag",
+  "Torsdag",
+  "Fredag",
+  "Lørdag",
+];
 
 export { DAY_NAMES };
 
@@ -61,11 +69,13 @@ export function useTwitchSchedule() {
     if (!selectedGuild?.id) return;
     try {
       const { data, error } = await supabase
-        .from('twitch_stream_schedules')
-        .select(`*, twitch_streamers (display_name, profile_image_url, twitch_username)`)
-        .eq('guild_id', selectedGuild.id)
-        .order('day_of_week', { ascending: true })
-        .order('start_time', { ascending: true });
+        .from("twitch_stream_schedules")
+        .select(
+          `*, twitch_streamers (display_name, profile_image_url, twitch_username)`,
+        )
+        .eq("guild_id", selectedGuild.id)
+        .order("day_of_week", { ascending: true })
+        .order("start_time", { ascending: true });
 
       if (error) throw error;
       setEntries(
@@ -74,10 +84,10 @@ export function useTwitchSchedule() {
           streamer_name: e.twitch_streamers?.display_name,
           streamer_avatar: e.twitch_streamers?.profile_image_url,
           twitch_username: e.twitch_streamers?.twitch_username,
-        }))
+        })),
       );
     } catch (err) {
-      console.error('Error fetching schedule entries:', err);
+      console.error("Error fetching schedule entries:", err);
     }
   }, [selectedGuild?.id]);
 
@@ -85,21 +95,26 @@ export function useTwitchSchedule() {
     if (!selectedGuild?.id) return;
     try {
       const { data, error } = await supabase
-        .from('twitch_schedule_settings')
-        .select('*')
-        .eq('guild_id', selectedGuild.id)
+        .from("twitch_schedule_settings")
+        .select("*")
+        .eq("guild_id", selectedGuild.id)
         .maybeSingle();
       if (error) throw error;
       setSettings(data as TwitchScheduleSettings | null);
     } catch (err) {
-      console.error('Error fetching schedule settings:', err);
+      console.error("Error fetching schedule settings:", err);
     }
   }, [selectedGuild?.id]);
 
   useEffect(() => {
-    if (!selectedGuild?.id) { setLoading(false); return; }
+    if (!selectedGuild?.id) {
+      setLoading(false);
+      return;
+    }
     setLoading(true);
-    Promise.all([fetchEntries(), fetchSettings()]).finally(() => setLoading(false));
+    Promise.all([fetchEntries(), fetchSettings()]).finally(() =>
+      setLoading(false),
+    );
   }, [selectedGuild?.id, fetchEntries, fetchSettings]);
 
   const addEntry = async (entry: {
@@ -113,32 +128,49 @@ export function useTwitchSchedule() {
     if (!selectedGuild?.id) return false;
     setSaving(true);
     try {
-      const { error } = await supabase.from('twitch_stream_schedules').insert({
+      const { error } = await supabase.from("twitch_stream_schedules").insert({
         guild_id: selectedGuild.id,
         ...entry,
       });
       if (error) throw error;
-      toast({ title: 'Tilføjet', description: 'Skema-indgang blev tilføjet.' });
+      toast({ title: "Tilføjet", description: "Skema-indgang blev tilføjet." });
       await fetchEntries();
       return true;
     } catch (err) {
-      toast({ title: 'Fejl', description: 'Kunne ikke tilføje skema-indgang.', variant: 'destructive' });
+      toast({
+        title: "Fejl",
+        description: "Kunne ikke tilføje skema-indgang.",
+        variant: "destructive",
+      });
       return false;
     } finally {
       setSaving(false);
     }
   };
 
-  const updateEntry = async (id: string, updates: TablesUpdate<'twitch_stream_schedules'>): Promise<boolean> => {
+  const updateEntry = async (
+    id: string,
+    updates: TablesUpdate<"twitch_stream_schedules">,
+  ): Promise<boolean> => {
     setSaving(true);
     try {
-      const { error } = await supabase.from('twitch_stream_schedules').update(updates).eq('id', id);
+      const { error } = await supabase
+        .from("twitch_stream_schedules")
+        .update(updates)
+        .eq("id", id);
       if (error) throw error;
-      toast({ title: 'Opdateret', description: 'Skema-indgang blev opdateret.' });
+      toast({
+        title: "Opdateret",
+        description: "Skema-indgang blev opdateret.",
+      });
       await fetchEntries();
       return true;
     } catch {
-      toast({ title: 'Fejl', description: 'Kunne ikke opdatere.', variant: 'destructive' });
+      toast({
+        title: "Fejl",
+        description: "Kunne ikke opdatere.",
+        variant: "destructive",
+      });
       return false;
     } finally {
       setSaving(false);
@@ -148,40 +180,68 @@ export function useTwitchSchedule() {
   const removeEntry = async (id: string): Promise<boolean> => {
     setSaving(true);
     try {
-      const { error } = await supabase.from('twitch_stream_schedules').delete().eq('id', id);
+      const { error } = await supabase
+        .from("twitch_stream_schedules")
+        .delete()
+        .eq("id", id);
       if (error) throw error;
-      toast({ title: 'Fjernet', description: 'Skema-indgang blev fjernet.' });
+      toast({ title: "Fjernet", description: "Skema-indgang blev fjernet." });
       await fetchEntries();
       return true;
     } catch {
-      toast({ title: 'Fejl', description: 'Kunne ikke fjerne.', variant: 'destructive' });
+      toast({
+        title: "Fejl",
+        description: "Kunne ikke fjerne.",
+        variant: "destructive",
+      });
       return false;
     } finally {
       setSaving(false);
     }
   };
 
-  const saveSettings = async (newSettings: Partial<TwitchScheduleSettings>): Promise<boolean> => {
+  const saveSettings = async (
+    newSettings: Partial<TwitchScheduleSettings>,
+  ): Promise<boolean> => {
     if (!selectedGuild?.id) return false;
     setSaving(true);
     try {
       if (settings?.id) {
-        const { error } = await supabase.from('twitch_schedule_settings').update(newSettings).eq('id', settings.id);
+        const { error } = await supabase
+          .from("twitch_schedule_settings")
+          .update(newSettings)
+          .eq("id", settings.id);
         if (error) throw error;
       } else {
-        const { error } = await supabase.from('twitch_schedule_settings').insert({ guild_id: selectedGuild.id, ...newSettings });
+        const { error } = await supabase
+          .from("twitch_schedule_settings")
+          .insert({ guild_id: selectedGuild.id, ...newSettings });
         if (error) throw error;
       }
-      toast({ title: 'Gemt', description: 'Skema-indstillinger blev gemt.' });
+      toast({ title: "Gemt", description: "Skema-indstillinger blev gemt." });
       await fetchSettings();
       return true;
     } catch {
-      toast({ title: 'Fejl', description: 'Kunne ikke gemme indstillinger.', variant: 'destructive' });
+      toast({
+        title: "Fejl",
+        description: "Kunne ikke gemme indstillinger.",
+        variant: "destructive",
+      });
       return false;
     } finally {
       setSaving(false);
     }
   };
 
-  return { entries, settings, loading, saving, addEntry, updateEntry, removeEntry, saveSettings, refetch: () => Promise.all([fetchEntries(), fetchSettings()]) };
+  return {
+    entries,
+    settings,
+    loading,
+    saving,
+    addEntry,
+    updateEntry,
+    removeEntry,
+    saveSettings,
+    refetch: () => Promise.all([fetchEntries(), fetchSettings()]),
+  };
 }

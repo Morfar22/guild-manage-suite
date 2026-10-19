@@ -1,6 +1,6 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect } from "react";
 
-const STORAGE_KEY = 'dashboard-favorite-pages';
+const STORAGE_KEY = "dashboard-favorite-pages";
 
 export function useFavoritePages() {
   const [favorites, setFavorites] = useState<string[]>([]);
@@ -30,7 +30,7 @@ export function useFavoritePages() {
 
   const isFavorite = useCallback(
     (path: string) => favorites.includes(path),
-    [favorites]
+    [favorites],
   );
 
   return { favorites, toggleFavorite, isFavorite };

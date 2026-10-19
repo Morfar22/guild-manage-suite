@@ -1,8 +1,8 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
-import { useGuild } from '@/contexts/GuildContext';
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { useGuild } from "@/contexts/GuildContext";
 
-export type CharacterStatus = 'alive' | 'dead' | 'retired';
+export type CharacterStatus = "alive" | "dead" | "retired";
 
 export interface Character {
   id: string;
@@ -34,18 +34,18 @@ export function useCharacters(status?: CharacterStatus) {
   const { selectedGuild } = useGuild();
 
   return useQuery({
-    queryKey: ['characters', selectedGuild?.id, status],
+    queryKey: ["characters", selectedGuild?.id, status],
     queryFn: async () => {
       if (!selectedGuild?.id) return [];
 
       let query = supabase
-        .from('characters')
-        .select('*')
-        .eq('guild_id', selectedGuild.id)
-        .order('created_at', { ascending: false });
+        .from("characters")
+        .select("*")
+        .eq("guild_id", selectedGuild.id)
+        .order("created_at", { ascending: false });
 
       if (status) {
-        query = query.eq('status', status);
+        query = query.eq("status", status);
       }
 
       const { data, error } = await query;
@@ -60,24 +60,25 @@ export function useCharacterStats() {
   const { selectedGuild } = useGuild();
 
   return useQuery({
-    queryKey: ['character-stats', selectedGuild?.id],
+    queryKey: ["character-stats", selectedGuild?.id],
     queryFn: async () => {
       if (!selectedGuild?.id) return null;
 
       const { data: characters, error } = await supabase
-        .from('characters')
-        .select('status, discord_user_id')
-        .eq('guild_id', selectedGuild.id);
+        .from("characters")
+        .select("status, discord_user_id")
+        .eq("guild_id", selectedGuild.id);
 
       if (error) throw error;
 
-      const uniquePlayers = new Set(characters.map(c => c.discord_user_id)).size;
+      const uniquePlayers = new Set(characters.map((c) => c.discord_user_id))
+        .size;
 
       const stats: CharacterStats = {
         total: characters.length,
-        alive: characters.filter(c => c.status === 'alive').length,
-        dead: characters.filter(c => c.status === 'dead').length,
-        retired: characters.filter(c => c.status === 'retired').length,
+        alive: characters.filter((c) => c.status === "alive").length,
+        dead: characters.filter((c) => c.status === "dead").length,
+        retired: characters.filter((c) => c.status === "retired").length,
         uniquePlayers,
       };
 
@@ -92,9 +93,11 @@ export function useCreateCharacter() {
   const { selectedGuild } = useGuild();
 
   return useMutation({
-    mutationFn: async (character: Omit<Character, 'id' | 'created_at' | 'updated_at'>) => {
+    mutationFn: async (
+      character: Omit<Character, "id" | "created_at" | "updated_at">,
+    ) => {
       const { data, error } = await supabase
-        .from('characters')
+        .from("characters")
         .insert(character)
         .select()
         .single();
@@ -103,8 +106,12 @@ export function useCreateCharacter() {
       return data as Character;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['characters', selectedGuild?.id] });
-      queryClient.invalidateQueries({ queryKey: ['character-stats', selectedGuild?.id] });
+      queryClient.invalidateQueries({
+        queryKey: ["characters", selectedGuild?.id],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["character-stats", selectedGuild?.id],
+      });
     },
   });
 }
@@ -114,11 +121,14 @@ export function useUpdateCharacter() {
   const { selectedGuild } = useGuild();
 
   return useMutation({
-    mutationFn: async ({ id, ...updates }: Partial<Character> & { id: string }) => {
+    mutationFn: async ({
+      id,
+      ...updates
+    }: Partial<Character> & { id: string }) => {
       const { data, error } = await supabase
-        .from('characters')
+        .from("characters")
         .update(updates)
-        .eq('id', id)
+        .eq("id", id)
         .select()
         .single();
 
@@ -126,8 +136,12 @@ export function useUpdateCharacter() {
       return data as Character;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['characters', selectedGuild?.id] });
-      queryClient.invalidateQueries({ queryKey: ['character-stats', selectedGuild?.id] });
+      queryClient.invalidateQueries({
+        queryKey: ["characters", selectedGuild?.id],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["character-stats", selectedGuild?.id],
+      });
     },
   });
 }
@@ -138,16 +152,17 @@ export function useDeleteCharacter() {
 
   return useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase
-        .from('characters')
-        .delete()
-        .eq('id', id);
+      const { error } = await supabase.from("characters").delete().eq("id", id);
 
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['characters', selectedGuild?.id] });
-      queryClient.invalidateQueries({ queryKey: ['character-stats', selectedGuild?.id] });
+      queryClient.invalidateQueries({
+        queryKey: ["characters", selectedGuild?.id],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["character-stats", selectedGuild?.id],
+      });
     },
   });
 }

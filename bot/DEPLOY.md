@@ -24,6 +24,7 @@ bash setup.sh
 ```
 
 Dette vil:
+
 - Oprette `handlers/` mappen og flytte handler-filer derhen
 - Oprette `.env` fra `.env.example`
 - Installere npm dependencies
@@ -36,13 +37,13 @@ Dette vil:
 nano .env
 ```
 
-| Variabel | Beskrivelse | Hvor finder du den? |
-|----------|-------------|---------------------|
-| `DEFAULT_BOT_TOKEN` | Din bot token | Discord Developer Portal → Bot → Token |
-| `DISCORD_TOKEN` | Samme som DEFAULT_BOT_TOKEN | Discord Developer Portal → Bot → Token |
-| `APPLICATION_ID` | Valgfri kontrolværdi; scriptet bruger ID'et fra det aktive bot-token | Discord Developer Portal → General Information |
-| `SUPABASE_SERVICE_ROLE_KEY` | Database service key | Supabase project settings |
-| `BOT_SECRET_KEY` | Delt hemmelighed | web runtime secrets |
+| Variabel                    | Beskrivelse                                                          | Hvor finder du den?                            |
+| --------------------------- | -------------------------------------------------------------------- | ---------------------------------------------- |
+| `DEFAULT_BOT_TOKEN`         | Din bot token                                                        | Discord Developer Portal → Bot → Token         |
+| `DISCORD_TOKEN`             | Samme som DEFAULT_BOT_TOKEN                                          | Discord Developer Portal → Bot → Token         |
+| `APPLICATION_ID`            | Valgfri kontrolværdi; scriptet bruger ID'et fra det aktive bot-token | Discord Developer Portal → General Information |
+| `SUPABASE_SERVICE_ROLE_KEY` | Database service key                                                 | Supabase project settings                      |
+| `BOT_SECRET_KEY`            | Delt hemmelighed                                                     | web runtime secrets                            |
 
 ### 4. Deploy Slash Commands
 
@@ -66,6 +67,7 @@ DEPLOY_SCOPE=guild DEPLOY_GUILD_ID=123456789012345678 node deployCommands.js
 ### 5. Start Bot
 
 **Med PM2 (anbefalet):**
+
 ```bash
 pm2 start ecosystem.config.js
 pm2 save
@@ -73,6 +75,7 @@ pm2 startup  # Autostart ved server reboot
 ```
 
 **Direkte:**
+
 ```bash
 node bot.js
 ```
@@ -192,6 +195,7 @@ cp -r fivem/ /path/to/fxserver/resources/fivem-discord-integration/
 ```
 
 Tilføj til `server.cfg`:
+
 ```
 ensure fivem-discord-integration
 set zdiscord_api_url "https://rkdqunnttcyuybbofkvz.supabase.co/functions/v1"
@@ -201,14 +205,13 @@ set zdiscord_guild_id "DIT_GUILD_UUID"
 
 ## Fejlfinding
 
-| Problem | Løsning |
-|---------|---------|
-| `BOT_SECRET_KEY mangler` | Tjek at .env er udfyldt korrekt |
-| `401 Unauthorized` | BOT_SECRET_KEY matcher ikke Cloud secrets |
-| Slash commands virker ikke | Kør `node deployCommands.js` igen |
-| Bot går offline | Tjek `pm2 logs` for fejl |
-| Musik virker ikke | Tjek at Lavalink kører og .env er korrekt |
-
+| Problem                    | Løsning                                   |
+| -------------------------- | ----------------------------------------- |
+| `BOT_SECRET_KEY mangler`   | Tjek at .env er udfyldt korrekt           |
+| `401 Unauthorized`         | BOT_SECRET_KEY matcher ikke Cloud secrets |
+| Slash commands virker ikke | Kør `node deployCommands.js` igen         |
+| Bot går offline            | Tjek `pm2 logs` for fejl                  |
+| Musik virker ikke          | Tjek at Lavalink kører og .env er korrekt |
 
 ## Production update på `/bot`
 
@@ -220,6 +223,7 @@ bash update-from-github.sh --deploy-commands
 ```
 
 Scriptet:
+
 - tager backup af `/bot/.env`
 - henter seneste `main`
 - synkroniserer kun bot-filer og bevarer `.env`, `node_modules` og logs
@@ -243,7 +247,6 @@ Den officielle GuildOS-app publicerer et Discovery-safe globalt command-katalog.
 Runtime på den officielle bot blokerer dem også, så gamle Discord-command caches eller prefix-aliases ikke kan omgå kataloget.
 
 Offentlige invite-links bruger et eksplicit permissionsæt i stedet for Discord `Administrator`. Eksisterende servere får ikke automatisk nye rolle-permissions ved kodeopdateringer, så manglende rettigheder som `Ban Members` skal gives til bot-rollen på den enkelte server.
-
 
 ## Discord Developer Portal endpoints
 

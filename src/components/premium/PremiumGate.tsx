@@ -1,9 +1,9 @@
-import React, { ReactNode } from 'react';
-import { useGuildPremiumFeatures } from '@/hooks/useGuildPremiumFeatures';
-import { useCurrentUserPremiumFeatures } from '@/hooks/useUserPremiumFeatures';
-import { PREMIUM_FEATURES, PremiumFeatureKey } from '@/lib/premium-features';
-import { Card, CardContent } from '@/components/ui/card';
-import { Lock } from 'lucide-react';
+import React, { ReactNode } from "react";
+import { useGuildPremiumFeatures } from "@/hooks/useGuildPremiumFeatures";
+import { useCurrentUserPremiumFeatures } from "@/hooks/useUserPremiumFeatures";
+import { PREMIUM_FEATURES, PremiumFeatureKey } from "@/lib/premium-features";
+import { Card, CardContent } from "@/components/ui/card";
+import { Lock } from "lucide-react";
 
 interface PremiumGateProps {
   feature: PremiumFeatureKey;
@@ -11,8 +11,10 @@ interface PremiumGateProps {
 }
 
 export const PremiumGate = ({ feature, children }: PremiumGateProps) => {
-  const { hasPremiumFeature: hasGuildPremium, isLoading: guildLoading } = useGuildPremiumFeatures();
-  const { hasUserPremiumFeature, isLoading: userLoading } = useCurrentUserPremiumFeatures();
+  const { hasPremiumFeature: hasGuildPremium, isLoading: guildLoading } =
+    useGuildPremiumFeatures();
+  const { hasUserPremiumFeature, isLoading: userLoading } =
+    useCurrentUserPremiumFeatures();
 
   if (guildLoading || userLoading) return null;
 

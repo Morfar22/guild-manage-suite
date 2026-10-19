@@ -1,27 +1,77 @@
 // @ts-nocheck
 // Migrated from Supabase Edge Function `execute-fivem-command` to a TanStack server route.
-import { createFileRoute } from '@tanstack/react-router'
-import { createClient } from '@supabase/supabase-js'
+import { createFileRoute } from "@tanstack/react-router";
+import { createClient } from "@supabase/supabase-js";
 
-const __env = (k: string) => process.env[k] ?? (k === 'SUPABASE_ANON_KEY' ? process.env['SUPABASE_PUBLISHABLE_KEY'] : undefined)
-let __handler: (req: Request) => Response | Promise<Response>
-const __serve = (fn: any, _opts?: any) => { __handler = fn }
-
+const __env = (k: string) =>
+  process.env[k] ??
+  (k === "SUPABASE_ANON_KEY"
+    ? process.env["SUPABASE_PUBLISHABLE_KEY"]
+    : undefined);
+let __handler: (req: Request) => Response | Promise<Response>;
+const __serve = (fn: any, _opts?: any) => {
+  __handler = fn;
+};
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type",
 };
 
 const ALLOWED_FIVEM_COMMANDS = new Set([
-  "announcement", "armor", "ban", "bring", "charinfo", "clear-weapons",
-  "clothing-menu", "delvehicle", "embed", "freeze", "give-weapon", "godmode",
-  "goto", "heal", "identifiers", "inventory", "invisible", "jail", "kick",
-  "kickall", "kill", "logout", "money", "noclip", "onlinecount", "permissions",
-  "players", "remove-weapon", "repair", "resource", "revive", "revive-all",
-  "screenshot", "server", "setarmor", "sethealth", "sethunger", "setmodel",
-  "setstress", "setthirst", "spectate", "teleport", "teleport-all", "unfreeze",
-  "unjail", "vehicle", "warn", "whitelist", "weather", "time", "job", "gang"
+  "announcement",
+  "armor",
+  "ban",
+  "bring",
+  "charinfo",
+  "clear-weapons",
+  "clothing-menu",
+  "delvehicle",
+  "embed",
+  "freeze",
+  "give-weapon",
+  "godmode",
+  "goto",
+  "heal",
+  "identifiers",
+  "inventory",
+  "invisible",
+  "jail",
+  "kick",
+  "kickall",
+  "kill",
+  "logout",
+  "money",
+  "noclip",
+  "onlinecount",
+  "permissions",
+  "players",
+  "remove-weapon",
+  "repair",
+  "resource",
+  "revive",
+  "revive-all",
+  "screenshot",
+  "server",
+  "setarmor",
+  "sethealth",
+  "sethunger",
+  "setmodel",
+  "setstress",
+  "setthirst",
+  "spectate",
+  "teleport",
+  "teleport-all",
+  "unfreeze",
+  "unjail",
+  "vehicle",
+  "warn",
+  "whitelist",
+  "weather",
+  "time",
+  "job",
+  "gang",
 ]);
 
 __serve(async (req) => {
@@ -45,7 +95,10 @@ __serve(async (req) => {
     }
 
     const token = authHeader.replace("Bearer ", "");
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser(token);
 
     if (authError || !user) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
@@ -57,10 +110,13 @@ __serve(async (req) => {
     const { guild_id, command, data } = await req.json();
 
     if (!guild_id || !command) {
-      return new Response(JSON.stringify({ error: "guild_id and command are required" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return new Response(
+        JSON.stringify({ error: "guild_id and command are required" }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
     }
 
     // Verify user has admin permission for this guild
@@ -72,10 +128,13 @@ __serve(async (req) => {
       .single();
 
     if (permError || !userGuild?.has_admin_permission) {
-      return new Response(JSON.stringify({ error: "No permission for this guild" }), {
-        status: 403,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return new Response(
+        JSON.stringify({ error: "No permission for this guild" }),
+        {
+          status: 403,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
     }
 
     // Get guild info
@@ -93,11 +152,17 @@ __serve(async (req) => {
     }
 
     const commandName = String(command || "").toLowerCase();
-    if (!/^[a-z0-9-]{1,64}$/i.test(commandName) || !ALLOWED_FIVEM_COMMANDS.has(commandName)) {
-      return new Response(JSON.stringify({ error: "Unknown or unsupported FiveM command" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+    if (
+      !/^[a-z0-9-]{1,64}$/i.test(commandName) ||
+      !ALLOWED_FIVEM_COMMANDS.has(commandName)
+    ) {
+      return new Response(
+        JSON.stringify({ error: "Unknown or unsupported FiveM command" }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
     }
 
     const { data: settings } = await supabase
@@ -107,12 +172,16 @@ __serve(async (req) => {
       .maybeSingle();
 
     if (!settings?.enabled) {
-      return new Response(JSON.stringify({
-        error: "FiveM integration is not enabled. Complete FiveM → Opsætning first."
-      }), {
-        status: 409,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return new Response(
+        JSON.stringify({
+          error:
+            "FiveM integration is not enabled. Complete FiveM → Opsætning first.",
+        }),
+        {
+          status: 409,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
     }
 
     const requestedServerId = data.serverId ? String(data.serverId) : null;
@@ -135,18 +204,21 @@ __serve(async (req) => {
     const bridgeOnline = Boolean(
       serverStatus?.is_online &&
       heartbeatMs > 0 &&
-      Date.now() - heartbeatMs < 90_000
+      Date.now() - heartbeatMs < 90_000,
     );
 
     if (!bridgeOnline) {
-      return new Response(JSON.stringify({
-        error: requestedServerId
-          ? `FiveM Bridge '${requestedServerId}' er offline. Tjek serveren eller vælg en anden instance.`
-          : "FiveM Bridge er offline. Tjek FiveM → Opsætning og server.cfg."
-      }), {
-        status: 409,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return new Response(
+        JSON.stringify({
+          error: requestedServerId
+            ? `FiveM Bridge '${requestedServerId}' er offline. Tjek serveren eller vælg en anden instance.`
+            : "FiveM Bridge er offline. Tjek FiveM → Opsætning og server.cfg.",
+        }),
+        {
+          status: 409,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
     }
 
     const moderatorName =
@@ -157,12 +229,16 @@ __serve(async (req) => {
     const moderatorDiscordId = String(userGuild.discord_user_id || "").trim();
 
     if (!/^\d{15,22}$/.test(moderatorDiscordId)) {
-      return new Response(JSON.stringify({
-        error: "Din Discord-identitet mangler på GuildOS-kontoen. Log ud og ind med Discord igen."
-      }), {
-        status: 403,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return new Response(
+        JSON.stringify({
+          error:
+            "Din Discord-identitet mangler på GuildOS-kontoen. Log ud og ind med Discord igen.",
+        }),
+        {
+          status: 403,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
     }
 
     const serverId = String(data.serverId || serverStatus?.server_id || "main");
@@ -193,10 +269,13 @@ __serve(async (req) => {
 
     if (queueError || !queuedRow?.id) {
       console.error("Error queuing command:", queueError);
-      return new Response(JSON.stringify({ error: "Failed to queue command" }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return new Response(
+        JSON.stringify({ error: "Failed to queue command" }),
+        {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
     }
 
     // Also log the action for history
@@ -208,46 +287,50 @@ __serve(async (req) => {
       moderator_discord_id: moderatorDiscordId,
       moderator_name: moderatorName,
       reason: data.reason || null,
-      duration_seconds: data.duration ? parseDuration(String(data.duration)) : null,
+      duration_seconds: data.duration
+        ? parseDuration(String(data.duration))
+        : null,
       metadata: trustedCommandData,
     });
 
     // Optional webhook logging works for both the default bot and custom-bot guilds.
     if (settings?.log_webhook_url) {
       const actionColors: Record<string, number> = {
-        kick: 0xFFA500,
-        ban: 0xFF0000,
-        kill: 0xFF4444,
-        revive: 0x00FF00,
-        announcement: 0x5865F2,
-        weather: 0x00BFFF,
-        time: 0x00BFFF,
+        kick: 0xffa500,
+        ban: 0xff0000,
+        kill: 0xff4444,
+        revive: 0x00ff00,
+        announcement: 0x5865f2,
+        weather: 0x00bfff,
+        time: 0x00bfff,
       };
 
       await fetch(settings.log_webhook_url, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          embeds: [{
-            title: `🎮 FiveM ${commandName}`,
-            description: `**Target:** ${data.targetName || data.targetDiscordId || (data.targetPlayerId ? 'Player #' + data.targetPlayerId : 'N/A')}\n**Moderator:** ${moderatorName}${data.reason ? '\n**Reason:** ' + data.reason : ''}\n\n*Queued for the FiveM bridge.*`,
-            color: actionColors[commandName] || 0x5865F2,
-            timestamp: new Date().toISOString(),
-          }],
+          embeds: [
+            {
+              title: `🎮 FiveM ${commandName}`,
+              description: `**Target:** ${data.targetName || data.targetDiscordId || (data.targetPlayerId ? "Player #" + data.targetPlayerId : "N/A")}\n**Moderator:** ${moderatorName}${data.reason ? "\n**Reason:** " + data.reason : ""}\n\n*Queued for the FiveM bridge.*`,
+              color: actionColors[commandName] || 0x5865f2,
+              timestamp: new Date().toISOString(),
+            },
+          ],
         }),
       }).catch(() => {});
     }
 
     return new Response(
-      JSON.stringify({ 
-        success: true, 
+      JSON.stringify({
+        success: true,
         command: commandName,
         serverId,
         commandId: queuedRow.id,
         message: `Command '${commandName}' queued for execution`,
-        status: "queued"
+        status: "queued",
       }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      { headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   } catch (error) {
     console.error("Error:", error);
@@ -261,10 +344,10 @@ __serve(async (req) => {
 function parseDuration(duration: string): number {
   const match = duration.match(/^(\d+)([smhdw])$/);
   if (!match) return 0;
-  
+
   const value = parseInt(match[1], 10);
   const unit = match[2];
-  
+
   const multipliers: Record<string, number> = {
     s: 1,
     m: 60,
@@ -272,14 +355,13 @@ function parseDuration(duration: string): number {
     d: 86400,
     w: 604800,
   };
-  
+
   return value * (multipliers[unit] || 0);
 }
 
+const __call = ({ request }: { request: Request }) => __handler(request);
 
-const __call = ({ request }: { request: Request }) => __handler(request)
-
-export const Route = createFileRoute('/api/public/execute-fivem-command')({
+export const Route = createFileRoute("/api/public/execute-fivem-command")({
   server: {
     handlers: {
       GET: __call,
@@ -290,4 +372,4 @@ export const Route = createFileRoute('/api/public/execute-fivem-command')({
       OPTIONS: __call,
     },
   },
-})
+});

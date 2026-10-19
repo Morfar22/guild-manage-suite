@@ -1,18 +1,36 @@
-import { useState } from 'react';
-import { Activity, AlertTriangle, Ban, Eye, Gauge, Loader2, RefreshCw, Trophy } from 'lucide-react';
-import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
-import { useCommandAnalytics } from '@/hooks/useCommandAnalytics';
-import { getCommandSlashPath } from '@/lib/commandGrouping';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
+import { useState } from "react";
+import {
+  Activity,
+  AlertTriangle,
+  Ban,
+  Eye,
+  Gauge,
+  Loader2,
+  RefreshCw,
+  Trophy,
+} from "lucide-react";
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Legend,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
+import { useCommandAnalytics } from "@/hooks/useCommandAnalytics";
+import { getCommandSlashPath } from "@/lib/commandGrouping";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
+} from "@/components/ui/select";
 import {
   Table,
   TableBody,
@@ -20,12 +38,12 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table';
+} from "@/components/ui/table";
 
 const tooltipStyle = {
-  backgroundColor: 'hsl(var(--card))',
-  border: '1px solid hsl(var(--border))',
-  borderRadius: '8px',
+  backgroundColor: "hsl(var(--card))",
+  border: "1px solid hsl(var(--border))",
+  borderRadius: "8px",
 };
 
 function formatLatency(ms: number) {
@@ -34,12 +52,12 @@ function formatLatency(ms: number) {
 }
 
 function formatLastUsed(value: string | null) {
-  if (!value) return 'Aldrig';
-  return new Intl.DateTimeFormat('da-DK', {
-    day: '2-digit',
-    month: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
+  if (!value) return "Aldrig";
+  return new Intl.DateTimeFormat("da-DK", {
+    day: "2-digit",
+    month: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
   }).format(new Date(value));
 }
 
@@ -49,7 +67,8 @@ interface Props {
 
 export function CommandAnalyticsPanel({ onInspect }: Props) {
   const [days, setDays] = useState(7);
-  const { commands, timeline, summary, recentErrors, isLoading, refetch } = useCommandAnalytics(days);
+  const { commands, timeline, summary, recentErrors, isLoading, refetch } =
+    useCommandAnalytics(days);
 
   const topCommand = commands[0];
 
@@ -63,7 +82,10 @@ export function CommandAnalyticsPanel({ onInspect }: Props) {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Select value={String(days)} onValueChange={(value) => setDays(Number(value))}>
+          <Select
+            value={String(days)}
+            onValueChange={(value) => setDays(Number(value))}
+          >
             <SelectTrigger className="w-40">
               <SelectValue />
             </SelectTrigger>
@@ -74,7 +96,12 @@ export function CommandAnalyticsPanel({ onInspect }: Props) {
               <SelectItem value="90">Sidste 90 dage</SelectItem>
             </SelectContent>
           </Select>
-          <Button variant="outline" size="icon" onClick={() => void refetch()} title="Opdater">
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => void refetch()}
+            title="Opdater"
+          >
             <RefreshCw className="h-4 w-4" />
           </Button>
         </div>
@@ -87,7 +114,9 @@ export function CommandAnalyticsPanel({ onInspect }: Props) {
               <Activity className="h-5 w-5 text-primary" />
               <div>
                 <p className="text-xs text-muted-foreground">Kørsler</p>
-                <p className="text-2xl font-bold">{summary.executions.toLocaleString('da-DK')}</p>
+                <p className="text-2xl font-bold">
+                  {summary.executions.toLocaleString("da-DK")}
+                </p>
               </div>
             </div>
           </CardContent>
@@ -109,7 +138,9 @@ export function CommandAnalyticsPanel({ onInspect }: Props) {
               <AlertTriangle className="h-5 w-5 text-destructive" />
               <div>
                 <p className="text-xs text-muted-foreground">Fejl</p>
-                <p className="text-2xl font-bold">{summary.errors.toLocaleString('da-DK')}</p>
+                <p className="text-2xl font-bold">
+                  {summary.errors.toLocaleString("da-DK")}
+                </p>
               </div>
             </div>
           </CardContent>
@@ -120,7 +151,9 @@ export function CommandAnalyticsPanel({ onInspect }: Props) {
               <Ban className="h-5 w-5 text-muted-foreground" />
               <div>
                 <p className="text-xs text-muted-foreground">Blokeret</p>
-                <p className="text-2xl font-bold">{summary.blocked.toLocaleString('da-DK')}</p>
+                <p className="text-2xl font-bold">
+                  {summary.blocked.toLocaleString("da-DK")}
+                </p>
               </div>
             </div>
           </CardContent>
@@ -131,7 +164,11 @@ export function CommandAnalyticsPanel({ onInspect }: Props) {
               <Trophy className="h-5 w-5 text-primary" />
               <div className="min-w-0">
                 <p className="text-xs text-muted-foreground">Mest brugte</p>
-                <p className="truncate text-lg font-bold">{topCommand ? getCommandSlashPath(topCommand.command_name) : 'Ingen data'}</p>
+                <p className="truncate text-lg font-bold">
+                  {topCommand
+                    ? getCommandSlashPath(topCommand.command_name)
+                    : "Ingen data"}
+                </p>
               </div>
             </div>
           </CardContent>
@@ -162,19 +199,48 @@ export function CommandAnalyticsPanel({ onInspect }: Props) {
               <div className="h-[280px]">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={timeline}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                    <XAxis dataKey="day" stroke="hsl(var(--muted-foreground))" fontSize={12} />
-                    <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} allowDecimals={false} />
+                    <CartesianGrid
+                      strokeDasharray="3 3"
+                      stroke="hsl(var(--border))"
+                    />
+                    <XAxis
+                      dataKey="day"
+                      stroke="hsl(var(--muted-foreground))"
+                      fontSize={12}
+                    />
+                    <YAxis
+                      stroke="hsl(var(--muted-foreground))"
+                      fontSize={12}
+                      allowDecimals={false}
+                    />
                     <Tooltip contentStyle={tooltipStyle} />
                     <Legend />
-                    <Bar dataKey="successes" stackId="a" fill="hsl(var(--chart-2))" name="Success" />
-                    <Bar dataKey="errors" stackId="a" fill="hsl(var(--destructive))" name="Fejl" />
-                    <Bar dataKey="blocked" stackId="a" fill="hsl(var(--muted-foreground))" name="Blokeret" />
+                    <Bar
+                      dataKey="successes"
+                      stackId="a"
+                      fill="hsl(var(--chart-2))"
+                      name="Success"
+                    />
+                    <Bar
+                      dataKey="errors"
+                      stackId="a"
+                      fill="hsl(var(--destructive))"
+                      name="Fejl"
+                    />
+                    <Bar
+                      dataKey="blocked"
+                      stackId="a"
+                      fill="hsl(var(--muted-foreground))"
+                      name="Blokeret"
+                    />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
               <div className="mt-3 text-sm text-muted-foreground">
-                Gennemsnitlig svartid: <span className="font-medium text-foreground">{formatLatency(summary.avg_latency_ms)}</span>
+                Gennemsnitlig svartid:{" "}
+                <span className="font-medium text-foreground">
+                  {formatLatency(summary.avg_latency_ms)}
+                </span>
               </div>
             </CardContent>
           </Card>
@@ -201,35 +267,46 @@ export function CommandAnalyticsPanel({ onInspect }: Props) {
                 <TableBody>
                   {recentErrors.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={6} className="py-10 text-center text-muted-foreground">
+                      <TableCell
+                        colSpan={6}
+                        className="py-10 text-center text-muted-foreground"
+                      >
                         Ingen command-fejl i perioden.
                       </TableCell>
                     </TableRow>
-                  ) : recentErrors.map((event) => (
-                    <TableRow key={event.id}>
-                      <TableCell>
-                        <Badge variant="secondary" className="font-mono">{getCommandSlashPath(event.command_name)}</Badge>
-                      </TableCell>
-                      <TableCell className="whitespace-nowrap text-xs text-muted-foreground">
-                        {formatLastUsed(event.created_at)}
-                      </TableCell>
-                      <TableCell><Badge variant="outline">{event.source}</Badge></TableCell>
-                      <TableCell>{formatLatency(Number(event.latency_ms || 0))}</TableCell>
-                      <TableCell className="max-w-xl truncate font-mono text-xs text-destructive">
-                        {event.error_message || 'Ukendt fejl'}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => onInspect?.(event.command_name)}
-                          title="Åbn command"
-                        >
-                          <Eye className="h-4 w-4" />
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                  ) : (
+                    recentErrors.map((event) => (
+                      <TableRow key={event.id}>
+                        <TableCell>
+                          <Badge variant="secondary" className="font-mono">
+                            {getCommandSlashPath(event.command_name)}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="whitespace-nowrap text-xs text-muted-foreground">
+                          {formatLastUsed(event.created_at)}
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline">{event.source}</Badge>
+                        </TableCell>
+                        <TableCell>
+                          {formatLatency(Number(event.latency_ms || 0))}
+                        </TableCell>
+                        <TableCell className="max-w-xl truncate font-mono text-xs text-destructive">
+                          {event.error_message || "Ukendt fejl"}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => onInspect?.(event.command_name)}
+                            title="Åbn command"
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
                 </TableBody>
               </Table>
             </CardContent>
@@ -258,19 +335,39 @@ export function CommandAnalyticsPanel({ onInspect }: Props) {
                   {commands.map((command) => (
                     <TableRow key={command.command_name}>
                       <TableCell>
-                        <Badge variant="secondary" className="font-mono">{getCommandSlashPath(command.command_name)}</Badge>
+                        <Badge variant="secondary" className="font-mono">
+                          {getCommandSlashPath(command.command_name)}
+                        </Badge>
                       </TableCell>
-                      <TableCell className="text-right font-medium">{command.executions.toLocaleString('da-DK')}</TableCell>
+                      <TableCell className="text-right font-medium">
+                        {command.executions.toLocaleString("da-DK")}
+                      </TableCell>
                       <TableCell className="text-right">
-                        <span className={command.success_rate < 90 ? 'text-destructive' : 'text-foreground'}>
+                        <span
+                          className={
+                            command.success_rate < 90
+                              ? "text-destructive"
+                              : "text-foreground"
+                          }
+                        >
                           {command.success_rate}%
                         </span>
                       </TableCell>
-                      <TableCell className="text-right">{command.errors}</TableCell>
-                      <TableCell className="text-right">{command.blocked}</TableCell>
-                      <TableCell className="text-right">{formatLatency(command.avg_latency_ms)}</TableCell>
-                      <TableCell className="text-right">{formatLatency(command.max_latency_ms)}</TableCell>
-                      <TableCell className="text-right text-xs text-muted-foreground">{formatLastUsed(command.last_used_at)}</TableCell>
+                      <TableCell className="text-right">
+                        {command.errors}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        {command.blocked}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        {formatLatency(command.avg_latency_ms)}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        {formatLatency(command.max_latency_ms)}
+                      </TableCell>
+                      <TableCell className="text-right text-xs text-muted-foreground">
+                        {formatLastUsed(command.last_used_at)}
+                      </TableCell>
                       <TableCell className="text-right">
                         <Button
                           variant="ghost"

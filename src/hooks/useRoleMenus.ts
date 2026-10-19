@@ -1,7 +1,7 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
-import { useGuild } from '@/contexts/GuildContext';
-import { toast } from 'sonner';
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { useGuild } from "@/contexts/GuildContext";
+import { toast } from "sonner";
 
 export interface RoleMenuOption {
   role_id: string;
@@ -29,14 +29,14 @@ export function useRoleMenus() {
   const queryClient = useQueryClient();
 
   const menusQuery = useQuery({
-    queryKey: ['role-menus', selectedGuild?.id],
+    queryKey: ["role-menus", selectedGuild?.id],
     queryFn: async () => {
       if (!selectedGuild?.id) return [];
       const { data, error } = await supabase
-        .from('role_menus')
-        .select('*')
-        .eq('guild_id', selectedGuild.id)
-        .order('created_at', { ascending: false });
+        .from("role_menus")
+        .select("*")
+        .eq("guild_id", selectedGuild.id)
+        .order("created_at", { ascending: false });
       if (error) throw error;
       return (data ?? []).map((d: any) => ({
         ...d,
@@ -47,14 +47,18 @@ export function useRoleMenus() {
   });
 
   const createMenu = useMutation({
-    mutationFn: async (data: { name: string; menu_type?: string; max_roles?: number }) => {
-      if (!selectedGuild?.id) throw new Error('No guild');
+    mutationFn: async (data: {
+      name: string;
+      menu_type?: string;
+      max_roles?: number;
+    }) => {
+      if (!selectedGuild?.id) throw new Error("No guild");
       const { data: result, error } = await supabase
-        .from('role_menus')
+        .from("role_menus")
         .insert({
           guild_id: selectedGuild.id,
           name: data.name,
-          menu_type: data.menu_type || 'dropdown',
+          menu_type: data.menu_type || "dropdown",
           max_roles: data.max_roles || 0,
           roles: [],
         })
@@ -64,32 +68,46 @@ export function useRoleMenus() {
       return result;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['role-menus'] });
-      toast.success('Role menu oprettet!');
+      queryClient.invalidateQueries({ queryKey: ["role-menus"] });
+      toast.success("Role menu oprettet!");
     },
     onError: (e: Error) => toast.error(e.message),
   });
 
   const updateMenu = useMutation({
-    mutationFn: async ({ id, ...data }: { id: string; name?: string; menu_type?: string; max_roles?: number; roles?: RoleMenuOption[]; channel_id?: string; message_id?: string }) => {
-      const { error } = await supabase.from('role_menus').update(data as any).eq('id', id);
+    mutationFn: async ({
+      id,
+      ...data
+    }: {
+      id: string;
+      name?: string;
+      menu_type?: string;
+      max_roles?: number;
+      roles?: RoleMenuOption[];
+      channel_id?: string;
+      message_id?: string;
+    }) => {
+      const { error } = await supabase
+        .from("role_menus")
+        .update(data as any)
+        .eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['role-menus'] });
-      toast.success('Role menu opdateret!');
+      queryClient.invalidateQueries({ queryKey: ["role-menus"] });
+      toast.success("Role menu opdateret!");
     },
     onError: (e: Error) => toast.error(e.message),
   });
 
   const deleteMenu = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from('role_menus').delete().eq('id', id);
+      const { error } = await supabase.from("role_menus").delete().eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['role-menus'] });
-      toast.success('Role menu slettet!');
+      queryClient.invalidateQueries({ queryKey: ["role-menus"] });
+      toast.success("Role menu slettet!");
     },
     onError: (e: Error) => toast.error(e.message),
   });

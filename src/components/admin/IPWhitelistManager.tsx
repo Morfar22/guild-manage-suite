@@ -1,17 +1,35 @@
-import { useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Badge } from '@/components/ui/badge';
-import { Trash2, Plus, Globe, ShieldCheck, Loader2 } from 'lucide-react';
-import { useIPWhitelist, useAddIPToWhitelist, useRemoveIPFromWhitelist, useCheckIPAccess } from '@/hooks/useIPWhitelist';
-import { format } from 'date-fns';
+import { useState } from "react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import { Trash2, Plus, Globe, ShieldCheck, Loader2 } from "lucide-react";
+import {
+  useIPWhitelist,
+  useAddIPToWhitelist,
+  useRemoveIPFromWhitelist,
+  useCheckIPAccess,
+} from "@/hooks/useIPWhitelist";
+import { format } from "date-fns";
 
 export function IPWhitelistManager() {
-  const [newIP, setNewIP] = useState('');
-  const [description, setDescription] = useState('');
+  const [newIP, setNewIP] = useState("");
+  const [description, setDescription] = useState("");
 
   const { data: whitelist, isLoading } = useIPWhitelist();
   const { data: ipCheck } = useCheckIPAccess();
@@ -23,22 +41,30 @@ export function IPWhitelistManager() {
     if (!newIP.trim()) return;
 
     addIP.mutate(
-      { ip_address: newIP.trim(), description: description.trim() || undefined },
+      {
+        ip_address: newIP.trim(),
+        description: description.trim() || undefined,
+      },
       {
         onSuccess: () => {
-          setNewIP('');
-          setDescription('');
+          setNewIP("");
+          setDescription("");
         },
-      }
+      },
     );
   };
 
   const handleAddCurrentIP = () => {
-    if (!ipCheck?.ip || ipCheck.ip === 'unknown' || ipCheck.ip === 'account-bypass') return;
-    
+    if (
+      !ipCheck?.ip ||
+      ipCheck.ip === "unknown" ||
+      ipCheck.ip === "account-bypass"
+    )
+      return;
+
     addIP.mutate({
       ip_address: ipCheck.ip,
-      description: 'Min nuværende IP',
+      description: "Min nuværende IP",
     });
   };
 
@@ -52,14 +78,21 @@ export function IPWhitelistManager() {
               IP Whitelist
             </CardTitle>
             <CardDescription>
-              Administrer hvilke IP-adresser der har adgang til admin-panelet. Brugere med admin-rollen har altid adgang via deres konto — IP-whitelist gælder kun for staff.
+              Administrer hvilke IP-adresser der har adgang til admin-panelet.
+              Brugere med admin-rollen har altid adgang via deres konto —
+              IP-whitelist gælder kun for staff.
             </CardDescription>
           </div>
           {ipCheck && (
             <div className="text-right">
               <p className="text-sm text-muted-foreground">Din nuværende IP:</p>
-              <Badge variant={ipCheck.allowed ? 'default' : 'destructive'} className="font-mono">
-                {ipCheck.ip === 'account-bypass' ? 'Admin-konto (IP frigået)' : ipCheck.ip}
+              <Badge
+                variant={ipCheck.allowed ? "default" : "destructive"}
+                className="font-mono"
+              >
+                {ipCheck.ip === "account-bypass"
+                  ? "Admin-konto (IP frigået)"
+                  : ipCheck.ip}
               </Badge>
             </div>
           )}
@@ -98,7 +131,7 @@ export function IPWhitelistManager() {
               )}
               Tilføj IP
             </Button>
-            {ipCheck?.ip && ipCheck.ip !== 'unknown' && !ipCheck.allowed && (
+            {ipCheck?.ip && ipCheck.ip !== "unknown" && !ipCheck.allowed && (
               <Button
                 type="button"
                 variant="outline"
@@ -153,9 +186,9 @@ export function IPWhitelistManager() {
                           )}
                         </div>
                       </TableCell>
-                      <TableCell>{entry.description || '-'}</TableCell>
+                      <TableCell>{entry.description || "-"}</TableCell>
                       <TableCell className="text-muted-foreground">
-                        {format(new Date(entry.created_at), 'dd/MM/yyyy HH:mm')}
+                        {format(new Date(entry.created_at), "dd/MM/yyyy HH:mm")}
                       </TableCell>
                       <TableCell>
                         <Button
@@ -177,8 +210,9 @@ export function IPWhitelistManager() {
 
         {/* Info notice */}
         <p className="text-xs text-muted-foreground">
-          Bemærk: Hvis whitelist er tom, har alle admins adgang. Så snart du tilføjer en IP, 
-          vil kun whitelistede IP'er have adgang til admin-panelet.
+          Bemærk: Hvis whitelist er tom, har alle admins adgang. Så snart du
+          tilføjer en IP, vil kun whitelistede IP'er have adgang til
+          admin-panelet.
         </p>
       </CardContent>
     </Card>

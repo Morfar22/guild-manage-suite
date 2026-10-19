@@ -1,8 +1,8 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
-import { useGuild } from '@/contexts/GuildContext';
-import { useToast } from '@/hooks/use-toast';
-import { invokeFunction } from '@/lib/functions-client';
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { useGuild } from "@/contexts/GuildContext";
+import { useToast } from "@/hooks/use-toast";
+import { invokeFunction } from "@/lib/functions-client";
 
 export interface ReactionRole {
   id: string;
@@ -33,15 +33,15 @@ export function useReactionRoles() {
   const { toast } = useToast();
 
   const query = useQuery({
-    queryKey: ['reaction-roles', selectedGuild?.id],
+    queryKey: ["reaction-roles", selectedGuild?.id],
     queryFn: async () => {
       if (!selectedGuild?.id) return [];
 
       const { data, error } = await supabase
-        .from('reaction_roles')
-        .select('*')
-        .eq('guild_id', selectedGuild.id)
-        .order('created_at', { ascending: false });
+        .from("reaction_roles")
+        .select("*")
+        .eq("guild_id", selectedGuild.id)
+        .order("created_at", { ascending: false });
 
       if (error) throw error;
       return data as ReactionRole[];
@@ -58,10 +58,10 @@ export function useReactionRoles() {
       role_name: string;
       description?: string;
     }) => {
-      if (!selectedGuild?.id) throw new Error('No guild selected');
+      if (!selectedGuild?.id) throw new Error("No guild selected");
 
       const { data: result, error } = await supabase
-        .from('reaction_roles')
+        .from("reaction_roles")
         .insert({
           guild_id: selectedGuild.id,
           ...data,
@@ -73,17 +73,21 @@ export function useReactionRoles() {
       return result;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['reaction-roles', selectedGuild?.id] });
-      toast({ title: 'Reaction rolle tilføjet' });
+      queryClient.invalidateQueries({
+        queryKey: ["reaction-roles", selectedGuild?.id],
+      });
+      toast({ title: "Reaction rolle tilføjet" });
     },
     onError: (error: Error) => {
-      const isDuplicate = error.message.includes('duplicate key') || error.message.includes('23505');
-      toast({ 
-        title: isDuplicate ? 'Findes allerede' : 'Fejl', 
-        description: isDuplicate 
-          ? 'Denne emoji er allerede tilknyttet denne besked. Vælg en anden emoji eller besked.' 
-          : error.message, 
-        variant: 'destructive' 
+      const isDuplicate =
+        error.message.includes("duplicate key") ||
+        error.message.includes("23505");
+      toast({
+        title: isDuplicate ? "Findes allerede" : "Fejl",
+        description: isDuplicate
+          ? "Denne emoji er allerede tilknyttet denne besked. Vælg en anden emoji eller besked."
+          : error.message,
+        variant: "destructive",
       });
     },
   });
@@ -91,18 +95,24 @@ export function useReactionRoles() {
   const deleteReactionRole = useMutation({
     mutationFn: async (roleId: string) => {
       const { error } = await supabase
-        .from('reaction_roles')
+        .from("reaction_roles")
         .delete()
-        .eq('id', roleId);
+        .eq("id", roleId);
 
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['reaction-roles', selectedGuild?.id] });
-      toast({ title: 'Reaction rolle slettet' });
+      queryClient.invalidateQueries({
+        queryKey: ["reaction-roles", selectedGuild?.id],
+      });
+      toast({ title: "Reaction rolle slettet" });
     },
     onError: (error: Error) => {
-      toast({ title: 'Fejl', description: error.message, variant: 'destructive' });
+      toast({
+        title: "Fejl",
+        description: error.message,
+        variant: "destructive",
+      });
     },
   });
 
@@ -115,15 +125,15 @@ export function useReactionRolePanels() {
   const { toast } = useToast();
 
   const query = useQuery({
-    queryKey: ['reaction-role-panels', selectedGuild?.id],
+    queryKey: ["reaction-role-panels", selectedGuild?.id],
     queryFn: async () => {
       if (!selectedGuild?.id) return [];
 
       const { data, error } = await supabase
-        .from('reaction_role_panels')
-        .select('*')
-        .eq('guild_id', selectedGuild.id)
-        .order('created_at', { ascending: false });
+        .from("reaction_role_panels")
+        .select("*")
+        .eq("guild_id", selectedGuild.id)
+        .order("created_at", { ascending: false });
 
       if (error) throw error;
       return data as ReactionRolePanel[];
@@ -132,11 +142,15 @@ export function useReactionRolePanels() {
   });
 
   const createPanel = useMutation({
-    mutationFn: async (data: { title: string; description?: string; color?: string }) => {
-      if (!selectedGuild?.id) throw new Error('No guild selected');
+    mutationFn: async (data: {
+      title: string;
+      description?: string;
+      color?: string;
+    }) => {
+      if (!selectedGuild?.id) throw new Error("No guild selected");
 
       const { data: result, error } = await supabase
-        .from('reaction_role_panels')
+        .from("reaction_role_panels")
         .insert({
           guild_id: selectedGuild.id,
           ...data,
@@ -148,20 +162,36 @@ export function useReactionRolePanels() {
       return result;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['reaction-role-panels', selectedGuild?.id] });
-      toast({ title: 'Panel oprettet' });
+      queryClient.invalidateQueries({
+        queryKey: ["reaction-role-panels", selectedGuild?.id],
+      });
+      toast({ title: "Panel oprettet" });
     },
     onError: (error: Error) => {
-      toast({ title: 'Fejl', description: error.message, variant: 'destructive' });
+      toast({
+        title: "Fejl",
+        description: error.message,
+        variant: "destructive",
+      });
     },
   });
 
   const updatePanel = useMutation({
-    mutationFn: async ({ id, ...data }: { id: string; channel_id?: string; message_id?: string; title?: string; description?: string; color?: string }) => {
+    mutationFn: async ({
+      id,
+      ...data
+    }: {
+      id: string;
+      channel_id?: string;
+      message_id?: string;
+      title?: string;
+      description?: string;
+      color?: string;
+    }) => {
       const { data: result, error } = await supabase
-        .from('reaction_role_panels')
+        .from("reaction_role_panels")
         .update(data)
-        .eq('id', id)
+        .eq("id", id)
         .select()
         .single();
 
@@ -169,37 +199,55 @@ export function useReactionRolePanels() {
       return result;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['reaction-role-panels', selectedGuild?.id] });
-      toast({ title: 'Panel opdateret' });
+      queryClient.invalidateQueries({
+        queryKey: ["reaction-role-panels", selectedGuild?.id],
+      });
+      toast({ title: "Panel opdateret" });
     },
     onError: (error: Error) => {
-      toast({ title: 'Fejl', description: error.message, variant: 'destructive' });
+      toast({
+        title: "Fejl",
+        description: error.message,
+        variant: "destructive",
+      });
     },
   });
 
   const deletePanel = useMutation({
     mutationFn: async (panelId: string) => {
       const { error } = await supabase
-        .from('reaction_role_panels')
+        .from("reaction_role_panels")
         .delete()
-        .eq('id', panelId);
+        .eq("id", panelId);
 
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['reaction-role-panels', selectedGuild?.id] });
-      toast({ title: 'Panel slettet' });
+      queryClient.invalidateQueries({
+        queryKey: ["reaction-role-panels", selectedGuild?.id],
+      });
+      toast({ title: "Panel slettet" });
     },
     onError: (error: Error) => {
-      toast({ title: 'Fejl', description: error.message, variant: 'destructive' });
+      toast({
+        title: "Fejl",
+        description: error.message,
+        variant: "destructive",
+      });
     },
   });
 
   const sendPanel = useMutation({
-    mutationFn: async ({ panelId, channelId }: { panelId: string; channelId: string }) => {
-      const { data, error } = await invokeFunction('reaction-role-handler', {
+    mutationFn: async ({
+      panelId,
+      channelId,
+    }: {
+      panelId: string;
+      channelId: string;
+    }) => {
+      const { data, error } = await invokeFunction("reaction-role-handler", {
         body: {
-          action: 'send_panel',
+          action: "send_panel",
           panel_id: panelId,
           channel_id: channelId,
         },
@@ -210,11 +258,20 @@ export function useReactionRolePanels() {
       return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['reaction-role-panels', selectedGuild?.id] });
-      toast({ title: 'Panel sendt!', description: 'Embed er blevet sendt til Discord-kanalen' });
+      queryClient.invalidateQueries({
+        queryKey: ["reaction-role-panels", selectedGuild?.id],
+      });
+      toast({
+        title: "Panel sendt!",
+        description: "Embed er blevet sendt til Discord-kanalen",
+      });
     },
     onError: (error: Error) => {
-      toast({ title: 'Fejl', description: error.message, variant: 'destructive' });
+      toast({
+        title: "Fejl",
+        description: error.message,
+        variant: "destructive",
+      });
     },
   });
 

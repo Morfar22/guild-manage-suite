@@ -1,7 +1,7 @@
 /**
  * XP Handler for Discord Bot
  * Supports: Message XP, Voice XP, XP Multipliers, Blacklist Channels
- * 
+ *
  * Usage in bot.js:
  *   const { initXPHandler } = require('./xpHandler');
  *   initXPHandler(client, supabaseUrl, botSecretKey);
@@ -12,18 +12,26 @@ const BOT_SECRET_KEY = process.env.BOT_SECRET_KEY;
 
 // Track users in voice channels for voice XP
 const voiceSessionTracker = new Map(); // Map<`${guildId}-${userId}`, { joinedAt: Date, channelId: string }>
-const APP_API_BASE = process.env.APP_API_BASE || 'https://bot.nethost-solutions.dk';
+const APP_API_BASE =
+  process.env.APP_API_BASE || "https://bot.nethost-solutions.dk";
 
 /**
  * Call the xp-handler edge function
  */
-async function grantXP({ guildId, userId, username, channelId, userRoles, isVoice }) {
+async function grantXP({
+  guildId,
+  userId,
+  username,
+  channelId,
+  userRoles,
+  isVoice,
+}) {
   try {
     const response = await fetch(`${APP_API_BASE}/api/public/xp-handler`, {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
-        'x-bot-secret': BOT_SECRET_KEY,
+        "Content-Type": "application/json",
+        "x-bot-secret": BOT_SECRET_KEY,
       },
       body: JSON.stringify({
         guild_id: guildId,
@@ -36,19 +44,22 @@ async function grantXP({ guildId, userId, username, channelId, userRoles, isVoic
     });
 
     const data = await response.json();
-    
+
     if (!response.ok) {
-      if (data.message === 'On cooldown' || data.message === 'Channel is blacklisted') {
+      if (
+        data.message === "On cooldown" ||
+        data.message === "Channel is blacklisted"
+      ) {
         // Not an error, just skip silently
         return null;
       }
-      console.error('[XP] Error:', data.error || data.message);
+      console.error("[XP] Error:", data.error || data.message);
       return null;
     }
 
     return data;
   } catch (error) {
-    console.error('[XP] Failed to grant XP:', error.message);
+    console.error("[XP] Failed to grant XP:", error.message);
     return null;
   }
 }
@@ -68,12 +79,14 @@ async function handleLevelUp(client, guildId, userId, levelUpData) {
       const channel = guild.channels.cache.get(levelUpData.channel_id);
       if (channel && channel.isTextBased()) {
         await channel.send({
-          embeds: [{
-            title: '🎉 Level Up!',
-            description: levelUpData.message,
-            color: 0x5865F2,
-            timestamp: new Date().toISOString(),
-          }],
+          embeds: [
+            {
+              title: "🎉 Level Up!",
+              description: levelUpData.message,
+              color: 0x5865f2,
+              timestamp: new Date().toISOString(),
+            },
+          ],
         });
       }
     }
@@ -85,16 +98,18 @@ async function handleLevelUp(client, guildId, userId, levelUpData) {
         for (const roleId of levelUpData.roles_to_assign) {
           const role = guild.roles.cache.get(roleId);
           if (role && !member.roles.cache.has(roleId)) {
-            await member.roles.add(role).catch(err => {
+            await member.roles.add(role).catch((err) => {
               console.error(`[XP] Failed to add role ${roleId}:`, err.message);
             });
-            console.log(`[XP] Assigned role ${role.name} to ${member.user.tag}`);
+            console.log(
+              `[XP] Assigned role ${role.name} to ${member.user.tag}`,
+            );
           }
         }
       }
     }
   } catch (error) {
-    console.error('[XP] Error handling level up:', error.message);
+    console.error("[XP] Error handling level up:", error.message);
   }
 }
 
@@ -103,7 +118,7 @@ async function handleLevelUp(client, guildId, userId, levelUpData) {
  */
 function getUserRoleIds(member) {
   if (!member || !member.roles) return [];
-  return member.roles.cache.map(role => role.id);
+  return member.roles.cache.map((role) => role.id);
 }
 
 /**
@@ -113,7 +128,9 @@ async function handleMessageXP(client, message) {
   // Ignore bots and DMs
   if (message.author.bot || !message.guild) return;
 
-  const member = message.member || await message.guild.members.fetch(message.author.id).catch(() => null);
+  const member =
+    message.member ||
+    (await message.guild.members.fetch(message.author.id).catch(() => null));
   const userRoles = getUserRoleIds(member);
 
   const result = await grantXP({
@@ -126,8 +143,15 @@ async function handleMessageXP(client, message) {
   });
 
   if (result?.leveled_up && result?.level_up) {
-    await handleLevelUp(client, message.guild.id, message.author.id, result.level_up);
-    console.log(`[XP] ${message.author.tag} leveled up to ${result.level}! (+${result.xp_gained} XP, ${result.multiplier}x multiplier)`);
+    await handleLevelUp(
+      client,
+      message.guild.id,
+      message.author.id,
+      result.level_up,
+    );
+    console.log(
+      `[XP] ${message.author.tag} leveled up to ${result.level}! (+${result.xp_gained} XP, ${result.multiplier}x multiplier)`,
+    );
   }
 }
 
@@ -137,7 +161,7 @@ async function handleMessageXP(client, message) {
 function handleVoiceStateUpdate(client, oldState, newState) {
   const userId = newState.member?.id || oldState.member?.id;
   const guildId = newState.guild?.id || oldState.guild?.id;
-  
+
   if (!userId || !guildId) return;
 
   const key = `${guildId}-${userId}`;
@@ -153,19 +177,23 @@ function handleVoiceStateUpdate(client, oldState, newState) {
     // Don't track if user is a bot, deafened, or in AFK channel
     if (newState.member?.user?.bot) return;
     if (newState.selfDeaf || newState.serverDeaf) return;
-    
+
     voiceSessionTracker.set(key, {
       joinedAt: new Date(),
       channelId: newState.channelId,
       guildId: guildId,
       userId: userId,
-      username: newState.member?.user?.username || 'Unknown',
+      username: newState.member?.user?.username || "Unknown",
     });
     return;
   }
 
   // User switched channels
-  if (oldState.channelId && newState.channelId && oldState.channelId !== newState.channelId) {
+  if (
+    oldState.channelId &&
+    newState.channelId &&
+    oldState.channelId !== newState.channelId
+  ) {
     const session = voiceSessionTracker.get(key);
     if (session) {
       session.channelId = newState.channelId;
@@ -197,7 +225,9 @@ async function processVoiceXP(client, shouldHandleGuild = () => true) {
         continue;
       }
 
-      const member = await guild.members.fetch(session.userId).catch(() => null);
+      const member = await guild.members
+        .fetch(session.userId)
+        .catch(() => null);
       if (!member) {
         voiceSessionTracker.delete(key);
         continue;
@@ -205,7 +235,11 @@ async function processVoiceXP(client, shouldHandleGuild = () => true) {
 
       // Check if still in voice and not deafened
       const voiceState = member.voice;
-      if (!voiceState?.channelId || voiceState.selfDeaf || voiceState.serverDeaf) {
+      if (
+        !voiceState?.channelId ||
+        voiceState.selfDeaf ||
+        voiceState.serverDeaf
+      ) {
         voiceSessionTracker.delete(key);
         continue;
       }
@@ -213,7 +247,7 @@ async function processVoiceXP(client, shouldHandleGuild = () => true) {
       // Check if alone in channel (no XP if alone)
       const voiceChannel = guild.channels.cache.get(voiceState.channelId);
       if (voiceChannel && voiceChannel.members) {
-        const nonBotMembers = voiceChannel.members.filter(m => !m.user.bot);
+        const nonBotMembers = voiceChannel.members.filter((m) => !m.user.bot);
         if (nonBotMembers.size < 2) {
           continue; // Skip if alone
         }
@@ -231,10 +265,19 @@ async function processVoiceXP(client, shouldHandleGuild = () => true) {
       });
 
       if (result?.leveled_up && result?.level_up) {
-        await handleLevelUp(client, session.guildId, session.userId, result.level_up);
-        console.log(`[Voice XP] ${session.username} leveled up to ${result.level}!`);
+        await handleLevelUp(
+          client,
+          session.guildId,
+          session.userId,
+          result.level_up,
+        );
+        console.log(
+          `[Voice XP] ${session.username} leveled up to ${result.level}!`,
+        );
       } else if (result?.xp_gained) {
-        console.log(`[Voice XP] ${session.username} earned ${result.xp_gained} XP (${result.multiplier}x multiplier)`);
+        console.log(
+          `[Voice XP] ${session.username} earned ${result.xp_gained} XP (${result.multiplier}x multiplier)`,
+        );
       }
     } catch (error) {
       console.error(`[Voice XP] Error processing ${key}:`, error.message);
@@ -257,7 +300,7 @@ function initXPHandler(client, supabaseUrl, botSecretKey, config = {}) {
   if (botSecretKey) process.env.BOT_SECRET_KEY = botSecretKey;
 
   // Message XP handler
-  client.on('messageCreate', async (message) => {
+  client.on("messageCreate", async (message) => {
     // Ignore bots and DMs
     if (message.author.bot || !message.guild) return;
 
@@ -268,9 +311,9 @@ function initXPHandler(client, supabaseUrl, botSecretKey, config = {}) {
   });
 
   // Voice state change handler
-  client.on('voiceStateUpdate', (oldState, newState) => {
+  client.on("voiceStateUpdate", (oldState, newState) => {
     const guildId = newState.guild?.id || oldState.guild?.id;
-    
+
     // Check if this bot instance should handle this guild
     if (!guildId || !shouldHandleGuild(guildId)) return;
 
@@ -282,7 +325,7 @@ function initXPHandler(client, supabaseUrl, botSecretKey, config = {}) {
     processVoiceXP(client, shouldHandleGuild);
   }, 60 * 1000); // 60 seconds
 
-  console.log('[XP Handler] Initialized with voice XP and multiplier support');
+  console.log("[XP Handler] Initialized with voice XP and multiplier support");
 }
 
 module.exports = {

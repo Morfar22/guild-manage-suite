@@ -13,6 +13,7 @@ Forvandle det eksisterende ansøgningssystem (5 sider, 4 tabeller, 2 edge functi
 ## Hvad bygges (Pro-laget)
 
 ### 1. Database — udvidelser
+
 ```text
 application_forms:
   + panel_style          ('buttons' | 'dropdown' | 'both')   default 'buttons'
@@ -41,33 +42,39 @@ ny tabel: application_audit_log
 ```
 
 Free-tier-limits enforces via DB-trigger:
+
 - Free: max 1 form pr. guild, max 5 spørgsmål, ingen AI/interview/multi-stage
 - Premium: ubegrænset (tjek mod `premium_subscriptions` tabellen)
 
 ### 2. Edge Functions
 
 **Eksisterende `application-handler`** udvides:
+
 - Tjek premium-status før features bruges
 - Send dropdown-panel (StringSelectMenu) udover knapper
 - Tjek account-age, blacklist-roles, max-pending før modal vises
 - Skab interview-tråd hvis `interview_enabled` ved submit
 
 **AI-function: `ai-screen-application`** (OpenAI)
+
 - Trigger ved submit
 - Sender svar + `ai_screening_prompt` til OpenAI
 - Returnerer `{score, summary, flags}` → opdaterer submission
 - Hvis score ≥ `ai_auto_threshold` → auto-approve via `review-application`
 
 **Eksisterende `review-application`** udvides:
+
 - Voting: optælling af staff-stemmer
 - Multi-stage flow: ved approve advancer til næste stage
 - Audit-log skrivning
 
 **Ny edge function: `export-applications`**
+
 - Filtreret CSV-eksport (status, form, periode)
 - Returnerer downloadbar fil
 
 ### 3. Bot (`/dev-server/bot/applicationHandler.js`)
+
 - Tilføj dropdown-handler (`StringSelectMenuInteraction`)
 - Tilføj slash-command `/apply` med autocomplete på forms
 - Lyt på modmail-style replies i interview-tråd → gem som `interview_answers`
@@ -76,11 +83,13 @@ Free-tier-limits enforces via DB-trigger:
 ### 4. Frontend — Pro UI
 
 **Ny side: `ApplicationAnalytics.tsx`**
+
 - KPI-kort: pending / approved / denied / avg-tid-til-svar / approval-rate
 - Charts (Recharts): submissions over tid, status-fordeling, AI-score distribution, top reviewers
 - Filter: form, periode
 
 **`ApplicationFormEdit.tsx` udvides**
+
 - Tabs: Spørgsmål · Panel · AI-screening · Interview · Avanceret
 - Drag-and-drop reorder af spørgsmål (dnd-kit)
 - Conditional logic-editor (vis spørgsmål Y hvis svar på X = Z)
@@ -88,6 +97,7 @@ Free-tier-limits enforces via DB-trigger:
 - "Premium-låst"-overlay på Pro-felter for free-guilds
 
 **`ApplicationReview.tsx` udvides**
+
 - AI-score badge + summary + flags
 - Voting-knapper + staff-noter timeline
 - Stage-progress (screening → interview → final)
@@ -95,11 +105,13 @@ Free-tier-limits enforces via DB-trigger:
 - Audit-log i sidepanel
 
 **`ApplicationList.tsx` udvides**
+
 - CSV-eksport knap
 - Filter på AI-score, stage, dato-range
 - Bulk-actions (approve flere)
 
 **`ApplicationSettings.tsx` udvides**
+
 - Default panel style
 - Default review-channel
 - Notification webhooks

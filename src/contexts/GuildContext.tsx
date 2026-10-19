@@ -1,5 +1,11 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { Guild } from '@/types/discord';
+import {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  ReactNode,
+} from "react";
+import { Guild } from "@/types/discord";
 
 interface GuildContextType {
   selectedGuild: Guild | null;
@@ -8,7 +14,7 @@ interface GuildContextType {
 
 const GuildContext = createContext<GuildContextType | undefined>(undefined);
 
-const STORAGE_KEY = 'selectedGuild';
+const STORAGE_KEY = "selectedGuild";
 
 export function GuildProvider({ children }: { children: ReactNode }) {
   // Start as null on both server and client so SSR markup matches the first
@@ -38,14 +44,16 @@ export function GuildProvider({ children }: { children: ReactNode }) {
     const onStorage = (e: StorageEvent) => {
       if (e.key === STORAGE_KEY) {
         try {
-          setSelectedGuildState(e.newValue ? (JSON.parse(e.newValue) as Guild) : null);
+          setSelectedGuildState(
+            e.newValue ? (JSON.parse(e.newValue) as Guild) : null,
+          );
         } catch {
           setSelectedGuildState(null);
         }
       }
     };
-    window.addEventListener('storage', onStorage);
-    return () => window.removeEventListener('storage', onStorage);
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
   }, []);
 
   return (
@@ -58,7 +66,7 @@ export function GuildProvider({ children }: { children: ReactNode }) {
 export function useGuild() {
   const context = useContext(GuildContext);
   if (context === undefined) {
-    throw new Error('useGuild must be used within a GuildProvider');
+    throw new Error("useGuild must be used within a GuildProvider");
   }
   return context;
 }

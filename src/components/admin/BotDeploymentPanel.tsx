@@ -1,17 +1,32 @@
-import { useState } from 'react';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Skeleton } from '@/components/ui/skeleton';
-import { useToast } from '@/hooks/use-toast';
+import { useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import {
-  RefreshCw, Play, Square, RotateCw, Download, Rocket, Terminal, GitBranch, AlertTriangle,
-} from 'lucide-react';
-import { invokeFunction } from '@/lib/functions-client';
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useToast } from "@/hooks/use-toast";
+import {
+  RefreshCw,
+  Play,
+  Square,
+  RotateCw,
+  Download,
+  Rocket,
+  Terminal,
+  GitBranch,
+  AlertTriangle,
+} from "lucide-react";
+import { invokeFunction } from "@/lib/functions-client";
 
-type Action = 'status' | 'logs' | 'pull' | 'restart' | 'start' | 'stop' | 'deploy';
+type Action =
+  "status" | "logs" | "pull" | "restart" | "start" | "stop" | "deploy";
 type AgentPayload = Record<string, unknown>;
 
 interface AgentResponse {
@@ -20,8 +35,11 @@ interface AgentResponse {
   data: AgentPayload;
 }
 
-async function callAgent(action: Action, lines?: number): Promise<AgentResponse> {
-  const { data, error } = await invokeFunction('bot-deploy', {
+async function callAgent(
+  action: Action,
+  lines?: number,
+): Promise<AgentResponse> {
+  const { data, error } = await invokeFunction("bot-deploy", {
     body: { action, ...(lines ? { lines } : {}) },
   });
   if (error) throw error;
@@ -29,34 +47,34 @@ async function callAgent(action: Action, lines?: number): Promise<AgentResponse>
 }
 
 function asPayload(value: unknown): AgentPayload | null {
-  return value && typeof value === 'object' ? (value as AgentPayload) : null;
+  return value && typeof value === "object" ? (value as AgentPayload) : null;
 }
 
 function getAgentError(data: unknown, fallback: string) {
   const payload = asPayload(data);
   if (!payload) return fallback;
-  if (typeof payload.error === 'string') return payload.error;
-  if (typeof payload.stderr === 'string') return payload.stderr;
-  for (const step of ['restart', 'install', 'pull']) {
+  if (typeof payload.error === "string") return payload.error;
+  if (typeof payload.stderr === "string") return payload.stderr;
+  for (const step of ["restart", "install", "pull"]) {
     const stepPayload = asPayload(payload[step]);
-    if (typeof stepPayload?.stderr === 'string') return stepPayload.stderr;
+    if (typeof stepPayload?.stderr === "string") return stepPayload.stderr;
   }
   return fallback;
 }
 
 function textValue(value: unknown) {
-  return typeof value === 'string' ? value : '';
+  return typeof value === "string" ? value : "";
 }
 
 export function BotDeploymentPanel() {
   const { toast } = useToast();
   const qc = useQueryClient();
-  const [logs, setLogs] = useState<string>('');
+  const [logs, setLogs] = useState<string>("");
   const [logsLoading, setLogsLoading] = useState(false);
 
   const statusQuery = useQuery({
-    queryKey: ['bot-deploy-status'],
-    queryFn: () => callAgent('status'),
+    queryKey: ["bot-deploy-status"],
+    queryFn: () => callAgent("status"),
     refetchInterval: 10_000,
     retry: 1,
   });
@@ -65,31 +83,41 @@ export function BotDeploymentPanel() {
     mutationFn: (action: Action) => callAgent(action),
     onSuccess: (res, action) => {
       if (res.ok) {
-        toast({ title: 'Udført', description: `${action} kørt OK` });
+        toast({ title: "Udført", description: `${action} kørt OK` });
       } else {
         toast({
-          title: 'Agent fejl',
+          title: "Agent fejl",
           description: getAgentError(res.data, `Status ${res.status}`),
-          variant: 'destructive',
+          variant: "destructive",
         });
       }
-      qc.invalidateQueries({ queryKey: ['bot-deploy-status'] });
+      qc.invalidateQueries({ queryKey: ["bot-deploy-status"] });
     },
     onError: (err: unknown) => {
-      toast({ title: 'Fejl', description: err instanceof Error ? err.message : 'Kunne ikke nå agent', variant: 'destructive' });
+      toast({
+        title: "Fejl",
+        description: err instanceof Error ? err.message : "Kunne ikke nå agent",
+        variant: "destructive",
+      });
     },
   });
 
   const fetchLogs = async () => {
     setLogsLoading(true);
     try {
-      const res = await callAgent('logs', 200);
-      if (!res.ok) throw new Error(getAgentError(res.data, 'Failed'));
+      const res = await callAgent("logs", 200);
+      if (!res.ok) throw new Error(getAgentError(res.data, "Failed"));
       const out = textValue(res.data?.out) || textValue(res.data?.logs);
       const err = textValue(res.data?.err);
-      setLogs([out, err].filter(Boolean).join('\n--- STDERR ---\n') || '(ingen logs)');
+      setLogs(
+        [out, err].filter(Boolean).join("\n--- STDERR ---\n") || "(ingen logs)",
+      );
     } catch (e: unknown) {
-      toast({ title: 'Fejl', description: e instanceof Error ? e.message : 'Kunne ikke hente logs', variant: 'destructive' });
+      toast({
+        title: "Fejl",
+        description: e instanceof Error ? e.message : "Kunne ikke hente logs",
+        variant: "destructive",
+      });
     } finally {
       setLogsLoading(false);
     }
@@ -115,7 +143,8 @@ export function BotDeploymentPanel() {
                 Bot Deployment
               </CardTitle>
               <CardDescription>
-                Genstart bot, pull seneste kode fra GitHub eller se logs fra VPS'en.
+                Genstart bot, pull seneste kode fra GitHub eller se logs fra
+                VPS'en.
               </CardDescription>
             </div>
             <Button
@@ -124,7 +153,9 @@ export function BotDeploymentPanel() {
               onClick={() => statusQuery.refetch()}
               disabled={statusQuery.isFetching}
             >
-              <RefreshCw className={`h-4 w-4 ${statusQuery.isFetching ? 'animate-spin' : ''}`} />
+              <RefreshCw
+                className={`h-4 w-4 ${statusQuery.isFetching ? "animate-spin" : ""}`}
+              />
             </Button>
           </div>
         </CardHeader>
@@ -137,17 +168,21 @@ export function BotDeploymentPanel() {
               <div>
                 <p className="font-medium">Kan ikke nå deploy-agent</p>
                 <p className="text-muted-foreground text-xs mt-0.5">
-                  Tjek at agenten kører på VPS'en, og at <code>DEPLOY_AGENT_URL</code> + <code>DEPLOY_AGENT_TOKEN</code> er korrekte.
+                  Tjek at agenten kører på VPS'en, og at{" "}
+                  <code>DEPLOY_AGENT_URL</code> +{" "}
+                  <code>DEPLOY_AGENT_TOKEN</code> er korrekte.
                 </p>
               </div>
             </div>
           ) : (
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="rounded-lg border p-3">
-                <div className="text-xs text-muted-foreground mb-1">Bot status</div>
+                <div className="text-xs text-muted-foreground mb-1">
+                  Bot status
+                </div>
                 <div className="flex items-center gap-2">
-                  <Badge variant={isOnline ? 'default' : 'secondary'}>
-                    {isOnline ? 'Online' : 'Offline'}
+                  <Badge variant={isOnline ? "default" : "secondary"}>
+                    {isOnline ? "Online" : "Offline"}
                   </Badge>
                   {pm2Name && (
                     <span className="text-xs text-muted-foreground font-mono">
@@ -161,7 +196,9 @@ export function BotDeploymentPanel() {
                   <GitBranch className="h-3 w-3" /> Git
                 </div>
                 <div className="text-sm font-mono truncate">
-                  {branch || commit ? `${branch || '?'} @ ${commit || '?'}` : 'Ikke et git-repo'}
+                  {branch || commit
+                    ? `${branch || "?"} @ ${commit || "?"}`
+                    : "Ikke et git-repo"}
                 </div>
               </div>
             </div>
@@ -170,7 +207,7 @@ export function BotDeploymentPanel() {
           {/* Action buttons */}
           <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
             <Button
-              onClick={() => runAction.mutate('deploy')}
+              onClick={() => runAction.mutate("deploy")}
               disabled={runAction.isPending}
               className="gap-2"
             >
@@ -178,7 +215,7 @@ export function BotDeploymentPanel() {
             </Button>
             <Button
               variant="outline"
-              onClick={() => runAction.mutate('pull')}
+              onClick={() => runAction.mutate("pull")}
               disabled={runAction.isPending}
               className="gap-2"
             >
@@ -186,7 +223,7 @@ export function BotDeploymentPanel() {
             </Button>
             <Button
               variant="outline"
-              onClick={() => runAction.mutate('restart')}
+              onClick={() => runAction.mutate("restart")}
               disabled={runAction.isPending}
               className="gap-2"
             >
@@ -194,7 +231,7 @@ export function BotDeploymentPanel() {
             </Button>
             <Button
               variant="outline"
-              onClick={() => runAction.mutate('start')}
+              onClick={() => runAction.mutate("start")}
               disabled={runAction.isPending}
               className="gap-2"
             >
@@ -202,7 +239,7 @@ export function BotDeploymentPanel() {
             </Button>
             <Button
               variant="outline"
-              onClick={() => runAction.mutate('stop')}
+              onClick={() => runAction.mutate("stop")}
               disabled={runAction.isPending}
               className="gap-2"
             >

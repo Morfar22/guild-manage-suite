@@ -1,7 +1,7 @@
-import { useState, useEffect, useCallback } from 'react';
-import { useGuild } from '@/contexts/GuildContext';
-import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
+import { useState, useEffect, useCallback } from "react";
+import { useGuild } from "@/contexts/GuildContext";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 export interface TikTokAccount {
   id: string;
@@ -62,14 +62,14 @@ export function useTikTokAccounts() {
     if (!selectedGuild?.id) return;
     try {
       const { data, error } = await supabase
-        .from('tiktok_accounts')
-        .select('*')
-        .eq('guild_id', selectedGuild.id)
-        .order('created_at', { ascending: false });
+        .from("tiktok_accounts")
+        .select("*")
+        .eq("guild_id", selectedGuild.id)
+        .order("created_at", { ascending: false });
       if (error) throw error;
       setAccounts((data as unknown as TikTokAccount[]) || []);
     } catch (error) {
-      console.error('Error fetching TikTok accounts:', error);
+      console.error("Error fetching TikTok accounts:", error);
     }
   }, [selectedGuild?.id]);
 
@@ -77,14 +77,14 @@ export function useTikTokAccounts() {
     if (!selectedGuild?.id) return;
     try {
       const { data, error } = await supabase
-        .from('tiktok_settings')
-        .select('*')
-        .eq('guild_id', selectedGuild.id)
+        .from("tiktok_settings")
+        .select("*")
+        .eq("guild_id", selectedGuild.id)
         .maybeSingle();
       if (error) throw error;
       setSettings(data as unknown as TikTokSettings | null);
     } catch (error) {
-      console.error('Error fetching TikTok settings:', error);
+      console.error("Error fetching TikTok settings:", error);
     }
   }, [selectedGuild?.id]);
 
@@ -92,15 +92,15 @@ export function useTikTokAccounts() {
     if (!selectedGuild?.id) return;
     try {
       const { data, error } = await supabase
-        .from('tiktok_notification_logs')
-        .select('*')
-        .eq('guild_id', selectedGuild.id)
-        .order('created_at', { ascending: false })
+        .from("tiktok_notification_logs")
+        .select("*")
+        .eq("guild_id", selectedGuild.id)
+        .order("created_at", { ascending: false })
         .limit(50);
       if (error) throw error;
       setLogs((data as unknown as TikTokNotificationLog[]) || []);
     } catch (error) {
-      console.error('Error fetching TikTok logs:', error);
+      console.error("Error fetching TikTok logs:", error);
     }
   }, [selectedGuild?.id]);
 
@@ -110,32 +110,42 @@ export function useTikTokAccounts() {
       return;
     }
     setLoading(true);
-    Promise.all([fetchAccounts(), fetchSettings(), fetchLogs()]).finally(() => setLoading(false));
+    Promise.all([fetchAccounts(), fetchSettings(), fetchLogs()]).finally(() =>
+      setLoading(false),
+    );
   }, [selectedGuild?.id, fetchAccounts, fetchSettings, fetchLogs]);
 
-  const addAccount = async (username: string, channelId: string, mentionRoleId?: string): Promise<boolean> => {
+  const addAccount = async (
+    username: string,
+    channelId: string,
+    mentionRoleId?: string,
+  ): Promise<boolean> => {
     if (!selectedGuild?.id) return false;
     setSaving(true);
     try {
-      const { error } = await supabase
-        .from('tiktok_accounts')
-        .insert({
-          guild_id: selectedGuild.id,
-          tiktok_username: username.toLowerCase().replace('@', ''),
-          display_name: username,
-          notification_channel_id: channelId,
-          mention_role_id: mentionRoleId || null,
-        } as any);
+      const { error } = await supabase.from("tiktok_accounts").insert({
+        guild_id: selectedGuild.id,
+        tiktok_username: username.toLowerCase().replace("@", ""),
+        display_name: username,
+        notification_channel_id: channelId,
+        mention_role_id: mentionRoleId || null,
+      } as any);
       if (error) throw error;
-      toast({ title: 'TikTok konto tilføjet', description: `@${username} vil nu blive tracket.` });
+      toast({
+        title: "TikTok konto tilføjet",
+        description: `@${username} vil nu blive tracket.`,
+      });
       await fetchAccounts();
       return true;
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'Kunne ikke tilføje konto';
+      const message =
+        error instanceof Error ? error.message : "Kunne ikke tilføje konto";
       toast({
-        title: 'Fejl',
-        description: message.includes('duplicate') ? 'Denne TikTok konto er allerede tilføjet.' : message,
-        variant: 'destructive',
+        title: "Fejl",
+        description: message.includes("duplicate")
+          ? "Denne TikTok konto er allerede tilføjet."
+          : message,
+        variant: "destructive",
       });
       return false;
     } finally {
@@ -146,51 +156,85 @@ export function useTikTokAccounts() {
   const removeAccount = async (id: string): Promise<boolean> => {
     setSaving(true);
     try {
-      const { error } = await supabase.from('tiktok_accounts').delete().eq('id', id);
+      const { error } = await supabase
+        .from("tiktok_accounts")
+        .delete()
+        .eq("id", id);
       if (error) throw error;
-      toast({ title: 'TikTok konto fjernet', description: 'Kontoen vil ikke længere blive tracket.' });
+      toast({
+        title: "TikTok konto fjernet",
+        description: "Kontoen vil ikke længere blive tracket.",
+      });
       await fetchAccounts();
       return true;
     } catch {
-      toast({ title: 'Fejl', description: 'Kunne ikke fjerne konto.', variant: 'destructive' });
+      toast({
+        title: "Fejl",
+        description: "Kunne ikke fjerne konto.",
+        variant: "destructive",
+      });
       return false;
     } finally {
       setSaving(false);
     }
   };
 
-  const updateAccount = async (id: string, updates: Partial<TikTokAccount>): Promise<boolean> => {
+  const updateAccount = async (
+    id: string,
+    updates: Partial<TikTokAccount>,
+  ): Promise<boolean> => {
     setSaving(true);
     try {
-      const { error } = await supabase.from('tiktok_accounts').update(updates as any).eq('id', id);
+      const { error } = await supabase
+        .from("tiktok_accounts")
+        .update(updates as any)
+        .eq("id", id);
       if (error) throw error;
-      toast({ title: 'Opdateret', description: 'TikTok konto indstillinger blev gemt.' });
+      toast({
+        title: "Opdateret",
+        description: "TikTok konto indstillinger blev gemt.",
+      });
       await fetchAccounts();
       return true;
     } catch {
-      toast({ title: 'Fejl', description: 'Kunne ikke opdatere konto.', variant: 'destructive' });
+      toast({
+        title: "Fejl",
+        description: "Kunne ikke opdatere konto.",
+        variant: "destructive",
+      });
       return false;
     } finally {
       setSaving(false);
     }
   };
 
-  const saveSettings = async (newSettings: Partial<TikTokSettings>): Promise<boolean> => {
+  const saveSettings = async (
+    newSettings: Partial<TikTokSettings>,
+  ): Promise<boolean> => {
     if (!selectedGuild?.id) return false;
     setSaving(true);
     try {
       if (settings?.id) {
-        const { error } = await supabase.from('tiktok_settings').update(newSettings as any).eq('id', settings.id);
+        const { error } = await supabase
+          .from("tiktok_settings")
+          .update(newSettings as any)
+          .eq("id", settings.id);
         if (error) throw error;
       } else {
-        const { error } = await supabase.from('tiktok_settings').insert({ guild_id: selectedGuild.id, ...newSettings } as any);
+        const { error } = await supabase
+          .from("tiktok_settings")
+          .insert({ guild_id: selectedGuild.id, ...newSettings } as any);
         if (error) throw error;
       }
-      toast({ title: 'Gemt', description: 'TikTok indstillinger blev gemt.' });
+      toast({ title: "Gemt", description: "TikTok indstillinger blev gemt." });
       await fetchSettings();
       return true;
     } catch {
-      toast({ title: 'Fejl', description: 'Kunne ikke gemme indstillinger.', variant: 'destructive' });
+      toast({
+        title: "Fejl",
+        description: "Kunne ikke gemme indstillinger.",
+        variant: "destructive",
+      });
       return false;
     } finally {
       setSaving(false);

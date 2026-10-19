@@ -1,43 +1,61 @@
-import { useLocation, useNavigate } from '@tanstack/react-router';
-import { NavLink } from '@/components/NavLink';
-import { cn } from '@/lib/utils';
-import { useGuild } from '@/contexts/GuildContext';
-import { useGuildPremiumFeatures } from '@/hooks/useGuildPremiumFeatures';
-import { PremiumFeatureKey } from '@/lib/premium-features';
-import { ScrollArea } from '@/components/ui/scroll-area';
+import { useLocation, useNavigate } from "@tanstack/react-router";
+import { NavLink } from "@/components/NavLink";
+import { cn } from "@/lib/utils";
+import { useGuild } from "@/contexts/GuildContext";
+import { useGuildPremiumFeatures } from "@/hooks/useGuildPremiumFeatures";
+import { PremiumFeatureKey } from "@/lib/premium-features";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
-  Bot, ChevronDown, ChevronRight, LogOut, Moon, Sun, Settings,
-  Lock, Crown, Globe, Star,
-} from 'lucide-react';
-import { useAuth } from '@/contexts/AuthContext';
-import { useTheme } from 'next-themes';
-import { useLanguage } from '@/contexts/LanguageContext';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+  Bot,
+  ChevronDown,
+  ChevronRight,
+  LogOut,
+  Moon,
+  Sun,
+  Settings,
+  Lock,
+  Crown,
+  Globe,
+  Star,
+} from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { useTheme } from "next-themes";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
-  DropdownMenu, DropdownMenuContent, DropdownMenuItem,
-  DropdownMenuSeparator, DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { BotStatusIndicator } from './BotStatusIndicator';
-import { CommandPalette } from './CommandPalette';
-import { useFavoritePages } from '@/hooks/useFavoritePages';
-import { navGroups, getAllNavItems } from '@/lib/nav-items';
-import { useState, useCallback } from 'react';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { BotStatusIndicator } from "./BotStatusIndicator";
+import { CommandPalette } from "./CommandPalette";
+import { useFavoritePages } from "@/hooks/useFavoritePages";
+import { navGroups, getAllNavItems } from "@/lib/nav-items";
+import { useState, useCallback } from "react";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 
 const PREMIUM_NAV_MAP: Record<string, PremiumFeatureKey> = {
-  '/dashboard/ai-chat': 'ai_chat',
-  '/dashboard/fivem': 'fivem',
-  '/dashboard/twitch': 'twitch',
-  '/dashboard/tiktok': 'tiktok',
-  '/dashboard/server-clone': 'server_clone',
-  '/dashboard/bot-settings': 'custom_bot',
+  "/dashboard/ai-chat": "ai_chat",
+  "/dashboard/fivem": "fivem",
+  "/dashboard/twitch": "twitch",
+  "/dashboard/tiktok": "tiktok",
+  "/dashboard/server-clone": "server_clone",
+  "/dashboard/bot-settings": "custom_bot",
 };
 
 interface DashboardSidebarContentProps {
   onNavigate?: () => void;
 }
 
-export function DashboardSidebarContent({ onNavigate }: DashboardSidebarContentProps) {
+export function DashboardSidebarContent({
+  onNavigate,
+}: DashboardSidebarContentProps) {
   const location = useLocation();
   const navigate = useNavigate();
   const { selectedGuild } = useGuild();
@@ -51,7 +69,9 @@ export function DashboardSidebarContent({ onNavigate }: DashboardSidebarContentP
     const openSet = new Set<number>();
     navGroups.forEach((group, idx) => {
       const hasActive = group.items.some((item) =>
-        item.end ? location.pathname === item.to : location.pathname.startsWith(item.to)
+        item.end
+          ? location.pathname === item.to
+          : location.pathname.startsWith(item.to),
       );
       if (hasActive) openSet.add(idx);
     });
@@ -70,12 +90,14 @@ export function DashboardSidebarContent({ onNavigate }: DashboardSidebarContentP
   };
 
   const quickAccessPaths = [
-    '/dashboard',
-    '/dashboard/operations',
-    '/dashboard/tickets',
-    '/dashboard/commands',
+    "/dashboard",
+    "/dashboard/operations",
+    "/dashboard/tickets",
+    "/dashboard/commands",
   ];
-  const quickAccessItems = getAllNavItems().filter((item) => quickAccessPaths.includes(item.to));
+  const quickAccessItems = getAllNavItems().filter((item) =>
+    quickAccessPaths.includes(item.to),
+  );
 
   // Find favorite nav items
   const favoriteItems = favorites
@@ -88,7 +110,10 @@ export function DashboardSidebarContent({ onNavigate }: DashboardSidebarContentP
     })
     .filter(Boolean);
 
-  const renderNavItem = (item: typeof navGroups[0]['items'][0], showFavStar = false) => {
+  const renderNavItem = (
+    item: (typeof navGroups)[0]["items"][0],
+    showFavStar = false,
+  ) => {
     const isActive = item.end
       ? location.pathname === item.to
       : location.pathname.startsWith(item.to);
@@ -102,10 +127,10 @@ export function DashboardSidebarContent({ onNavigate }: DashboardSidebarContentP
           to={item.to as any}
           onClick={onNavigate}
           className={cn(
-            'flex flex-1 items-center gap-2.5 rounded-md px-2.5 py-2 text-sm transition-all',
+            "flex flex-1 items-center gap-2.5 rounded-md px-2.5 py-2 text-sm transition-all",
             isActive
-              ? 'bg-primary/10 text-primary font-medium'
-              : 'text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground'
+              ? "bg-primary/10 text-primary font-medium"
+              : "text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
           )}
         >
           <item.icon className="h-4 w-4 shrink-0" />
@@ -124,16 +149,24 @@ export function DashboardSidebarContent({ onNavigate }: DashboardSidebarContentP
             toggleFavorite(item.to);
           }}
           className={cn(
-            'absolute right-1 p-1 rounded transition-opacity',
+            "absolute right-1 p-1 rounded transition-opacity",
             isFavorite(item.to)
-              ? 'opacity-100 text-amber-500'
-              : 'opacity-0 group-hover:opacity-60 text-muted-foreground hover:text-amber-500'
+              ? "opacity-100 text-amber-500"
+              : "opacity-0 group-hover:opacity-60 text-muted-foreground hover:text-amber-500",
           )}
-          title={isFavorite(item.to)
-            ? (language === 'da' ? 'Fjern fra favoritter' : 'Remove from favorites')
-            : (language === 'da' ? 'Tilføj til favoritter' : 'Add to favorites')}
+          title={
+            isFavorite(item.to)
+              ? language === "da"
+                ? "Fjern fra favoritter"
+                : "Remove from favorites"
+              : language === "da"
+                ? "Tilføj til favoritter"
+                : "Add to favorites"
+          }
         >
-          <Star className={cn('h-3 w-3', isFavorite(item.to) && 'fill-current')} />
+          <Star
+            className={cn("h-3 w-3", isFavorite(item.to) && "fill-current")}
+          />
         </button>
       </div>
     );
@@ -147,7 +180,9 @@ export function DashboardSidebarContent({ onNavigate }: DashboardSidebarContentP
           <div className="relative flex h-9 w-9 items-center justify-center rounded-lg gradient-blurple">
             <Bot className="h-5 w-5 text-primary-foreground" />
           </div>
-          <span className="text-lg font-bold text-sidebar-foreground">GuildOS Bot</span>
+          <span className="text-lg font-bold text-sidebar-foreground">
+            GuildOS Bot
+          </span>
         </div>
         <BotStatusIndicator />
       </div>
@@ -175,7 +210,9 @@ export function DashboardSidebarContent({ onNavigate }: DashboardSidebarContentP
               <p className="truncate text-sm font-medium text-sidebar-foreground">
                 {selectedGuild.guild_name}
               </p>
-              <p className="text-xs text-muted-foreground">{t('nav.switchServer')}</p>
+              <p className="text-xs text-muted-foreground">
+                {t("nav.switchServer")}
+              </p>
             </div>
             <ChevronDown className="h-4 w-4 text-muted-foreground" />
           </NavLink>
@@ -192,7 +229,7 @@ export function DashboardSidebarContent({ onNavigate }: DashboardSidebarContentP
         <nav className="space-y-1 p-3">
           <div className="mb-3">
             <p className="px-3 py-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              {language === 'da' ? 'Hurtig adgang' : 'Quick access'}
+              {language === "da" ? "Hurtig adgang" : "Quick access"}
             </p>
             <div className="space-y-0.5">
               {quickAccessItems.map((item) => renderNavItem(item))}
@@ -204,7 +241,7 @@ export function DashboardSidebarContent({ onNavigate }: DashboardSidebarContentP
           {favoriteItems.length > 0 && (
             <div className="mb-2">
               <p className="px-3 py-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                {language === 'da' ? '⭐ Favoritter' : '⭐ Favorites'}
+                {language === "da" ? "⭐ Favoritter" : "⭐ Favorites"}
               </p>
               <div className="space-y-0.5">
                 {favoriteItems.map((item) => item && renderNavItem(item, true))}
@@ -215,19 +252,30 @@ export function DashboardSidebarContent({ onNavigate }: DashboardSidebarContentP
 
           {navGroups.map((group, groupIdx) => {
             const isOpen = openGroups.has(groupIdx);
-            const groupLabel = language === 'da' ? group.labelDa : group.labelEn;
+            const groupLabel =
+              language === "da" ? group.labelDa : group.labelEn;
             const hasActiveItem = group.items.some((item) =>
-              item.end ? location.pathname === item.to : location.pathname.startsWith(item.to)
+              item.end
+                ? location.pathname === item.to
+                : location.pathname.startsWith(item.to),
             );
 
             return (
-              <Collapsible key={groupIdx} open={isOpen} onOpenChange={() => toggleGroup(groupIdx)}>
-                <CollapsibleTrigger className={cn(
-                  'flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-semibold transition-colors',
-                  'text-sidebar-foreground hover:bg-sidebar-accent',
-                  hasActiveItem && !isOpen && 'text-primary'
-                )}>
-                  <group.icon className={cn('h-4 w-4', hasActiveItem && 'text-primary')} />
+              <Collapsible
+                key={groupIdx}
+                open={isOpen}
+                onOpenChange={() => toggleGroup(groupIdx)}
+              >
+                <CollapsibleTrigger
+                  className={cn(
+                    "flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-semibold transition-colors",
+                    "text-sidebar-foreground hover:bg-sidebar-accent",
+                    hasActiveItem && !isOpen && "text-primary",
+                  )}
+                >
+                  <group.icon
+                    className={cn("h-4 w-4", hasActiveItem && "text-primary")}
+                  />
                   <span className="flex-1 text-left">{groupLabel}</span>
                   {isOpen ? (
                     <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
@@ -252,42 +300,56 @@ export function DashboardSidebarContent({ onNavigate }: DashboardSidebarContentP
           <DropdownMenuTrigger className="flex w-full items-center gap-3 rounded-lg p-2 transition-colors hover:bg-sidebar-accent">
             <Avatar className="h-9 w-9">
               <AvatarFallback className="bg-primary/20 text-primary">
-                {user?.email?.slice(0, 2).toUpperCase() || 'U'}
+                {user?.email?.slice(0, 2).toUpperCase() || "U"}
               </AvatarFallback>
             </Avatar>
             <div className="flex-1 overflow-hidden text-left">
               <p className="truncate text-sm font-medium text-sidebar-foreground">
-                {user?.email?.split('@')[0] || 'User'}
+                {user?.email?.split("@")[0] || "User"}
               </p>
-              <p className="text-xs text-muted-foreground">{t('nav.administrator')}</p>
+              <p className="text-xs text-muted-foreground">
+                {t("nav.administrator")}
+              </p>
             </div>
             <ChevronDown className="h-4 w-4 text-muted-foreground" />
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-56 bg-popover border-border">
+          <DropdownMenuContent
+            align="end"
+            className="w-56 bg-popover border-border"
+          >
             <DropdownMenuItem
               className="cursor-pointer"
-              onClick={() => navigate({ to: '/dashboard/bot-settings' })}
+              onClick={() => navigate({ to: "/dashboard/bot-settings" })}
             >
               <Settings className="mr-2 h-4 w-4" />
-              {t('common.settings')}
+              {t("common.settings")}
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => setLanguage(language === 'da' ? 'en' : 'da')} className="cursor-pointer">
+            <DropdownMenuItem
+              onClick={() => setLanguage(language === "da" ? "en" : "da")}
+              className="cursor-pointer"
+            >
               <Globe className="mr-2 h-4 w-4" />
-              {language === 'da' ? '🇬🇧 English' : '🇩🇰 Dansk'}
+              {language === "da" ? "🇬🇧 English" : "🇩🇰 Dansk"}
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} className="cursor-pointer">
-              {theme === 'dark' ? (
+            <DropdownMenuItem
+              onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+              className="cursor-pointer"
+            >
+              {theme === "dark" ? (
                 <Sun className="mr-2 h-4 w-4" />
               ) : (
                 <Moon className="mr-2 h-4 w-4" />
               )}
-              {theme === 'dark' ? t('nav.lightTheme') : t('nav.darkTheme')}
+              {theme === "dark" ? t("nav.lightTheme") : t("nav.darkTheme")}
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={signOut} className="cursor-pointer text-destructive focus:text-destructive">
+            <DropdownMenuItem
+              onClick={signOut}
+              className="cursor-pointer text-destructive focus:text-destructive"
+            >
               <LogOut className="mr-2 h-4 w-4" />
-              {t('nav.logout')}
+              {t("nav.logout")}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

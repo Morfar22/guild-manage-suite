@@ -1,13 +1,13 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
-import { useGuild } from '@/contexts/GuildContext';
-import { useToast } from '@/hooks/use-toast';
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { useGuild } from "@/contexts/GuildContext";
+import { useToast } from "@/hooks/use-toast";
 
 export interface XPMultiplier {
   id: string;
   guild_id: string;
   name: string;
-  multiplier_type: 'role' | 'channel' | 'global';
+  multiplier_type: "role" | "channel" | "global";
   target_id: string | null;
   multiplier: number;
   enabled: boolean;
@@ -22,15 +22,15 @@ export function useXPMultipliers() {
   const { toast } = useToast();
 
   const query = useQuery({
-    queryKey: ['xp-multipliers', selectedGuild?.id],
+    queryKey: ["xp-multipliers", selectedGuild?.id],
     queryFn: async () => {
       if (!selectedGuild?.id) return [];
 
       const { data, error } = await supabase
-        .from('xp_multipliers')
-        .select('*')
-        .eq('guild_id', selectedGuild.id)
-        .order('created_at', { ascending: false });
+        .from("xp_multipliers")
+        .select("*")
+        .eq("guild_id", selectedGuild.id)
+        .order("created_at", { ascending: false });
 
       if (error) throw error;
       return data as XPMultiplier[];
@@ -41,16 +41,16 @@ export function useXPMultipliers() {
   const addMultiplier = useMutation({
     mutationFn: async (data: {
       name: string;
-      multiplier_type: 'role' | 'channel' | 'global';
+      multiplier_type: "role" | "channel" | "global";
       target_id?: string | null;
       multiplier: number;
       starts_at?: string | null;
       ends_at?: string | null;
     }) => {
-      if (!selectedGuild?.id) throw new Error('No guild selected');
+      if (!selectedGuild?.id) throw new Error("No guild selected");
 
       const { data: result, error } = await supabase
-        .from('xp_multipliers')
+        .from("xp_multipliers")
         .insert({
           guild_id: selectedGuild.id,
           name: data.name,
@@ -67,20 +67,29 @@ export function useXPMultipliers() {
       return result;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['xp-multipliers', selectedGuild?.id] });
-      toast({ title: 'XP multiplier added' });
+      queryClient.invalidateQueries({
+        queryKey: ["xp-multipliers", selectedGuild?.id],
+      });
+      toast({ title: "XP multiplier added" });
     },
     onError: (error: Error) => {
-      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
     },
   });
 
   const updateMultiplier = useMutation({
-    mutationFn: async ({ id, ...data }: Partial<XPMultiplier> & { id: string }) => {
+    mutationFn: async ({
+      id,
+      ...data
+    }: Partial<XPMultiplier> & { id: string }) => {
       const { data: result, error } = await supabase
-        .from('xp_multipliers')
+        .from("xp_multipliers")
         .update(data)
-        .eq('id', id)
+        .eq("id", id)
         .select()
         .single();
 
@@ -88,29 +97,41 @@ export function useXPMultipliers() {
       return result;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['xp-multipliers', selectedGuild?.id] });
-      toast({ title: 'XP multiplier updated' });
+      queryClient.invalidateQueries({
+        queryKey: ["xp-multipliers", selectedGuild?.id],
+      });
+      toast({ title: "XP multiplier updated" });
     },
     onError: (error: Error) => {
-      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
     },
   });
 
   const deleteMultiplier = useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase
-        .from('xp_multipliers')
+        .from("xp_multipliers")
         .delete()
-        .eq('id', id);
+        .eq("id", id);
 
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['xp-multipliers', selectedGuild?.id] });
-      toast({ title: 'XP multiplier deleted' });
+      queryClient.invalidateQueries({
+        queryKey: ["xp-multipliers", selectedGuild?.id],
+      });
+      toast({ title: "XP multiplier deleted" });
     },
     onError: (error: Error) => {
-      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
     },
   });
 

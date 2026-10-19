@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState } from "react";
 import {
   Terminal,
   Play,
@@ -17,21 +17,27 @@ import {
   DollarSign,
   Megaphone,
   RefreshCw,
-} from 'lucide-react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+} from "lucide-react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
+} from "@/components/ui/select";
 import {
   Dialog,
   DialogContent,
@@ -39,620 +45,996 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
-import { useToast } from '@/hooks/use-toast';
-import { useExecuteFiveMCommand, useFiveMOnlinePlayers, useFiveMServerInstances } from '@/hooks/useFiveM';
-import { useFiveMCommandQueueEntry } from '@/hooks/fivem/useFiveMCommandQueueEntry';
-import { useFiveMServerStatus } from '@/hooks/useFiveMServerStatus';
+} from "@/components/ui/dialog";
+import { useToast } from "@/hooks/use-toast";
+import {
+  useExecuteFiveMCommand,
+  useFiveMOnlinePlayers,
+  useFiveMServerInstances,
+} from "@/hooks/useFiveM";
+import { useFiveMCommandQueueEntry } from "@/hooks/fivem/useFiveMCommandQueueEntry";
+import { useFiveMServerStatus } from "@/hooks/useFiveMServerStatus";
 
 interface CommandDef {
   name: string;
   description: string;
   permission: string;
   icon: React.ReactNode;
-  fields: { name: string; label: string; type: string; required?: boolean; options?: { value: string; label: string }[] }[];
+  fields: {
+    name: string;
+    label: string;
+    type: string;
+    required?: boolean;
+    options?: { value: string; label: string }[];
+  }[];
 }
 
 const STANDALONE_COMMANDS: CommandDef[] = [
   {
-    name: 'announcement',
-    description: 'Send announcement til alle spillere',
-    permission: 'mod',
+    name: "announcement",
+    description: "Send announcement til alle spillere",
+    permission: "mod",
     icon: <Megaphone className="h-4 w-4" />,
-    fields: [{ name: 'message', label: 'Besked', type: 'textarea', required: true }],
-  },
-  {
-    name: 'embed',
-    description: 'Send formateret serverbesked til alle spillere',
-    permission: 'mod',
-    icon: <MessageSquare className="h-4 w-4" />,
     fields: [
-      { name: 'title', label: 'Titel', type: 'text', required: true },
-      { name: 'message', label: 'Besked', type: 'textarea', required: true },
+      { name: "message", label: "Besked", type: "textarea", required: true },
     ],
   },
   {
-    name: 'identifiers',
-    description: 'Vis spillerens identifiers',
-    permission: 'mod',
+    name: "embed",
+    description: "Send formateret serverbesked til alle spillere",
+    permission: "mod",
+    icon: <MessageSquare className="h-4 w-4" />,
+    fields: [
+      { name: "title", label: "Titel", type: "text", required: true },
+      { name: "message", label: "Besked", type: "textarea", required: true },
+    ],
+  },
+  {
+    name: "identifiers",
+    description: "Vis spillerens identifiers",
+    permission: "mod",
     icon: <Shield className="h-4 w-4" />,
-    fields: [{ name: 'targetPlayerId', label: 'Spiller ID', type: 'player', required: true }],
-  },
-  {
-    name: 'kick',
-    description: 'Kick en spiller fra serveren',
-    permission: 'mod',
-    icon: <Users className="h-4 w-4" />,
     fields: [
-      { name: 'targetPlayerId', label: 'Spiller ID', type: 'player', required: true },
-      { name: 'reason', label: 'Årsag', type: 'text' },
+      {
+        name: "targetPlayerId",
+        label: "Spiller ID",
+        type: "player",
+        required: true,
+      },
     ],
   },
   {
-    name: 'kickall',
-    description: 'Kick alle spillere',
-    permission: 'admin',
+    name: "kick",
+    description: "Kick en spiller fra serveren",
+    permission: "mod",
     icon: <Users className="h-4 w-4" />,
-    fields: [{ name: 'reason', label: 'Årsag', type: 'text', required: true }],
+    fields: [
+      {
+        name: "targetPlayerId",
+        label: "Spiller ID",
+        type: "player",
+        required: true,
+      },
+      { name: "reason", label: "Årsag", type: "text" },
+    ],
   },
   {
-    name: 'kill',
-    description: 'Dræb en spiller',
-    permission: 'admin',
+    name: "kickall",
+    description: "Kick alle spillere",
+    permission: "admin",
+    icon: <Users className="h-4 w-4" />,
+    fields: [{ name: "reason", label: "Årsag", type: "text", required: true }],
+  },
+  {
+    name: "kill",
+    description: "Dræb en spiller",
+    permission: "admin",
     icon: <Zap className="h-4 w-4" />,
-    fields: [{ name: 'targetPlayerId', label: 'Spiller ID', type: 'player', required: true }],
+    fields: [
+      {
+        name: "targetPlayerId",
+        label: "Spiller ID",
+        type: "player",
+        required: true,
+      },
+    ],
   },
   {
-    name: 'message',
-    description: 'Send privat besked til en spiller',
-    permission: 'mod',
+    name: "message",
+    description: "Send privat besked til en spiller",
+    permission: "mod",
     icon: <MessageSquare className="h-4 w-4" />,
     fields: [
-      { name: 'targetPlayerId', label: 'Spiller ID', type: 'player', required: true },
-      { name: 'message', label: 'Besked', type: 'textarea', required: true },
+      {
+        name: "targetPlayerId",
+        label: "Spiller ID",
+        type: "player",
+        required: true,
+      },
+      { name: "message", label: "Besked", type: "textarea", required: true },
     ],
   },
   {
-    name: 'onlinecount',
-    description: 'Vis antal online spillere',
-    permission: 'user',
+    name: "onlinecount",
+    description: "Vis antal online spillere",
+    permission: "user",
     icon: <Users className="h-4 w-4" />,
     fields: [],
   },
   {
-    name: 'players',
-    description: 'Vis liste over online spillere',
-    permission: 'mod',
+    name: "players",
+    description: "Vis liste over online spillere",
+    permission: "mod",
     icon: <Users className="h-4 w-4" />,
     fields: [],
   },
   {
-    name: 'resource',
-    description: 'Administrer server ressourcer',
-    permission: 'god',
+    name: "resource",
+    description: "Administrer server ressourcer",
+    permission: "god",
     icon: <RefreshCw className="h-4 w-4" />,
     fields: [
-      { name: 'action', label: 'Handling', type: 'select', required: true, options: [
-        { value: 'ensure', label: 'Ensure' },
-        { value: 'start', label: 'Start' },
-        { value: 'stop', label: 'Stop' },
-        { value: 'restart', label: 'Restart' },
-        { value: 'refresh', label: 'Refresh resource-listen' },
-        { value: 'list', label: 'Vis alle resources' },
-        { value: 'inspect', label: 'Vis resource status' },
-      ]},
-      { name: 'resourceName', label: 'Resource navn', type: 'text' },
+      {
+        name: "action",
+        label: "Handling",
+        type: "select",
+        required: true,
+        options: [
+          { value: "ensure", label: "Ensure" },
+          { value: "start", label: "Start" },
+          { value: "stop", label: "Stop" },
+          { value: "restart", label: "Restart" },
+          { value: "refresh", label: "Refresh resource-listen" },
+          { value: "list", label: "Vis alle resources" },
+          { value: "inspect", label: "Vis resource status" },
+        ],
+      },
+      { name: "resourceName", label: "Resource navn", type: "text" },
     ],
   },
   {
-    name: 'server',
-    description: 'Server info og status',
-    permission: 'mod',
+    name: "server",
+    description: "Server info og status",
+    permission: "mod",
     icon: <Terminal className="h-4 w-4" />,
     fields: [],
   },
   {
-    name: 'screenshot',
-    description: 'Tag screenshot af spillers skærm',
-    permission: 'admin',
+    name: "screenshot",
+    description: "Tag screenshot af spillers skærm",
+    permission: "admin",
     icon: <Terminal className="h-4 w-4" />,
-    fields: [{ name: 'targetPlayerId', label: 'Spiller ID', type: 'player', required: true }],
+    fields: [
+      {
+        name: "targetPlayerId",
+        label: "Spiller ID",
+        type: "player",
+        required: true,
+      },
+    ],
   },
   {
-    name: 'teleport',
-    description: 'Teleporter en spiller',
-    permission: 'mod',
+    name: "teleport",
+    description: "Teleporter en spiller",
+    permission: "mod",
     icon: <MapPin className="h-4 w-4" />,
     fields: [
-      { name: 'targetPlayerId', label: 'Spiller ID', type: 'player', required: true },
-      { name: 'x', label: 'X Koordinat', type: 'number' },
-      { name: 'y', label: 'Y Koordinat', type: 'number' },
-      { name: 'z', label: 'Z Koordinat', type: 'number' },
-      { name: 'location', label: 'Eller vælg preset', type: 'select', options: [
-        { value: 'pillbox', label: 'Pillbox Hospital' },
-        { value: 'mrpd', label: 'Mission Row PD' },
-        { value: 'airport', label: 'LS Airport' },
-        { value: 'legion', label: 'Legion Square' },
-        { value: 'paleto', label: 'Paleto Bay' },
-        { value: 'sandy', label: 'Sandy Shores' },
-      ]},
+      {
+        name: "targetPlayerId",
+        label: "Spiller ID",
+        type: "player",
+        required: true,
+      },
+      { name: "x", label: "X Koordinat", type: "number" },
+      { name: "y", label: "Y Koordinat", type: "number" },
+      { name: "z", label: "Z Koordinat", type: "number" },
+      {
+        name: "location",
+        label: "Eller vælg preset",
+        type: "select",
+        options: [
+          { value: "pillbox", label: "Pillbox Hospital" },
+          { value: "mrpd", label: "Mission Row PD" },
+          { value: "airport", label: "LS Airport" },
+          { value: "legion", label: "Legion Square" },
+          { value: "paleto", label: "Paleto Bay" },
+          { value: "sandy", label: "Sandy Shores" },
+        ],
+      },
     ],
   },
   {
-    name: 'teleport-all',
-    description: 'Teleporter alle til en lokation',
-    permission: 'god',
+    name: "teleport-all",
+    description: "Teleporter alle til en lokation",
+    permission: "god",
     icon: <MapPin className="h-4 w-4" />,
     fields: [
-      { name: 'location', label: 'Lokation', type: 'select', required: true, options: [
-        { value: 'pillbox', label: 'Pillbox Hospital' },
-        { value: 'mrpd', label: 'Mission Row PD' },
-        { value: 'airport', label: 'LS Airport' },
-        { value: 'legion', label: 'Legion Square' },
-      ]},
+      {
+        name: "location",
+        label: "Lokation",
+        type: "select",
+        required: true,
+        options: [
+          { value: "pillbox", label: "Pillbox Hospital" },
+          { value: "mrpd", label: "Mission Row PD" },
+          { value: "airport", label: "LS Airport" },
+          { value: "legion", label: "Legion Square" },
+        ],
+      },
     ],
   },
   {
-    name: 'whitelist',
-    description: 'Administrer whitelist',
-    permission: 'admin',
+    name: "whitelist",
+    description: "Administrer whitelist",
+    permission: "admin",
     icon: <Shield className="h-4 w-4" />,
     fields: [
-      { name: 'action', label: 'Handling', type: 'select', required: true, options: [
-        { value: 'toggle', label: 'Slå whitelist til/fra' },
-        { value: 'add', label: 'Tilføj' },
-        { value: 'remove', label: 'Fjern' },
-        { value: 'check', label: 'Tjek' },
-      ]},
-      { name: 'discordId', label: 'Discord ID', type: 'text' },
+      {
+        name: "action",
+        label: "Handling",
+        type: "select",
+        required: true,
+        options: [
+          { value: "toggle", label: "Slå whitelist til/fra" },
+          { value: "add", label: "Tilføj" },
+          { value: "remove", label: "Fjern" },
+          { value: "check", label: "Tjek" },
+        ],
+      },
+      { name: "discordId", label: "Discord ID", type: "text" },
     ],
   },
   {
-    name: 'give-weapon',
-    description: 'Giv våben til spiller',
-    permission: 'god',
+    name: "give-weapon",
+    description: "Giv våben til spiller",
+    permission: "god",
     icon: <Zap className="h-4 w-4" />,
     fields: [
-      { name: 'targetPlayerId', label: 'Spiller ID', type: 'player', required: true },
-      { name: 'weapon', label: 'Våben kode', type: 'text', required: true },
-      { name: 'ammo', label: 'Ammunition', type: 'number' },
+      {
+        name: "targetPlayerId",
+        label: "Spiller ID",
+        type: "player",
+        required: true,
+      },
+      { name: "weapon", label: "Våben kode", type: "text", required: true },
+      { name: "ammo", label: "Ammunition", type: "number" },
     ],
   },
   {
-    name: 'remove-weapon',
-    description: 'Fjern våben fra spiller',
-    permission: 'admin',
+    name: "remove-weapon",
+    description: "Fjern våben fra spiller",
+    permission: "admin",
     icon: <Zap className="h-4 w-4" />,
     fields: [
-      { name: 'targetPlayerId', label: 'Spiller ID', type: 'player', required: true },
-      { name: 'weapon', label: 'Våben kode', type: 'text', required: true },
+      {
+        name: "targetPlayerId",
+        label: "Spiller ID",
+        type: "player",
+        required: true,
+      },
+      { name: "weapon", label: "Våben kode", type: "text", required: true },
     ],
   },
   {
-    name: 'clear-weapons',
-    description: 'Fjern alle våben fra spiller',
-    permission: 'admin',
+    name: "clear-weapons",
+    description: "Fjern alle våben fra spiller",
+    permission: "admin",
     icon: <Zap className="h-4 w-4" />,
-    fields: [{ name: 'targetPlayerId', label: 'Spiller ID', type: 'player', required: true }],
+    fields: [
+      {
+        name: "targetPlayerId",
+        label: "Spiller ID",
+        type: "player",
+        required: true,
+      },
+    ],
   },
   {
-    name: 'freeze',
-    description: 'Frys en spiller',
-    permission: 'mod',
+    name: "freeze",
+    description: "Frys en spiller",
+    permission: "mod",
     icon: <Shield className="h-4 w-4" />,
-    fields: [{ name: 'targetPlayerId', label: 'Spiller ID', type: 'player', required: true }],
+    fields: [
+      {
+        name: "targetPlayerId",
+        label: "Spiller ID",
+        type: "player",
+        required: true,
+      },
+    ],
   },
   {
-    name: 'unfreeze',
-    description: 'Frigør en spiller',
-    permission: 'mod',
+    name: "unfreeze",
+    description: "Frigør en spiller",
+    permission: "mod",
     icon: <Shield className="h-4 w-4" />,
-    fields: [{ name: 'targetPlayerId', label: 'Spiller ID', type: 'player', required: true }],
+    fields: [
+      {
+        name: "targetPlayerId",
+        label: "Spiller ID",
+        type: "player",
+        required: true,
+      },
+    ],
   },
   {
-    name: 'noclip',
-    description: 'Toggle noclip for spiller',
-    permission: 'admin',
+    name: "noclip",
+    description: "Toggle noclip for spiller",
+    permission: "admin",
     icon: <MapPin className="h-4 w-4" />,
-    fields: [{ name: 'targetPlayerId', label: 'Spiller ID', type: 'player', required: true }],
+    fields: [
+      {
+        name: "targetPlayerId",
+        label: "Spiller ID",
+        type: "player",
+        required: true,
+      },
+    ],
   },
   {
-    name: 'godmode',
-    description: 'Toggle godmode for spiller',
-    permission: 'god',
+    name: "godmode",
+    description: "Toggle godmode for spiller",
+    permission: "god",
     icon: <Shield className="h-4 w-4" />,
-    fields: [{ name: 'targetPlayerId', label: 'Spiller ID', type: 'player', required: true }],
+    fields: [
+      {
+        name: "targetPlayerId",
+        label: "Spiller ID",
+        type: "player",
+        required: true,
+      },
+    ],
   },
   {
-    name: 'invisible',
-    description: 'Toggle usynlighed for spiller',
-    permission: 'admin',
+    name: "invisible",
+    description: "Toggle usynlighed for spiller",
+    permission: "admin",
     icon: <Shield className="h-4 w-4" />,
-    fields: [{ name: 'targetPlayerId', label: 'Spiller ID', type: 'player', required: true }],
+    fields: [
+      {
+        name: "targetPlayerId",
+        label: "Spiller ID",
+        type: "player",
+        required: true,
+      },
+    ],
   },
   {
-    name: 'spectate',
-    description: 'Spectate en spiller',
-    permission: 'mod',
+    name: "spectate",
+    description: "Spectate en spiller",
+    permission: "mod",
     icon: <Users className="h-4 w-4" />,
-    fields: [{ name: 'targetPlayerId', label: 'Spiller ID', type: 'player', required: true }],
+    fields: [
+      {
+        name: "targetPlayerId",
+        label: "Spiller ID",
+        type: "player",
+        required: true,
+      },
+    ],
   },
   {
-    name: 'bring',
-    description: 'Bring en spiller til dig',
-    permission: 'mod',
+    name: "bring",
+    description: "Bring en spiller til dig",
+    permission: "mod",
     icon: <MapPin className="h-4 w-4" />,
-    fields: [{ name: 'targetPlayerId', label: 'Spiller ID', type: 'player', required: true }],
+    fields: [
+      {
+        name: "targetPlayerId",
+        label: "Spiller ID",
+        type: "player",
+        required: true,
+      },
+    ],
   },
   {
-    name: 'goto',
-    description: 'Gå til en spiller',
-    permission: 'mod',
+    name: "goto",
+    description: "Gå til en spiller",
+    permission: "mod",
     icon: <MapPin className="h-4 w-4" />,
-    fields: [{ name: 'targetPlayerId', label: 'Spiller ID', type: 'player', required: true }],
+    fields: [
+      {
+        name: "targetPlayerId",
+        label: "Spiller ID",
+        type: "player",
+        required: true,
+      },
+    ],
   },
   {
-    name: 'warn',
-    description: 'Advar en spiller',
-    permission: 'mod',
+    name: "warn",
+    description: "Advar en spiller",
+    permission: "mod",
     icon: <MessageSquare className="h-4 w-4" />,
     fields: [
-      { name: 'targetPlayerId', label: 'Spiller ID', type: 'player', required: true },
-      { name: 'reason', label: 'Årsag', type: 'textarea', required: true },
+      {
+        name: "targetPlayerId",
+        label: "Spiller ID",
+        type: "player",
+        required: true,
+      },
+      { name: "reason", label: "Årsag", type: "textarea", required: true },
     ],
   },
 ];
 
 const QBCORE_COMMANDS: CommandDef[] = [
   {
-    name: 'ban',
-    description: 'Ban en spiller',
-    permission: 'admin',
+    name: "ban",
+    description: "Ban en spiller",
+    permission: "admin",
     icon: <Ban className="h-4 w-4" />,
     fields: [
-      { name: 'targetPlayerId', label: 'Spiller ID', type: 'player', required: true },
-      { name: 'duration', label: 'Varighed', type: 'select', required: true, options: [
-        { value: '1h', label: '1 time' },
-        { value: '1d', label: '1 dag' },
-        { value: '7d', label: '7 dage' },
-        { value: '30d', label: '30 dage' },
-        { value: 'permanent', label: 'Permanent' },
-      ]},
-      { name: 'reason', label: 'Årsag', type: 'textarea', required: true },
+      {
+        name: "targetPlayerId",
+        label: "Spiller ID",
+        type: "player",
+        required: true,
+      },
+      {
+        name: "duration",
+        label: "Varighed",
+        type: "select",
+        required: true,
+        options: [
+          { value: "1h", label: "1 time" },
+          { value: "1d", label: "1 dag" },
+          { value: "7d", label: "7 dage" },
+          { value: "30d", label: "30 dage" },
+          { value: "permanent", label: "Permanent" },
+        ],
+      },
+      { name: "reason", label: "Årsag", type: "textarea", required: true },
     ],
   },
   {
-    name: 'revive',
-    description: 'Genopliv en spiller',
-    permission: 'admin',
+    name: "revive",
+    description: "Genopliv en spiller",
+    permission: "admin",
     icon: <Heart className="h-4 w-4" />,
-    fields: [{ name: 'targetPlayerId', label: 'Spiller ID', type: 'player', required: true }],
+    fields: [
+      {
+        name: "targetPlayerId",
+        label: "Spiller ID",
+        type: "player",
+        required: true,
+      },
+    ],
   },
   {
-    name: 'revive-all',
-    description: 'Genopliv alle spillere',
-    permission: 'god',
+    name: "revive-all",
+    description: "Genopliv alle spillere",
+    permission: "god",
     icon: <Heart className="h-4 w-4" />,
     fields: [],
   },
   {
-    name: 'money',
-    description: 'Administrer spillers penge',
-    permission: 'admin',
+    name: "money",
+    description: "Administrer spillers penge",
+    permission: "admin",
     icon: <DollarSign className="h-4 w-4" />,
     fields: [
-      { name: 'action', label: 'Handling', type: 'select', required: true, options: [
-        { value: 'add', label: 'Tilføj' },
-        { value: 'remove', label: 'Fjern' },
-        { value: 'set', label: 'Sæt' },
-        { value: 'inspect', label: 'Vis saldo' },
-      ]},
-      { name: 'targetPlayerId', label: 'Spiller ID', type: 'player', required: true },
-      { name: 'type', label: 'Type', type: 'select', required: true, options: [
-        { value: 'cash', label: 'Cash' },
-        { value: 'bank', label: 'Bank' },
-        { value: 'crypto', label: 'Crypto' },
-      ]},
-      { name: 'amount', label: 'Beløb', type: 'number' },
+      {
+        name: "action",
+        label: "Handling",
+        type: "select",
+        required: true,
+        options: [
+          { value: "add", label: "Tilføj" },
+          { value: "remove", label: "Fjern" },
+          { value: "set", label: "Sæt" },
+          { value: "inspect", label: "Vis saldo" },
+        ],
+      },
+      {
+        name: "targetPlayerId",
+        label: "Spiller ID",
+        type: "player",
+        required: true,
+      },
+      {
+        name: "type",
+        label: "Type",
+        type: "select",
+        required: true,
+        options: [
+          { value: "cash", label: "Cash" },
+          { value: "bank", label: "Bank" },
+          { value: "crypto", label: "Crypto" },
+        ],
+      },
+      { name: "amount", label: "Beløb", type: "number" },
     ],
   },
   {
-    name: 'inventory',
-    description: 'Administrer spillers inventory',
-    permission: 'admin',
+    name: "inventory",
+    description: "Administrer spillers inventory",
+    permission: "admin",
     icon: <Package className="h-4 w-4" />,
     fields: [
-      { name: 'action', label: 'Handling', type: 'select', required: true, options: [
-        { value: 'give', label: 'Giv' },
-        { value: 'take', label: 'Tag' },
-        { value: 'inspect', label: 'Inspicér' },
-        { value: 'clear', label: 'Ryd' },
-      ]},
-      { name: 'targetPlayerId', label: 'Spiller ID', type: 'player', required: true },
-      { name: 'item', label: 'Item navn', type: 'text' },
-      { name: 'count', label: 'Antal', type: 'number' },
+      {
+        name: "action",
+        label: "Handling",
+        type: "select",
+        required: true,
+        options: [
+          { value: "give", label: "Giv" },
+          { value: "take", label: "Tag" },
+          { value: "inspect", label: "Inspicér" },
+          { value: "clear", label: "Ryd" },
+        ],
+      },
+      {
+        name: "targetPlayerId",
+        label: "Spiller ID",
+        type: "player",
+        required: true,
+      },
+      { name: "item", label: "Item navn", type: "text" },
+      { name: "count", label: "Antal", type: "number" },
     ],
   },
   {
-    name: 'job',
-    description: 'Administrer spillers job',
-    permission: 'admin',
+    name: "job",
+    description: "Administrer spillers job",
+    permission: "admin",
     icon: <Briefcase className="h-4 w-4" />,
     fields: [
-      { name: 'action', label: 'Handling', type: 'select', required: true, options: [
-        { value: 'set', label: 'Sæt' },
-        { value: 'fire', label: 'Fyr' },
-        { value: 'inspect', label: 'Inspicér' },
-      ]},
-      { name: 'targetPlayerId', label: 'Spiller ID', type: 'player', required: true },
-      { name: 'job', label: 'Job navn', type: 'text' },
-      { name: 'grade', label: 'Grade', type: 'number' },
+      {
+        name: "action",
+        label: "Handling",
+        type: "select",
+        required: true,
+        options: [
+          { value: "set", label: "Sæt" },
+          { value: "fire", label: "Fyr" },
+          { value: "inspect", label: "Inspicér" },
+        ],
+      },
+      {
+        name: "targetPlayerId",
+        label: "Spiller ID",
+        type: "player",
+        required: true,
+      },
+      { name: "job", label: "Job navn", type: "text" },
+      { name: "grade", label: "Grade", type: "number" },
     ],
   },
   {
-    name: 'gang',
-    description: 'Administrer spillers gang',
-    permission: 'admin',
+    name: "gang",
+    description: "Administrer spillers gang",
+    permission: "admin",
     icon: <Users className="h-4 w-4" />,
     fields: [
-      { name: 'action', label: 'Handling', type: 'select', required: true, options: [
-        { value: 'set', label: 'Sæt' },
-        { value: 'remove', label: 'Fjern' },
-        { value: 'inspect', label: 'Inspicér' },
-      ]},
-      { name: 'targetPlayerId', label: 'Spiller ID', type: 'player', required: true },
-      { name: 'gang', label: 'Gang navn', type: 'text' },
-      { name: 'grade', label: 'Grade', type: 'number' },
+      {
+        name: "action",
+        label: "Handling",
+        type: "select",
+        required: true,
+        options: [
+          { value: "set", label: "Sæt" },
+          { value: "remove", label: "Fjern" },
+          { value: "inspect", label: "Inspicér" },
+        ],
+      },
+      {
+        name: "targetPlayerId",
+        label: "Spiller ID",
+        type: "player",
+        required: true,
+      },
+      { name: "gang", label: "Gang navn", type: "text" },
+      { name: "grade", label: "Grade", type: "number" },
     ],
   },
   {
-    name: 'weather',
-    description: 'Sæt server vejr eller blackout',
-    permission: 'admin',
+    name: "weather",
+    description: "Sæt server vejr eller blackout",
+    permission: "admin",
     icon: <Cloud className="h-4 w-4" />,
     fields: [
-      { name: 'action', label: 'Handling', type: 'select', required: true, options: [
-        { value: 'set', label: 'Sæt vejr' },
-        { value: 'blackout', label: 'Toggle blackout' },
-      ]},
-      { name: 'weather', label: 'Vejr', type: 'select', options: [
-        { value: 'CLEAR', label: 'Klart' },
-        { value: 'CLOUDS', label: 'Skyet' },
-        { value: 'OVERCAST', label: 'Overskyet' },
-        { value: 'RAIN', label: 'Regn' },
-        { value: 'THUNDER', label: 'Torden' },
-        { value: 'SNOW', label: 'Sne' },
-        { value: 'FOGGY', label: 'Tåge' },
-        { value: 'BLIZZARD', label: 'Snestorm' },
-        { value: 'XMAS', label: 'Jul' },
-      ]},
+      {
+        name: "action",
+        label: "Handling",
+        type: "select",
+        required: true,
+        options: [
+          { value: "set", label: "Sæt vejr" },
+          { value: "blackout", label: "Toggle blackout" },
+        ],
+      },
+      {
+        name: "weather",
+        label: "Vejr",
+        type: "select",
+        options: [
+          { value: "CLEAR", label: "Klart" },
+          { value: "CLOUDS", label: "Skyet" },
+          { value: "OVERCAST", label: "Overskyet" },
+          { value: "RAIN", label: "Regn" },
+          { value: "THUNDER", label: "Torden" },
+          { value: "SNOW", label: "Sne" },
+          { value: "FOGGY", label: "Tåge" },
+          { value: "BLIZZARD", label: "Snestorm" },
+          { value: "XMAS", label: "Jul" },
+        ],
+      },
     ],
   },
   {
-    name: 'time',
-    description: 'Sæt server tid',
-    permission: 'admin',
+    name: "time",
+    description: "Sæt server tid",
+    permission: "admin",
     icon: <Clock className="h-4 w-4" />,
-    fields: [{ name: 'hour', label: 'Time (0-23)', type: 'number', required: true }],
+    fields: [
+      { name: "hour", label: "Time (0-23)", type: "number", required: true },
+    ],
   },
   {
-    name: 'vehicle',
-    description: 'Spawn køretøj til spiller',
-    permission: 'god',
+    name: "vehicle",
+    description: "Spawn køretøj til spiller",
+    permission: "god",
     icon: <Car className="h-4 w-4" />,
     fields: [
-      { name: 'targetPlayerId', label: 'Spiller ID', type: 'player', required: true },
-      { name: 'vehicleCode', label: 'Køretøj kode', type: 'text', required: true },
-      { name: 'plate', label: 'Nummerplade', type: 'text' },
+      {
+        name: "targetPlayerId",
+        label: "Spiller ID",
+        type: "player",
+        required: true,
+      },
+      {
+        name: "vehicleCode",
+        label: "Køretøj kode",
+        type: "text",
+        required: true,
+      },
+      { name: "plate", label: "Nummerplade", type: "text" },
     ],
   },
   {
-    name: 'delvehicle',
-    description: 'Slet køretøj',
-    permission: 'admin',
+    name: "delvehicle",
+    description: "Slet køretøj",
+    permission: "admin",
     icon: <Car className="h-4 w-4" />,
-    fields: [{ name: 'targetPlayerId', label: 'Spiller ID', type: 'player', required: true }],
+    fields: [
+      {
+        name: "targetPlayerId",
+        label: "Spiller ID",
+        type: "player",
+        required: true,
+      },
+    ],
   },
   {
-    name: 'repair',
-    description: 'Reparer køretøj',
-    permission: 'mod',
+    name: "repair",
+    description: "Reparer køretøj",
+    permission: "mod",
     icon: <Car className="h-4 w-4" />,
-    fields: [{ name: 'targetPlayerId', label: 'Spiller ID', type: 'player', required: true }],
-  },
-  {
-    name: 'clothing-menu',
-    description: 'Åbn tøjmenu for spiller',
-    permission: 'admin',
-    icon: <Users className="h-4 w-4" />,
-    fields: [{ name: 'targetPlayerId', label: 'Spiller ID', type: 'player', required: true }],
-  },
-  {
-    name: 'jail',
-    description: 'Fængsl en spiller',
-    permission: 'mod',
-    icon: <Shield className="h-4 w-4" />,
     fields: [
-      { name: 'targetPlayerId', label: 'Spiller ID', type: 'player', required: true },
-      { name: 'time', label: 'Tid (minutter)', type: 'number', required: true },
-      { name: 'reason', label: 'Årsag', type: 'text' },
+      {
+        name: "targetPlayerId",
+        label: "Spiller ID",
+        type: "player",
+        required: true,
+      },
     ],
   },
   {
-    name: 'unjail',
-    description: 'Løslad en spiller',
-    permission: 'mod',
-    icon: <Shield className="h-4 w-4" />,
-    fields: [{ name: 'targetPlayerId', label: 'Spiller ID', type: 'player', required: true }],
-  },
-  {
-    name: 'permissions',
-    description: 'Vis spillers permissions',
-    permission: 'admin',
-    icon: <Shield className="h-4 w-4" />,
-    fields: [{ name: 'targetPlayerId', label: 'Spiller ID', type: 'player', required: true }],
-  },
-  {
-    name: 'logout',
-    description: 'Log en spiller ud',
-    permission: 'admin',
-    icon: <Users className="h-4 w-4" />,
-    fields: [{ name: 'targetPlayerId', label: 'Spiller ID', type: 'player', required: true }],
-  },
-  {
-    name: 'setmodel',
-    description: 'Skift spillers ped model',
-    permission: 'admin',
+    name: "clothing-menu",
+    description: "Åbn tøjmenu for spiller",
+    permission: "admin",
     icon: <Users className="h-4 w-4" />,
     fields: [
-      { name: 'targetPlayerId', label: 'Spiller ID', type: 'player', required: true },
-      { name: 'model', label: 'Model navn', type: 'text', required: true },
+      {
+        name: "targetPlayerId",
+        label: "Spiller ID",
+        type: "player",
+        required: true,
+      },
     ],
   },
   {
-    name: 'setarmor',
-    description: 'Sæt spillers armor',
-    permission: 'admin',
+    name: "jail",
+    description: "Fængsl en spiller",
+    permission: "mod",
     icon: <Shield className="h-4 w-4" />,
     fields: [
-      { name: 'targetPlayerId', label: 'Spiller ID', type: 'player', required: true },
-      { name: 'amount', label: 'Armor (0-100)', type: 'number', required: true },
+      {
+        name: "targetPlayerId",
+        label: "Spiller ID",
+        type: "player",
+        required: true,
+      },
+      { name: "time", label: "Tid (minutter)", type: "number", required: true },
+      { name: "reason", label: "Årsag", type: "text" },
     ],
   },
   {
-    name: 'sethealth',
-    description: 'Sæt spillers health',
-    permission: 'admin',
+    name: "unjail",
+    description: "Løslad en spiller",
+    permission: "mod",
+    icon: <Shield className="h-4 w-4" />,
+    fields: [
+      {
+        name: "targetPlayerId",
+        label: "Spiller ID",
+        type: "player",
+        required: true,
+      },
+    ],
+  },
+  {
+    name: "permissions",
+    description: "Vis spillers permissions",
+    permission: "admin",
+    icon: <Shield className="h-4 w-4" />,
+    fields: [
+      {
+        name: "targetPlayerId",
+        label: "Spiller ID",
+        type: "player",
+        required: true,
+      },
+    ],
+  },
+  {
+    name: "logout",
+    description: "Log en spiller ud",
+    permission: "admin",
+    icon: <Users className="h-4 w-4" />,
+    fields: [
+      {
+        name: "targetPlayerId",
+        label: "Spiller ID",
+        type: "player",
+        required: true,
+      },
+    ],
+  },
+  {
+    name: "setmodel",
+    description: "Skift spillers ped model",
+    permission: "admin",
+    icon: <Users className="h-4 w-4" />,
+    fields: [
+      {
+        name: "targetPlayerId",
+        label: "Spiller ID",
+        type: "player",
+        required: true,
+      },
+      { name: "model", label: "Model navn", type: "text", required: true },
+    ],
+  },
+  {
+    name: "setarmor",
+    description: "Sæt spillers armor",
+    permission: "admin",
+    icon: <Shield className="h-4 w-4" />,
+    fields: [
+      {
+        name: "targetPlayerId",
+        label: "Spiller ID",
+        type: "player",
+        required: true,
+      },
+      {
+        name: "amount",
+        label: "Armor (0-100)",
+        type: "number",
+        required: true,
+      },
+    ],
+  },
+  {
+    name: "sethealth",
+    description: "Sæt spillers health",
+    permission: "admin",
     icon: <Heart className="h-4 w-4" />,
     fields: [
-      { name: 'targetPlayerId', label: 'Spiller ID', type: 'player', required: true },
-      { name: 'amount', label: 'Health (0-200)', type: 'number', required: true },
+      {
+        name: "targetPlayerId",
+        label: "Spiller ID",
+        type: "player",
+        required: true,
+      },
+      {
+        name: "amount",
+        label: "Health (0-200)",
+        type: "number",
+        required: true,
+      },
     ],
   },
   {
-    name: 'setstress',
-    description: 'Sæt spillers stress niveau',
-    permission: 'admin',
+    name: "setstress",
+    description: "Sæt spillers stress niveau",
+    permission: "admin",
     icon: <Heart className="h-4 w-4" />,
     fields: [
-      { name: 'targetPlayerId', label: 'Spiller ID', type: 'player', required: true },
-      { name: 'amount', label: 'Stress (0-100)', type: 'number', required: true },
+      {
+        name: "targetPlayerId",
+        label: "Spiller ID",
+        type: "player",
+        required: true,
+      },
+      {
+        name: "amount",
+        label: "Stress (0-100)",
+        type: "number",
+        required: true,
+      },
     ],
   },
   {
-    name: 'sethunger',
-    description: 'Sæt spillers sult',
-    permission: 'admin',
+    name: "sethunger",
+    description: "Sæt spillers sult",
+    permission: "admin",
     icon: <Heart className="h-4 w-4" />,
     fields: [
-      { name: 'targetPlayerId', label: 'Spiller ID', type: 'player', required: true },
-      { name: 'amount', label: 'Sult (0-100)', type: 'number', required: true },
+      {
+        name: "targetPlayerId",
+        label: "Spiller ID",
+        type: "player",
+        required: true,
+      },
+      { name: "amount", label: "Sult (0-100)", type: "number", required: true },
     ],
   },
   {
-    name: 'setthirst',
-    description: 'Sæt spillers tørst',
-    permission: 'admin',
+    name: "setthirst",
+    description: "Sæt spillers tørst",
+    permission: "admin",
     icon: <Heart className="h-4 w-4" />,
     fields: [
-      { name: 'targetPlayerId', label: 'Spiller ID', type: 'player', required: true },
-      { name: 'amount', label: 'Tørst (0-100)', type: 'number', required: true },
+      {
+        name: "targetPlayerId",
+        label: "Spiller ID",
+        type: "player",
+        required: true,
+      },
+      {
+        name: "amount",
+        label: "Tørst (0-100)",
+        type: "number",
+        required: true,
+      },
     ],
   },
   {
-    name: 'warn',
-    description: 'Advar en spiller',
-    permission: 'mod',
+    name: "warn",
+    description: "Advar en spiller",
+    permission: "mod",
     icon: <MessageSquare className="h-4 w-4" />,
     fields: [
-      { name: 'targetPlayerId', label: 'Spiller ID', type: 'player', required: true },
-      { name: 'reason', label: 'Årsag', type: 'textarea', required: true },
+      {
+        name: "targetPlayerId",
+        label: "Spiller ID",
+        type: "player",
+        required: true,
+      },
+      { name: "reason", label: "Årsag", type: "textarea", required: true },
     ],
   },
   {
-    name: 'charinfo',
-    description: 'Vis karakter info',
-    permission: 'mod',
+    name: "charinfo",
+    description: "Vis karakter info",
+    permission: "mod",
     icon: <Users className="h-4 w-4" />,
-    fields: [{ name: 'targetPlayerId', label: 'Spiller ID', type: 'player', required: true }],
+    fields: [
+      {
+        name: "targetPlayerId",
+        label: "Spiller ID",
+        type: "player",
+        required: true,
+      },
+    ],
   },
   {
-    name: 'heal',
-    description: 'Heal en spiller til fuld health',
-    permission: 'admin',
+    name: "heal",
+    description: "Heal en spiller til fuld health",
+    permission: "admin",
     icon: <Heart className="h-4 w-4" />,
-    fields: [{ name: 'targetPlayerId', label: 'Spiller ID', type: 'player', required: true }],
+    fields: [
+      {
+        name: "targetPlayerId",
+        label: "Spiller ID",
+        type: "player",
+        required: true,
+      },
+    ],
   },
   {
-    name: 'armor',
-    description: 'Giv spiller fuld armor',
-    permission: 'admin',
+    name: "armor",
+    description: "Giv spiller fuld armor",
+    permission: "admin",
     icon: <Shield className="h-4 w-4" />,
-    fields: [{ name: 'targetPlayerId', label: 'Spiller ID', type: 'player', required: true }],
+    fields: [
+      {
+        name: "targetPlayerId",
+        label: "Spiller ID",
+        type: "player",
+        required: true,
+      },
+    ],
   },
 ];
 
 export default function CommandPanel() {
   const { toast } = useToast();
   const { data: serverInstances } = useFiveMServerInstances();
-  const [selectedServerId, setSelectedServerId] = useState<string>('');
-  const { data: onlinePlayers } = useFiveMOnlinePlayers(selectedServerId || undefined);
+  const [selectedServerId, setSelectedServerId] = useState<string>("");
+  const { data: onlinePlayers } = useFiveMOnlinePlayers(
+    selectedServerId || undefined,
+  );
   const { data: serverStatus } = useFiveMServerStatus();
-  const nrpAceMode = serverStatus?.metadata?.permissionMode === 'nrp_ace';
+  const nrpAceMode = serverStatus?.metadata?.permissionMode === "nrp_ace";
   const executeCommand = useExecuteFiveMCommand();
 
   useEffect(() => {
     if (!serverInstances?.length) {
-      setSelectedServerId('');
+      setSelectedServerId("");
       return;
     }
-    if (!selectedServerId || !serverInstances.some((server) => server.server_id === selectedServerId)) {
-      setSelectedServerId(serverInstances[0].server_id || 'main');
+    if (
+      !selectedServerId ||
+      !serverInstances.some((server) => server.server_id === selectedServerId)
+    ) {
+      setSelectedServerId(serverInstances[0].server_id || "main");
     }
   }, [serverInstances, selectedServerId]);
 
   const [pendingCommandId, setPendingCommandId] = useState<string | null>(null);
   const pending = useFiveMCommandQueueEntry(pendingCommandId);
 
-  const [selectedCommand, setSelectedCommand] = useState<CommandDef | null>(null);
-  const [commandValues, setCommandValues] = useState<Record<string, string | number>>({});
+  const [selectedCommand, setSelectedCommand] = useState<CommandDef | null>(
+    null,
+  );
+  const [commandValues, setCommandValues] = useState<
+    Record<string, string | number>
+  >({});
 
   // Track command execution status with polling
   useEffect(() => {
     if (!pendingCommandId) {
       return;
     }
-    
+
     const status = pending.data?.status;
     const result = pending.data?.result;
-    
-    console.log("[CommandPanel] Polling:", { pendingCommandId, status, result });
-    
+
+    console.log("[CommandPanel] Polling:", {
+      pendingCommandId,
+      status,
+      result,
+    });
+
     // Still loading or no data yet
     if (pending.isLoading || !pending.data) {
       return;
     }
 
     // Command finished - show result
-    if (status === 'executed') {
+    if (status === "executed") {
       toast({
-        title: '✅ Kommando udført',
-        description: result || 'Success',
+        title: "✅ Kommando udført",
+        description: result || "Success",
       });
       setPendingCommandId(null);
       return;
     }
 
-    if (status === 'failed') {
+    if (status === "failed") {
       toast({
-        title: '❌ Kommando fejlede',
-        description: result || 'Se FiveM server log for detaljer.',
-        variant: 'destructive',
+        title: "❌ Kommando fejlede",
+        description: result || "Se FiveM server log for detaljer.",
+        variant: "destructive",
       });
       setPendingCommandId(null);
       return;
     }
-    
+
     // pending/processing: polling continues in useFiveMCommandQueueEntry
   }, [pending.data, pending.isLoading, pendingCommandId, toast]);
 
@@ -661,59 +1043,77 @@ export default function CommandPanel() {
     setCommandValues({});
   };
 
-  const isFieldVisible = (field: CommandDef['fields'][0]) => {
+  const isFieldVisible = (field: CommandDef["fields"][0]) => {
     if (!selectedCommand) return true;
-    const action = String(commandValues.action || '');
+    const action = String(commandValues.action || "");
 
-    if (selectedCommand.name === 'resource' && field.name === 'resourceName') {
-      return !['refresh', 'list'].includes(action);
+    if (selectedCommand.name === "resource" && field.name === "resourceName") {
+      return !["refresh", "list"].includes(action);
     }
-    if (selectedCommand.name === 'whitelist' && field.name === 'discordId') {
-      return action !== 'toggle';
+    if (selectedCommand.name === "whitelist" && field.name === "discordId") {
+      return action !== "toggle";
     }
-    if (selectedCommand.name === 'money' && field.name === 'amount') {
-      return action !== 'inspect';
+    if (selectedCommand.name === "money" && field.name === "amount") {
+      return action !== "inspect";
     }
-    if (selectedCommand.name === 'inventory' && (field.name === 'item' || field.name === 'count')) {
-      return action === 'give' || action === 'take';
+    if (
+      selectedCommand.name === "inventory" &&
+      (field.name === "item" || field.name === "count")
+    ) {
+      return action === "give" || action === "take";
     }
-    if (selectedCommand.name === 'job' && (field.name === 'job' || field.name === 'grade')) {
-      return action === 'set';
+    if (
+      selectedCommand.name === "job" &&
+      (field.name === "job" || field.name === "grade")
+    ) {
+      return action === "set";
     }
-    if (selectedCommand.name === 'gang' && (field.name === 'gang' || field.name === 'grade')) {
-      return action === 'set';
+    if (
+      selectedCommand.name === "gang" &&
+      (field.name === "gang" || field.name === "grade")
+    ) {
+      return action === "set";
     }
-    if (selectedCommand.name === 'weather' && field.name === 'weather') {
-      return action === 'set';
+    if (selectedCommand.name === "weather" && field.name === "weather") {
+      return action === "set";
     }
 
     return true;
   };
 
-  const isFieldRequired = (field: CommandDef['fields'][0]) => {
+  const isFieldRequired = (field: CommandDef["fields"][0]) => {
     if (!selectedCommand || !isFieldVisible(field)) return false;
-    const action = String(commandValues.action || '');
+    const action = String(commandValues.action || "");
 
-    if (selectedCommand.name === 'resource' && field.name === 'resourceName') {
-      return ['ensure', 'start', 'stop', 'restart', 'inspect'].includes(action);
+    if (selectedCommand.name === "resource" && field.name === "resourceName") {
+      return ["ensure", "start", "stop", "restart", "inspect"].includes(action);
     }
-    if (selectedCommand.name === 'whitelist' && field.name === 'discordId') {
-      return action !== 'toggle';
+    if (selectedCommand.name === "whitelist" && field.name === "discordId") {
+      return action !== "toggle";
     }
-    if (selectedCommand.name === 'money' && field.name === 'amount') {
-      return action !== 'inspect';
+    if (selectedCommand.name === "money" && field.name === "amount") {
+      return action !== "inspect";
     }
-    if (selectedCommand.name === 'inventory' && (field.name === 'item' || field.name === 'count')) {
-      return action === 'give' || action === 'take';
+    if (
+      selectedCommand.name === "inventory" &&
+      (field.name === "item" || field.name === "count")
+    ) {
+      return action === "give" || action === "take";
     }
-    if (selectedCommand.name === 'job' && (field.name === 'job' || field.name === 'grade')) {
-      return action === 'set';
+    if (
+      selectedCommand.name === "job" &&
+      (field.name === "job" || field.name === "grade")
+    ) {
+      return action === "set";
     }
-    if (selectedCommand.name === 'gang' && (field.name === 'gang' || field.name === 'grade')) {
-      return action === 'set';
+    if (
+      selectedCommand.name === "gang" &&
+      (field.name === "gang" || field.name === "grade")
+    ) {
+      return action === "set";
     }
-    if (selectedCommand.name === 'weather' && field.name === 'weather') {
-      return action === 'set';
+    if (selectedCommand.name === "weather" && field.name === "weather") {
+      return action === "set";
     }
 
     return Boolean(field.required);
@@ -726,33 +1126,48 @@ export default function CommandPanel() {
     for (const field of selectedCommand.fields) {
       if (!isFieldVisible(field) || !isFieldRequired(field)) continue;
       const value = commandValues[field.name];
-      if (value === undefined || value === null || value === '') {
-        toast({ title: `${field.label} er påkrævet`, variant: 'destructive' });
+      if (value === undefined || value === null || value === "") {
+        toast({ title: `${field.label} er påkrævet`, variant: "destructive" });
         return;
       }
     }
 
-    if (selectedCommand.name === 'teleport') {
+    if (selectedCommand.name === "teleport") {
       const hasPreset = Boolean(commandValues.location);
-      const hasCoords = [commandValues.x, commandValues.y, commandValues.z]
-        .every((value) => value !== undefined && value !== null && value !== '');
+      const hasCoords = [
+        commandValues.x,
+        commandValues.y,
+        commandValues.z,
+      ].every((value) => value !== undefined && value !== null && value !== "");
       if (!hasPreset && !hasCoords) {
-        toast({ title: 'Vælg et preset eller udfyld X, Y og Z', variant: 'destructive' });
+        toast({
+          title: "Vælg et preset eller udfyld X, Y og Z",
+          variant: "destructive",
+        });
         return;
       }
     }
 
-    if (selectedCommand.name === 'time') {
+    if (selectedCommand.name === "time") {
       const hour = Number(commandValues.hour);
       if (!Number.isFinite(hour) || hour < 0 || hour > 23) {
-        toast({ title: 'Time skal være mellem 0 og 23', variant: 'destructive' });
+        toast({
+          title: "Time skal være mellem 0 og 23",
+          variant: "destructive",
+        });
         return;
       }
     }
 
-    if (['money', 'inventory'].includes(selectedCommand.name) && commandValues.amount !== undefined) {
+    if (
+      ["money", "inventory"].includes(selectedCommand.name) &&
+      commandValues.amount !== undefined
+    ) {
       if (Number(commandValues.amount) < 0) {
-        toast({ title: 'Beløb/antal må ikke være negativt', variant: 'destructive' });
+        toast({
+          title: "Beløb/antal må ikke være negativt",
+          variant: "destructive",
+        });
         return;
       }
     }
@@ -761,10 +1176,13 @@ export default function CommandPanel() {
     let targetDiscordId: string | undefined;
     let targetName: string | undefined;
     if (commandValues.targetPlayerId) {
-      const player = onlinePlayers?.find(p => p.player_id === Number(commandValues.targetPlayerId));
+      const player = onlinePlayers?.find(
+        (p) => p.player_id === Number(commandValues.targetPlayerId),
+      );
       if (player) {
         targetDiscordId = player.discord_user_id || undefined;
-        targetName = player.discord_username || player.character_name || undefined;
+        targetName =
+          player.discord_username || player.character_name || undefined;
       }
     }
 
@@ -797,15 +1215,20 @@ export default function CommandPanel() {
         ammo: commandValues.ammo as number,
         model: commandValues.model as string,
         time: commandValues.time as number,
-        coords: commandValues.x ? {
-          x: Number(commandValues.x),
-          y: Number(commandValues.y),
-          z: Number(commandValues.z),
-        } : undefined,
+        coords: commandValues.x
+          ? {
+              x: Number(commandValues.x),
+              y: Number(commandValues.y),
+              z: Number(commandValues.z),
+            }
+          : undefined,
       });
 
       if (result?.success === false) {
-        toast({ title: result.error || 'Kommando fejlede', variant: 'destructive' });
+        toast({
+          title: result.error || "Kommando fejlede",
+          variant: "destructive",
+        });
         return;
       }
 
@@ -820,8 +1243,8 @@ export default function CommandPanel() {
 
       setSelectedCommand(null);
     } catch (err) {
-      const errorMsg = err instanceof Error ? err.message : 'Ukendt fejl';
-      toast({ title: `Fejl: ${errorMsg}`, variant: 'destructive' });
+      const errorMsg = err instanceof Error ? err.message : "Ukendt fejl";
+      toast({ title: `Fejl: ${errorMsg}`, variant: "destructive" });
     }
   };
 
@@ -831,30 +1254,42 @@ export default function CommandPanel() {
     }
 
     switch (permission) {
-      case 'god': return <Badge variant="destructive">GOD</Badge>;
-      case 'admin': return <Badge>Admin</Badge>;
-      case 'mod': return <Badge variant="secondary">Mod</Badge>;
-      default: return <Badge variant="outline">User</Badge>;
+      case "god":
+        return <Badge variant="destructive">GOD</Badge>;
+      case "admin":
+        return <Badge>Admin</Badge>;
+      case "mod":
+        return <Badge variant="secondary">Mod</Badge>;
+      default:
+        return <Badge variant="outline">User</Badge>;
     }
   };
 
-  const renderField = (field: CommandDef['fields'][0]) => {
-    if (field.type === 'player') {
+  const renderField = (field: CommandDef["fields"][0]) => {
+    if (field.type === "player") {
       return (
         <Select
-          value={String(commandValues[field.name] || '')}
-          onValueChange={(v) => setCommandValues({ ...commandValues, [field.name]: Number(v) })}
+          value={String(commandValues[field.name] || "")}
+          onValueChange={(v) =>
+            setCommandValues({ ...commandValues, [field.name]: Number(v) })
+          }
         >
           <SelectTrigger>
             <SelectValue placeholder="Vælg spiller..." />
           </SelectTrigger>
           <SelectContent>
             {onlinePlayers?.length === 0 ? (
-              <SelectItem value="none" disabled>Ingen spillere online</SelectItem>
+              <SelectItem value="none" disabled>
+                Ingen spillere online
+              </SelectItem>
             ) : (
               onlinePlayers?.map((player) => (
-                <SelectItem key={player.player_id} value={String(player.player_id)}>
-                  #{player.player_id} - {player.discord_username || player.character_name || 'Ukendt'}
+                <SelectItem
+                  key={player.player_id}
+                  value={String(player.player_id)}
+                >
+                  #{player.player_id} -{" "}
+                  {player.discord_username || player.character_name || "Ukendt"}
                 </SelectItem>
               ))
             )}
@@ -863,40 +1298,51 @@ export default function CommandPanel() {
       );
     }
 
-    if (field.type === 'select' && field.options) {
+    if (field.type === "select" && field.options) {
       return (
         <Select
-          value={String(commandValues[field.name] || '')}
-          onValueChange={(v) => setCommandValues({ ...commandValues, [field.name]: v })}
+          value={String(commandValues[field.name] || "")}
+          onValueChange={(v) =>
+            setCommandValues({ ...commandValues, [field.name]: v })
+          }
         >
           <SelectTrigger>
             <SelectValue placeholder="Vælg..." />
           </SelectTrigger>
           <SelectContent>
             {field.options.map((opt) => (
-              <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+              <SelectItem key={opt.value} value={opt.value}>
+                {opt.label}
+              </SelectItem>
             ))}
           </SelectContent>
         </Select>
       );
     }
 
-    if (field.type === 'textarea') {
+    if (field.type === "textarea") {
       return (
         <Textarea
-          value={String(commandValues[field.name] || '')}
-          onChange={(e) => setCommandValues({ ...commandValues, [field.name]: e.target.value })}
+          value={String(commandValues[field.name] || "")}
+          onChange={(e) =>
+            setCommandValues({ ...commandValues, [field.name]: e.target.value })
+          }
           placeholder={field.label}
         />
       );
     }
 
-    if (field.type === 'number') {
+    if (field.type === "number") {
       return (
         <Input
           type="number"
-          value={String(commandValues[field.name] || '')}
-          onChange={(e) => setCommandValues({ ...commandValues, [field.name]: Number(e.target.value) })}
+          value={String(commandValues[field.name] || "")}
+          onChange={(e) =>
+            setCommandValues({
+              ...commandValues,
+              [field.name]: Number(e.target.value),
+            })
+          }
           placeholder={field.label}
         />
       );
@@ -904,8 +1350,10 @@ export default function CommandPanel() {
 
     return (
       <Input
-        value={String(commandValues[field.name] || '')}
-        onChange={(e) => setCommandValues({ ...commandValues, [field.name]: e.target.value })}
+        value={String(commandValues[field.name] || "")}
+        onChange={(e) =>
+          setCommandValues({ ...commandValues, [field.name]: e.target.value })
+        }
         placeholder={field.label}
       />
     );
@@ -922,22 +1370,37 @@ export default function CommandPanel() {
                 Command Panel
               </CardTitle>
               <CardDescription>
-                Kør commands direkte mod FiveM Bridge. Discord /fivem synkroniseres automatisk af botten.
+                Kør commands direkte mod FiveM Bridge. Discord /fivem
+                synkroniseres automatisk af botten.
               </CardDescription>
             </div>
             <div className="flex flex-wrap items-center gap-2">
               {serverInstances && serverInstances.length > 0 && (
-                <Select value={selectedServerId} onValueChange={setSelectedServerId}>
+                <Select
+                  value={selectedServerId}
+                  onValueChange={setSelectedServerId}
+                >
                   <SelectTrigger className="w-[220px]">
                     <SelectValue placeholder="Vælg FiveM server..." />
                   </SelectTrigger>
                   <SelectContent>
                     {serverInstances.map((server) => {
-                      const heartbeat = server.last_heartbeat ? new Date(server.last_heartbeat).getTime() : 0;
-                      const online = Boolean(server.is_online && heartbeat && Date.now() - heartbeat < 90_000);
+                      const heartbeat = server.last_heartbeat
+                        ? new Date(server.last_heartbeat).getTime()
+                        : 0;
+                      const online = Boolean(
+                        server.is_online &&
+                        heartbeat &&
+                        Date.now() - heartbeat < 90_000,
+                      );
                       return (
-                        <SelectItem key={server.server_id} value={server.server_id}>
-                          {online ? '🟢' : '🔴'} {server.server_name || server.server_id} · {server.server_id}
+                        <SelectItem
+                          key={server.server_id}
+                          value={server.server_id}
+                        >
+                          {online ? "🟢" : "🔴"}{" "}
+                          {server.server_name || server.server_id} ·{" "}
+                          {server.server_id}
                         </SelectItem>
                       );
                     })}
@@ -954,8 +1417,12 @@ export default function CommandPanel() {
         <CardContent>
           <Tabs defaultValue="standalone">
             <TabsList className="mb-4">
-              <TabsTrigger value="standalone">Standalone ({STANDALONE_COMMANDS.length})</TabsTrigger>
-              <TabsTrigger value="qbcore">QBox / QBCore ({QBCORE_COMMANDS.length})</TabsTrigger>
+              <TabsTrigger value="standalone">
+                Standalone ({STANDALONE_COMMANDS.length})
+              </TabsTrigger>
+              <TabsTrigger value="qbcore">
+                QBox / QBCore ({QBCORE_COMMANDS.length})
+              </TabsTrigger>
             </TabsList>
 
             <TabsContent value="standalone">
@@ -971,7 +1438,9 @@ export default function CommandPanel() {
                       {cmd.icon}
                       <div className="text-left flex-1">
                         <div className="font-medium">/{cmd.name}</div>
-                        <div className="text-xs text-muted-foreground">{cmd.description}</div>
+                        <div className="text-xs text-muted-foreground">
+                          {cmd.description}
+                        </div>
                       </div>
                       {getPermissionBadge(cmd.permission)}
                     </div>
@@ -993,7 +1462,9 @@ export default function CommandPanel() {
                       {cmd.icon}
                       <div className="text-left flex-1">
                         <div className="font-medium">/{cmd.name}</div>
-                        <div className="text-xs text-muted-foreground">{cmd.description}</div>
+                        <div className="text-xs text-muted-foreground">
+                          {cmd.description}
+                        </div>
                       </div>
                       {getPermissionBadge(cmd.permission)}
                     </div>
@@ -1005,18 +1476,24 @@ export default function CommandPanel() {
         </CardContent>
       </Card>
 
-      <Dialog open={!!selectedCommand} onOpenChange={() => setSelectedCommand(null)}>
+      <Dialog
+        open={!!selectedCommand}
+        onOpenChange={() => setSelectedCommand(null)}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              {selectedCommand?.icon}
-              /{selectedCommand?.name}
+              {selectedCommand?.icon}/{selectedCommand?.name}
             </DialogTitle>
-            <DialogDescription>{selectedCommand?.description}</DialogDescription>
+            <DialogDescription>
+              {selectedCommand?.description}
+            </DialogDescription>
           </DialogHeader>
 
           {selectedCommand?.fields.length === 0 ? (
-            <p className="text-center py-4 text-muted-foreground">Ingen parametre påkrævet</p>
+            <p className="text-center py-4 text-muted-foreground">
+              Ingen parametre påkrævet
+            </p>
           ) : (
             <div className="space-y-4">
               {selectedCommand?.fields
@@ -1025,7 +1502,9 @@ export default function CommandPanel() {
                   <div key={field.name} className="space-y-2">
                     <Label>
                       {field.label}
-                      {isFieldRequired(field) && <span className="text-destructive ml-1">*</span>}
+                      {isFieldRequired(field) && (
+                        <span className="text-destructive ml-1">*</span>
+                      )}
                     </Label>
                     {renderField(field)}
                   </div>

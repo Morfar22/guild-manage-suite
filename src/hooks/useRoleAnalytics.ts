@@ -1,7 +1,7 @@
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
-import { useGuild } from '@/contexts/GuildContext';
-import { useDiscordRoles } from './useDiscordRoles';
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { useGuild } from "@/contexts/GuildContext";
+import { useDiscordRoles } from "./useDiscordRoles";
 
 export interface RoleDistribution {
   name: string;
@@ -15,7 +15,7 @@ export function useRoleAnalytics() {
 
   // Get member counts per role from discord-members edge function
   const memberRolesQuery = useQuery({
-    queryKey: ['role-analytics-members', selectedGuild?.id],
+    queryKey: ["role-analytics-members", selectedGuild?.id],
     queryFn: async () => {
       if (!selectedGuild?.id) return [];
 
@@ -24,9 +24,9 @@ export function useRoleAnalytics() {
         {
           headers: {
             Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
-            'Content-Type': 'application/json',
+            "Content-Type": "application/json",
           },
-        }
+        },
       );
 
       if (!response.ok) return [];
@@ -54,10 +54,10 @@ export function useRoleAnalytics() {
     return roles
       .map((role: any) => ({
         name: role.name,
-        color: `#${(role.color || 0x808080).toString(16).padStart(6, '0')}`,
+        color: `#${(role.color || 0x808080).toString(16).padStart(6, "0")}`,
         count: roleCounts.get(role.id) || 0,
       }))
-      .filter((r: RoleDistribution) => r.name !== '@everyone' && r.count > 0)
+      .filter((r: RoleDistribution) => r.name !== "@everyone" && r.count > 0)
       .sort((a: RoleDistribution, b: RoleDistribution) => b.count - a.count);
   })();
 

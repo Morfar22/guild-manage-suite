@@ -1,23 +1,27 @@
-import { useMemo, useState } from 'react';
-import { useCommands } from '@/hooks/useCommands';
-import { useLanguage } from '@/contexts/LanguageContext';
-import { CommandTable } from '@/components/dashboard/CommandTable';
-import { CommandSettingsDialog } from '@/components/dashboard/CommandSettingsDialog';
-import { CommandDetailDialog } from '@/components/dashboard/CommandDetailDialog';
-import { CommandAnalyticsPanel } from '@/components/dashboard/CommandAnalyticsPanel';
-import { CommandPermissionsMatrix } from '@/components/dashboard/CommandPermissionsMatrix';
-import { COMMANDS_BY_CATEGORY, CommandCategory, CommandInfo } from '@/types/discord';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
+import { useMemo, useState } from "react";
+import { useCommands } from "@/hooks/useCommands";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { CommandTable } from "@/components/dashboard/CommandTable";
+import { CommandSettingsDialog } from "@/components/dashboard/CommandSettingsDialog";
+import { CommandDetailDialog } from "@/components/dashboard/CommandDetailDialog";
+import { CommandAnalyticsPanel } from "@/components/dashboard/CommandAnalyticsPanel";
+import { CommandPermissionsMatrix } from "@/components/dashboard/CommandPermissionsMatrix";
+import {
+  COMMANDS_BY_CATEGORY,
+  CommandCategory,
+  CommandInfo,
+} from "@/types/discord";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
+} from "@/components/ui/select";
 import {
   BarChart3,
   Loader2,
@@ -39,7 +43,7 @@ import {
   Search,
   SlidersHorizontal,
   Command as CommandIcon,
-} from 'lucide-react';
+} from "lucide-react";
 
 const categoryIcons: Record<string, React.ElementType> = {
   moderation: Shield,
@@ -55,23 +59,36 @@ const categoryIcons: Record<string, React.ElementType> = {
   reactionroles: Smile,
 };
 
-const getIcon = (category: string): React.ElementType => categoryIcons[category] || HelpCircle;
+const getIcon = (category: string): React.ElementType =>
+  categoryIcons[category] || HelpCircle;
 
 const categoryDescriptions: Record<string, Record<string, string>> = {
-  moderation: { da: 'Administration og moderation af servermedlemmer', en: 'Server member management and moderation' },
-  music: { da: 'Afspil og kontrollér musik', en: 'Play and control music' },
-  leveling: { da: 'XP, ranglister og level-belønninger', en: 'XP, leaderboards and level rewards' },
-  utility: { da: 'Serverværktøjer og information', en: 'Server tools and information' },
-  fun: { da: 'Spil og underholdning', en: 'Games and entertainment' },
-  economy: { da: 'Valuta, shop og økonomi', en: 'Currency, shop and economy' },
-  tickets: { da: 'Ticket-system og support', en: 'Ticket system and support' },
-  giveaway: { da: 'Giveaways og vindere', en: 'Giveaways and winners' },
-  tebex: { da: 'Tebex-verifikation', en: 'Tebex verification' },
-  admin: { da: 'Serveropsætning og administration', en: 'Server setup and administration' },
-  reactionroles: { da: 'Reaction role-paneler', en: 'Reaction role panels' },
+  moderation: {
+    da: "Administration og moderation af servermedlemmer",
+    en: "Server member management and moderation",
+  },
+  music: { da: "Afspil og kontrollér musik", en: "Play and control music" },
+  leveling: {
+    da: "XP, ranglister og level-belønninger",
+    en: "XP, leaderboards and level rewards",
+  },
+  utility: {
+    da: "Serverværktøjer og information",
+    en: "Server tools and information",
+  },
+  fun: { da: "Spil og underholdning", en: "Games and entertainment" },
+  economy: { da: "Valuta, shop og økonomi", en: "Currency, shop and economy" },
+  tickets: { da: "Ticket-system og support", en: "Ticket system and support" },
+  giveaway: { da: "Giveaways og vindere", en: "Giveaways and winners" },
+  tebex: { da: "Tebex-verifikation", en: "Tebex verification" },
+  admin: {
+    da: "Serveropsætning og administration",
+    en: "Server setup and administration",
+  },
+  reactionroles: { da: "Reaction role-paneler", en: "Reaction role panels" },
 };
 
-type StatusFilter = 'all' | 'enabled' | 'disabled' | 'restricted';
+type StatusFilter = "all" | "enabled" | "disabled" | "restricted";
 
 export default function Commands() {
   const {
@@ -86,19 +103,24 @@ export default function Commands() {
     getCategoryStats,
   } = useCommands();
   const { language } = useLanguage();
-  const en = language === 'en';
+  const en = language === "en";
 
-  const [section, setSection] = useState('control');
-  const [query, setQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
-  const [activeCategory, setActiveCategory] = useState('all');
-  const [selectedCommand, setSelectedCommand] = useState<CommandInfo | null>(null);
+  const [section, setSection] = useState("control");
+  const [query, setQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
+  const [activeCategory, setActiveCategory] = useState("all");
+  const [selectedCommand, setSelectedCommand] = useState<CommandInfo | null>(
+    null,
+  );
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [detailCommand, setDetailCommand] = useState<CommandInfo | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
 
   const categories = Object.keys(COMMANDS_BY_CATEGORY) as CommandCategory[];
-  const allCommands = useMemo(() => Object.values(COMMANDS_BY_CATEGORY).flat(), []);
+  const allCommands = useMemo(
+    () => Object.values(COMMANDS_BY_CATEGORY).flat(),
+    [],
+  );
 
   const filterCommands = (commands: CommandInfo[]) => {
     const normalized = query.trim().toLowerCase();
@@ -112,19 +134,22 @@ export default function Commands() {
         (settings?.allowed_channel_ids?.length ?? 0) > 0;
 
       if (normalized) {
-        const haystack = `${command.name} ${command.description} ${command.category} ${command.usage}`.toLowerCase();
+        const haystack =
+          `${command.name} ${command.description} ${command.category} ${command.usage}`.toLowerCase();
         if (!haystack.includes(normalized)) return false;
       }
 
-      if (statusFilter === 'enabled' && !enabled) return false;
-      if (statusFilter === 'disabled' && enabled) return false;
-      if (statusFilter === 'restricted' && !restricted) return false;
+      if (statusFilter === "enabled" && !enabled) return false;
+      if (statusFilter === "disabled" && enabled) return false;
+      if (statusFilter === "restricted" && !restricted) return false;
       return true;
     });
   };
 
   const filteredAll = filterCommands(allCommands);
-  const totalEnabled = allCommands.filter((command) => commandSettings[command.name]?.enabled !== false).length;
+  const totalEnabled = allCommands.filter(
+    (command) => commandSettings[command.name]?.enabled !== false,
+  ).length;
   const totalRestricted = allCommands.filter((command) => {
     const settings = commandSettings[command.name];
     return (
@@ -155,7 +180,7 @@ export default function Commands() {
   };
 
   const jumpToCategory = (category: string) => {
-    setSection('control');
+    setSection("control");
     setActiveCategory(category);
   };
 
@@ -178,17 +203,17 @@ export default function Commands() {
           <h1 className="text-3xl font-bold text-foreground">Command Center</h1>
           <p className="mt-1 max-w-2xl text-muted-foreground">
             {en
-              ? 'Control commands, access rules, cooldowns and execution analytics from one place.'
-              : 'Styr commands, adgangsregler, cooldowns og execution analytics fra ét sted.'}
+              ? "Control commands, access rules, cooldowns and execution analytics from one place."
+              : "Styr commands, adgangsregler, cooldowns og execution analytics fra ét sted."}
           </p>
         </div>
 
         <div className="flex flex-wrap gap-2">
           <Badge variant="secondary" className="px-3 py-1.5">
-            {totalEnabled}/{allCommands.length} {en ? 'active' : 'aktive'}
+            {totalEnabled}/{allCommands.length} {en ? "active" : "aktive"}
           </Badge>
           <Badge variant="outline" className="px-3 py-1.5">
-            {totalRestricted} {en ? 'with rules' : 'med regler'}
+            {totalRestricted} {en ? "with rules" : "med regler"}
           </Badge>
         </div>
       </div>
@@ -197,7 +222,7 @@ export default function Commands() {
         <TabsList className="h-auto flex-wrap gap-1 border border-border bg-muted p-1">
           <TabsTrigger value="control" className="gap-2">
             <CommandIcon className="h-4 w-4" />
-            {en ? 'Commands' : 'Commands'}
+            {en ? "Commands" : "Commands"}
           </TabsTrigger>
           <TabsTrigger value="analytics" className="gap-2">
             <BarChart3 className="h-4 w-4" />
@@ -225,9 +250,11 @@ export default function Commands() {
                     <Icon className="h-5 w-5 text-primary" />
                   </div>
                   <div className="min-w-0">
-                    <p className="truncate text-sm font-medium capitalize text-foreground">{category}</p>
+                    <p className="truncate text-sm font-medium capitalize text-foreground">
+                      {category}
+                    </p>
                     <p className="text-xs text-muted-foreground">
-                      {stats.enabled}/{stats.total} {en ? 'active' : 'aktive'}
+                      {stats.enabled}/{stats.total} {en ? "active" : "aktive"}
                     </p>
                   </div>
                 </button>
@@ -241,42 +268,78 @@ export default function Commands() {
               <Input
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
-                placeholder={en ? 'Search command, description or usage...' : 'Søg efter command, beskrivelse eller brug...'}
+                placeholder={
+                  en
+                    ? "Search command, description or usage..."
+                    : "Søg efter command, beskrivelse eller brug..."
+                }
                 className="pl-9"
               />
             </div>
 
             <div className="flex items-center gap-2">
               <SlidersHorizontal className="h-4 w-4 text-muted-foreground" />
-              <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as StatusFilter)}>
+              <Select
+                value={statusFilter}
+                onValueChange={(value) =>
+                  setStatusFilter(value as StatusFilter)
+                }
+              >
                 <SelectTrigger className="w-[190px]">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">{en ? 'All statuses' : 'Alle statusser'}</SelectItem>
-                  <SelectItem value="enabled">{en ? 'Enabled' : 'Aktive'}</SelectItem>
-                  <SelectItem value="disabled">{en ? 'Disabled' : 'Deaktiverede'}</SelectItem>
-                  <SelectItem value="restricted">{en ? 'With restrictions' : 'Med begrænsninger'}</SelectItem>
+                  <SelectItem value="all">
+                    {en ? "All statuses" : "Alle statusser"}
+                  </SelectItem>
+                  <SelectItem value="enabled">
+                    {en ? "Enabled" : "Aktive"}
+                  </SelectItem>
+                  <SelectItem value="disabled">
+                    {en ? "Disabled" : "Deaktiverede"}
+                  </SelectItem>
+                  <SelectItem value="restricted">
+                    {en ? "With restrictions" : "Med begrænsninger"}
+                  </SelectItem>
                 </SelectContent>
               </Select>
             </div>
           </div>
 
-          <Tabs value={activeCategory} onValueChange={setActiveCategory} className="space-y-5">
+          <Tabs
+            value={activeCategory}
+            onValueChange={setActiveCategory}
+            className="space-y-5"
+          >
             <TabsList className="h-auto flex-wrap gap-1 border border-border bg-muted p-1">
               <TabsTrigger value="all" className="gap-2">
                 <CommandIcon className="h-4 w-4" />
-                {en ? 'All' : 'Alle'}
-                <Badge variant="secondary" className="ml-1 text-xs">{filteredAll.length}</Badge>
+                {en ? "All" : "Alle"}
+                <Badge variant="secondary" className="ml-1 text-xs">
+                  {filteredAll.length}
+                </Badge>
               </TabsTrigger>
               {categories.map((category) => {
                 const Icon = getIcon(category);
                 const stats = getCategoryStats(category);
                 return (
-                  <TabsTrigger key={category} value={category} className="flex items-center gap-2 capitalize">
+                  <TabsTrigger
+                    key={category}
+                    value={category}
+                    className="flex items-center gap-2 capitalize"
+                  >
                     <Icon className="h-4 w-4" />
                     {category}
-                    <Badge variant={stats.allEnabled ? 'default' : stats.noneEnabled ? 'destructive' : 'secondary'} className="ml-1 text-xs">
+                    <Badge
+                      variant={
+                        stats.allEnabled
+                          ? "default"
+                          : stats.noneEnabled
+                            ? "destructive"
+                            : "secondary"
+                      }
+                      className="ml-1 text-xs"
+                    >
                       {stats.enabled}/{stats.total}
                     </Badge>
                   </TabsTrigger>
@@ -286,9 +349,14 @@ export default function Commands() {
 
             <TabsContent value="all" className="space-y-4">
               <div>
-                <h2 className="text-lg font-semibold text-foreground">{en ? 'All commands' : 'Alle commands'}</h2>
+                <h2 className="text-lg font-semibold text-foreground">
+                  {en ? "All commands" : "Alle commands"}
+                </h2>
                 <p className="text-sm text-muted-foreground">
-                  {filteredAll.length} {en ? 'commands match your filters' : 'commands matcher dine filtre'}
+                  {filteredAll.length}{" "}
+                  {en
+                    ? "commands match your filters"
+                    : "commands matcher dine filtre"}
                 </p>
               </div>
               <CommandTable
@@ -305,13 +373,19 @@ export default function Commands() {
               const stats = getCategoryStats(category);
               const commands = filterCommands(COMMANDS_BY_CATEGORY[category]);
               return (
-                <TabsContent key={category} value={category} className="space-y-4">
+                <TabsContent
+                  key={category}
+                  value={category}
+                  className="space-y-4"
+                >
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                       <h2 className="text-lg font-semibold capitalize text-foreground">
                         {category} commands
                       </h2>
-                      <p className="text-sm text-muted-foreground">{categoryDescriptions[category]?.[language] || ''}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {categoryDescriptions[category]?.[language] || ""}
+                      </p>
                     </div>
                     <div className="flex items-center gap-2">
                       <Button
@@ -321,7 +395,7 @@ export default function Commands() {
                         disabled={updating || stats.allEnabled}
                       >
                         <ToggleRight className="mr-1 h-3.5 w-3.5" />
-                        {en ? 'Enable all' : 'Aktiver alle'}
+                        {en ? "Enable all" : "Aktiver alle"}
                       </Button>
                       <Button
                         variant="outline"
@@ -330,7 +404,7 @@ export default function Commands() {
                         disabled={updating || stats.noneEnabled}
                       >
                         <ToggleLeft className="mr-1 h-3.5 w-3.5" />
-                        {en ? 'Disable all' : 'Deaktiver alle'}
+                        {en ? "Disable all" : "Deaktiver alle"}
                       </Button>
                     </div>
                   </div>
@@ -380,7 +454,9 @@ export default function Commands() {
         open={settingsOpen}
         onOpenChange={setSettingsOpen}
         command={selectedCommand}
-        settings={selectedCommand ? commandSettings[selectedCommand.name] : undefined}
+        settings={
+          selectedCommand ? commandSettings[selectedCommand.name] : undefined
+        }
         saving={updating}
         onSave={updateCommandSettings}
       />

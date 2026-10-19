@@ -1,10 +1,10 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
-import { useGuild } from '@/contexts/GuildContext';
-import { invokeFunction } from '@/lib/functions-client';
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { useGuild } from "@/contexts/GuildContext";
+import { invokeFunction } from "@/lib/functions-client";
 
-const FIVEM_SETTINGS_PUBLIC_COLUMNS = 'id,guild_id,enabled,server_name,server_ip,cfx_code,whitelist_enabled,auto_whitelist_role_id,whitelisted_role_id,sync_discord_roles,sync_playtime,log_channel_id,whitelist_application_form_id,status_webhook_url,log_webhook_url,staff_chat_channel_id,announcement_channel_id,staff_role_ids,mod_role_ids,admin_role_ids,god_role_ids,bridge_token_created_at,bridge_last_seen_at,bridge_version,bridge_framework,created_at,updated_at' as const;
-
+const FIVEM_SETTINGS_PUBLIC_COLUMNS =
+  "id,guild_id,enabled,server_name,server_ip,cfx_code,whitelist_enabled,auto_whitelist_role_id,whitelisted_role_id,sync_discord_roles,sync_playtime,log_channel_id,whitelist_application_form_id,status_webhook_url,log_webhook_url,staff_chat_channel_id,announcement_channel_id,staff_role_ids,mod_role_ids,admin_role_ids,god_role_ids,bridge_token_created_at,bridge_last_seen_at,bridge_version,bridge_framework,created_at,updated_at" as const;
 
 export interface FiveMSettings {
   id: string;
@@ -122,14 +122,14 @@ export function useFiveMSettings() {
   const { selectedGuild } = useGuild();
 
   return useQuery({
-    queryKey: ['fivem-settings', selectedGuild?.id],
+    queryKey: ["fivem-settings", selectedGuild?.id],
     queryFn: async () => {
       if (!selectedGuild?.id) return null;
 
       const { data, error } = await supabase
-        .from('fivem_settings')
+        .from("fivem_settings")
         .select(FIVEM_SETTINGS_PUBLIC_COLUMNS)
-        .eq('guild_id', selectedGuild.id)
+        .eq("guild_id", selectedGuild.id)
         .maybeSingle();
 
       if (error) throw error;
@@ -145,19 +145,19 @@ export function useUpdateFiveMSettings() {
 
   return useMutation({
     mutationFn: async (settings: Partial<FiveMSettings>) => {
-      if (!selectedGuild?.id) throw new Error('No guild selected');
+      if (!selectedGuild?.id) throw new Error("No guild selected");
 
       const { data: existing } = await supabase
-        .from('fivem_settings')
-        .select('id')
-        .eq('guild_id', selectedGuild.id)
+        .from("fivem_settings")
+        .select("id")
+        .eq("guild_id", selectedGuild.id)
         .maybeSingle();
 
       if (existing) {
         const { data, error } = await supabase
-          .from('fivem_settings')
+          .from("fivem_settings")
           .update(settings)
-          .eq('guild_id', selectedGuild.id)
+          .eq("guild_id", selectedGuild.id)
           .select(FIVEM_SETTINGS_PUBLIC_COLUMNS)
           .single();
 
@@ -165,7 +165,7 @@ export function useUpdateFiveMSettings() {
         return data as FiveMSettings;
       } else {
         const { data, error } = await supabase
-          .from('fivem_settings')
+          .from("fivem_settings")
           .insert({ ...settings, guild_id: selectedGuild.id })
           .select(FIVEM_SETTINGS_PUBLIC_COLUMNS)
           .single();
@@ -175,7 +175,9 @@ export function useUpdateFiveMSettings() {
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['fivem-settings', selectedGuild?.id] });
+      queryClient.invalidateQueries({
+        queryKey: ["fivem-settings", selectedGuild?.id],
+      });
     },
   });
 }
@@ -185,15 +187,15 @@ export function useFiveMWhitelist() {
   const { selectedGuild } = useGuild();
 
   return useQuery({
-    queryKey: ['fivem-whitelist', selectedGuild?.id],
+    queryKey: ["fivem-whitelist", selectedGuild?.id],
     queryFn: async () => {
       if (!selectedGuild?.id) return [];
 
       const { data, error } = await supabase
-        .from('fivem_whitelist')
-        .select('*')
-        .eq('guild_id', selectedGuild.id)
-        .order('created_at', { ascending: false });
+        .from("fivem_whitelist")
+        .select("*")
+        .eq("guild_id", selectedGuild.id)
+        .order("created_at", { ascending: false });
 
       if (error) throw error;
       return data as FiveMWhitelistEntry[];
@@ -207,12 +209,14 @@ export function useAddToWhitelist() {
   const { selectedGuild } = useGuild();
 
   return useMutation({
-    mutationFn: async (entry: Omit<Partial<FiveMWhitelistEntry>, 'guild_id' | 'id'>) => {
-      if (!selectedGuild?.id) throw new Error('No guild selected');
+    mutationFn: async (
+      entry: Omit<Partial<FiveMWhitelistEntry>, "guild_id" | "id">,
+    ) => {
+      if (!selectedGuild?.id) throw new Error("No guild selected");
 
       const { data, error } = await supabase
-        .from('fivem_whitelist')
-        .insert({ 
+        .from("fivem_whitelist")
+        .insert({
           discord_user_id: entry.discord_user_id!,
           discord_username: entry.discord_username,
           steam_hex: entry.steam_hex,
@@ -226,7 +230,7 @@ export function useAddToWhitelist() {
           whitelisted_at: entry.whitelisted_at,
           notes: entry.notes,
           priority_level: entry.priority_level,
-          guild_id: selectedGuild.id 
+          guild_id: selectedGuild.id,
         })
         .select()
         .single();
@@ -235,7 +239,9 @@ export function useAddToWhitelist() {
       return data as FiveMWhitelistEntry;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['fivem-whitelist', selectedGuild?.id] });
+      queryClient.invalidateQueries({
+        queryKey: ["fivem-whitelist", selectedGuild?.id],
+      });
     },
   });
 }
@@ -245,11 +251,14 @@ export function useUpdateWhitelistEntry() {
   const { selectedGuild } = useGuild();
 
   return useMutation({
-    mutationFn: async ({ id, ...updates }: Partial<FiveMWhitelistEntry> & { id: string }) => {
+    mutationFn: async ({
+      id,
+      ...updates
+    }: Partial<FiveMWhitelistEntry> & { id: string }) => {
       const { data, error } = await supabase
-        .from('fivem_whitelist')
+        .from("fivem_whitelist")
         .update(updates)
-        .eq('id', id)
+        .eq("id", id)
         .select()
         .single();
 
@@ -257,7 +266,9 @@ export function useUpdateWhitelistEntry() {
       return data as FiveMWhitelistEntry;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['fivem-whitelist', selectedGuild?.id] });
+      queryClient.invalidateQueries({
+        queryKey: ["fivem-whitelist", selectedGuild?.id],
+      });
     },
   });
 }
@@ -269,14 +280,16 @@ export function useRemoveFromWhitelist() {
   return useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase
-        .from('fivem_whitelist')
+        .from("fivem_whitelist")
         .delete()
-        .eq('id', id);
+        .eq("id", id);
 
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['fivem-whitelist', selectedGuild?.id] });
+      queryClient.invalidateQueries({
+        queryKey: ["fivem-whitelist", selectedGuild?.id],
+      });
     },
   });
 }
@@ -286,15 +299,15 @@ export function useFiveMBans() {
   const { selectedGuild } = useGuild();
 
   return useQuery({
-    queryKey: ['fivem-bans', selectedGuild?.id],
+    queryKey: ["fivem-bans", selectedGuild?.id],
     queryFn: async () => {
       if (!selectedGuild?.id) return [];
 
       const { data, error } = await supabase
-        .from('fivem_bans')
-        .select('*')
-        .eq('guild_id', selectedGuild.id)
-        .order('banned_at', { ascending: false });
+        .from("fivem_bans")
+        .select("*")
+        .eq("guild_id", selectedGuild.id)
+        .order("banned_at", { ascending: false });
 
       if (error) throw error;
       return data as FiveMBan[];
@@ -308,11 +321,21 @@ export function useAddBan() {
   const { selectedGuild } = useGuild();
 
   return useMutation({
-    mutationFn: async (ban: Omit<FiveMBan, 'id' | 'guild_id' | 'banned_at' | 'is_active' | 'unbanned_at' | 'unbanned_by'>) => {
-      if (!selectedGuild?.id) throw new Error('No guild selected');
+    mutationFn: async (
+      ban: Omit<
+        FiveMBan,
+        | "id"
+        | "guild_id"
+        | "banned_at"
+        | "is_active"
+        | "unbanned_at"
+        | "unbanned_by"
+      >,
+    ) => {
+      if (!selectedGuild?.id) throw new Error("No guild selected");
 
       const { data, error } = await supabase
-        .from('fivem_bans')
+        .from("fivem_bans")
         .insert({
           ...ban,
           guild_id: selectedGuild.id,
@@ -324,7 +347,9 @@ export function useAddBan() {
       return data as FiveMBan;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['fivem-bans', selectedGuild?.id] });
+      queryClient.invalidateQueries({
+        queryKey: ["fivem-bans", selectedGuild?.id],
+      });
     },
   });
 }
@@ -334,20 +359,28 @@ export function useUnban() {
   const { selectedGuild } = useGuild();
 
   return useMutation({
-    mutationFn: async ({ id, unbannedBy }: { id: string; unbannedBy: string }) => {
+    mutationFn: async ({
+      id,
+      unbannedBy,
+    }: {
+      id: string;
+      unbannedBy: string;
+    }) => {
       const { error } = await supabase
-        .from('fivem_bans')
+        .from("fivem_bans")
         .update({
           is_active: false,
           unbanned_at: new Date().toISOString(),
           unbanned_by: unbannedBy,
         })
-        .eq('id', id);
+        .eq("id", id);
 
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['fivem-bans', selectedGuild?.id] });
+      queryClient.invalidateQueries({
+        queryKey: ["fivem-bans", selectedGuild?.id],
+      });
     },
   });
 }
@@ -357,14 +390,16 @@ export function useFiveMServerInstances() {
   const { selectedGuild } = useGuild();
 
   return useQuery({
-    queryKey: ['fivem-server-instances', selectedGuild?.id],
+    queryKey: ["fivem-server-instances", selectedGuild?.id],
     queryFn: async () => {
       if (!selectedGuild?.id) return [];
       const { data, error } = await supabase
-        .from('fivem_server_status')
-        .select('server_id, server_name, is_online, last_heartbeat, player_count, max_players, metadata')
-        .eq('guild_id', selectedGuild.id)
-        .order('last_heartbeat', { ascending: false });
+        .from("fivem_server_status")
+        .select(
+          "server_id, server_name, is_online, last_heartbeat, player_count, max_players, metadata",
+        )
+        .eq("guild_id", selectedGuild.id)
+        .order("last_heartbeat", { ascending: false });
 
       if (error) throw error;
       return data || [];
@@ -378,30 +413,34 @@ export function useFiveMOnlinePlayers(requestedServerId?: string) {
   const { selectedGuild } = useGuild();
 
   return useQuery({
-    queryKey: ['fivem-online-players', selectedGuild?.id, requestedServerId || 'active'],
+    queryKey: [
+      "fivem-online-players",
+      selectedGuild?.id,
+      requestedServerId || "active",
+    ],
     queryFn: async () => {
       if (!selectedGuild?.id) return [];
 
       let serverId = requestedServerId;
       if (!serverId) {
         const { data: activeStatus } = await supabase
-          .from('fivem_server_status')
-          .select('server_id, last_heartbeat')
-          .eq('guild_id', selectedGuild.id)
-          .order('last_heartbeat', { ascending: false })
+          .from("fivem_server_status")
+          .select("server_id, last_heartbeat")
+          .eq("guild_id", selectedGuild.id)
+          .order("last_heartbeat", { ascending: false })
           .limit(1)
           .maybeSingle();
-        serverId = activeStatus?.server_id || 'main';
+        serverId = activeStatus?.server_id || "main";
       }
 
       const freshnessCutoff = new Date(Date.now() - 45_000).toISOString();
       const { data, error } = await supabase
-        .from('fivem_online_players')
-        .select('*')
-        .eq('guild_id', selectedGuild.id)
-        .eq('server_id', serverId)
-        .gte('last_update', freshnessCutoff)
-        .order('player_id', { ascending: true });
+        .from("fivem_online_players")
+        .select("*")
+        .eq("guild_id", selectedGuild.id)
+        .eq("server_id", serverId)
+        .gte("last_update", freshnessCutoff)
+        .order("player_id", { ascending: true });
 
       if (error) throw error;
       return data as FiveMOnlinePlayer[];
@@ -416,15 +455,15 @@ export function useFiveMActionLogs(limit = 50) {
   const { selectedGuild } = useGuild();
 
   return useQuery({
-    queryKey: ['fivem-action-logs', selectedGuild?.id, limit],
+    queryKey: ["fivem-action-logs", selectedGuild?.id, limit],
     queryFn: async () => {
       if (!selectedGuild?.id) return [];
 
       const { data, error } = await supabase
-        .from('fivem_action_logs')
-        .select('*')
-        .eq('guild_id', selectedGuild.id)
-        .order('created_at', { ascending: false })
+        .from("fivem_action_logs")
+        .select("*")
+        .eq("guild_id", selectedGuild.id)
+        .order("created_at", { ascending: false })
         .limit(limit);
 
       if (error) throw error;
@@ -439,15 +478,15 @@ export function useFiveMRolePermissions() {
   const { selectedGuild } = useGuild();
 
   return useQuery({
-    queryKey: ['fivem-role-permissions', selectedGuild?.id],
+    queryKey: ["fivem-role-permissions", selectedGuild?.id],
     queryFn: async () => {
       if (!selectedGuild?.id) return [];
 
       const { data, error } = await supabase
-        .from('fivem_role_permissions')
-        .select('*')
-        .eq('guild_id', selectedGuild.id)
-        .order('permission_level', { ascending: false });
+        .from("fivem_role_permissions")
+        .select("*")
+        .eq("guild_id", selectedGuild.id)
+        .order("permission_level", { ascending: false });
 
       if (error) throw error;
       return data as FiveMRolePermission[];
@@ -461,24 +500,29 @@ export function useUpdateRolePermission() {
   const { selectedGuild } = useGuild();
 
   return useMutation({
-    mutationFn: async (permission: Omit<FiveMRolePermission, 'id' | 'guild_id' | 'created_at' | 'updated_at'>) => {
-      if (!selectedGuild?.id) throw new Error('No guild selected');
+    mutationFn: async (
+      permission: Omit<
+        FiveMRolePermission,
+        "id" | "guild_id" | "created_at" | "updated_at"
+      >,
+    ) => {
+      if (!selectedGuild?.id) throw new Error("No guild selected");
 
       const { data: existing } = await supabase
-        .from('fivem_role_permissions')
-        .select('id')
-        .eq('guild_id', selectedGuild.id)
-        .eq('discord_role_id', permission.discord_role_id)
+        .from("fivem_role_permissions")
+        .select("id")
+        .eq("guild_id", selectedGuild.id)
+        .eq("discord_role_id", permission.discord_role_id)
         .maybeSingle();
 
       if (existing) {
         const { data, error } = await supabase
-          .from('fivem_role_permissions')
+          .from("fivem_role_permissions")
           .update({
             ...permission,
             updated_at: new Date().toISOString(),
           })
-          .eq('id', existing.id)
+          .eq("id", existing.id)
           .select()
           .single();
 
@@ -486,7 +530,7 @@ export function useUpdateRolePermission() {
         return data as FiveMRolePermission;
       } else {
         const { data, error } = await supabase
-          .from('fivem_role_permissions')
+          .from("fivem_role_permissions")
           .insert({
             ...permission,
             guild_id: selectedGuild.id,
@@ -499,7 +543,9 @@ export function useUpdateRolePermission() {
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['fivem-role-permissions', selectedGuild?.id] });
+      queryClient.invalidateQueries({
+        queryKey: ["fivem-role-permissions", selectedGuild?.id],
+      });
     },
   });
 }
@@ -511,14 +557,16 @@ export function useDeleteRolePermission() {
   return useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase
-        .from('fivem_role_permissions')
+        .from("fivem_role_permissions")
         .delete()
-        .eq('id', id);
+        .eq("id", id);
 
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['fivem-role-permissions', selectedGuild?.id] });
+      queryClient.invalidateQueries({
+        queryKey: ["fivem-role-permissions", selectedGuild?.id],
+      });
     },
   });
 }
@@ -531,10 +579,13 @@ export function useFiveMStats() {
   const { data: onlinePlayers } = useFiveMOnlinePlayers();
 
   const totalPlayers = whitelist?.length || 0;
-  const whitelistedPlayers = whitelist?.filter(p => p.is_whitelisted).length || 0;
-  const pendingPlayers = whitelist?.filter(p => !p.is_whitelisted).length || 0;
-  const totalPlaytime = whitelist?.reduce((acc, p) => acc + (p.playtime_minutes || 0), 0) || 0;
-  const activeBans = bans?.filter(b => b.is_active).length || 0;
+  const whitelistedPlayers =
+    whitelist?.filter((p) => p.is_whitelisted).length || 0;
+  const pendingPlayers =
+    whitelist?.filter((p) => !p.is_whitelisted).length || 0;
+  const totalPlaytime =
+    whitelist?.reduce((acc, p) => acc + (p.playtime_minutes || 0), 0) || 0;
+  const activeBans = bans?.filter((b) => b.is_active).length || 0;
   const onlineCount = onlinePlayers?.length || 0;
 
   return {
@@ -552,13 +603,13 @@ export function useRegisterFiveMCommands() {
   const { selectedGuild } = useGuild();
 
   return useMutation({
-    mutationFn: async (action: 'register' | 'unregister' | 'list') => {
-      if (!selectedGuild?.id) throw new Error('No guild selected');
+    mutationFn: async (action: "register" | "unregister" | "list") => {
+      if (!selectedGuild?.id) throw new Error("No guild selected");
 
       const { data: session } = await supabase.auth.getSession();
-      if (!session?.session) throw new Error('Not authenticated');
+      if (!session?.session) throw new Error("Not authenticated");
 
-      const response = await invokeFunction('register-fivem-commands', {
+      const response = await invokeFunction("register-fivem-commands", {
         body: { guild_id: selectedGuild.id, action },
       });
 
@@ -608,27 +659,29 @@ export function useExecuteFiveMCommand() {
       color?: string;
       time?: number;
     }) => {
-      if (!selectedGuild?.id) throw new Error('No guild selected');
+      if (!selectedGuild?.id) throw new Error("No guild selected");
 
       const { data: session } = await supabase.auth.getSession();
-      if (!session?.session) throw new Error('Not authenticated');
+      if (!session?.session) throw new Error("Not authenticated");
 
       // Get user info for logging
-      const moderatorName = session.session.user.user_metadata?.full_name || 
-                           session.session.user.email || 
-                           'Dashboard';
-      const moderatorDiscordId = session.session.user.user_metadata?.provider_id || 'dashboard';
+      const moderatorName =
+        session.session.user.user_metadata?.full_name ||
+        session.session.user.email ||
+        "Dashboard";
+      const moderatorDiscordId =
+        session.session.user.user_metadata?.provider_id || "dashboard";
 
       // Execute command via FiveM handler
-      const response = await invokeFunction('execute-fivem-command', {
-        body: { 
-          guild_id: selectedGuild.id, 
+      const response = await invokeFunction("execute-fivem-command", {
+        body: {
+          guild_id: selectedGuild.id,
           command: command.name,
           data: {
             ...command,
             moderatorName,
             moderatorDiscordId,
-          }
+          },
         },
       });
 
@@ -636,8 +689,12 @@ export function useExecuteFiveMCommand() {
       return response.data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['fivem-action-logs', selectedGuild?.id] });
-      queryClient.invalidateQueries({ queryKey: ['fivem-online-players', selectedGuild?.id] });
+      queryClient.invalidateQueries({
+        queryKey: ["fivem-action-logs", selectedGuild?.id],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["fivem-online-players", selectedGuild?.id],
+      });
     },
   });
 }
@@ -645,42 +702,187 @@ export function useExecuteFiveMCommand() {
 // Get list of available FiveM commands
 export function useFiveMCommandList() {
   return useQuery({
-    queryKey: ['fivem-commands-list'],
+    queryKey: ["fivem-commands-list"],
     queryFn: async () => {
       // Return command definitions grouped by category
       return {
         standalone: [
-          { name: 'announcement', description: 'Send announcement til alle spillere', permission: 'mod', params: ['message'] },
-          { name: 'kick', description: 'Kick en spiller', permission: 'mod', params: ['id', 'reason?'] },
-          { name: 'kickall', description: 'Kick alle spillere', permission: 'admin', params: ['reason'] },
-          { name: 'kill', description: 'Dræb en spiller', permission: 'admin', params: ['id'] },
-          { name: 'message', description: 'Send privat besked', permission: 'mod', params: ['id', 'message'] },
-          { name: 'onlinecount', description: 'Vis antal online', permission: 'user', params: [] },
-          { name: 'players', description: 'List alle online spillere', permission: 'mod', params: [] },
-          { name: 'teleport', description: 'Teleporter en spiller', permission: 'mod', params: ['id', 'coords/location'] },
-          { name: 'teleport-all', description: 'Teleporter alle spillere', permission: 'god', params: ['coords/location'] },
-          { name: 'screenshot', description: 'Tag screenshot af spiller', permission: 'god', params: ['id'] },
-          { name: 'server', description: 'Vis server info', permission: 'user', params: [] },
-          { name: 'whitelist', description: 'Administrer whitelist', permission: 'god', params: ['action', 'value?'] },
-          { name: 'resource', description: 'Administrer resources', permission: 'god', params: ['action', 'name?'] },
-          { name: 'embed', description: 'Send embed besked', permission: 'god', params: ['channel', 'message', 'title?'] },
-          { name: 'identifiers', description: 'Vis spiller identifiers', permission: 'admin', params: ['id'] },
+          {
+            name: "announcement",
+            description: "Send announcement til alle spillere",
+            permission: "mod",
+            params: ["message"],
+          },
+          {
+            name: "kick",
+            description: "Kick en spiller",
+            permission: "mod",
+            params: ["id", "reason?"],
+          },
+          {
+            name: "kickall",
+            description: "Kick alle spillere",
+            permission: "admin",
+            params: ["reason"],
+          },
+          {
+            name: "kill",
+            description: "Dræb en spiller",
+            permission: "admin",
+            params: ["id"],
+          },
+          {
+            name: "message",
+            description: "Send privat besked",
+            permission: "mod",
+            params: ["id", "message"],
+          },
+          {
+            name: "onlinecount",
+            description: "Vis antal online",
+            permission: "user",
+            params: [],
+          },
+          {
+            name: "players",
+            description: "List alle online spillere",
+            permission: "mod",
+            params: [],
+          },
+          {
+            name: "teleport",
+            description: "Teleporter en spiller",
+            permission: "mod",
+            params: ["id", "coords/location"],
+          },
+          {
+            name: "teleport-all",
+            description: "Teleporter alle spillere",
+            permission: "god",
+            params: ["coords/location"],
+          },
+          {
+            name: "screenshot",
+            description: "Tag screenshot af spiller",
+            permission: "god",
+            params: ["id"],
+          },
+          {
+            name: "server",
+            description: "Vis server info",
+            permission: "user",
+            params: [],
+          },
+          {
+            name: "whitelist",
+            description: "Administrer whitelist",
+            permission: "god",
+            params: ["action", "value?"],
+          },
+          {
+            name: "resource",
+            description: "Administrer resources",
+            permission: "god",
+            params: ["action", "name?"],
+          },
+          {
+            name: "embed",
+            description: "Send embed besked",
+            permission: "god",
+            params: ["channel", "message", "title?"],
+          },
+          {
+            name: "identifiers",
+            description: "Vis spiller identifiers",
+            permission: "admin",
+            params: ["id"],
+          },
         ],
         qbcore: [
-          { name: 'ban', description: 'Ban en spiller', permission: 'admin', params: ['id', 'duration', 'reason'] },
-          { name: 'revive', description: 'Genopliv en spiller', permission: 'admin', params: ['id'] },
-          { name: 'revive-all', description: 'Genopliv alle', permission: 'god', params: [] },
-          { name: 'money', description: 'Administrer penge', permission: 'admin', params: ['action', 'id', 'type', 'amount'] },
-          { name: 'inventory', description: 'Administrer inventory', permission: 'admin', params: ['action', 'id', 'item?', 'count?'] },
-          { name: 'job', description: 'Administrer job', permission: 'admin', params: ['action', 'id', 'job?', 'grade?'] },
-          { name: 'gang', description: 'Administrer gang', permission: 'admin', params: ['action', 'id', 'gang?', 'grade?'] },
-          { name: 'jail', description: 'Sæt spiller i fængsel', permission: 'mod', params: ['action', 'id', 'time?'] },
-          { name: 'vehicle', description: 'Spawn køretøj', permission: 'god', params: ['action', 'id?', 'spawncode?', 'plate?'] },
-          { name: 'weather', description: 'Sæt vejr', permission: 'admin', params: ['action', 'weather?'] },
-          { name: 'time', description: 'Sæt server tid', permission: 'admin', params: ['hour'] },
-          { name: 'logout', description: 'Tving logout', permission: 'admin', params: ['id'] },
-          { name: 'clothing-menu', description: 'Åbn tøjmenu', permission: 'admin', params: ['id'] },
-          { name: 'permissions', description: 'Administrer permissions', permission: 'god', params: ['action', 'id', 'permission?'] },
+          {
+            name: "ban",
+            description: "Ban en spiller",
+            permission: "admin",
+            params: ["id", "duration", "reason"],
+          },
+          {
+            name: "revive",
+            description: "Genopliv en spiller",
+            permission: "admin",
+            params: ["id"],
+          },
+          {
+            name: "revive-all",
+            description: "Genopliv alle",
+            permission: "god",
+            params: [],
+          },
+          {
+            name: "money",
+            description: "Administrer penge",
+            permission: "admin",
+            params: ["action", "id", "type", "amount"],
+          },
+          {
+            name: "inventory",
+            description: "Administrer inventory",
+            permission: "admin",
+            params: ["action", "id", "item?", "count?"],
+          },
+          {
+            name: "job",
+            description: "Administrer job",
+            permission: "admin",
+            params: ["action", "id", "job?", "grade?"],
+          },
+          {
+            name: "gang",
+            description: "Administrer gang",
+            permission: "admin",
+            params: ["action", "id", "gang?", "grade?"],
+          },
+          {
+            name: "jail",
+            description: "Sæt spiller i fængsel",
+            permission: "mod",
+            params: ["action", "id", "time?"],
+          },
+          {
+            name: "vehicle",
+            description: "Spawn køretøj",
+            permission: "god",
+            params: ["action", "id?", "spawncode?", "plate?"],
+          },
+          {
+            name: "weather",
+            description: "Sæt vejr",
+            permission: "admin",
+            params: ["action", "weather?"],
+          },
+          {
+            name: "time",
+            description: "Sæt server tid",
+            permission: "admin",
+            params: ["hour"],
+          },
+          {
+            name: "logout",
+            description: "Tving logout",
+            permission: "admin",
+            params: ["id"],
+          },
+          {
+            name: "clothing-menu",
+            description: "Åbn tøjmenu",
+            permission: "admin",
+            params: ["id"],
+          },
+          {
+            name: "permissions",
+            description: "Administrer permissions",
+            permission: "god",
+            params: ["action", "id", "permission?"],
+          },
         ],
       };
     },
@@ -715,12 +917,15 @@ export function useFiveMBridgeStatus() {
   const { selectedGuild } = useGuild();
 
   return useQuery({
-    queryKey: ['fivem-bridge-status', selectedGuild?.id],
+    queryKey: ["fivem-bridge-status", selectedGuild?.id],
     queryFn: async () => {
       if (!selectedGuild?.id) return null;
-      const { data, error } = await invokeFunction<FiveMBridgeStatus>('fivem-setup-key', {
-        body: { guild_id: selectedGuild.id, action: 'status' },
-      });
+      const { data, error } = await invokeFunction<FiveMBridgeStatus>(
+        "fivem-setup-key",
+        {
+          body: { guild_id: selectedGuild.id, action: "status" },
+        },
+      );
       if (error) throw error;
       return data;
     },
@@ -735,17 +940,24 @@ export function useRotateFiveMBridgeKey() {
 
   return useMutation({
     mutationFn: async () => {
-      if (!selectedGuild?.id) throw new Error('No guild selected');
-      const { data, error } = await invokeFunction<FiveMBridgeKeyResult>('fivem-setup-key', {
-        body: { guild_id: selectedGuild.id, action: 'rotate' },
-      });
+      if (!selectedGuild?.id) throw new Error("No guild selected");
+      const { data, error } = await invokeFunction<FiveMBridgeKeyResult>(
+        "fivem-setup-key",
+        {
+          body: { guild_id: selectedGuild.id, action: "rotate" },
+        },
+      );
       if (error) throw error;
-      if (!data?.token) throw new Error('Bridge key was not returned');
+      if (!data?.token) throw new Error("Bridge key was not returned");
       return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['fivem-bridge-status', selectedGuild?.id] });
-      queryClient.invalidateQueries({ queryKey: ['fivem-settings', selectedGuild?.id] });
+      queryClient.invalidateQueries({
+        queryKey: ["fivem-bridge-status", selectedGuild?.id],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["fivem-settings", selectedGuild?.id],
+      });
     },
   });
 }
@@ -756,17 +968,23 @@ export function useRevokeFiveMBridgeKey() {
 
   return useMutation({
     mutationFn: async () => {
-      if (!selectedGuild?.id) throw new Error('No guild selected');
-      const { data, error } = await invokeFunction<{ success: boolean }>('fivem-setup-key', {
-        body: { guild_id: selectedGuild.id, action: 'revoke' },
-      });
+      if (!selectedGuild?.id) throw new Error("No guild selected");
+      const { data, error } = await invokeFunction<{ success: boolean }>(
+        "fivem-setup-key",
+        {
+          body: { guild_id: selectedGuild.id, action: "revoke" },
+        },
+      );
       if (error) throw error;
       return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['fivem-bridge-status', selectedGuild?.id] });
-      queryClient.invalidateQueries({ queryKey: ['fivem-settings', selectedGuild?.id] });
+      queryClient.invalidateQueries({
+        queryKey: ["fivem-bridge-status", selectedGuild?.id],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["fivem-settings", selectedGuild?.id],
+      });
     },
   });
 }
-

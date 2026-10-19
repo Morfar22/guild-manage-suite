@@ -3,7 +3,8 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type",
 };
 
 serve(async (req) => {
@@ -28,7 +29,10 @@ serve(async (req) => {
     }
 
     const token = authHeader.replace("Bearer ", "");
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser(token);
 
     if (authError || !user) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
@@ -57,32 +61,42 @@ serve(async (req) => {
 
     if (guildError) {
       console.error("Failed to create guild:", guildError);
-      return new Response(JSON.stringify({ error: "Failed to create guild", details: guildError }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return new Response(
+        JSON.stringify({
+          error: "Failed to create guild",
+          details: guildError,
+        }),
+        {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
     }
 
     console.log("Guild created:", guild.id);
 
     // Link user to guild
-    const { error: linkError } = await supabase
-      .from("user_guilds")
-      .insert({
-        user_id: user.id,
-        guild_id: guild.id,
-        discord_user_id: user.id,
-        has_admin_permission: true,
-      });
+    const { error: linkError } = await supabase.from("user_guilds").insert({
+      user_id: user.id,
+      guild_id: guild.id,
+      discord_user_id: user.id,
+      has_admin_permission: true,
+    });
 
     if (linkError) {
       console.error("Failed to link user to guild:", linkError);
       // Clean up the guild if we couldn't link
       await supabase.from("guilds").delete().eq("id", guild.id);
-      return new Response(JSON.stringify({ error: "Failed to link user to guild", details: linkError }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return new Response(
+        JSON.stringify({
+          error: "Failed to link user to guild",
+          details: linkError,
+        }),
+        {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
     }
 
     console.log("User linked to guild");
@@ -90,24 +104,19 @@ serve(async (req) => {
     // Add default modules
     const modules = ["moderation", "music", "leveling", "utility", "fun"];
     for (const module of modules) {
-      await supabase
-        .from("guild_modules")
-        .insert({
-          guild_id: guild.id,
-          module_type: module,
-          enabled: true,
-        });
+      await supabase.from("guild_modules").insert({
+        guild_id: guild.id,
+        module_type: module,
+        enabled: true,
+      });
     }
 
     console.log("Default modules added");
 
-    return new Response(
-      JSON.stringify({ success: true, guild }),
-      {
-        status: 200,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      }
-    );
+    return new Response(JSON.stringify({ success: true, guild }), {
+      status: 200,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   } catch (error) {
     console.error("Error:", error);
     return new Response(JSON.stringify({ error: "Internal server error" }), {

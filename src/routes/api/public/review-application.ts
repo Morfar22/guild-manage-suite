@@ -1,12 +1,17 @@
 // @ts-nocheck
 // Migrated from Supabase Edge Function `review-application` to a TanStack server route.
-import { createFileRoute } from '@tanstack/react-router'
-import { createClient } from '@supabase/supabase-js'
+import { createFileRoute } from "@tanstack/react-router";
+import { createClient } from "@supabase/supabase-js";
 
-const __env = (k: string) => process.env[k] ?? (k === 'SUPABASE_ANON_KEY' ? process.env['SUPABASE_PUBLISHABLE_KEY'] : undefined)
-let __handler: (req: Request) => Response | Promise<Response>
-const __serve = (fn: any, _opts?: any) => { __handler = fn }
-
+const __env = (k: string) =>
+  process.env[k] ??
+  (k === "SUPABASE_ANON_KEY"
+    ? process.env["SUPABASE_PUBLISHABLE_KEY"]
+    : undefined);
+let __handler: (req: Request) => Response | Promise<Response>;
+const __serve = (fn: any, _opts?: any) => {
+  __handler = fn;
+};
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -59,7 +64,8 @@ __serve(async (req) => {
       { global: { headers: { Authorization: authHeader } } },
     );
 
-    const { data: claimsData, error: claimsError } = await supabaseAuthed.auth.getClaims(token);
+    const { data: claimsData, error: claimsError } =
+      await supabaseAuthed.auth.getClaims(token);
     if (claimsError || !claimsData?.claims?.sub) {
       console.error("getClaims failed", claimsError);
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
@@ -110,12 +116,13 @@ __serve(async (req) => {
     if (!application) throw new Error("Application not found");
 
     // Verify reviewer can manage this guild
-    const { data: reviewerGuild, error: reviewerGuildError } = await supabaseAdmin
-      .from("user_guilds")
-      .select("discord_user_id, has_admin_permission")
-      .eq("guild_id", application.guild_id)
-      .eq("user_id", reviewerUserId)
-      .maybeSingle();
+    const { data: reviewerGuild, error: reviewerGuildError } =
+      await supabaseAdmin
+        .from("user_guilds")
+        .select("discord_user_id, has_admin_permission")
+        .eq("guild_id", application.guild_id)
+        .eq("user_id", reviewerUserId)
+        .maybeSingle();
 
     if (reviewerGuildError) throw reviewerGuildError;
     if (!reviewerGuild?.has_admin_permission) {
@@ -243,10 +250,11 @@ __serve(async (req) => {
       try {
         const statusEmoji = status === "approved" ? "✅" : "❌";
         const statusText = status === "approved" ? "APPROVED" : "DENIED";
-        const roleInfo = status === "approved" && effects.roleGranted && effects.roleId 
-          ? `\n🎭 Role assigned: <@&${effects.roleId}>` 
-          : "";
-        
+        const roleInfo =
+          status === "approved" && effects.roleGranted && effects.roleId
+            ? `\n🎭 Role assigned: <@&${effects.roleId}>`
+            : "";
+
         const embed = {
           title: `${statusEmoji} Application ${statusText}`,
           description: `<@${application.discord_user_id}>'s application has been reviewed.`,
@@ -259,19 +267,29 @@ __serve(async (req) => {
             },
             {
               name: "Reviewed by",
-              value: reviewerDiscordId ? `<@${reviewerDiscordId}>` : reviewerDisplay,
+              value: reviewerDiscordId
+                ? `<@${reviewerDiscordId}>`
+                : reviewerDisplay,
               inline: true,
             },
-            ...(notes ? [{
-              name: "Note",
-              value: notes,
-              inline: false,
-            }] : []),
-            ...(roleInfo ? [{
-              name: "Role",
-              value: effects.roleId ? `<@&${effects.roleId}>` : "None",
-              inline: true,
-            }] : []),
+            ...(notes
+              ? [
+                  {
+                    name: "Note",
+                    value: notes,
+                    inline: false,
+                  },
+                ]
+              : []),
+            ...(roleInfo
+              ? [
+                  {
+                    name: "Role",
+                    value: effects.roleId ? `<@&${effects.roleId}>` : "None",
+                    inline: true,
+                  },
+                ]
+              : []),
           ],
           timestamp: reviewedAt,
         };
@@ -286,7 +304,8 @@ __serve(async (req) => {
       } catch (e) {
         console.error("Failed to send ticket status message", e);
         effects.ticketMessageSent = false;
-        effects.ticketMessageError = e instanceof Error ? e.message : "Unknown error";
+        effects.ticketMessageError =
+          e instanceof Error ? e.message : "Unknown error";
       }
     }
 
@@ -304,10 +323,9 @@ __serve(async (req) => {
   }
 });
 
+const __call = ({ request }: { request: Request }) => __handler(request);
 
-const __call = ({ request }: { request: Request }) => __handler(request)
-
-export const Route = createFileRoute('/api/public/review-application')({
+export const Route = createFileRoute("/api/public/review-application")({
   server: {
     handlers: {
       GET: __call,
@@ -318,4 +336,4 @@ export const Route = createFileRoute('/api/public/review-application')({
       OPTIONS: __call,
     },
   },
-})
+});

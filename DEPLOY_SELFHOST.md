@@ -34,6 +34,7 @@ bot/.env
 Projektet bygger med Nitro mod Cloudflare (allerede konfigureret i `vite.config.ts`).
 
 **Cloudflare Workers/Pages:**
+
 1. Cloudflare Dashboard → Workers & Pages → Create → forbind dit GitHub-repo.
 2. Build command: `bun install && bun run build` (eller `npm install && npm run build`).
 3. Output directory: `dist` (tjek `bun run build` lokalt første gang for at bekræfte mappenavnet).
@@ -59,6 +60,7 @@ Projektet bygger med Nitro mod Cloudflare (allerede konfigureret i `vite.config.
 ## 5. AI-funktioner (vigtigt!)
 
 AI-screening, AI-chat, AI-automod, AI auto-responder, tekstforbedring og ticket summaries bruger nu OpenAI direkte fra server-ruterne.
+
 - Opret en OpenAI API-nøgle.
 - Tilføj `OPENAI_API_KEY` som en hemmelig Cloudflare Secret.
 - Valgfrit: sæt `OPENAI_MODEL` for at overskrive standardmodellen (`gpt-4.1-mini`).

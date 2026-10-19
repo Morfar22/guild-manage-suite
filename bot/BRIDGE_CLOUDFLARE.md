@@ -13,7 +13,7 @@ npm install
 openssl rand -hex 32
 ```
 
-Store the generated 64-character random string privately. Use the *same* string on the VPS and Cloudflare. Do not paste it into GitHub or chat.
+Store the generated 64-character random string privately. Use the _same_ string on the VPS and Cloudflare. Do not paste it into GitHub or chat.
 
 Add to the VPS bot environment (`/bot/.env`):
 
@@ -46,7 +46,7 @@ The URL is an example, not a configured endpoint. If an Access policy protects t
 In the **deployed** Cloudflare web project, Settings → Variables and Secrets, add:
 
 - `GUILDOS_BRIDGE_URL` = `https://guildos-bridge.example.com` (your real tunnel hostname)
-- `GUILDOS_BRIDGE_SECRET` = the *same* generated secret (Secret type)
+- `GUILDOS_BRIDGE_SECRET` = the _same_ generated secret (Secret type)
 
 Existing `SUPABASE_URL`, `SUPABASE_ANON_KEY` or `SUPABASE_PUBLISHABLE_KEY`, and `SUPABASE_SERVICE_ROLE_KEY` remain required. Redeploy the web project after changing environment variables.
 

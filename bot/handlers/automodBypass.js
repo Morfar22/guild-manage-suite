@@ -14,11 +14,13 @@ async function getBypassRoleIds(supabase, discordGuildId) {
 
   try {
     const { data } = await supabase
-      .from('guilds')
-      .select('automod_bypass_role_ids')
-      .eq('guild_id', discordGuildId)
+      .from("guilds")
+      .select("automod_bypass_role_ids")
+      .eq("guild_id", discordGuildId)
       .maybeSingle();
-    const roles = Array.isArray(data?.automod_bypass_role_ids) ? data.automod_bypass_role_ids : [];
+    const roles = Array.isArray(data?.automod_bypass_role_ids)
+      ? data.automod_bypass_role_ids
+      : [];
     cache.set(discordGuildId, { roles, ts: Date.now() });
     return roles;
   } catch {

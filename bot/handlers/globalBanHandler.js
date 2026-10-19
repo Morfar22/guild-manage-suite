@@ -1,6 +1,6 @@
 /**
  * Global Ban Handler
- * 
+ *
  * Polls pending global ban executions and applies them only in the guilds
  * this bot instance is responsible for.
  * Also auto-detects globally banned users when they join a guild.
@@ -9,7 +9,7 @@
 function setupGlobalBanHandler(client, supabase, options = {}) {
   const { shouldHandleGuild } = options;
 
-  console.log('[GlobalBan] Setting up handler...');
+  console.log("[GlobalBan] Setting up handler...");
 
   let isProcessingQueue = false;
   const permissionWarnings = new Set();
@@ -18,35 +18,40 @@ function setupGlobalBanHandler(client, supabase, options = {}) {
   const blockedGuildUntil = new Map();
   const BLOCKED_RETRY_MS = 30 * 60 * 1000;
 
-  async function createPermissionAlertOnce(guildRowId, discordGuildId, guildName, permissionName) {
+  async function createPermissionAlertOnce(
+    guildRowId,
+    discordGuildId,
+    guildName,
+    permissionName,
+  ) {
     const key = `${discordGuildId}:${permissionName}`;
     if (permissionWarnings.has(key)) return;
     permissionWarnings.add(key);
 
     console.warn(
-      `[GlobalBan] ${guildName}: mangler ${permissionName}. GlobalBan pauses for denne guild i 30 min.`
+      `[GlobalBan] ${guildName}: mangler ${permissionName}. GlobalBan pauses for denne guild i 30 min.`,
     );
 
     try {
       const { data: existing } = await supabase
-        .from('dashboard_notifications')
-        .select('id')
-        .eq('guild_id', guildRowId)
-        .eq('source', 'globalban-permission')
-        .neq('status', 'resolved')
-        .contains('metadata', { permission: permissionName })
+        .from("dashboard_notifications")
+        .select("id")
+        .eq("guild_id", guildRowId)
+        .eq("source", "globalban-permission")
+        .neq("status", "resolved")
+        .contains("metadata", { permission: permissionName })
         .limit(1)
         .maybeSingle();
 
       if (!existing) {
-        await supabase.from('dashboard_notifications').insert({
+        await supabase.from("dashboard_notifications").insert({
           guild_id: guildRowId,
-          type: 'warning',
-          severity: 'warning',
-          status: 'open',
-          title: 'GlobalBan mangler Discord-permission',
+          type: "warning",
+          severity: "warning",
+          status: "open",
+          title: "GlobalBan mangler Discord-permission",
           message: `GuildOS Bot mangler ${permissionName} på ${guildName}. GlobalBan kan ikke håndhæves før permissionen er givet.`,
-          source: 'globalban-permission',
+          source: "globalban-permission",
           metadata: {
             discord_guild_id: discordGuildId,
             permission: permissionName,
@@ -54,26 +59,32 @@ function setupGlobalBanHandler(client, supabase, options = {}) {
         });
       }
     } catch (error) {
-      console.warn('[GlobalBan] Kunne ikke oprette permission-alert:', error?.message || error);
+      console.warn(
+        "[GlobalBan] Kunne ikke oprette permission-alert:",
+        error?.message || error,
+      );
     }
   }
 
   async function getManagedGuildRows() {
     const managedDiscordGuildIds = client.guilds.cache
-      .map(guild => guild.id)
-      .filter(guildId => !shouldHandleGuild || shouldHandleGuild(guildId));
+      .map((guild) => guild.id)
+      .filter((guildId) => !shouldHandleGuild || shouldHandleGuild(guildId));
 
     if (managedDiscordGuildIds.length === 0) {
       return [];
     }
 
     const { data, error } = await supabase
-      .from('guilds')
-      .select('id, guild_id')
-      .in('guild_id', managedDiscordGuildIds);
+      .from("guilds")
+      .select("id, guild_id")
+      .in("guild_id", managedDiscordGuildIds);
 
     if (error) {
-      console.error('[GlobalBan] Error fetching managed guilds:', error.message);
+      console.error(
+        "[GlobalBan] Error fetching managed guilds:",
+        error.message,
+      );
       return [];
     }
 
@@ -88,35 +99,46 @@ function setupGlobalBanHandler(client, supabase, options = {}) {
       const guildRows = await getManagedGuildRows();
       if (guildRows.length === 0) return;
 
-      const guildIdByDbId = new Map(guildRows.map(row => [row.id, row.guild_id]));
-      const managedGuildDbIds = guildRows.map(row => row.id);
+      const guildIdByDbId = new Map(
+        guildRows.map((row) => [row.id, row.guild_id]),
+      );
+      const managedGuildDbIds = guildRows.map((row) => row.id);
 
       const { data: executions, error } = await supabase
-        .from('global_ban_executions')
-        .select('id, guild_id, global_ban_id')
-        .eq('executed', false)
-        .in('guild_id', managedGuildDbIds)
+        .from("global_ban_executions")
+        .select("id, guild_id, global_ban_id")
+        .eq("executed", false)
+        .in("guild_id", managedGuildDbIds)
         .limit(100);
 
       if (error) {
-        console.error('[GlobalBan] Error fetching executions:', error.message);
+        console.error("[GlobalBan] Error fetching executions:", error.message);
         return;
       }
 
       if (!executions || executions.length === 0) return;
 
-      const banIds = [...new Set(executions.map(execution => execution.global_ban_id).filter(Boolean))];
+      const banIds = [
+        ...new Set(
+          executions
+            .map((execution) => execution.global_ban_id)
+            .filter(Boolean),
+        ),
+      ];
       const { data: bans, error: bansError } = await supabase
-        .from('global_bans')
-        .select('id, target_discord_id, target_discord_name, reason')
-        .in('id', banIds);
+        .from("global_bans")
+        .select("id, target_discord_id, target_discord_name, reason")
+        .in("id", banIds);
 
       if (bansError) {
-        console.error('[GlobalBan] Error fetching ban details:', bansError.message);
+        console.error(
+          "[GlobalBan] Error fetching ban details:",
+          bansError.message,
+        );
         return;
       }
 
-      const bansById = new Map((bans || []).map(ban => [ban.id, ban]));
+      const bansById = new Map((bans || []).map((ban) => [ban.id, ban]));
       let executedCount = 0;
 
       for (const execution of executions) {
@@ -132,52 +154,72 @@ function setupGlobalBanHandler(client, supabase, options = {}) {
         if (guildBlockedUntil) blockedGuildUntil.delete(discordGuildId);
 
         if (!discordGuildId) {
-          await supabase.from('global_ban_executions').update({
-            executed: false,
-            error_message: 'Guild not found in database',
-            executed_at: new Date().toISOString(),
-          }).eq('id', execution.id);
+          await supabase
+            .from("global_ban_executions")
+            .update({
+              executed: false,
+              error_message: "Guild not found in database",
+              executed_at: new Date().toISOString(),
+            })
+            .eq("id", execution.id);
           continue;
         }
 
         if (!ban) {
-          await supabase.from('global_ban_executions').update({
-            executed: false,
-            error_message: 'Global ban record not found',
-            executed_at: new Date().toISOString(),
-          }).eq('id', execution.id);
+          await supabase
+            .from("global_ban_executions")
+            .update({
+              executed: false,
+              error_message: "Global ban record not found",
+              executed_at: new Date().toISOString(),
+            })
+            .eq("id", execution.id);
           continue;
         }
 
         try {
           const guild = client.guilds.cache.get(discordGuildId);
           if (!guild) {
-            await supabase.from('global_ban_executions').update({
-              executed: false,
-              error_message: 'Bot not in guild',
-              executed_at: new Date().toISOString(),
-            }).eq('id', execution.id);
+            await supabase
+              .from("global_ban_executions")
+              .update({
+                executed: false,
+                error_message: "Bot not in guild",
+                executed_at: new Date().toISOString(),
+              })
+              .eq("id", execution.id);
             continue;
           }
 
-          const me = guild.members.me || await guild.members.fetchMe().catch(() => null);
-          if (!me?.permissions?.has('BanMembers')) {
-            const permissionError = 'Missing BanMembers permission';
-            blockedExecutionUntil.set(execution.id, Date.now() + BLOCKED_RETRY_MS);
-            blockedGuildUntil.set(discordGuildId, Date.now() + BLOCKED_RETRY_MS);
+          const me =
+            guild.members.me ||
+            (await guild.members.fetchMe().catch(() => null));
+          if (!me?.permissions?.has("BanMembers")) {
+            const permissionError = "Missing BanMembers permission";
+            blockedExecutionUntil.set(
+              execution.id,
+              Date.now() + BLOCKED_RETRY_MS,
+            );
+            blockedGuildUntil.set(
+              discordGuildId,
+              Date.now() + BLOCKED_RETRY_MS,
+            );
 
             await createPermissionAlertOnce(
               execution.guild_id,
               discordGuildId,
               guild.name,
-              'Ban Members'
+              "Ban Members",
             );
 
-            await supabase.from('global_ban_executions').update({
-              executed: false,
-              error_message: permissionError,
-              executed_at: new Date().toISOString(),
-            }).eq('id', execution.id);
+            await supabase
+              .from("global_ban_executions")
+              .update({
+                executed: false,
+                error_message: permissionError,
+                executed_at: new Date().toISOString(),
+              })
+              .eq("id", execution.id);
             continue;
           }
 
@@ -186,22 +228,33 @@ function setupGlobalBanHandler(client, supabase, options = {}) {
 
           // If the target is currently a member, Discord role hierarchy may make
           // them unbannable even when the bot has BanMembers.
-          const targetMember = await guild.members.fetch(ban.target_discord_id).catch(() => null);
+          const targetMember = await guild.members
+            .fetch(ban.target_discord_id)
+            .catch(() => null);
           if (targetMember && !targetMember.bannable) {
-            const hierarchyError = 'Target is not bannable (role hierarchy or guild owner)';
+            const hierarchyError =
+              "Target is not bannable (role hierarchy or guild owner)";
             const failureKey = `${discordGuildId}:${ban.target_discord_id}:hierarchy`;
-            blockedExecutionUntil.set(execution.id, Date.now() + BLOCKED_RETRY_MS);
+            blockedExecutionUntil.set(
+              execution.id,
+              Date.now() + BLOCKED_RETRY_MS,
+            );
 
             if (!banFailureWarnings.has(failureKey)) {
-              console.warn(`[GlobalBan] Skipping ${ban.target_discord_id} in ${guild.name}: ${hierarchyError} (retry om 10 min)`);
+              console.warn(
+                `[GlobalBan] Skipping ${ban.target_discord_id} in ${guild.name}: ${hierarchyError} (retry om 10 min)`,
+              );
               banFailureWarnings.add(failureKey);
             }
 
-            await supabase.from('global_ban_executions').update({
-              executed: false,
-              error_message: hierarchyError,
-              executed_at: new Date().toISOString(),
-            }).eq('id', execution.id);
+            await supabase
+              .from("global_ban_executions")
+              .update({
+                executed: false,
+                error_message: hierarchyError,
+                executed_at: new Date().toISOString(),
+              })
+              .eq("id", execution.id);
             continue;
           }
 
@@ -209,43 +262,63 @@ function setupGlobalBanHandler(client, supabase, options = {}) {
             reason: `[Global Ban] ${ban.reason}`,
           });
 
-          await supabase.from('global_ban_executions').update({
-            executed: true,
-            error_message: null,
-            executed_at: new Date().toISOString(),
-          }).eq('id', execution.id);
+          await supabase
+            .from("global_ban_executions")
+            .update({
+              executed: true,
+              error_message: null,
+              executed_at: new Date().toISOString(),
+            })
+            .eq("id", execution.id);
 
           executedCount++;
-          console.log(`[GlobalBan] ✅ Banned ${ban.target_discord_id} from ${guild.name}`);
+          console.log(
+            `[GlobalBan] ✅ Banned ${ban.target_discord_id} from ${guild.name}`,
+          );
         } catch (banError) {
           const errorMsg = banError.message || String(banError);
           const failureKey = `${discordGuildId}:${ban.target_discord_id}:${errorMsg}`;
 
-          if (banError.code === 50013 || /missing permissions/i.test(errorMsg)) {
-            blockedExecutionUntil.set(execution.id, Date.now() + BLOCKED_RETRY_MS);
+          if (
+            banError.code === 50013 ||
+            /missing permissions/i.test(errorMsg)
+          ) {
+            blockedExecutionUntil.set(
+              execution.id,
+              Date.now() + BLOCKED_RETRY_MS,
+            );
           }
 
           if (!banFailureWarnings.has(failureKey)) {
-            const retryNote = blockedExecutionUntil.has(execution.id) ? ' (retry om 10 min)' : '';
-            console.warn(`[GlobalBan] Could not ban ${ban.target_discord_id} in ${discordGuildId}: ${errorMsg}${retryNote}`);
+            const retryNote = blockedExecutionUntil.has(execution.id)
+              ? " (retry om 10 min)"
+              : "";
+            console.warn(
+              `[GlobalBan] Could not ban ${ban.target_discord_id} in ${discordGuildId}: ${errorMsg}${retryNote}`,
+            );
             banFailureWarnings.add(failureKey);
           }
 
-          await supabase.from('global_ban_executions').update({
-            executed: false,
-            error_message: errorMsg,
-            executed_at: new Date().toISOString(),
-          }).eq('id', execution.id);
+          await supabase
+            .from("global_ban_executions")
+            .update({
+              executed: false,
+              error_message: errorMsg,
+              executed_at: new Date().toISOString(),
+            })
+            .eq("id", execution.id);
         }
 
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        await new Promise((resolve) => setTimeout(resolve, 1000));
       }
 
       if (executedCount > 0) {
-        console.log(`[GlobalBan] Finished polling run: ${executedCount} ban(s) executed`);
+        console.log(
+          `[GlobalBan] Finished polling run: ${executedCount} ban(s) executed`,
+        );
       }
     } catch (err) {
-      console.error('[GlobalBan] Error processing execution queue:', err);
+      console.error("[GlobalBan] Error processing execution queue:", err);
     } finally {
       isProcessingQueue = false;
     }
@@ -260,104 +333,127 @@ function setupGlobalBanHandler(client, supabase, options = {}) {
       if (shouldHandleGuild && !shouldHandleGuild(member.guild.id)) return;
 
       const { data: guildRow } = await supabase
-        .from('guilds')
-        .select('id')
-        .eq('guild_id', member.guild.id)
+        .from("guilds")
+        .select("id")
+        .eq("guild_id", member.guild.id)
         .single();
 
       if (!guildRow) return;
 
       const { data: bans } = await supabase
-        .from('global_bans')
-        .select('id, reason, severity')
-        .eq('target_discord_id', member.user.id);
+        .from("global_bans")
+        .select("id, reason, severity")
+        .eq("target_discord_id", member.user.id);
 
       if (!bans || bans.length === 0) return;
 
       const ban = bans[0];
-      console.log(`[GlobalBan] ⚠️ Globally banned user ${member.user.tag} joined ${member.guild.name}`);
+      console.log(
+        `[GlobalBan] ⚠️ Globally banned user ${member.user.tag} joined ${member.guild.name}`,
+      );
 
       const { data: settings } = await supabase
-        .from('guild_bot_settings')
-        .select('global_ban_auto_action, global_ban_opt_out')
-        .eq('guild_id', guildRow.id)
+        .from("guild_bot_settings")
+        .select("global_ban_auto_action, global_ban_opt_out")
+        .eq("guild_id", guildRow.id)
         .single();
 
       if (settings?.global_ban_opt_out) return;
 
-      const autoAction = settings?.global_ban_auto_action || 'none';
+      const autoAction = settings?.global_ban_auto_action || "none";
 
-      await supabase.from('global_ban_alerts').insert({
+      await supabase.from("global_ban_alerts").insert({
         guild_id: guildRow.id,
         ban_id: ban.id,
         member_discord_id: member.user.id,
-        alert_type: autoAction === 'none' ? 'warning' : autoAction,
+        alert_type: autoAction === "none" ? "warning" : autoAction,
         action_taken: autoAction,
       });
 
-      if (autoAction === 'ban') {
-        const me = member.guild.members.me || await member.guild.members.fetchMe().catch(() => null);
-        if (!me?.permissions?.has('BanMembers') || !member.bannable) {
+      if (autoAction === "ban") {
+        const me =
+          member.guild.members.me ||
+          (await member.guild.members.fetchMe().catch(() => null));
+        if (!me?.permissions?.has("BanMembers") || !member.bannable) {
           await createPermissionAlertOnce(
             guildRow.id,
             member.guild.id,
             member.guild.name,
-            !me?.permissions?.has('BanMembers') ? 'Ban Members' : 'Role hierarchy for bans'
+            !me?.permissions?.has("BanMembers")
+              ? "Ban Members"
+              : "Role hierarchy for bans",
           );
           return;
         }
 
         await member.ban({ reason: `[Global Ban Auto-detect] ${ban.reason}` });
-        console.log(`[GlobalBan] Auto-banned ${member.user.tag} from ${member.guild.name}`);
-      } else if (autoAction === 'kick') {
-        const me = member.guild.members.me || await member.guild.members.fetchMe().catch(() => null);
-        if (!me?.permissions?.has('KickMembers') || !member.kickable) {
+        console.log(
+          `[GlobalBan] Auto-banned ${member.user.tag} from ${member.guild.name}`,
+        );
+      } else if (autoAction === "kick") {
+        const me =
+          member.guild.members.me ||
+          (await member.guild.members.fetchMe().catch(() => null));
+        if (!me?.permissions?.has("KickMembers") || !member.kickable) {
           await createPermissionAlertOnce(
             guildRow.id,
             member.guild.id,
             member.guild.name,
-            !me?.permissions?.has('KickMembers') ? 'Kick Members' : 'Role hierarchy for kicks'
+            !me?.permissions?.has("KickMembers")
+              ? "Kick Members"
+              : "Role hierarchy for kicks",
           );
           return;
         }
 
         await member.kick(`[Global Ban Auto-detect] ${ban.reason}`);
-        console.log(`[GlobalBan] Auto-kicked ${member.user.tag} from ${member.guild.name}`);
-      } else if (autoAction === 'warn') {
+        console.log(
+          `[GlobalBan] Auto-kicked ${member.user.tag} from ${member.guild.name}`,
+        );
+      } else if (autoAction === "warn") {
         try {
-          await member.send(`⚠️ Du er registreret i det globale ban-system på **${member.guild.name}**. Kontakt en administrator for mere info.`);
-        } catch { /* DMs may be disabled */ }
-        console.log(`[GlobalBan] Warned ${member.user.tag} in ${member.guild.name}`);
+          await member.send(
+            `⚠️ Du er registreret i det globale ban-system på **${member.guild.name}**. Kontakt en administrator for mere info.`,
+          );
+        } catch {
+          /* DMs may be disabled */
+        }
+        console.log(
+          `[GlobalBan] Warned ${member.user.tag} in ${member.guild.name}`,
+        );
       }
     } catch (err) {
-      console.error('[GlobalBan] Error in auto-detect:', err);
+      console.error("[GlobalBan] Error in auto-detect:", err);
     }
   };
 
-  client.on('guildMemberAdd', onGuildMemberAdd);
+  client.on("guildMemberAdd", onGuildMemberAdd);
 
   const onGuildMemberUpdate = (oldMember, newMember) => {
     if (newMember.id !== client.user?.id) return;
-    if (oldMember.permissions.bitfield === newMember.permissions.bitfield) return;
+    if (oldMember.permissions.bitfield === newMember.permissions.bitfield)
+      return;
 
     blockedGuildUntil.delete(newMember.guild.id);
     permissionWarnings.delete(`${newMember.guild.id}:Ban Members`);
     permissionWarnings.delete(`${newMember.guild.id}:Kick Members`);
-    console.log(`[GlobalBan] Bot permissions changed in ${newMember.guild.name}; retry-backoff cleared`);
+    console.log(
+      `[GlobalBan] Bot permissions changed in ${newMember.guild.name}; retry-backoff cleared`,
+    );
     setTimeout(() => void processPendingExecutions(), 1000);
   };
 
-  client.on('guildMemberUpdate', onGuildMemberUpdate);
+  client.on("guildMemberUpdate", onGuildMemberUpdate);
 
   return {
     destroy: () => {
       clearInterval(executionInterval);
       clearTimeout(initialExecutionTimeout);
-      client.removeListener('guildMemberAdd', onGuildMemberAdd);
-      client.removeListener('guildMemberUpdate', onGuildMemberUpdate);
+      client.removeListener("guildMemberAdd", onGuildMemberAdd);
+      client.removeListener("guildMemberUpdate", onGuildMemberUpdate);
       blockedGuildUntil.clear();
       blockedExecutionUntil.clear();
-      console.log('[GlobalBan] Handler destroyed');
+      console.log("[GlobalBan] Handler destroyed");
     },
   };
 }

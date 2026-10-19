@@ -1,7 +1,7 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
-import { useGuild } from '@/contexts/GuildContext';
-import { useToast } from '@/hooks/use-toast';
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { useGuild } from "@/contexts/GuildContext";
+import { useToast } from "@/hooks/use-toast";
 
 export interface AutoResponder {
   id: string;
@@ -34,15 +34,15 @@ export function useAutoResponders() {
   const queryClient = useQueryClient();
 
   const respondersQuery = useQuery({
-    queryKey: ['auto-responders', selectedGuild?.id],
+    queryKey: ["auto-responders", selectedGuild?.id],
     queryFn: async () => {
       if (!selectedGuild?.id) return [];
 
       const { data, error } = await supabase
-        .from('auto_responders')
-        .select('*')
-        .eq('guild_id', selectedGuild.id)
-        .order('created_at', { ascending: false });
+        .from("auto_responders")
+        .select("*")
+        .eq("guild_id", selectedGuild.id)
+        .order("created_at", { ascending: false });
 
       if (error) throw error;
       return data as AutoResponder[];
@@ -52,53 +52,64 @@ export function useAutoResponders() {
 
   const createResponder = useMutation({
     mutationFn: async (responder: CreateAutoResponder) => {
-      if (!selectedGuild?.id) throw new Error('No guild selected');
+      if (!selectedGuild?.id) throw new Error("No guild selected");
 
-      const { error } = await supabase
-        .from('auto_responders')
-        .insert({
-          guild_id: selectedGuild.id,
-          ...responder,
-        });
+      const { error } = await supabase.from("auto_responders").insert({
+        guild_id: selectedGuild.id,
+        ...responder,
+      });
 
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['auto-responders', selectedGuild?.id] });
-      toast({ title: 'Auto-responder oprettet' });
+      queryClient.invalidateQueries({
+        queryKey: ["auto-responders", selectedGuild?.id],
+      });
+      toast({ title: "Auto-responder oprettet" });
     },
     onError: (error) => {
-      toast({ title: 'Fejl', description: error.message, variant: 'destructive' });
+      toast({
+        title: "Fejl",
+        description: error.message,
+        variant: "destructive",
+      });
     },
   });
 
   const updateResponder = useMutation({
-    mutationFn: async ({ id, ...updates }: Partial<AutoResponder> & { id: string }) => {
+    mutationFn: async ({
+      id,
+      ...updates
+    }: Partial<AutoResponder> & { id: string }) => {
       const { error } = await supabase
-        .from('auto_responders')
+        .from("auto_responders")
         .update(updates)
-        .eq('id', id);
+        .eq("id", id);
 
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['auto-responders', selectedGuild?.id] });
-      toast({ title: 'Auto-responder opdateret' });
+      queryClient.invalidateQueries({
+        queryKey: ["auto-responders", selectedGuild?.id],
+      });
+      toast({ title: "Auto-responder opdateret" });
     },
   });
 
   const deleteResponder = useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase
-        .from('auto_responders')
+        .from("auto_responders")
         .delete()
-        .eq('id', id);
+        .eq("id", id);
 
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['auto-responders', selectedGuild?.id] });
-      toast({ title: 'Auto-responder slettet' });
+      queryClient.invalidateQueries({
+        queryKey: ["auto-responders", selectedGuild?.id],
+      });
+      toast({ title: "Auto-responder slettet" });
     },
   });
 

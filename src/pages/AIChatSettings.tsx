@@ -1,15 +1,29 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect } from "react";
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Switch } from '@/components/ui/switch';
-import { Textarea } from '@/components/ui/textarea';
-import { useAIChatSettings } from '@/hooks/useAIChatSettings';
-import { Loader2, Bot, MessageSquare, Settings2, Trash2, RefreshCw, Sparkles } from 'lucide-react';
-import { formatDistanceToNow } from 'date-fns';
-import { da } from 'date-fns/locale';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import { Textarea } from "@/components/ui/textarea";
+import { useAIChatSettings } from "@/hooks/useAIChatSettings";
+import {
+  Loader2,
+  Bot,
+  MessageSquare,
+  Settings2,
+  Trash2,
+  RefreshCw,
+  Sparkles,
+} from "lucide-react";
+import { formatDistanceToNow } from "date-fns";
+import { da } from "date-fns/locale";
 import {
   Table,
   TableBody,
@@ -17,14 +31,14 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table';
+} from "@/components/ui/table";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
+} from "@/components/ui/select";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -35,21 +49,30 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from '@/components/ui/alert-dialog';
-import { useDiscordChannels } from '@/hooks/useDiscordChannels';
-import { Badge } from '@/components/ui/badge';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { PremiumGate } from '@/components/premium/PremiumGate';
+} from "@/components/ui/alert-dialog";
+import { useDiscordChannels } from "@/hooks/useDiscordChannels";
+import { Badge } from "@/components/ui/badge";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { PremiumGate } from "@/components/premium/PremiumGate";
 
 export default function AIChatSettings() {
-  const { settings, history, isLoading, updateSettings, clearHistory, refetchHistory, isRefetchingHistory } = useAIChatSettings();
+  const {
+    settings,
+    history,
+    isLoading,
+    updateSettings,
+    clearHistory,
+    refetchHistory,
+    isRefetchingHistory,
+  } = useAIChatSettings();
   const { data: channelData } = useDiscordChannels();
 
   const [localSettings, setLocalSettings] = useState({
     enabled: false,
-    channel_id: '',
-    system_prompt: 'You are a friendly and helpful Discord bot assistant. Keep your answers short and precise. Always respond in English.',
-    max_history_messages: 10
+    channel_id: "",
+    system_prompt:
+      "You are a friendly and helpful Discord bot assistant. Keep your answers short and precise. Always respond in English.",
+    max_history_messages: 10,
   });
 
   const [hasChanges, setHasChanges] = useState(false);
@@ -58,18 +81,20 @@ export default function AIChatSettings() {
     if (settings) {
       setLocalSettings({
         enabled: settings.enabled,
-        channel_id: settings.channel_id || '',
-        system_prompt: settings.system_prompt || 'You are a friendly and helpful Discord bot assistant. Keep your answers short and precise. Always respond in English.',
-        max_history_messages: settings.max_history_messages || 10
+        channel_id: settings.channel_id || "",
+        system_prompt:
+          settings.system_prompt ||
+          "You are a friendly and helpful Discord bot assistant. Keep your answers short and precise. Always respond in English.",
+        max_history_messages: settings.max_history_messages || 10,
       });
     }
   }, [settings]);
 
   const handleChange = <K extends keyof typeof localSettings>(
     key: K,
-    value: typeof localSettings[K]
+    value: (typeof localSettings)[K],
   ) => {
-    setLocalSettings(prev => ({ ...prev, [key]: value }));
+    setLocalSettings((prev) => ({ ...prev, [key]: value }));
     setHasChanges(true);
   };
 
@@ -78,22 +103,25 @@ export default function AIChatSettings() {
       enabled: localSettings.enabled,
       channel_id: localSettings.channel_id || null,
       system_prompt: localSettings.system_prompt,
-      max_history_messages: localSettings.max_history_messages
+      max_history_messages: localSettings.max_history_messages,
     });
     setHasChanges(false);
   };
 
   // Get text channels from channel data
-  const textChannels = channelData?.channels?.filter(c => c.type === 0) || [];
+  const textChannels = channelData?.channels?.filter((c) => c.type === 0) || [];
 
   // Group history by channel
-  const historyByChannel = history.reduce((acc, msg) => {
-    if (!acc[msg.channel_id]) {
-      acc[msg.channel_id] = [];
-    }
-    acc[msg.channel_id].push(msg);
-    return acc;
-  }, {} as Record<string, typeof history>);
+  const historyByChannel = history.reduce(
+    (acc, msg) => {
+      if (!acc[msg.channel_id]) {
+        acc[msg.channel_id] = [];
+      }
+      acc[msg.channel_id].push(msg);
+      return acc;
+    },
+    {} as Record<string, typeof history>,
+  );
 
   if (isLoading) {
     return (
@@ -124,9 +152,7 @@ export default function AIChatSettings() {
                 <Settings2 className="h-5 w-5 text-primary" />
                 Indstillinger
               </CardTitle>
-              <CardDescription>
-                Konfigurer AI chat funktionen
-              </CardDescription>
+              <CardDescription>Konfigurer AI chat funktionen</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               {/* Enable Toggle */}
@@ -139,7 +165,9 @@ export default function AIChatSettings() {
                 </div>
                 <Switch
                   checked={localSettings.enabled}
-                  onCheckedChange={(checked) => handleChange('enabled', checked)}
+                  onCheckedChange={(checked) =>
+                    handleChange("enabled", checked)
+                  }
                 />
               </div>
 
@@ -150,8 +178,10 @@ export default function AIChatSettings() {
                   Hvis valgt, svarer AI kun i denne kanal
                 </p>
                 <Select
-                  value={localSettings.channel_id || 'none'}
-                  onValueChange={(value) => handleChange('channel_id', value === 'none' ? '' : value)}
+                  value={localSettings.channel_id || "none"}
+                  onValueChange={(value) =>
+                    handleChange("channel_id", value === "none" ? "" : value)
+                  }
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Alle kanaler..." />
@@ -176,8 +206,8 @@ export default function AIChatSettings() {
                 <Select
                   value="custom"
                   onValueChange={(value) => {
-                    if (value !== 'custom') {
-                      handleChange('system_prompt', value);
+                    if (value !== "custom") {
+                      handleChange("system_prompt", value);
                     }
                   }}
                 >
@@ -235,7 +265,9 @@ export default function AIChatSettings() {
                 </Select>
                 <Textarea
                   value={localSettings.system_prompt}
-                  onChange={(e) => handleChange('system_prompt', e.target.value)}
+                  onChange={(e) =>
+                    handleChange("system_prompt", e.target.value)
+                  }
                   placeholder="Du er en venlig og hjælpsom Discord bot assistent..."
                   rows={4}
                   className="mt-2"
@@ -253,7 +285,12 @@ export default function AIChatSettings() {
                   min={1}
                   max={20}
                   value={localSettings.max_history_messages}
-                  onChange={(e) => handleChange('max_history_messages', Math.min(20, Math.max(1, parseInt(e.target.value) || 10)))}
+                  onChange={(e) =>
+                    handleChange(
+                      "max_history_messages",
+                      Math.min(20, Math.max(1, parseInt(e.target.value) || 10)),
+                    )
+                  }
                 />
               </div>
 
@@ -269,7 +306,7 @@ export default function AIChatSettings() {
                     Gemmer...
                   </>
                 ) : (
-                  'Gem Indstillinger'
+                  "Gem Indstillinger"
                 )}
               </Button>
             </CardContent>
@@ -287,9 +324,7 @@ export default function AIChatSettings() {
                       {history.length} beskeder
                     </Badge>
                   </CardTitle>
-                  <CardDescription>
-                    Seneste AI samtaler
-                  </CardDescription>
+                  <CardDescription>Seneste AI samtaler</CardDescription>
                 </div>
                 <Button
                   variant="outline"
@@ -297,7 +332,9 @@ export default function AIChatSettings() {
                   onClick={() => refetchHistory()}
                   disabled={isRefetchingHistory}
                 >
-                  <RefreshCw className={`h-4 w-4 mr-2 ${isRefetchingHistory ? 'animate-spin' : ''}`} />
+                  <RefreshCw
+                    className={`h-4 w-4 mr-2 ${isRefetchingHistory ? "animate-spin" : ""}`}
+                  />
                   Genindlæs
                 </Button>
               </div>
@@ -314,70 +351,87 @@ export default function AIChatSettings() {
               ) : (
                 <ScrollArea className="h-[400px] pr-4">
                   <div className="space-y-4">
-                    {Object.entries(historyByChannel).map(([channelId, messages]) => (
-                      <div key={channelId} className="space-y-2">
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm font-medium text-muted-foreground">
-                            Kanal: {channelId.slice(-6)}
-                          </span>
-                          <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="h-7 text-destructive hover:text-destructive"
-                              >
-                                <Trash2 className="h-3 w-3 mr-1" />
-                                Ryd
-                              </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                              <AlertDialogHeader>
-                                <AlertDialogTitle>Ryd samtalehistorik?</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                  Dette sletter al samtalehistorik for denne kanal. AI'en vil ikke kunne huske tidligere samtaler.
-                                </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                <AlertDialogCancel>Annuller</AlertDialogCancel>
-                                <AlertDialogAction
-                                  onClick={() => clearHistory.mutate(channelId)}
-                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                    {Object.entries(historyByChannel).map(
+                      ([channelId, messages]) => (
+                        <div key={channelId} className="space-y-2">
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm font-medium text-muted-foreground">
+                              Kanal: {channelId.slice(-6)}
+                            </span>
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-7 text-destructive hover:text-destructive"
                                 >
-                                  Ryd historik
-                                </AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
-                        </div>
-                        {messages.slice(0, 10).map((msg) => (
-                          <div
-                            key={msg.id}
-                            className={`p-3 rounded-lg ${
-                              msg.role === 'user' 
-                                ? 'bg-muted ml-4' 
-                                : 'bg-primary/10 mr-4'
-                            }`}
-                          >
-                            <div className="flex items-center gap-2 mb-1">
-                              {msg.role === 'assistant' ? (
-                                <Bot className="h-4 w-4 text-primary" />
-                              ) : null}
-                              <span className="text-sm font-medium">
-                                {msg.role === 'user' ? msg.user_name || 'Bruger' : 'AI Bot'}
-                              </span>
-                              <span className="text-xs text-muted-foreground ml-auto">
-                                {formatDistanceToNow(new Date(msg.created_at), {
-                                  addSuffix: true,
-                                  locale: da
-                                })}
-                              </span>
-                            </div>
-                            <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                                  <Trash2 className="h-3 w-3 mr-1" />
+                                  Ryd
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>
+                                    Ryd samtalehistorik?
+                                  </AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    Dette sletter al samtalehistorik for denne
+                                    kanal. AI'en vil ikke kunne huske tidligere
+                                    samtaler.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>
+                                    Annuller
+                                  </AlertDialogCancel>
+                                  <AlertDialogAction
+                                    onClick={() =>
+                                      clearHistory.mutate(channelId)
+                                    }
+                                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                  >
+                                    Ryd historik
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
                           </div>
-                        ))}
-                      </div>
-                    ))}
+                          {messages.slice(0, 10).map((msg) => (
+                            <div
+                              key={msg.id}
+                              className={`p-3 rounded-lg ${
+                                msg.role === "user"
+                                  ? "bg-muted ml-4"
+                                  : "bg-primary/10 mr-4"
+                              }`}
+                            >
+                              <div className="flex items-center gap-2 mb-1">
+                                {msg.role === "assistant" ? (
+                                  <Bot className="h-4 w-4 text-primary" />
+                                ) : null}
+                                <span className="text-sm font-medium">
+                                  {msg.role === "user"
+                                    ? msg.user_name || "Bruger"
+                                    : "AI Bot"}
+                                </span>
+                                <span className="text-xs text-muted-foreground ml-auto">
+                                  {formatDistanceToNow(
+                                    new Date(msg.created_at),
+                                    {
+                                      addSuffix: true,
+                                      locale: da,
+                                    },
+                                  )}
+                                </span>
+                              </div>
+                              <p className="text-sm whitespace-pre-wrap">
+                                {msg.content}
+                              </p>
+                            </div>
+                          ))}
+                        </div>
+                      ),
+                    )}
                   </div>
                 </ScrollArea>
               )}

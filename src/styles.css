@@ -106,8 +106,16 @@
   --sidebar-ring: 235 86% 60%;
 
   /* Custom gradients & shadows */
-  --gradient-blurple: linear-gradient(135deg, hsl(235 86% 65%) 0%, hsl(255 70% 55%) 100%);
-  --gradient-dark: linear-gradient(180deg, hsl(232 15% 12%) 0%, hsl(232 15% 8%) 100%);
+  --gradient-blurple: linear-gradient(
+    135deg,
+    hsl(235 86% 65%) 0%,
+    hsl(255 70% 55%) 100%
+  );
+  --gradient-dark: linear-gradient(
+    180deg,
+    hsl(232 15% 12%) 0%,
+    hsl(232 15% 8%) 100%
+  );
   --shadow-glow: 0 0 20px hsl(235 86% 65% / 0.15);
   --shadow-card: 0 4px 24px hsl(0 0% 0% / 0.25);
 }
@@ -153,10 +161,21 @@
   --sidebar-border: 240 34% 15%;
   --sidebar-ring: 243 75% 62%;
 
-  --gradient-blurple: linear-gradient(135deg, hsl(243 75% 62%) 0%, hsl(265 72% 58%) 100%);
-  --gradient-dark: linear-gradient(180deg, hsl(240 45% 8%) 0%, hsl(240 48% 5%) 100%);
-  --shadow-glow: 0 0 0 1px hsl(243 75% 62% / 0.18), 0 18px 50px -18px hsl(243 75% 62% / 0.55);
-  --shadow-card: 0 1px 0 0 hsl(0 0% 100% / 0.04) inset, 0 20px 50px -24px hsl(240 60% 2% / 0.9);
+  --gradient-blurple: linear-gradient(
+    135deg,
+    hsl(243 75% 62%) 0%,
+    hsl(265 72% 58%) 100%
+  );
+  --gradient-dark: linear-gradient(
+    180deg,
+    hsl(240 45% 8%) 0%,
+    hsl(240 48% 5%) 100%
+  );
+  --shadow-glow:
+    0 0 0 1px hsl(243 75% 62% / 0.18), 0 18px 50px -18px hsl(243 75% 62% / 0.55);
+  --shadow-card:
+    0 1px 0 0 hsl(0 0% 100% / 0.04) inset,
+    0 20px 50px -24px hsl(240 60% 2% / 0.9);
 }
 
 @layer base {
@@ -204,14 +223,21 @@
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
   }
-  h1, h2, h3, .font-display {
+  h1,
+  h2,
+  h3,
+  .font-display {
     font-family: var(--font-display);
     letter-spacing: -0.02em;
   }
 }
 
 @utility surface-card {
-  background: linear-gradient(180deg, hsl(var(--card) / 0.9) 0%, hsl(var(--card) / 0.6) 100%);
+  background: linear-gradient(
+    180deg,
+    hsl(var(--card) / 0.9) 0%,
+    hsl(var(--card) / 0.6) 100%
+  );
   border: 1px solid hsl(var(--border) / 0.8);
   box-shadow: var(--shadow-card);
   backdrop-filter: blur(12px);
@@ -226,5 +252,9 @@
     linear-gradient(hsl(var(--border) / 0.35) 1px, transparent 1px),
     linear-gradient(90deg, hsl(var(--border) / 0.35) 1px, transparent 1px);
   background-size: 64px 64px;
-  mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, #000 40%, transparent 100%);
+  mask-image: radial-gradient(
+    ellipse 80% 60% at 50% 0%,
+    #000 40%,
+    transparent 100%
+  );
 }

@@ -1,8 +1,8 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
-import { useGuild } from '@/contexts/GuildContext';
-import { toast } from 'sonner';
-import { invokeFunction } from '@/lib/functions-client';
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { useGuild } from "@/contexts/GuildContext";
+import { toast } from "sonner";
+import { invokeFunction } from "@/lib/functions-client";
 
 export interface ApplicationSubmission {
   id: string;
@@ -12,7 +12,7 @@ export interface ApplicationSubmission {
   discord_username: string | null;
   discord_avatar: string | null;
   answers: { question: string; answer: string }[];
-  status: 'pending' | 'approved' | 'denied';
+  status: "pending" | "approved" | "denied";
   reviewer_discord_id: string | null;
   reviewer_name: string | null;
   reviewer_notes: string | null;
@@ -25,25 +25,29 @@ export interface ApplicationSubmission {
   };
 }
 
-export function useApplicationSubmissions(status?: 'pending' | 'approved' | 'denied') {
+export function useApplicationSubmissions(
+  status?: "pending" | "approved" | "denied",
+) {
   const { selectedGuild } = useGuild();
 
   return useQuery({
-    queryKey: ['application-submissions', selectedGuild?.id, status],
+    queryKey: ["application-submissions", selectedGuild?.id, status],
     queryFn: async () => {
       if (!selectedGuild?.id) return [];
 
       let query = supabase
-        .from('application_submissions')
-        .select(`
+        .from("application_submissions")
+        .select(
+          `
           *,
           form:application_forms(name, emoji)
-        `)
-        .eq('guild_id', selectedGuild.id)
-        .order('created_at', { ascending: false });
+        `,
+        )
+        .eq("guild_id", selectedGuild.id)
+        .order("created_at", { ascending: false });
 
       if (status) {
-        query = query.eq('status', status);
+        query = query.eq("status", status);
       }
 
       const { data, error } = await query;
@@ -59,22 +63,30 @@ export function useApplicationSubmission(submissionId: string | undefined) {
   const { selectedGuild } = useGuild();
 
   return useQuery({
-    queryKey: ['application-submission', submissionId],
+    queryKey: ["application-submission", submissionId],
     queryFn: async () => {
       if (!submissionId || !selectedGuild?.id) return null;
 
       const { data, error } = await supabase
-        .from('application_submissions')
-        .select(`
+        .from("application_submissions")
+        .select(
+          `
           *,
           form:application_forms(name, emoji, granted_role_id)
-        `)
-        .eq('id', submissionId)
-        .eq('guild_id', selectedGuild.id)
+        `,
+        )
+        .eq("id", submissionId)
+        .eq("guild_id", selectedGuild.id)
         .single();
 
       if (error) throw error;
-      return data as unknown as ApplicationSubmission & { form: { name: string; emoji: string | null; granted_role_id: string | null } };
+      return data as unknown as ApplicationSubmission & {
+        form: {
+          name: string;
+          emoji: string | null;
+          granted_role_id: string | null;
+        };
+      };
     },
     enabled: !!submissionId && !!selectedGuild?.id,
   });
@@ -93,17 +105,17 @@ export function useReviewApplication() {
       notes,
     }: {
       submissionId: string;
-      status: 'approved' | 'denied';
+      status: "approved" | "denied";
       reviewerName: string;
       reviewerDiscordId: string;
       notes?: string;
     }) => {
-      if (!selectedGuild?.id) throw new Error('No guild selected');
+      if (!selectedGuild?.id) throw new Error("No guild selected");
 
       // Call edge function to handle the review (includes role assignment, DM, channel post)
-      const { data, error } = await invokeFunction('application-handler', {
+      const { data, error } = await invokeFunction("application-handler", {
         body: {
-          action: 'review',
+          action: "review",
           submission_id: submissionId,
           status,
           reviewer_name: reviewerName,
@@ -116,11 +128,13 @@ export function useReviewApplication() {
       return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['application-submissions', selectedGuild?.id] });
-      toast.success('Application reviewed');
+      queryClient.invalidateQueries({
+        queryKey: ["application-submissions", selectedGuild?.id],
+      });
+      toast.success("Application reviewed");
     },
     onError: (error) => {
-      toast.error('Failed to review application: ' + error.message);
+      toast.error("Failed to review application: " + error.message);
     },
   });
 }
@@ -131,11 +145,11 @@ export function useSendApplicationPanel() {
 
   return useMutation({
     mutationFn: async () => {
-      if (!selectedGuild?.id) throw new Error('No guild selected');
+      if (!selectedGuild?.id) throw new Error("No guild selected");
 
-      const { data, error } = await invokeFunction('application-handler', {
+      const { data, error } = await invokeFunction("application-handler", {
         body: {
-          action: 'send_panel',
+          action: "send_panel",
           guild_id: selectedGuild.id,
         },
       });
@@ -144,11 +158,13 @@ export function useSendApplicationPanel() {
       return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['application-settings', selectedGuild?.id] });
-      toast.success('Application panel sent');
+      queryClient.invalidateQueries({
+        queryKey: ["application-settings", selectedGuild?.id],
+      });
+      toast.success("Application panel sent");
     },
     onError: (error) => {
-      toast.error('Failed to send panel: ' + error.message);
+      toast.error("Failed to send panel: " + error.message);
     },
   });
 }

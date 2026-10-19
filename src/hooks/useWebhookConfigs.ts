@@ -1,7 +1,7 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
-import { useGuild } from '@/contexts/GuildContext';
-import { toast } from 'sonner';
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { useGuild } from "@/contexts/GuildContext";
+import { toast } from "sonner";
 
 export interface WebhookConfig {
   id: string;
@@ -21,17 +21,17 @@ export interface WebhookConfig {
 export function useWebhookConfigs() {
   const { selectedGuild } = useGuild();
   const queryClient = useQueryClient();
-  const key = ['webhook-configs', selectedGuild?.id];
+  const key = ["webhook-configs", selectedGuild?.id];
 
   const query = useQuery({
     queryKey: key,
     queryFn: async () => {
       if (!selectedGuild?.id) return [];
       const { data, error } = await supabase
-        .from('webhook_configs')
-        .select('*')
-        .eq('guild_id', selectedGuild.id)
-        .order('created_at', { ascending: false });
+        .from("webhook_configs")
+        .select("*")
+        .eq("guild_id", selectedGuild.id)
+        .order("created_at", { ascending: false });
       if (error) throw error;
       return data as WebhookConfig[];
     },
@@ -40,30 +40,33 @@ export function useWebhookConfigs() {
 
   const create = useMutation({
     mutationFn: async (config: Partial<WebhookConfig>) => {
-      if (!selectedGuild?.id) throw new Error('No guild');
+      if (!selectedGuild?.id) throw new Error("No guild");
       const { error } = await supabase
-        .from('webhook_configs')
+        .from("webhook_configs")
         .insert([{ ...config, guild_id: selectedGuild.id } as any]);
       if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: key });
-      toast.success('Webhook oprettet');
+      toast.success("Webhook oprettet");
     },
     onError: (e) => toast.error(`Fejl: ${e.message}`),
   });
 
   const update = useMutation({
-    mutationFn: async ({ id, ...data }: Partial<WebhookConfig> & { id: string }) => {
+    mutationFn: async ({
+      id,
+      ...data
+    }: Partial<WebhookConfig> & { id: string }) => {
       const { error } = await supabase
-        .from('webhook_configs')
+        .from("webhook_configs")
         .update({ ...data, updated_at: new Date().toISOString() })
-        .eq('id', id);
+        .eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: key });
-      toast.success('Webhook opdateret');
+      toast.success("Webhook opdateret");
     },
     onError: (e) => toast.error(`Fejl: ${e.message}`),
   });
@@ -71,14 +74,14 @@ export function useWebhookConfigs() {
   const remove = useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase
-        .from('webhook_configs')
+        .from("webhook_configs")
         .delete()
-        .eq('id', id);
+        .eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: key });
-      toast.success('Webhook slettet');
+      toast.success("Webhook slettet");
     },
     onError: (e) => toast.error(`Fejl: ${e.message}`),
   });
@@ -86,16 +89,16 @@ export function useWebhookConfigs() {
   const testWebhook = useMutation({
     mutationFn: async (webhookUrl: string) => {
       const res = await fetch(webhookUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          content: '✅ Test besked fra BotDash Dashboard!',
-          username: 'BotDash Test',
+          content: "✅ Test besked fra BotDash Dashboard!",
+          username: "BotDash Test",
         }),
       });
-      if (!res.ok) throw new Error('Webhook test fejlede');
+      if (!res.ok) throw new Error("Webhook test fejlede");
     },
-    onSuccess: () => toast.success('Test besked sendt!'),
+    onSuccess: () => toast.success("Test besked sendt!"),
     onError: (e) => toast.error(`Test fejlede: ${e.message}`),
   });
 

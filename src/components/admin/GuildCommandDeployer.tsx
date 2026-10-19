@@ -1,37 +1,73 @@
-import { useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Badge } from '@/components/ui/badge';
-import { useToast } from '@/hooks/use-toast';
-import { useAllGuilds } from '@/hooks/useAdmin';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { supabase } from '@/integrations/supabase/client';
-import { Rocket, Loader2, CheckCircle2, Trash2, AlertTriangle } from 'lucide-react';
-import { invokeFunction } from '@/lib/functions-client';
+import { useState } from "react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import { useToast } from "@/hooks/use-toast";
+import { useAllGuilds } from "@/hooks/useAdmin";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { supabase } from "@/integrations/supabase/client";
+import {
+  Rocket,
+  Loader2,
+  CheckCircle2,
+  Trash2,
+  AlertTriangle,
+} from "lucide-react";
+import { invokeFunction } from "@/lib/functions-client";
 
 export function GuildCommandDeployer() {
   const { toast } = useToast();
   const { data: guilds } = useAllGuilds();
-  const [guildId, setGuildId] = useState('');
+  const [guildId, setGuildId] = useState("");
   const [deploying, setDeploying] = useState(false);
   const [clearing, setClearing] = useState(false);
-  const [lastResult, setLastResult] = useState<{ count: number; logicalCount: number; commands: string[] } | null>(null);
+  const [lastResult, setLastResult] = useState<{
+    count: number;
+    logicalCount: number;
+    commands: string[];
+  } | null>(null);
 
   const handleDeploy = async () => {
     const trimmed = guildId.trim();
     if (!/^\d{17,20}$/.test(trimmed)) {
-      toast({ title: 'Ugyldigt Guild ID', description: 'Indtast et gyldigt Discord Guild ID (17-20 cifre).', variant: 'destructive' });
+      toast({
+        title: "Ugyldigt Guild ID",
+        description: "Indtast et gyldigt Discord Guild ID (17-20 cifre).",
+        variant: "destructive",
+      });
       return;
     }
 
     setDeploying(true);
     setLastResult(null);
     try {
-      const { data, error } = await invokeFunction('deploy-guild-commands', {
-        body: { discordGuildId: trimmed, mode: 'deploy' },
+      const { data, error } = await invokeFunction("deploy-guild-commands", {
+        body: { discordGuildId: trimmed, mode: "deploy" },
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
@@ -42,12 +78,16 @@ export function GuildCommandDeployer() {
         commands: data.commands || [],
       });
       toast({
-        title: '✅ Kommandoer deployed',
+        title: "✅ Kommandoer deployed",
         description: `${data.logicalCommands || data.deployed} funktioner fordelt på ${data.deployed} slash-grupper er registreret på guild ${trimmed}.`,
       });
     } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : 'Ukendt fejl';
-      toast({ title: 'Fejl ved deployment', description: msg, variant: 'destructive' });
+      const msg = e instanceof Error ? e.message : "Ukendt fejl";
+      toast({
+        title: "Fejl ved deployment",
+        description: msg,
+        variant: "destructive",
+      });
     } finally {
       setDeploying(false);
     }
@@ -57,29 +97,30 @@ export function GuildCommandDeployer() {
     const trimmed = guildId.trim();
     if (!/^\d{17,20}$/.test(trimmed)) {
       toast({
-        title: 'Vælg en server først',
-        description: 'Rydning af globale kommandoer skal vide hvilken bots application der skal ryddes.',
-        variant: 'destructive',
+        title: "Vælg en server først",
+        description:
+          "Rydning af globale kommandoer skal vide hvilken bots application der skal ryddes.",
+        variant: "destructive",
       });
       return;
     }
 
     setClearing(true);
     try {
-      const { data, error } = await invokeFunction('deploy-guild-commands', {
-        body: { discordGuildId: trimmed, mode: 'clear-global' },
+      const { data, error } = await invokeFunction("deploy-guild-commands", {
+        body: { discordGuildId: trimmed, mode: "clear-global" },
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
       toast({
-        title: '✅ Globale kommandoer ryddet',
+        title: "✅ Globale kommandoer ryddet",
         description: data?.usingCustomBot
-          ? `Globale kommandoer for custom botten ${data.botName || ''} er ryddet. Discord-cachen kan tage op til 1 time.`
-          : 'Globale kommandoer for standardbotten er ryddet. Discord-cachen kan tage op til 1 time.',
+          ? `Globale kommandoer for custom botten ${data.botName || ""} er ryddet. Discord-cachen kan tage op til 1 time.`
+          : "Globale kommandoer for standardbotten er ryddet. Discord-cachen kan tage op til 1 time.",
       });
     } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : 'Ukendt fejl';
-      toast({ title: 'Fejl', description: msg, variant: 'destructive' });
+      const msg = e instanceof Error ? e.message : "Ukendt fejl";
+      toast({ title: "Fejl", description: msg, variant: "destructive" });
     } finally {
       setClearing(false);
     }
@@ -93,7 +134,8 @@ export function GuildCommandDeployer() {
           Deploy Slash-Kommandoer pr. Guild
         </CardTitle>
         <CardDescription>
-          Registrér hele det canonical command-katalog som grupperede slash commands på en specifik Discord-server.
+          Registrér hele det canonical command-katalog som grupperede slash
+          commands på en specifik Discord-server.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -112,7 +154,8 @@ export function GuildCommandDeployer() {
             <SelectContent>
               {guilds?.map((g) => (
                 <SelectItem key={g.id} value={g.id}>
-                  {g.guild_name} <span className="text-muted-foreground">({g.guild_id})</span>
+                  {g.guild_name}{" "}
+                  <span className="text-muted-foreground">({g.guild_id})</span>
                 </SelectItem>
               ))}
             </SelectContent>
@@ -121,22 +164,49 @@ export function GuildCommandDeployer() {
 
         <div className="space-y-2">
           <Label htmlFor="guild-id-input">Discord Guild ID</Label>
-          <Input id="guild-id-input" placeholder="f.eks. 1491785137891971133" value={guildId} onChange={(e) => setGuildId(e.target.value)} className="font-mono" />
+          <Input
+            id="guild-id-input"
+            placeholder="f.eks. 1491785137891971133"
+            value={guildId}
+            onChange={(e) => setGuildId(e.target.value)}
+            className="font-mono"
+          />
         </div>
 
-        <Button onClick={handleDeploy} disabled={deploying || !guildId.trim()} className="w-full">
-          {deploying ? (<><Loader2 className="mr-2 h-4 w-4 animate-spin" />Deployer...</>) : (<><Rocket className="mr-2 h-4 w-4" />Deploy kommandoer til guild</>)}
+        <Button
+          onClick={handleDeploy}
+          disabled={deploying || !guildId.trim()}
+          className="w-full"
+        >
+          {deploying ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Deployer...
+            </>
+          ) : (
+            <>
+              <Rocket className="mr-2 h-4 w-4" />
+              Deploy kommandoer til guild
+            </>
+          )}
         </Button>
 
         {lastResult && (
           <div className="rounded-lg border border-primary/30 bg-primary/5 p-4 space-y-2">
             <div className="flex items-center gap-2 text-sm font-medium text-primary">
               <CheckCircle2 className="h-4 w-4" />
-              {lastResult.logicalCount} funktioner i {lastResult.count} slash-grupper
+              {lastResult.logicalCount} funktioner i {lastResult.count}{" "}
+              slash-grupper
             </div>
             <div className="flex flex-wrap gap-1">
               {lastResult.commands.map((c) => (
-                <Badge key={c} variant="secondary" className="text-xs font-mono">/{c}</Badge>
+                <Badge
+                  key={c}
+                  variant="secondary"
+                  className="text-xs font-mono"
+                >
+                  /{c}
+                </Badge>
               ))}
             </div>
           </div>
@@ -146,30 +216,57 @@ export function GuildCommandDeployer() {
           <div className="flex items-start gap-2 rounded-lg border border-destructive/30 bg-destructive/5 p-3">
             <AlertTriangle className="h-4 w-4 text-destructive mt-0.5 flex-shrink-0" />
             <div className="space-y-1 flex-1">
-              <p className="text-sm font-medium text-destructive">Ser du dobbelte kommandoer i Discord?</p>
+              <p className="text-sm font-medium text-destructive">
+                Ser du dobbelte kommandoer i Discord?
+              </p>
               <p className="text-xs text-muted-foreground">
-                Det sker hvis kommandoer er registreret BÅDE globalt og pr. guild. Ryd globale kommandoer her — derefter eksisterer kun guild-versionerne (deployed med knappen ovenover).
+                Det sker hvis kommandoer er registreret BÅDE globalt og pr.
+                guild. Ryd globale kommandoer her — derefter eksisterer kun
+                guild-versionerne (deployed med knappen ovenover).
               </p>
             </div>
           </div>
           <AlertDialog>
             <AlertDialogTrigger asChild>
-              <Button variant="destructive" disabled={clearing || !guildId.trim()} className="w-full">
-                {clearing ? (<><Loader2 className="mr-2 h-4 w-4 animate-spin" />Rydder...</>) : (<><Trash2 className="mr-2 h-4 w-4" />Ryd globale kommandoer (fjerner duplikater)</>)}
+              <Button
+                variant="destructive"
+                disabled={clearing || !guildId.trim()}
+                className="w-full"
+              >
+                {clearing ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Rydder...
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Ryd globale kommandoer (fjerner duplikater)
+                  </>
+                )}
               </Button>
             </AlertDialogTrigger>
             <AlertDialogContent>
               <AlertDialogHeader>
-                <AlertDialogTitle>Ryd alle globale slash-kommandoer?</AlertDialogTitle>
+                <AlertDialogTitle>
+                  Ryd alle globale slash-kommandoer?
+                </AlertDialogTitle>
                 <AlertDialogDescription>
-                  Dette fjerner alle globale slash-kommandoer fra den bot-application, der hører til den valgte server. Hvis serveren bruger en custom bot, ryddes den custom bots globale commands. Guild-deployede commands påvirkes ikke.
-                  <br /><br />
-                  Discord-cachen kan tage op til 1 time at opdatere efter ryddeoperationen.
+                  Dette fjerner alle globale slash-kommandoer fra den
+                  bot-application, der hører til den valgte server. Hvis
+                  serveren bruger en custom bot, ryddes den custom bots globale
+                  commands. Guild-deployede commands påvirkes ikke.
+                  <br />
+                  <br />
+                  Discord-cachen kan tage op til 1 time at opdatere efter
+                  ryddeoperationen.
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
                 <AlertDialogCancel>Annullér</AlertDialogCancel>
-                <AlertDialogAction onClick={handleClearGlobal}>Ja, ryd globale</AlertDialogAction>
+                <AlertDialogAction onClick={handleClearGlobal}>
+                  Ja, ryd globale
+                </AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>

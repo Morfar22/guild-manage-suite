@@ -1,10 +1,10 @@
-import { ReactNode } from 'react';
-import { Crown, Lock } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { useGuildPremium } from '@/hooks/useGuildPremium';
-import { Link } from '@tanstack/react-router';
+import { ReactNode } from "react";
+import { Crown, Lock } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { useGuildPremium } from "@/hooks/useGuildPremium";
+import { Link } from "@tanstack/react-router";
 
 interface PremiumLockProps {
   children: ReactNode;
@@ -21,7 +21,7 @@ export function PremiumBadge({ className }: { className?: string }) {
     <Badge
       variant="outline"
       className={cn(
-        'border-amber-400/40 bg-gradient-to-r from-amber-500/20 to-yellow-500/20 text-amber-300',
+        "border-amber-400/40 bg-gradient-to-r from-amber-500/20 to-yellow-500/20 text-amber-300",
         className,
       )}
     >
@@ -33,8 +33,8 @@ export function PremiumBadge({ className }: { className?: string }) {
 
 export function PremiumLock({
   children,
-  title = 'Premium-funktion',
-  description = 'Denne funktion er en del af Applications Pro. Opgrader din server for at låse op for AI-screening, interviews, analytics og meget mere.',
+  title = "Premium-funktion",
+  description = "Denne funktion er en del af Applications Pro. Opgrader din server for at låse op for AI-screening, interviews, analytics og meget mere.",
   className,
   showPreview = true,
 }: PremiumLockProps) {
@@ -44,7 +44,12 @@ export function PremiumLock({
   if (hasPremium) return <>{children}</>;
 
   return (
-    <div className={cn('relative overflow-hidden rounded-lg border border-amber-500/20', className)}>
+    <div
+      className={cn(
+        "relative overflow-hidden rounded-lg border border-amber-500/20",
+        className,
+      )}
+    >
       {showPreview && (
         <div className="pointer-events-none select-none opacity-30 blur-[1px]">
           {children}
@@ -58,7 +63,9 @@ export function PremiumLock({
           <h3 className="text-base font-semibold">{title}</h3>
           <PremiumBadge />
         </div>
-        <p className="mb-4 max-w-sm text-sm text-muted-foreground">{description}</p>
+        <p className="mb-4 max-w-sm text-sm text-muted-foreground">
+          {description}
+        </p>
         <Button
           asChild
           size="sm"

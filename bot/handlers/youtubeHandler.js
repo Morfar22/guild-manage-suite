@@ -1,6 +1,6 @@
 /**
  * Bot YouTube Handler
- * 
+ *
  * Checker periodisk YouTube kanaler for nye videoer og live streams
  * via YouTube RSS feeds (ingen API-nøgle påkrævet for uploads).
  * Live-detektion bruger yt-dlp / scraping.
@@ -8,7 +8,7 @@
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
-const { manager } = require('../customBotManager');
+const { manager } = require("../customBotManager");
 
 // Check interval: 3 minutter
 const CHECK_INTERVAL = 180000;
@@ -25,7 +25,7 @@ async function checkYouTubeChannel(channelId) {
     const feedUrl = `https://www.youtube.com/feeds/videos.xml?channel_id=${encodeURIComponent(channelId)}`;
     const response = await fetch(feedUrl, {
       headers: {
-        'User-Agent': 'Mozilla/5.0 (compatible; DiscordBot/1.0)',
+        "User-Agent": "Mozilla/5.0 (compatible; DiscordBot/1.0)",
       },
     });
 
@@ -39,7 +39,14 @@ async function checkYouTubeChannel(channelId) {
 
     // Parse latest video entry
     const entryMatch = xml.match(/<entry>([\s\S]*?)<\/entry>/);
-    if (!entryMatch) return { channelName, videoId: null, videoUrl: null, title: null, isLive: false };
+    if (!entryMatch)
+      return {
+        channelName,
+        videoId: null,
+        videoUrl: null,
+        title: null,
+        isLive: false,
+      };
 
     const entry = entryMatch[1];
     const videoIdMatch = entry.match(/<yt:videoId>([^<]+)<\/yt:videoId>/);
@@ -58,7 +65,11 @@ async function checkYouTubeChannel(channelId) {
       videoUrl: videoId ? `https://www.youtube.com/watch?v=${videoId}` : null,
       title,
       published,
-      thumbnailUrl: thumbnailUrl || (videoId ? `https://img.youtube.com/vi/${videoId}/hqdefault.jpg` : null),
+      thumbnailUrl:
+        thumbnailUrl ||
+        (videoId
+          ? `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`
+          : null),
       isLive: false,
     };
   } catch (error) {
@@ -72,21 +83,26 @@ async function checkYouTubeChannel(channelId) {
  */
 async function checkIfLive(channelId) {
   try {
-    const response = await fetch(`https://www.youtube.com/channel/${channelId}/live`, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+    const response = await fetch(
+      `https://www.youtube.com/channel/${channelId}/live`,
+      {
+        headers: {
+          "User-Agent":
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        },
+        redirect: "follow",
       },
-      redirect: 'follow',
-    });
+    );
 
     if (!response.ok) return { isLive: false };
 
     const html = await response.text();
 
     // Check for live indicators in the page
-    const isLive = html.includes('"isLive":true') ||
-                   html.includes('"isLiveNow":true') ||
-                   html.includes('"liveBroadcastDetails"');
+    const isLive =
+      html.includes('"isLive":true') ||
+      html.includes('"isLiveNow":true') ||
+      html.includes('"liveBroadcastDetails"');
 
     // Try to get the stream title
     let liveTitle = null;
@@ -105,44 +121,71 @@ async function checkIfLive(channelId) {
 /**
  * Send Discord notification for a new YouTube video
  */
-async function sendVideoNotification(targetClient, account, videoInfo, settings) {
+async function sendVideoNotification(
+  targetClient,
+  account,
+  videoInfo,
+  settings,
+) {
   try {
-    const channel = await client.channels.fetch(account.notification_channel_id).catch(() => null);
+    const channel = await client.channels
+      .fetch(account.notification_channel_id)
+      .catch(() => null);
     if (!channel) {
-      console.error(`[YouTube] Kanal ${account.notification_channel_id} ikke fundet`);
+      console.error(
+        `[YouTube] Kanal ${account.notification_channel_id} ikke fundet`,
+      );
       return false;
     }
 
-    let message = (account.custom_message || settings?.new_video_message || '📺 **{channel}** har uploadet en ny video!')
-      .replace(/{channel}/g, account.channel_name || videoInfo.channelName || 'YouTube')
-      .replace(/{title}/g, videoInfo.title || 'Ny video')
-      .replace(/{url}/g, videoInfo.videoUrl || '');
+    let message = (
+      account.custom_message ||
+      settings?.new_video_message ||
+      "📺 **{channel}** har uploadet en ny video!"
+    )
+      .replace(
+        /{channel}/g,
+        account.channel_name || videoInfo.channelName || "YouTube",
+      )
+      .replace(/{title}/g, videoInfo.title || "Ny video")
+      .replace(/{url}/g, videoInfo.videoUrl || "");
 
-    const embedColor = settings?.embed_color ? parseInt(settings.embed_color.replace('#', ''), 16) : 0xFF0000;
+    const embedColor = settings?.embed_color
+      ? parseInt(settings.embed_color.replace("#", ""), 16)
+      : 0xff0000;
 
     const embed = {
-      title: videoInfo.title || `Ny video fra ${account.channel_name || 'YouTube'}`,
+      title:
+        videoInfo.title || `Ny video fra ${account.channel_name || "YouTube"}`,
       url: videoInfo.videoUrl,
       description: message,
       color: embedColor,
-      image: videoInfo.thumbnailUrl ? { url: videoInfo.thumbnailUrl } : undefined,
-      footer: { text: 'YouTube', icon_url: 'https://www.youtube.com/s/desktop/12d6b690/img/favicon_144x144.png' },
+      image: videoInfo.thumbnailUrl
+        ? { url: videoInfo.thumbnailUrl }
+        : undefined,
+      footer: {
+        text: "YouTube",
+        icon_url:
+          "https://www.youtube.com/s/desktop/12d6b690/img/favicon_144x144.png",
+      },
       timestamp: new Date().toISOString(),
     };
 
     const sentMessage = await channel.send({
-      content: account.mention_role_id ? `<@&${account.mention_role_id}>` : undefined,
+      content: account.mention_role_id
+        ? `<@&${account.mention_role_id}>`
+        : undefined,
       embeds: [embed],
     });
 
     // Log notification
     if (SUPABASE_SERVICE_ROLE_KEY) {
       await fetch(`${SUPABASE_URL}/rest/v1/youtube_notification_logs`, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
-          'apikey': SUPABASE_SERVICE_ROLE_KEY,
-          'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+          "Content-Type": "application/json",
+          apikey: SUPABASE_SERVICE_ROLE_KEY,
+          Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
         },
         body: JSON.stringify({
           guild_id: account.guild_id,
@@ -151,7 +194,7 @@ async function sendVideoNotification(targetClient, account, videoInfo, settings)
           video_id: videoInfo.videoId,
           video_url: videoInfo.videoUrl,
           video_title: videoInfo.title,
-          notification_type: 'new_video',
+          notification_type: "new_video",
           channel_id: account.notification_channel_id,
           message_id: sentMessage.id,
         }),
@@ -160,7 +203,7 @@ async function sendVideoNotification(targetClient, account, videoInfo, settings)
 
     return true;
   } catch (error) {
-    console.error('[YouTube] Video notification fejl:', error.message);
+    console.error("[YouTube] Video notification fejl:", error.message);
     return false;
   }
 }
@@ -168,56 +211,77 @@ async function sendVideoNotification(targetClient, account, videoInfo, settings)
 /**
  * Send Discord notification for live status change
  */
-async function sendLiveNotification(targetClient, account, isLive, settings, liveTitle) {
+async function sendLiveNotification(
+  targetClient,
+  account,
+  isLive,
+  settings,
+  liveTitle,
+) {
   try {
-    const targetChannelId = (isLive && account.live_channel_id) ? account.live_channel_id : account.notification_channel_id;
-    const channel = await client.channels.fetch(targetChannelId).catch(() => null);
+    const targetChannelId =
+      isLive && account.live_channel_id
+        ? account.live_channel_id
+        : account.notification_channel_id;
+    const channel = await client.channels
+      .fetch(targetChannelId)
+      .catch(() => null);
     if (!channel) return false;
 
     const messageTemplate = isLive
-      ? (settings?.live_message || '🔴 **{channel}** er nu LIVE på YouTube!')
-      : (settings?.offline_message || '⚫ **{channel}** er gået offline på YouTube.');
+      ? settings?.live_message || "🔴 **{channel}** er nu LIVE på YouTube!"
+      : settings?.offline_message ||
+        "⚫ **{channel}** er gået offline på YouTube.";
 
     let message = messageTemplate
-      .replace(/{channel}/g, account.channel_name || 'YouTube')
-      .replace(/{title}/g, liveTitle || 'Live Stream');
+      .replace(/{channel}/g, account.channel_name || "YouTube")
+      .replace(/{title}/g, liveTitle || "Live Stream");
 
-    const embedColor = isLive ? 0xFF0000 : 0x808080;
+    const embedColor = isLive ? 0xff0000 : 0x808080;
     const liveUrl = `https://www.youtube.com/channel/${account.youtube_channel_id}/live`;
 
     const embed = {
       title: isLive
-        ? `🔴 ${account.channel_name || 'YouTube'} er LIVE!`
-        : `⚫ ${account.channel_name || 'YouTube'} er gået offline`,
-      url: isLive ? liveUrl : `https://www.youtube.com/channel/${account.youtube_channel_id}`,
+        ? `🔴 ${account.channel_name || "YouTube"} er LIVE!`
+        : `⚫ ${account.channel_name || "YouTube"} er gået offline`,
+      url: isLive
+        ? liveUrl
+        : `https://www.youtube.com/channel/${account.youtube_channel_id}`,
       description: message,
       color: embedColor,
-      footer: { text: 'YouTube LIVE', icon_url: 'https://www.youtube.com/s/desktop/12d6b690/img/favicon_144x144.png' },
+      footer: {
+        text: "YouTube LIVE",
+        icon_url:
+          "https://www.youtube.com/s/desktop/12d6b690/img/favicon_144x144.png",
+      },
       timestamp: new Date().toISOString(),
     };
 
     if (isLive && liveTitle) {
-      embed.fields = [{ name: 'Stream', value: liveTitle, inline: false }];
+      embed.fields = [{ name: "Stream", value: liveTitle, inline: false }];
     }
 
     const sentMessage = await channel.send({
-      content: isLive && account.mention_role_id ? `<@&${account.mention_role_id}>` : undefined,
+      content:
+        isLive && account.mention_role_id
+          ? `<@&${account.mention_role_id}>`
+          : undefined,
       embeds: [embed],
     });
 
     if (SUPABASE_SERVICE_ROLE_KEY) {
       await fetch(`${SUPABASE_URL}/rest/v1/youtube_notification_logs`, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
-          'apikey': SUPABASE_SERVICE_ROLE_KEY,
-          'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+          "Content-Type": "application/json",
+          apikey: SUPABASE_SERVICE_ROLE_KEY,
+          Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
         },
         body: JSON.stringify({
           guild_id: account.guild_id,
           youtube_channel_db_id: account.id,
           youtube_channel_name: account.channel_name,
-          notification_type: isLive ? 'live' : 'offline',
+          notification_type: isLive ? "live" : "offline",
           channel_id: targetChannelId,
           message_id: sentMessage.id,
         }),
@@ -226,7 +290,7 @@ async function sendLiveNotification(targetClient, account, isLive, settings, liv
 
     return true;
   } catch (error) {
-    console.error('[YouTube] Live notification fejl:', error.message);
+    console.error("[YouTube] Live notification fejl:", error.message);
     return false;
   }
 }
@@ -234,9 +298,12 @@ async function sendLiveNotification(targetClient, account, isLive, settings, liv
 /**
  * Check all tracked YouTube channels
  */
-async function checkAllYouTubeChannels(client = null, shouldHandleGuild = null) {
+async function checkAllYouTubeChannels(
+  client = null,
+  shouldHandleGuild = null,
+) {
   if (!SUPABASE_SERVICE_ROLE_KEY) {
-    console.error('[YouTube] SUPABASE_SERVICE_ROLE_KEY mangler');
+    console.error("[YouTube] SUPABASE_SERVICE_ROLE_KEY mangler");
     return;
   }
 
@@ -246,14 +313,17 @@ async function checkAllYouTubeChannels(client = null, shouldHandleGuild = null) 
       `${SUPABASE_URL}/rest/v1/youtube_channels?enabled=eq.true&select=*`,
       {
         headers: {
-          'apikey': SUPABASE_SERVICE_ROLE_KEY,
-          'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+          apikey: SUPABASE_SERVICE_ROLE_KEY,
+          Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
         },
-      }
+      },
     );
 
     if (!accountsRes.ok) {
-      console.error('[YouTube] Kunne ikke hente kanaler:', await accountsRes.text());
+      console.error(
+        "[YouTube] Kunne ikke hente kanaler:",
+        await accountsRes.text(),
+      );
       return;
     }
 
@@ -261,21 +331,21 @@ async function checkAllYouTubeChannels(client = null, shouldHandleGuild = null) 
     if (!accounts.length) return;
 
     // Get unique guild IDs and fetch settings
-    const guildIds = [...new Set(accounts.map(a => a.guild_id))];
+    const guildIds = [...new Set(accounts.map((a) => a.guild_id))];
     const settingsMap = {};
 
     // Resolve internal guild UUIDs to Discord guild IDs once per cycle.
     const guildMap = {};
     if (guildIds.length > 0) {
-      const filter = encodeURIComponent(`in.(${guildIds.join(',')})`);
+      const filter = encodeURIComponent(`in.(${guildIds.join(",")})`);
       const guildRes = await fetch(
         `${SUPABASE_URL}/rest/v1/guilds?id=${filter}&select=id,guild_id`,
         {
           headers: {
-            'apikey': SUPABASE_SERVICE_ROLE_KEY,
-            'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+            apikey: SUPABASE_SERVICE_ROLE_KEY,
+            Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
           },
-        }
+        },
       );
       if (guildRes.ok) {
         const rows = await guildRes.json();
@@ -288,10 +358,10 @@ async function checkAllYouTubeChannels(client = null, shouldHandleGuild = null) 
         `${SUPABASE_URL}/rest/v1/youtube_settings?guild_id=eq.${guildId}&select=*`,
         {
           headers: {
-            'apikey': SUPABASE_SERVICE_ROLE_KEY,
-            'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+            apikey: SUPABASE_SERVICE_ROLE_KEY,
+            Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
           },
-        }
+        },
       );
       if (settingsRes.ok) {
         const data = await settingsRes.json();
@@ -306,7 +376,8 @@ async function checkAllYouTubeChannels(client = null, shouldHandleGuild = null) 
 
     for (const account of accounts) {
       const guildSettings = settingsMap[account.guild_id];
-      if (guildSettings === undefined && Object.keys(settingsMap).length > 0) continue;
+      if (guildSettings === undefined && Object.keys(settingsMap).length > 0)
+        continue;
 
       const discordGuildId = guildMap[account.guild_id];
       if (!discordGuildId) continue;
@@ -316,7 +387,10 @@ async function checkAllYouTubeChannels(client = null, shouldHandleGuild = null) 
         if (!shouldHandleGuild(discordGuildId)) continue;
       } else {
         targetClient = manager.getClient(discordGuildId);
-        if (!targetClient?.isReady?.() || !targetClient.guilds.cache.has(discordGuildId)) {
+        if (
+          !targetClient?.isReady?.() ||
+          !targetClient.guilds.cache.has(discordGuildId)
+        ) {
           continue;
         }
       }
@@ -326,8 +400,10 @@ async function checkAllYouTubeChannels(client = null, shouldHandleGuild = null) 
       checked++;
 
       if (!videoInfo) {
-        await updateAccount(account.id, { last_check_at: new Date().toISOString() });
-        await new Promise(resolve => setTimeout(resolve, 2000));
+        await updateAccount(account.id, {
+          last_check_at: new Date().toISOString(),
+        });
+        await new Promise((resolve) => setTimeout(resolve, 2000));
         continue;
       }
 
@@ -341,7 +417,8 @@ async function checkAllYouTubeChannels(client = null, shouldHandleGuild = null) 
       }
 
       // Check live status
-      const liveNotificationsEnabled = guildSettings?.live_notifications !== false;
+      const liveNotificationsEnabled =
+        guildSettings?.live_notifications !== false;
       if (liveNotificationsEnabled && targetClient) {
         const liveInfo = await checkIfLive(account.youtube_channel_id);
         const wasLive = account.is_live || false;
@@ -350,13 +427,29 @@ async function checkAllYouTubeChannels(client = null, shouldHandleGuild = null) 
         updateData.is_live = isNowLive;
 
         if (isNowLive && !wasLive) {
-          console.log(`[YouTube] ${account.channel_name || account.youtube_channel_id} er nu LIVE!`);
-          await sendLiveNotification(targetClient, account, true, guildSettings, liveInfo.liveTitle);
+          console.log(
+            `[YouTube] ${account.channel_name || account.youtube_channel_id} er nu LIVE!`,
+          );
+          await sendLiveNotification(
+            targetClient,
+            account,
+            true,
+            guildSettings,
+            liveInfo.liveTitle,
+          );
           updateData.last_live_at = new Date().toISOString();
           notified++;
         } else if (!isNowLive && wasLive) {
-          console.log(`[YouTube] ${account.channel_name || account.youtube_channel_id} er gået offline`);
-          await sendLiveNotification(targetClient, account, false, guildSettings, null);
+          console.log(
+            `[YouTube] ${account.channel_name || account.youtube_channel_id} er gået offline`,
+          );
+          await sendLiveNotification(
+            targetClient,
+            account,
+            false,
+            guildSettings,
+            null,
+          );
           notified++;
         }
 
@@ -369,12 +462,19 @@ async function checkAllYouTubeChannels(client = null, shouldHandleGuild = null) 
       if (videoInfo.videoId && videoInfo.videoId !== account.last_video_id) {
         // Skip if video is older than 24 hours (to avoid spam on first add)
         const isRecent = videoInfo.published
-          ? (Date.now() - new Date(videoInfo.published).getTime()) < 86400000
+          ? Date.now() - new Date(videoInfo.published).getTime() < 86400000
           : true;
 
         if (isRecent && account.last_video_id) {
-          console.log(`[YouTube] Ny video fra ${account.channel_name || account.youtube_channel_id}: ${videoInfo.videoId}`);
-          const success = await sendVideoNotification(targetClient, account, videoInfo, guildSettings);
+          console.log(
+            `[YouTube] Ny video fra ${account.channel_name || account.youtube_channel_id}: ${videoInfo.videoId}`,
+          );
+          const success = await sendVideoNotification(
+            targetClient,
+            account,
+            videoInfo,
+            guildSettings,
+          );
           if (success) notified++;
         }
 
@@ -385,30 +485,29 @@ async function checkAllYouTubeChannels(client = null, shouldHandleGuild = null) 
       await updateAccount(account.id, updateData);
 
       // Rate limiting
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      await new Promise((resolve) => setTimeout(resolve, 2000));
     }
 
     if (notified > 0) {
-      console.log(`[YouTube] Checked ${checked} kanaler, sendte ${notified} notifikation(er)`);
+      console.log(
+        `[YouTube] Checked ${checked} kanaler, sendte ${notified} notifikation(er)`,
+      );
     }
   } catch (error) {
-    console.error('[YouTube] Check fejl:', error.message);
+    console.error("[YouTube] Check fejl:", error.message);
   }
 }
 
 async function updateAccount(id, data) {
-  await fetch(
-    `${SUPABASE_URL}/rest/v1/youtube_channels?id=eq.${id}`,
-    {
-      method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json',
-        'apikey': SUPABASE_SERVICE_ROLE_KEY,
-        'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
-      },
-      body: JSON.stringify(data),
-    }
-  );
+  await fetch(`${SUPABASE_URL}/rest/v1/youtube_channels?id=eq.${id}`, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+      apikey: SUPABASE_SERVICE_ROLE_KEY,
+      Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+    },
+    body: JSON.stringify(data),
+  });
 }
 
 /**
@@ -421,16 +520,17 @@ async function resolveYouTubeChannelId(input) {
 
     // Clean input
     let url = input.trim();
-    if (!url.startsWith('http')) {
+    if (!url.startsWith("http")) {
       // Could be @handle or username
-      url = `https://www.youtube.com/@${url.replace('@', '')}`;
+      url = `https://www.youtube.com/@${url.replace("@", "")}`;
     }
 
     const response = await fetch(url, {
       headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+        "User-Agent":
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
       },
-      redirect: 'follow',
+      redirect: "follow",
     });
 
     if (!response.ok) return null;
@@ -446,7 +546,7 @@ async function resolveYouTubeChannelId(input) {
       channelName: nameMatch ? nameMatch[1] : null,
     };
   } catch (error) {
-    console.error('[YouTube] Resolve fejl:', error.message);
+    console.error("[YouTube] Resolve fejl:", error.message);
     return null;
   }
 }
@@ -456,20 +556,24 @@ async function resolveYouTubeChannelId(input) {
  */
 function startYouTubeChecker(client) {
   if (!SUPABASE_SERVICE_ROLE_KEY) {
-    console.error('[YouTube] SUPABASE_SERVICE_ROLE_KEY mangler! YouTube checker deaktiveret.');
+    console.error(
+      "[YouTube] SUPABASE_SERVICE_ROLE_KEY mangler! YouTube checker deaktiveret.",
+    );
     return;
   }
 
   const startGlobalPoller = () => {
     if (globalPollerStarted) return;
     globalPollerStarted = true;
-    console.log('[YouTube] Starter én global poller (ruter via korrekt bot-klient)');
+    console.log(
+      "[YouTube] Starter én global poller (ruter via korrekt bot-klient)",
+    );
 
     globalInitialTimeout = setTimeout(() => {
       checkAllYouTubeChannels().catch(() => {});
       globalPollInterval = setInterval(
         () => checkAllYouTubeChannels().catch(() => {}),
-        CHECK_INTERVAL
+        CHECK_INTERVAL,
       );
     }, 45000);
   };
@@ -479,7 +583,7 @@ function startYouTubeChecker(client) {
     if (client?.isReady?.()) {
       startGlobalPoller();
     } else if (client) {
-      client.once('clientReady', startGlobalPoller);
+      client.once("clientReady", startGlobalPoller);
     } else {
       startGlobalPoller();
     }

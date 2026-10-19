@@ -1,7 +1,7 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
-import { useGuild } from '@/contexts/GuildContext';
-import { toast } from 'sonner';
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { useGuild } from "@/contexts/GuildContext";
+import { toast } from "sonner";
 
 export interface DiscordMember {
   user: {
@@ -29,7 +29,7 @@ export function useDiscordMembers() {
   const queryClient = useQueryClient();
 
   const membersQuery = useQuery({
-    queryKey: ['discord-members', selectedGuild?.id],
+    queryKey: ["discord-members", selectedGuild?.id],
     queryFn: async () => {
       if (!selectedGuild?.id) return { members: [], roles: [] };
 
@@ -39,12 +39,12 @@ export function useDiscordMembers() {
           headers: {
             Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
           },
-        }
+        },
       );
 
       if (!response.ok) {
         const err = await response.json().catch(() => ({}));
-        throw new Error(err.error || 'Failed to fetch members');
+        throw new Error(err.error || "Failed to fetch members");
       }
 
       const result = await response.json();
@@ -58,29 +58,41 @@ export function useDiscordMembers() {
   });
 
   const toggleRole = useMutation({
-    mutationFn: async ({ memberId, roleId, action }: { memberId: string; roleId: string; action: 'add' | 'remove' }) => {
+    mutationFn: async ({
+      memberId,
+      roleId,
+      action,
+    }: {
+      memberId: string;
+      roleId: string;
+      action: "add" | "remove";
+    }) => {
       const response = await fetch(
         `/api/public/discord-members?guildId=${selectedGuild?.id}`,
         {
-          method: 'POST',
+          method: "POST",
           headers: {
             Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
-            'Content-Type': 'application/json',
+            "Content-Type": "application/json",
           },
           body: JSON.stringify({ memberId, roleId, action }),
-        }
+        },
       );
 
       if (!response.ok) {
         const err = await response.json().catch(() => ({}));
-        throw new Error(err.error || 'Failed to update role');
+        throw new Error(err.error || "Failed to update role");
       }
 
       return response.json();
     },
     onSuccess: (_, variables) => {
-      toast.success(`Rolle ${variables.action === 'add' ? 'tilføjet' : 'fjernet'}!`);
-      queryClient.invalidateQueries({ queryKey: ['discord-members', selectedGuild?.id] });
+      toast.success(
+        `Rolle ${variables.action === "add" ? "tilføjet" : "fjernet"}!`,
+      );
+      queryClient.invalidateQueries({
+        queryKey: ["discord-members", selectedGuild?.id],
+      });
     },
     onError: (error: Error) => {
       toast.error(error.message);

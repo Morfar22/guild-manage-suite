@@ -1,74 +1,120 @@
-import { useState } from 'react';
-import { useParams, useNavigate } from '@tanstack/react-router';
-import { format } from 'date-fns';
-import { enUS } from 'date-fns/locale';
-import { ArrowLeft, User, Clock, CheckCircle, XCircle, MessageSquare, Sparkles, Loader2 } from 'lucide-react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Separator } from '@/components/ui/separator';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useApplicationSubmission, useReviewApplication } from '@/hooks/useApplicationSubmissions';
-import { useAuth } from '@/contexts/AuthContext';
-import { AiScoreCard } from '@/components/applications/AiScoreCard';
-import { useGuildPremium } from '@/hooks/useGuildPremium';
-import { PremiumBadge } from '@/components/applications/PremiumLock';
-import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
-import { invokeFunction } from '@/lib/functions-client';
+import { useState } from "react";
+import { useParams, useNavigate } from "@tanstack/react-router";
+import { format } from "date-fns";
+import { enUS } from "date-fns/locale";
+import {
+  ArrowLeft,
+  User,
+  Clock,
+  CheckCircle,
+  XCircle,
+  MessageSquare,
+  Sparkles,
+  Loader2,
+} from "lucide-react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Separator } from "@/components/ui/separator";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  useApplicationSubmission,
+  useReviewApplication,
+} from "@/hooks/useApplicationSubmissions";
+import { useAuth } from "@/contexts/AuthContext";
+import { AiScoreCard } from "@/components/applications/AiScoreCard";
+import { useGuildPremium } from "@/hooks/useGuildPremium";
+import { PremiumBadge } from "@/components/applications/PremiumLock";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+import { invokeFunction } from "@/lib/functions-client";
 
 const statusConfig = {
-  pending: { label: 'Pending', variant: 'default' as const, icon: Clock },
-  approved: { label: 'Approved', variant: 'default' as const, icon: CheckCircle },
-  denied: { label: 'Denied', variant: 'destructive' as const, icon: XCircle },
+  pending: { label: "Pending", variant: "default" as const, icon: Clock },
+  approved: {
+    label: "Approved",
+    variant: "default" as const,
+    icon: CheckCircle,
+  },
+  denied: { label: "Denied", variant: "destructive" as const, icon: XCircle },
 };
 
 export default function ApplicationReview() {
-  const { submissionId } = useParams({ from: '/dashboard/applications/$submissionId' });
+  const { submissionId } = useParams({
+    from: "/dashboard/applications/$submissionId",
+  });
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { data: submission, isLoading } = useApplicationSubmission(submissionId);
+  const { data: submission, isLoading } =
+    useApplicationSubmission(submissionId);
   const { data: hasPremium } = useGuildPremium();
   const reviewMutation = useReviewApplication();
 
-  const [notes, setNotes] = useState('');
+  const [notes, setNotes] = useState("");
   const [approveDialogOpen, setApproveDialogOpen] = useState(false);
   const [denyDialogOpen, setDenyDialogOpen] = useState(false);
-  const [aiTone, setAiTone] = useState<'professional' | 'friendly' | 'firm' | 'empathetic'>('professional');
+  const [aiTone, setAiTone] = useState<
+    "professional" | "friendly" | "firm" | "empathetic"
+  >("professional");
   const [polishing, setPolishing] = useState(false);
 
-  const handlePolish = async (decision: 'approved' | 'denied') => {
+  const handlePolish = async (decision: "approved" | "denied") => {
     if (!notes.trim()) {
-      toast.error('Skriv et udkast først, så finpudser AI det.');
+      toast.error("Skriv et udkast først, så finpudser AI det.");
       return;
     }
     setPolishing(true);
     try {
-      const ctx = submission?.answers
-        ?.map((a) => `Q: ${a.question}\nA: ${a.answer}`)
-        .join('\n\n') || '';
-      const { data, error } = await invokeFunction('ai-polish-text', {
-        body: { text: notes, tone: aiTone, decision, context: ctx, language: 'da' },
+      const ctx =
+        submission?.answers
+          ?.map((a) => `Q: ${a.question}\nA: ${a.answer}`)
+          .join("\n\n") || "";
+      const { data, error } = await invokeFunction("ai-polish-text", {
+        body: {
+          text: notes,
+          tone: aiTone,
+          decision,
+          context: ctx,
+          language: "da",
+        },
       });
       if (error) throw error;
       if (data?.polished) {
         setNotes(data.polished);
-        toast.success('Svar finpudset med AI');
+        toast.success("Svar finpudset med AI");
       }
     } catch (e: any) {
-      toast.error(e.message || 'AI fejlede');
+      toast.error(e.message || "AI fejlede");
     } finally {
       setPolishing(false);
     }
   };
 
-
-  const handleReview = async (status: 'approved' | 'denied') => {
+  const handleReview = async (status: "approved" | "denied") => {
     if (!submission || !user) return;
 
     const meta = (user.user_metadata || {}) as Record<string, any>;
@@ -79,8 +125,8 @@ export default function ApplicationReview() {
       meta.user_name ||
       meta.preferred_username ||
       user.email ||
-      'Dashboard User';
-    const discordId = meta.provider_id || meta.sub || '';
+      "Dashboard User";
+    const discordId = meta.provider_id || meta.sub || "";
 
     await reviewMutation.mutateAsync({
       submissionId: submission.id,
@@ -92,7 +138,7 @@ export default function ApplicationReview() {
 
     setApproveDialogOpen(false);
     setDenyDialogOpen(false);
-    navigate({ to: '/dashboard/applications' });
+    navigate({ to: "/dashboard/applications" });
   };
 
   if (isLoading) {
@@ -108,7 +154,7 @@ export default function ApplicationReview() {
     return (
       <div className="flex flex-col items-center justify-center py-12">
         <h2 className="text-xl font-semibold mb-2">Application not found</h2>
-        <Button onClick={() => navigate({ to: '/dashboard/applications' })}>
+        <Button onClick={() => navigate({ to: "/dashboard/applications" })}>
           Go back
         </Button>
       </div>
@@ -122,7 +168,11 @@ export default function ApplicationReview() {
     <>
       <div className="space-y-6">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={() => navigate({ to: '/dashboard/applications' })}>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => navigate({ to: "/dashboard/applications" })}
+          >
             <ArrowLeft className="h-5 w-5" />
           </Button>
           <div className="flex-1">
@@ -131,7 +181,7 @@ export default function ApplicationReview() {
               {submission.form?.emoji} {submission.form?.name}
             </p>
           </div>
-          {submission.status === 'pending' && (
+          {submission.status === "pending" && (
             <div className="flex gap-2">
               <Button
                 variant="destructive"
@@ -161,8 +211,12 @@ export default function ApplicationReview() {
                 summary={(submission as any).ai_summary ?? null}
                 flags={((submission as any).ai_flags as string[]) ?? null}
                 reasoning={(submission as any).ai_reasoning ?? null}
-                aiGeneratedLikelihood={(submission as any).ai_generated_likelihood ?? null}
-                aiGeneratedReasoning={(submission as any).ai_generated_reasoning ?? null}
+                aiGeneratedLikelihood={
+                  (submission as any).ai_generated_likelihood ?? null
+                }
+                aiGeneratedReasoning={
+                  (submission as any).ai_generated_reasoning ?? null
+                }
               />
             )}
 
@@ -173,7 +227,12 @@ export default function ApplicationReview() {
                   {hasPremium && <PremiumBadge />}
                 </CardTitle>
                 <CardDescription>
-                  Submitted on {format(new Date(submission.created_at), "MMMM d, yyyy 'at' HH:mm", { locale: enUS })}
+                  Submitted on{" "}
+                  {format(
+                    new Date(submission.created_at),
+                    "MMMM d, yyyy 'at' HH:mm",
+                    { locale: enUS },
+                  )}
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
@@ -185,15 +244,19 @@ export default function ApplicationReview() {
                       <Label className="text-sm font-medium text-muted-foreground">
                         {answer.question}
                       </Label>
-                      <p className="mt-1 whitespace-pre-wrap">{answer.answer || '—'}</p>
-                      {index < submission.answers.length - 1 && <Separator className="mt-4" />}
+                      <p className="mt-1 whitespace-pre-wrap">
+                        {answer.answer || "—"}
+                      </p>
+                      {index < submission.answers.length - 1 && (
+                        <Separator className="mt-4" />
+                      )}
                     </div>
                   ))
                 )}
               </CardContent>
             </Card>
 
-            {submission.status !== 'pending' && submission.reviewer_notes && (
+            {submission.status !== "pending" && submission.reviewer_notes && (
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
@@ -202,7 +265,9 @@ export default function ApplicationReview() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="whitespace-pre-wrap">{submission.reviewer_notes}</p>
+                  <p className="whitespace-pre-wrap">
+                    {submission.reviewer_notes}
+                  </p>
                 </CardContent>
               </Card>
             )}
@@ -222,8 +287,12 @@ export default function ApplicationReview() {
                     </AvatarFallback>
                   </Avatar>
                   <div>
-                    <p className="font-medium">{submission.discord_username || 'Unknown User'}</p>
-                    <p className="text-sm text-muted-foreground">ID: {submission.discord_user_id}</p>
+                    <p className="font-medium">
+                      {submission.discord_username || "Unknown User"}
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      ID: {submission.discord_user_id}
+                    </p>
                   </div>
                 </div>
               </CardContent>
@@ -242,8 +311,15 @@ export default function ApplicationReview() {
                 </div>
                 {submission.reviewed_at && (
                   <div className="text-sm text-muted-foreground">
-                    <p>Reviewed by: {submission.reviewer_name || 'Unknown'}</p>
-                    <p>On: {format(new Date(submission.reviewed_at), "MMM d, yyyy 'at' HH:mm", { locale: enUS })}</p>
+                    <p>Reviewed by: {submission.reviewer_name || "Unknown"}</p>
+                    <p>
+                      On:{" "}
+                      {format(
+                        new Date(submission.reviewed_at),
+                        "MMM d, yyyy 'at' HH:mm",
+                        { locale: enUS },
+                      )}
+                    </p>
                   </div>
                 )}
               </CardContent>
@@ -257,7 +333,8 @@ export default function ApplicationReview() {
           <DialogHeader>
             <DialogTitle>Approve Application</DialogTitle>
             <DialogDescription>
-              This will approve the application and grant any configured roles to the user.
+              This will approve the application and grant any configured roles
+              to the user.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
@@ -270,7 +347,10 @@ export default function ApplicationReview() {
                 rows={4}
               />
               <div className="flex items-center gap-2">
-                <Select value={aiTone} onValueChange={(v) => setAiTone(v as any)}>
+                <Select
+                  value={aiTone}
+                  onValueChange={(v) => setAiTone(v as any)}
+                >
                   <SelectTrigger className="w-[160px] h-8 text-xs">
                     <SelectValue />
                   </SelectTrigger>
@@ -285,21 +365,28 @@ export default function ApplicationReview() {
                   type="button"
                   size="sm"
                   variant="outline"
-                  onClick={() => handlePolish('approved')}
+                  onClick={() => handlePolish("approved")}
                   disabled={polishing || !notes.trim()}
                 >
-                  {polishing ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <Sparkles className="h-3 w-3 mr-1" />}
+                  {polishing ? (
+                    <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                  ) : (
+                    <Sparkles className="h-3 w-3 mr-1" />
+                  )}
                   Finpuds med AI
                 </Button>
               </div>
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setApproveDialogOpen(false)}>
+            <Button
+              variant="outline"
+              onClick={() => setApproveDialogOpen(false)}
+            >
               Cancel
             </Button>
             <Button
-              onClick={() => handleReview('approved')}
+              onClick={() => handleReview("approved")}
               disabled={reviewMutation.isPending}
             >
               Approve Application
@@ -313,7 +400,8 @@ export default function ApplicationReview() {
           <DialogHeader>
             <DialogTitle>Deny Application</DialogTitle>
             <DialogDescription>
-              This will deny the application. The user will be notified if DM notifications are enabled.
+              This will deny the application. The user will be notified if DM
+              notifications are enabled.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
@@ -326,7 +414,10 @@ export default function ApplicationReview() {
                 rows={4}
               />
               <div className="flex items-center gap-2">
-                <Select value={aiTone} onValueChange={(v) => setAiTone(v as any)}>
+                <Select
+                  value={aiTone}
+                  onValueChange={(v) => setAiTone(v as any)}
+                >
                   <SelectTrigger className="w-[160px] h-8 text-xs">
                     <SelectValue />
                   </SelectTrigger>
@@ -341,10 +432,14 @@ export default function ApplicationReview() {
                   type="button"
                   size="sm"
                   variant="outline"
-                  onClick={() => handlePolish('denied')}
+                  onClick={() => handlePolish("denied")}
                   disabled={polishing || !notes.trim()}
                 >
-                  {polishing ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <Sparkles className="h-3 w-3 mr-1" />}
+                  {polishing ? (
+                    <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                  ) : (
+                    <Sparkles className="h-3 w-3 mr-1" />
+                  )}
                   Finpuds med AI
                 </Button>
               </div>
@@ -356,7 +451,7 @@ export default function ApplicationReview() {
             </Button>
             <Button
               variant="destructive"
-              onClick={() => handleReview('denied')}
+              onClick={() => handleReview("denied")}
               disabled={reviewMutation.isPending}
             >
               Deny Application

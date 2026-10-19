@@ -1,7 +1,7 @@
-import { useEffect, useMemo, useState } from 'react';
-import { Settings2, ShieldCheck, Hash, TimerReset } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
+import { useEffect, useMemo, useState } from "react";
+import { Settings2, ShieldCheck, Hash, TimerReset } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -9,16 +9,16 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Badge } from '@/components/ui/badge';
-import { useDiscordRoles } from '@/hooks/useDiscordRoles';
-import { useDiscordChannels } from '@/hooks/useDiscordChannels';
-import { CommandInfo } from '@/types/discord';
-import { GuildCommandSettings } from '@/lib/commands';
-import { getCommandSlashPath } from '@/lib/commandGrouping';
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Badge } from "@/components/ui/badge";
+import { useDiscordRoles } from "@/hooks/useDiscordRoles";
+import { useDiscordChannels } from "@/hooks/useDiscordChannels";
+import { CommandInfo } from "@/types/discord";
+import { GuildCommandSettings } from "@/lib/commands";
+import { getCommandSlashPath } from "@/lib/commandGrouping";
 
 interface Props {
   open: boolean;
@@ -28,7 +28,10 @@ interface Props {
   saving?: boolean;
   onSave: (
     commandName: string,
-    updates: Pick<GuildCommandSettings, 'cooldown_seconds' | 'allowed_role_ids' | 'allowed_channel_ids'>
+    updates: Pick<
+      GuildCommandSettings,
+      "cooldown_seconds" | "allowed_role_ids" | "allowed_channel_ids"
+    >,
   ) => Promise<void>;
 }
 
@@ -41,7 +44,8 @@ export function CommandSettingsDialog({
   onSave,
 }: Props) {
   const { data: roles = [], isLoading: rolesLoading } = useDiscordRoles();
-  const { data: channelData, isLoading: channelsLoading } = useDiscordChannels();
+  const { data: channelData, isLoading: channelsLoading } =
+    useDiscordChannels();
   const channels = channelData?.channels ?? [];
 
   const [cooldown, setCooldown] = useState(0);
@@ -56,16 +60,20 @@ export function CommandSettingsDialog({
   }, [open, settings]);
 
   const selectableRoles = useMemo(
-    () => roles.filter((role) => role.name !== '@everyone'),
-    [roles]
+    () => roles.filter((role) => role.name !== "@everyone"),
+    [roles],
   );
 
   const toggleValue = (
     value: string,
     values: string[],
-    setter: (next: string[]) => void
+    setter: (next: string[]) => void,
   ) => {
-    setter(values.includes(value) ? values.filter((item) => item !== value) : [...values, value]);
+    setter(
+      values.includes(value)
+        ? values.filter((item) => item !== value)
+        : [...values, value],
+    );
   };
 
   const handleSave = async () => {
@@ -89,14 +97,18 @@ export function CommandSettingsDialog({
             {getCommandSlashPath(command.name)}
           </DialogTitle>
           <DialogDescription>
-            Styr cooldown og hvor kommandoen må bruges. Tomme rolle- og kanallister betyder ingen begrænsning.
+            Styr cooldown og hvor kommandoen må bruges. Tomme rolle- og
+            kanallister betyder ingen begrænsning.
           </DialogDescription>
         </DialogHeader>
 
         <div className="grid gap-6 py-2 md:grid-cols-2">
           <div className="space-y-5">
             <div className="space-y-2">
-              <Label htmlFor="command-cooldown" className="flex items-center gap-2">
+              <Label
+                htmlFor="command-cooldown"
+                className="flex items-center gap-2"
+              >
                 <TimerReset className="h-4 w-4" />
                 Cooldown
               </Label>
@@ -109,7 +121,9 @@ export function CommandSettingsDialog({
                   value={cooldown}
                   onChange={(event) => setCooldown(Number(event.target.value))}
                 />
-                <span className="whitespace-nowrap text-sm text-muted-foreground">sekunder</span>
+                <span className="whitespace-nowrap text-sm text-muted-foreground">
+                  sekunder
+                </span>
               </div>
               <p className="text-xs text-muted-foreground">
                 0 deaktiverer cooldown. Maksimum er 24 timer.
@@ -122,14 +136,18 @@ export function CommandSettingsDialog({
                   <ShieldCheck className="h-4 w-4" />
                   Tilladte roller
                 </Label>
-                <Badge variant="secondary">{roleIds.length || 'Alle'}</Badge>
+                <Badge variant="secondary">{roleIds.length || "Alle"}</Badge>
               </div>
               <ScrollArea className="h-60 rounded-lg border border-border">
                 <div className="space-y-1 p-3">
                   {rolesLoading ? (
-                    <p className="p-2 text-sm text-muted-foreground">Henter roller...</p>
+                    <p className="p-2 text-sm text-muted-foreground">
+                      Henter roller...
+                    </p>
                   ) : selectableRoles.length === 0 ? (
-                    <p className="p-2 text-sm text-muted-foreground">Ingen roller fundet.</p>
+                    <p className="p-2 text-sm text-muted-foreground">
+                      Ingen roller fundet.
+                    </p>
                   ) : (
                     selectableRoles.map((role) => (
                       <label
@@ -138,7 +156,9 @@ export function CommandSettingsDialog({
                       >
                         <Checkbox
                           checked={roleIds.includes(role.id)}
-                          onCheckedChange={() => toggleValue(role.id, roleIds, setRoleIds)}
+                          onCheckedChange={() =>
+                            toggleValue(role.id, roleIds, setRoleIds)
+                          }
                         />
                         <span className="truncate text-sm">{role.name}</span>
                       </label>
@@ -147,7 +167,11 @@ export function CommandSettingsDialog({
                 </div>
               </ScrollArea>
               {roleIds.length > 0 && (
-                <Button variant="ghost" size="sm" onClick={() => setRoleIds([])}>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setRoleIds([])}
+                >
                   Tillad alle roller
                 </Button>
               )}
@@ -160,14 +184,18 @@ export function CommandSettingsDialog({
                 <Hash className="h-4 w-4" />
                 Tilladte kanaler
               </Label>
-              <Badge variant="secondary">{channelIds.length || 'Alle'}</Badge>
+              <Badge variant="secondary">{channelIds.length || "Alle"}</Badge>
             </div>
             <ScrollArea className="h-[352px] rounded-lg border border-border">
               <div className="space-y-1 p-3">
                 {channelsLoading ? (
-                  <p className="p-2 text-sm text-muted-foreground">Henter kanaler...</p>
+                  <p className="p-2 text-sm text-muted-foreground">
+                    Henter kanaler...
+                  </p>
                 ) : channels.length === 0 ? (
-                  <p className="p-2 text-sm text-muted-foreground">Ingen kanaler fundet.</p>
+                  <p className="p-2 text-sm text-muted-foreground">
+                    Ingen kanaler fundet.
+                  </p>
                 ) : (
                   channels.map((channel) => (
                     <label
@@ -176,7 +204,9 @@ export function CommandSettingsDialog({
                     >
                       <Checkbox
                         checked={channelIds.includes(channel.id)}
-                        onCheckedChange={() => toggleValue(channel.id, channelIds, setChannelIds)}
+                        onCheckedChange={() =>
+                          toggleValue(channel.id, channelIds, setChannelIds)
+                        }
                       />
                       <Hash className="h-3.5 w-3.5 text-muted-foreground" />
                       <span className="truncate text-sm">{channel.name}</span>
@@ -186,7 +216,11 @@ export function CommandSettingsDialog({
               </div>
             </ScrollArea>
             {channelIds.length > 0 && (
-              <Button variant="ghost" size="sm" onClick={() => setChannelIds([])}>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setChannelIds([])}
+              >
                 Tillad alle kanaler
               </Button>
             )}
@@ -194,11 +228,15 @@ export function CommandSettingsDialog({
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>
+          <Button
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+            disabled={saving}
+          >
             Annuller
           </Button>
           <Button onClick={handleSave} disabled={saving}>
-            {saving ? 'Gemmer...' : 'Gem indstillinger'}
+            {saving ? "Gemmer..." : "Gem indstillinger"}
           </Button>
         </DialogFooter>
       </DialogContent>

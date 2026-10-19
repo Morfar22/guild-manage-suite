@@ -1,50 +1,63 @@
 /**
  * Custom Bot Manager for Discord Bot
- * 
+ *
  * Manages multiple Discord bot instances based on guild_bot_settings.
  * Each guild can have its own custom bot with unique token, name, and avatar.
- * 
+ *
  * Environment variables required:
  * - BOT_SECRET_KEY: (same as in Lovable Cloud secrets)
  * - SUPABASE_URL: https://rkdqunnttcyuybbofkvz.supabase.co
  * - DEFAULT_BOT_TOKEN: Fallback token for guilds without custom bot
- * 
+ *
  * Usage in your main bot file:
  * const { CustomBotManager } = require('./customBotManager');
  * const manager = new CustomBotManager();
  * await manager.start();
- * 
- * IMPORTANT: This replaces the single-client approach. 
+ *
+ * IMPORTANT: This replaces the single-client approach.
  * All handlers should be registered per-client using manager.registerHandler()
  */
 
-const { Client, GatewayIntentBits, Partials, ActivityType, REST, Routes } = require('discord.js');
-const { buildFiveMCommand } = require('./fivem/commands');
-const { commands } = require('./commandDefinitions');
-const { groupFlatCommandDefinitions } = require('./commandRouting');
-const { commandSetsEqual } = require('./commandSync');
+const {
+  Client,
+  GatewayIntentBits,
+  Partials,
+  ActivityType,
+  REST,
+  Routes,
+} = require("discord.js");
+const { buildFiveMCommand } = require("./fivem/commands");
+const { commands } = require("./commandDefinitions");
+const { groupFlatCommandDefinitions } = require("./commandRouting");
+const { commandSetsEqual } = require("./commandSync");
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const BOT_SECRET_KEY = process.env.BOT_SECRET_KEY;
 const DEFAULT_BOT_TOKEN_CANDIDATES = [
-  ['DEFAULT_BOT_TOKEN', process.env.DEFAULT_BOT_TOKEN],
-  ['DISCORD_TOKEN', process.env.DISCORD_TOKEN],
-  ['DISCORD_BOT_TOKEN', process.env.DISCORD_BOT_TOKEN],
+  ["DEFAULT_BOT_TOKEN", process.env.DEFAULT_BOT_TOKEN],
+  ["DISCORD_TOKEN", process.env.DISCORD_TOKEN],
+  ["DISCORD_BOT_TOKEN", process.env.DISCORD_BOT_TOKEN],
 ]
-  .map(([source, token]) => ({ source, token: String(token || '').trim() }))
-  .filter(entry => entry.token.length > 0)
-  .filter((entry, index, entries) => entries.findIndex(other => other.token === entry.token) === index);
+  .map(([source, token]) => ({ source, token: String(token || "").trim() }))
+  .filter((entry) => entry.token.length > 0)
+  .filter(
+    (entry, index, entries) =>
+      entries.findIndex((other) => other.token === entry.token) === index,
+  );
 
 // How often to check for config changes (60 seconds)
 const CONFIG_CHECK_INTERVAL = 60000;
 
 // How often to send heartbeats (30 seconds)
 const HEARTBEAT_INTERVAL = 30000;
-const APP_API_BASE = process.env.APP_API_BASE || 'https://bot.nethost-solutions.dk';
-const GUILDOS_BRAND_NAME = 'GuildOS Bot';
-const GUILDOS_ACTIVITY = process.env.DEFAULT_BOT_ACTIVITY || 'GuildOS Bot • /help';
-const GUILDOS_DISCOVERY_APPLICATION_ID = process.env.GUILDOS_DISCOVERY_APPLICATION_ID || '1555371176224628787';
+const APP_API_BASE =
+  process.env.APP_API_BASE || "https://bot.nethost-solutions.dk";
+const GUILDOS_BRAND_NAME = "GuildOS Bot";
+const GUILDOS_ACTIVITY =
+  process.env.DEFAULT_BOT_ACTIVITY || "GuildOS Bot • /help";
+const GUILDOS_DISCOVERY_APPLICATION_ID =
+  process.env.GUILDOS_DISCOVERY_APPLICATION_ID || "1555371176224628787";
 
 function getWsPing(client) {
   const ping = Number(client?.ws?.ping);
@@ -65,11 +78,11 @@ class CustomBotManager {
   constructor() {
     // Map of guild_id -> { client, config, handlers }
     this.bots = new Map();
-    
+
     // Default client for guilds without custom bot
     this.defaultClient = null;
     this.defaultBotToken = null;
-    
+
     // Registered handler factories
     this.handlerFactories = [];
 
@@ -77,7 +90,7 @@ class CustomBotManager {
     // Populated from config before the clients finish logging in, so the default
     // bot can avoid those guilds during startup as well.
     this.customDiscordGuildIds = new Set();
-    
+
     // Running state
     this.isRunning = false;
     this.configCheckInterval = null;
@@ -100,26 +113,37 @@ class CustomBotManager {
    * @param {string} applicationId - Bot application/client ID
    * @param {string[]} [guildIds] - Optional guild IDs for instant guild-specific deployment
    */
-  async deployCommandsForBot(token, applicationId, guildIds = [], options = {}) {
+  async deployCommandsForBot(
+    token,
+    applicationId,
+    guildIds = [],
+    options = {},
+  ) {
     if (!applicationId) {
-      console.log('[CustomBotManager] No application ID provided, skipping command deploy');
+      console.log(
+        "[CustomBotManager] No application ID provided, skipping command deploy",
+      );
       return;
     }
 
     // Only deploy once per session per application ID
     if (CustomBotManager._deployedAppIds.has(applicationId)) {
-      console.log(`[CustomBotManager] Commands already checked for ${applicationId} this session`);
+      console.log(
+        `[CustomBotManager] Commands already checked for ${applicationId} this session`,
+      );
       return;
     }
 
-    const scope = options.scope === 'global' ? 'global' : 'guild';
-    const clearGuildIds = Array.isArray(options.clearGuildIds) ? options.clearGuildIds : [];
+    const scope = options.scope === "global" ? "global" : "guild";
+    const clearGuildIds = Array.isArray(options.clearGuildIds)
+      ? options.clearGuildIds
+      : [];
 
     try {
       const commandData = CustomBotManager.buildCommandData();
-      const rest = new REST({ version: '10' }).setToken(token);
+      const rest = new REST({ version: "10" }).setToken(token);
 
-      if (scope === 'global') {
+      if (scope === "global") {
         // The official GuildOS application uses global commands so Discord can
         // expose them consistently across every installed server and Discovery.
         // deployCommands.js owns the complete grouped command catalog. If it has
@@ -127,30 +151,41 @@ class CustomBotManager {
         // it with this manager's smaller runtime/bootstrap set.
         let existingGlobals = [];
         try {
-          existingGlobals = await rest.get(Routes.applicationCommands(applicationId));
+          existingGlobals = await rest.get(
+            Routes.applicationCommands(applicationId),
+          );
         } catch (error) {
-          console.warn(`[CustomBotManager] Could not inspect global commands for ${applicationId}:`, error.message);
+          console.warn(
+            `[CustomBotManager] Could not inspect global commands for ${applicationId}:`,
+            error.message,
+          );
         }
 
         if (options.preserveExistingGlobals !== false) {
           if (existingGlobals.length > 0) {
             console.log(
-              `[CustomBotManager] ✅ Preserving ${existingGlobals.length} existing global commands for app ${applicationId}`
+              `[CustomBotManager] ✅ Preserving ${existingGlobals.length} existing global commands for app ${applicationId}`,
             );
           } else {
             console.warn(
-              `[CustomBotManager] ⚠️ No canonical global commands found for app ${applicationId}. Run "node deployCommands.js" to publish the Discovery-safe grouped catalog.`
+              `[CustomBotManager] ⚠️ No canonical global commands found for app ${applicationId}. Run "node deployCommands.js" to publish the Discovery-safe grouped catalog.`,
             );
           }
         } else if (commandSetsEqual(existingGlobals, commandData)) {
-          console.log(`[CustomBotManager] ✅ Global bootstrap commands already up to date for app ${applicationId}`);
+          console.log(
+            `[CustomBotManager] ✅ Global bootstrap commands already up to date for app ${applicationId}`,
+          );
         } else {
-          console.log(`[CustomBotManager] 🔄 Deploying ${commandData.length} global bootstrap commands for app ${applicationId}...`);
+          console.log(
+            `[CustomBotManager] 🔄 Deploying ${commandData.length} global bootstrap commands for app ${applicationId}...`,
+          );
           const deployed = await rest.put(
             Routes.applicationCommands(applicationId),
-            { body: commandData }
+            { body: commandData },
           );
-          console.log(`[CustomBotManager] ✅ ${deployed.length} global commands active for app ${applicationId}`);
+          console.log(
+            `[CustomBotManager] ✅ ${deployed.length} global commands active for app ${applicationId}`,
+          );
         }
 
         // Remove old guild-scoped copies to avoid duplicate commands during migration.
@@ -158,50 +193,67 @@ class CustomBotManager {
         for (const guildId of guildsToClear) {
           try {
             const existingGuildCommands = await rest.get(
-              Routes.applicationGuildCommands(applicationId, guildId)
+              Routes.applicationGuildCommands(applicationId, guildId),
             );
             if (!existingGuildCommands.length) continue;
 
             await rest.put(
               Routes.applicationGuildCommands(applicationId, guildId),
-              { body: [] }
+              { body: [] },
             );
-            console.log(`[CustomBotManager] ✅ Cleared ${existingGuildCommands.length} legacy guild command(s) from ${guildId}`);
+            console.log(
+              `[CustomBotManager] ✅ Cleared ${existingGuildCommands.length} legacy guild command(s) from ${guildId}`,
+            );
           } catch (guildError) {
-            console.warn(`[CustomBotManager] Could not clear legacy guild commands from ${guildId}:`, guildError.message);
+            console.warn(
+              `[CustomBotManager] Could not clear legacy guild commands from ${guildId}:`,
+              guildError.message,
+            );
           }
         }
       } else {
         // Custom per-server bot applications stay guild-scoped so each custom
         // application only exposes commands inside its assigned server.
-        const existingGlobals = await rest.get(Routes.applicationCommands(applicationId));
+        const existingGlobals = await rest.get(
+          Routes.applicationCommands(applicationId),
+        );
         if (existingGlobals.length > 0) {
-          await rest.put(
-            Routes.applicationCommands(applicationId),
-            { body: [] }
+          await rest.put(Routes.applicationCommands(applicationId), {
+            body: [],
+          });
+          console.log(
+            `[CustomBotManager] ✅ Cleared ${existingGlobals.length} stale global command(s) for custom app ${applicationId}`,
           );
-          console.log(`[CustomBotManager] ✅ Cleared ${existingGlobals.length} stale global command(s) for custom app ${applicationId}`);
         }
 
         for (const guildId of guildIds) {
           try {
             const existingGuildCommands = await rest.get(
-              Routes.applicationGuildCommands(applicationId, guildId)
+              Routes.applicationGuildCommands(applicationId, guildId),
             );
 
             if (commandSetsEqual(existingGuildCommands, commandData)) {
-              console.log(`[CustomBotManager] ✅ ${commandData.length} commands already up to date in guild ${guildId}`);
+              console.log(
+                `[CustomBotManager] ✅ ${commandData.length} commands already up to date in guild ${guildId}`,
+              );
               continue;
             }
 
-            console.log(`[CustomBotManager] 🔄 Syncing ${commandData.length} commands to guild ${guildId}...`);
+            console.log(
+              `[CustomBotManager] 🔄 Syncing ${commandData.length} commands to guild ${guildId}...`,
+            );
             const deployed = await rest.put(
               Routes.applicationGuildCommands(applicationId, guildId),
-              { body: commandData }
+              { body: commandData },
             );
-            console.log(`[CustomBotManager] ✅ ${deployed.length} commands active in guild ${guildId}`);
+            console.log(
+              `[CustomBotManager] ✅ ${deployed.length} commands active in guild ${guildId}`,
+            );
           } catch (guildError) {
-            console.error(`[CustomBotManager] Failed guild deploy for ${guildId}:`, guildError.message);
+            console.error(
+              `[CustomBotManager] Failed guild deploy for ${guildId}:`,
+              guildError.message,
+            );
           }
         }
 
@@ -211,24 +263,32 @@ class CustomBotManager {
           if (guildIds.includes(guildId)) continue;
           try {
             const existingGuildCommands = await rest.get(
-              Routes.applicationGuildCommands(applicationId, guildId)
+              Routes.applicationGuildCommands(applicationId, guildId),
             );
             if (!existingGuildCommands.length) continue;
 
             await rest.put(
               Routes.applicationGuildCommands(applicationId, guildId),
-              { body: [] }
+              { body: [] },
             );
-            console.log(`[CustomBotManager] ✅ Cleared ${existingGuildCommands.length} command(s) from unassigned guild ${guildId}`);
+            console.log(
+              `[CustomBotManager] ✅ Cleared ${existingGuildCommands.length} command(s) from unassigned guild ${guildId}`,
+            );
           } catch (guildError) {
-            console.warn(`[CustomBotManager] Could not clear commands from unassigned guild ${guildId}:`, guildError.message);
+            console.warn(
+              `[CustomBotManager] Could not clear commands from unassigned guild ${guildId}:`,
+              guildError.message,
+            );
           }
         }
       }
 
       CustomBotManager._deployedAppIds.add(applicationId);
     } catch (error) {
-      console.error(`[CustomBotManager] ❌ Failed to sync commands for ${applicationId}:`, error.message);
+      console.error(
+        `[CustomBotManager] ❌ Failed to sync commands for ${applicationId}:`,
+        error.message,
+      );
     }
   }
 
@@ -241,36 +301,49 @@ class CustomBotManager {
   async deployCommandsToGuild(token, applicationId, guildId, options = {}) {
     if (!applicationId || !guildId) return;
 
-    const scope = options.scope === 'global' ? 'global' : 'guild';
+    const scope = options.scope === "global" ? "global" : "guild";
 
     try {
-      const rest = new REST({ version: '10' }).setToken(token);
+      const rest = new REST({ version: "10" }).setToken(token);
       const route = Routes.applicationGuildCommands(applicationId, guildId);
       const existingGuildCommands = await rest.get(route);
 
-      if (scope === 'global') {
+      if (scope === "global") {
         // Global commands already apply automatically. Only remove stale guild
         // overrides when there is actually something to remove.
         if (existingGuildCommands.length > 0) {
           await rest.put(route, { body: [] });
-          console.log(`[CustomBotManager] ✅ Cleared ${existingGuildCommands.length} stale guild override(s) from ${guildId}`);
+          console.log(
+            `[CustomBotManager] ✅ Cleared ${existingGuildCommands.length} stale guild override(s) from ${guildId}`,
+          );
         } else {
-          console.log(`[CustomBotManager] ✅ Global commands already apply cleanly to guild ${guildId}`);
+          console.log(
+            `[CustomBotManager] ✅ Global commands already apply cleanly to guild ${guildId}`,
+          );
         }
         return;
       }
 
       const commandData = CustomBotManager.buildCommandData();
       if (commandSetsEqual(existingGuildCommands, commandData)) {
-        console.log(`[CustomBotManager] ✅ Commands already up to date in guild ${guildId}`);
+        console.log(
+          `[CustomBotManager] ✅ Commands already up to date in guild ${guildId}`,
+        );
         return;
       }
 
-      console.log(`[CustomBotManager] 🔄 Syncing commands to guild ${guildId}...`);
+      console.log(
+        `[CustomBotManager] 🔄 Syncing commands to guild ${guildId}...`,
+      );
       const data = await rest.put(route, { body: commandData });
-      console.log(`[CustomBotManager] ✅ ${data.length} commands active in guild ${guildId}`);
+      console.log(
+        `[CustomBotManager] ✅ ${data.length} commands active in guild ${guildId}`,
+      );
     } catch (error) {
-      console.error(`[CustomBotManager] ❌ Failed to sync commands to guild ${guildId}:`, error.message);
+      console.error(
+        `[CustomBotManager] ❌ Failed to sync commands to guild ${guildId}:`,
+        error.message,
+      );
     }
   }
 
@@ -280,22 +353,28 @@ class CustomBotManager {
    */
   registerHandler(factory) {
     this.handlerFactories.push(factory);
-    
+
     // Apply to existing bots
     for (const [guildId, bot] of this.bots) {
       try {
         factory(bot.client, guildId, bot.config?.discord_guild_id || null);
       } catch (error) {
-        console.error(`[CustomBotManager] Error applying handler to ${guildId}:`, error);
+        console.error(
+          `[CustomBotManager] Error applying handler to ${guildId}:`,
+          error,
+        );
       }
     }
-    
+
     // Apply to default client if it exists
     if (this.defaultClient) {
       try {
         factory(this.defaultClient, null, null);
       } catch (error) {
-        console.error(`[CustomBotManager] Error applying handler to default client:`, error);
+        console.error(
+          `[CustomBotManager] Error applying handler to default client:`,
+          error,
+        );
       }
     }
   }
@@ -329,17 +408,20 @@ class CustomBotManager {
    */
   getAllClients() {
     const clients = new Map();
-    
+
     for (const [internalGuildId, bot] of this.bots) {
       if (bot.client && bot.client.isReady()) {
-        clients.set(bot.config?.discord_guild_id || internalGuildId, bot.client);
+        clients.set(
+          bot.config?.discord_guild_id || internalGuildId,
+          bot.client,
+        );
       }
     }
-    
+
     if (this.defaultClient && this.defaultClient.isReady()) {
-      clients.set('default', this.defaultClient);
+      clients.set("default", this.defaultClient);
     }
-    
+
     return clients;
   }
 
@@ -348,23 +430,26 @@ class CustomBotManager {
    */
   async fetchBotConfigs() {
     if (!BOT_SECRET_KEY) {
-      console.error('[CustomBotManager] BOT_SECRET_KEY not set');
+      console.error("[CustomBotManager] BOT_SECRET_KEY not set");
       return [];
     }
 
     try {
-      const response = await fetch(`${APP_API_BASE}/api/public/guild-bot-config`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-bot-secret': BOT_SECRET_KEY
+      const response = await fetch(
+        `${APP_API_BASE}/api/public/guild-bot-config`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-bot-secret": BOT_SECRET_KEY,
+          },
+          body: JSON.stringify({ action: "list_active" }),
         },
-        body: JSON.stringify({ action: 'list_active' })
-      });
+      );
 
       if (!response.ok) {
         const error = await response.text();
-        console.error('[CustomBotManager] Failed to fetch configs:', error);
+        console.error("[CustomBotManager] Failed to fetch configs:", error);
         return [];
       }
 
@@ -374,12 +459,12 @@ class CustomBotManager {
       // Backward-compatible fallback: if the web API hasn't deployed the
       // discord_guild_id field yet, resolve internal UUIDs directly via Supabase.
       const missingIds = configs
-        .filter(config => !config.discord_guild_id && config.guild_id)
-        .map(config => config.guild_id);
+        .filter((config) => !config.discord_guild_id && config.guild_id)
+        .map((config) => config.guild_id);
 
       if (missingIds.length > 0 && SUPABASE_SERVICE_ROLE_KEY) {
         try {
-          const filter = encodeURIComponent(`in.(${missingIds.join(',')})`);
+          const filter = encodeURIComponent(`in.(${missingIds.join(",")})`);
           const guildResponse = await fetch(
             `${SUPABASE_URL}/rest/v1/guilds?id=${filter}&select=id,guild_id`,
             {
@@ -387,28 +472,40 @@ class CustomBotManager {
                 apikey: SUPABASE_SERVICE_ROLE_KEY,
                 Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
               },
-            }
+            },
           );
 
           if (guildResponse.ok) {
             const guildRows = await guildResponse.json();
-            const discordIdByUuid = new Map(guildRows.map(row => [row.id, row.guild_id]));
+            const discordIdByUuid = new Map(
+              guildRows.map((row) => [row.id, row.guild_id]),
+            );
             for (const config of configs) {
               if (!config.discord_guild_id) {
-                config.discord_guild_id = discordIdByUuid.get(config.guild_id) || null;
+                config.discord_guild_id =
+                  discordIdByUuid.get(config.guild_id) || null;
               }
             }
           } else {
-            console.warn('[CustomBotManager] Could not hydrate Discord guild IDs:', guildResponse.status);
+            console.warn(
+              "[CustomBotManager] Could not hydrate Discord guild IDs:",
+              guildResponse.status,
+            );
           }
         } catch (error) {
-          console.warn('[CustomBotManager] Discord guild ID hydration failed:', error.message);
+          console.warn(
+            "[CustomBotManager] Discord guild ID hydration failed:",
+            error.message,
+          );
         }
       }
 
       return configs;
     } catch (error) {
-      console.error('[CustomBotManager] Network error fetching configs:', error.message);
+      console.error(
+        "[CustomBotManager] Network error fetching configs:",
+        error.message,
+      );
       return [];
     }
   }
@@ -416,32 +513,40 @@ class CustomBotManager {
   /**
    * Send heartbeat for a bot
    */
-  async sendHeartbeat(guildId, client, isCustom = false, discordGuildId = null) {
+  async sendHeartbeat(
+    guildId,
+    client,
+    isCustom = false,
+    discordGuildId = null,
+  ) {
     if (!BOT_SECRET_KEY) return;
 
     try {
       const targetDiscordGuildId = discordGuildId || guildId;
       const guild = client.guilds.cache.get(targetDiscordGuildId);
-      
+
       const payload = {
-        action: 'heartbeat',
+        action: "heartbeat",
         guild_id: guildId,
         is_online: client.isReady(),
         latency_ms: getWsPing(client),
         member_count: guild?.memberCount || 0,
-        is_custom_bot: isCustom
+        is_custom_bot: isCustom,
       };
 
       await fetch(`${APP_API_BASE}/api/public/guild-bot-config`, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
-          'x-bot-secret': BOT_SECRET_KEY
+          "Content-Type": "application/json",
+          "x-bot-secret": BOT_SECRET_KEY,
         },
-        body: JSON.stringify(payload)
+        body: JSON.stringify(payload),
       });
     } catch (error) {
-      console.error(`[CustomBotManager] Heartbeat error for ${guildId}:`, error.message);
+      console.error(
+        `[CustomBotManager] Heartbeat error for ${guildId}:`,
+        error.message,
+      );
     }
   }
 
@@ -460,15 +565,15 @@ class CustomBotManager {
         GatewayIntentBits.GuildModeration,
         GatewayIntentBits.GuildPresences,
         GatewayIntentBits.MessageContent,
-        GatewayIntentBits.DirectMessages
+        GatewayIntentBits.DirectMessages,
       ],
       partials: [
         Partials.Message,
         Partials.Reaction,
         Partials.User,
         Partials.GuildMember,
-        Partials.Channel
-      ]
+        Partials.Channel,
+      ],
     });
     // Increase max listeners to accommodate all handlers
     client.setMaxListeners(30);
@@ -488,39 +593,42 @@ class CustomBotManager {
 
     if (!BOT_SECRET_KEY) {
       console.warn(
-        `[CustomBotManager] Invalid avatar cleared in memory for ${config.guild_id}, but BOT_SECRET_KEY is missing; DB config was not updated`
+        `[CustomBotManager] Invalid avatar cleared in memory for ${config.guild_id}, but BOT_SECRET_KEY is missing; DB config was not updated`,
       );
       return;
     }
 
     try {
-      const response = await fetch(`${APP_API_BASE}/api/public/guild-bot-config`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-bot-secret': BOT_SECRET_KEY,
+      const response = await fetch(
+        `${APP_API_BASE}/api/public/guild-bot-config`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-bot-secret": BOT_SECRET_KEY,
+          },
+          body: JSON.stringify({
+            action: "clear_invalid_avatar",
+            guild_id: config.guild_id,
+            reason: String(reason || "invalid avatar source").slice(0, 500),
+          }),
         },
-        body: JSON.stringify({
-          action: 'clear_invalid_avatar',
-          guild_id: config.guild_id,
-          reason: String(reason || 'invalid avatar source').slice(0, 500),
-        }),
-      });
+      );
 
       if (!response.ok) {
-        const details = await response.text().catch(() => '');
+        const details = await response.text().catch(() => "");
         console.warn(
-          `[CustomBotManager] Could not persist avatar cleanup for ${config.guild_id}: HTTP ${response.status} ${details.slice(0, 180)}`
+          `[CustomBotManager] Could not persist avatar cleanup for ${config.guild_id}: HTTP ${response.status} ${details.slice(0, 180)}`,
         );
         return;
       }
 
       console.log(
-        `[CustomBotManager] 🧹 Removed invalid avatar URL from config for ${config.bot_name || config.guild_id}: ${oldUrl}`
+        `[CustomBotManager] 🧹 Removed invalid avatar URL from config for ${config.bot_name || config.guild_id}: ${oldUrl}`,
       );
     } catch (error) {
       console.warn(
-        `[CustomBotManager] Avatar cleanup API failed for ${config.guild_id}: ${error?.message || error}`
+        `[CustomBotManager] Avatar cleanup API failed for ${config.guild_id}: ${error?.message || error}`,
       );
     }
   }
@@ -533,30 +641,35 @@ class CustomBotManager {
 
     try {
       const activityTypes = {
-        'PLAYING': ActivityType.Playing,
-        'STREAMING': ActivityType.Streaming,
-        'LISTENING': ActivityType.Listening,
-        'WATCHING': ActivityType.Watching,
-        'COMPETING': ActivityType.Competing,
-        'CUSTOM': ActivityType.Custom
+        PLAYING: ActivityType.Playing,
+        STREAMING: ActivityType.Streaming,
+        LISTENING: ActivityType.Listening,
+        WATCHING: ActivityType.Watching,
+        COMPETING: ActivityType.Competing,
+        CUSTOM: ActivityType.Custom,
       };
 
       const activities = [];
       if (config.bot_activity_text) {
         activities.push({
           name: config.bot_activity_text,
-          type: activityTypes[config.bot_activity_type] || ActivityType.Playing
+          type: activityTypes[config.bot_activity_type] || ActivityType.Playing,
         });
       }
 
       await client.user.setPresence({
-        status: config.bot_status || 'online',
-        activities
+        status: config.bot_status || "online",
+        activities,
       });
 
-      console.log(`[CustomBotManager] Set presence for ${client.user.tag}: ${config.bot_status}`);
+      console.log(
+        `[CustomBotManager] Set presence for ${client.user.tag}: ${config.bot_status}`,
+      );
     } catch (error) {
-      console.error('[CustomBotManager] Error setting presence:', error.message);
+      console.error(
+        "[CustomBotManager] Error setting presence:",
+        error.message,
+      );
     }
   }
 
@@ -572,13 +685,20 @@ class CustomBotManager {
       if (config.bot_name && client.user.username !== config.bot_name) {
         try {
           await client.user.setUsername(config.bot_name);
-          console.log(`[CustomBotManager] Updated bot username to: ${config.bot_name}`);
+          console.log(
+            `[CustomBotManager] Updated bot username to: ${config.bot_name}`,
+          );
         } catch (error) {
           // Rate limit or other error - just log it
-          if (error.code === 50035 || error.message.includes('rate limit')) {
-            console.log(`[CustomBotManager] Username change rate limited, skipping (current: ${client.user.username})`);
+          if (error.code === 50035 || error.message.includes("rate limit")) {
+            console.log(
+              `[CustomBotManager] Username change rate limited, skipping (current: ${client.user.username})`,
+            );
           } else {
-            console.error(`[CustomBotManager] Error setting username:`, error.message);
+            console.error(
+              `[CustomBotManager] Error setting username:`,
+              error.message,
+            );
           }
         }
       }
@@ -592,59 +712,76 @@ class CustomBotManager {
         } catch {
           warnAvatarOnce(
             `invalid:${avatarUrl}`,
-            `[CustomBotManager] Invalid avatar URL for ${client.user.tag}; removing it from config`
+            `[CustomBotManager] Invalid avatar URL for ${client.user.tag}; removing it from config`,
           );
-          await this.clearInvalidAvatarConfig(config, 'Invalid URL');
+          await this.clearInvalidAvatarConfig(config, "Invalid URL");
         }
 
-        if (parsedAvatarUrl && ['http:', 'https:'].includes(parsedAvatarUrl.protocol)) {
+        if (
+          parsedAvatarUrl &&
+          ["http:", "https:"].includes(parsedAvatarUrl.protocol)
+        ) {
           try {
             const response = await fetch(parsedAvatarUrl.toString());
             if (response.ok) {
-              const contentType = response.headers.get('content-type') || '';
-              if (!contentType.startsWith('image/')) {
+              const contentType = response.headers.get("content-type") || "";
+              if (!contentType.startsWith("image/")) {
                 warnAvatarOnce(
                   `content-type:${parsedAvatarUrl.toString()}:${contentType}`,
-                  `[CustomBotManager] Avatar URL for ${client.user.tag} is not an image; removing it from config`
+                  `[CustomBotManager] Avatar URL for ${client.user.tag} is not an image; removing it from config`,
                 );
                 await this.clearInvalidAvatarConfig(
                   config,
-                  `Non-image content type: ${contentType || 'unknown'}`
+                  `Non-image content type: ${contentType || "unknown"}`,
                 );
               } else {
                 const buffer = await response.arrayBuffer();
-                const base64 = Buffer.from(buffer).toString('base64');
+                const base64 = Buffer.from(buffer).toString("base64");
                 const dataUri = `data:${contentType};base64,${base64}`;
 
                 await client.user.setAvatar(dataUri);
-                console.log(`[CustomBotManager] Updated bot avatar from configured URL`);
+                console.log(
+                  `[CustomBotManager] Updated bot avatar from configured URL`,
+                );
               }
             } else {
-              const permanentMissing = response.status === 404 || response.status === 410;
+              const permanentMissing =
+                response.status === 404 || response.status === 410;
               if (permanentMissing) {
                 warnAvatarOnce(
                   `http:${parsedAvatarUrl.toString()}:${response.status}`,
-                  `[CustomBotManager] Avatar URL for ${client.user.tag} returned HTTP ${response.status}; removing it from config`
+                  `[CustomBotManager] Avatar URL for ${client.user.tag} returned HTTP ${response.status}; removing it from config`,
                 );
-                await this.clearInvalidAvatarConfig(config, `HTTP ${response.status}`);
+                await this.clearInvalidAvatarConfig(
+                  config,
+                  `HTTP ${response.status}`,
+                );
               } else {
                 warnAvatarOnce(
                   `http:${parsedAvatarUrl.toString()}:${response.status}`,
-                  `[CustomBotManager] Avatar URL for ${client.user.tag} returned HTTP ${response.status}; treating as transient and keeping config`
+                  `[CustomBotManager] Avatar URL for ${client.user.tag} returned HTTP ${response.status}; treating as transient and keeping config`,
                 );
               }
             }
           } catch (error) {
-            if (error.code === 50035 || error.message.includes('rate limit')) {
-              console.log(`[CustomBotManager] Avatar change rate limited, skipping`);
+            if (error.code === 50035 || error.message.includes("rate limit")) {
+              console.log(
+                `[CustomBotManager] Avatar change rate limited, skipping`,
+              );
             } else {
-              console.warn(`[CustomBotManager] Avatar update skipped:`, error.message);
+              console.warn(
+                `[CustomBotManager] Avatar update skipped:`,
+                error.message,
+              );
             }
           }
         }
       }
     } catch (error) {
-      console.error('[CustomBotManager] Error updating bot profile:', error.message);
+      console.error(
+        "[CustomBotManager] Error updating bot profile:",
+        error.message,
+      );
     }
   }
 
@@ -653,7 +790,7 @@ class CustomBotManager {
    */
   async startCustomBot(config) {
     const guildId = config.guild_id;
-    
+
     // Check if already running
     if (this.bots.has(guildId)) {
       const existing = this.bots.get(guildId);
@@ -670,7 +807,9 @@ class CustomBotManager {
       return null;
     }
 
-    console.log(`[CustomBotManager] Starting custom bot for guild ${guildId}...`);
+    console.log(
+      `[CustomBotManager] Starting custom bot for guild ${guildId}...`,
+    );
 
     const client = this.createClient();
 
@@ -681,13 +820,18 @@ class CustomBotManager {
       try {
         factory(client, guildId, config.discord_guild_id || null);
       } catch (error) {
-        console.error(`[CustomBotManager] Handler error for ${guildId}:`, error);
+        console.error(
+          `[CustomBotManager] Handler error for ${guildId}:`,
+          error,
+        );
       }
     }
 
-    client.once('clientReady', async () => {
-      console.log(`[CustomBotManager] ✅ Custom bot ready: ${client.user.tag} for guild ${guildId}`);
-      
+    client.once("clientReady", async () => {
+      console.log(
+        `[CustomBotManager] ✅ Custom bot ready: ${client.user.tag} for guild ${guildId}`,
+      );
+
       // Deploy per-guild commands only to the guild this custom bot is assigned to.
       // A bot token can be invited to extra Discord guilds, but those guilds must not
       // receive this customer's commands or handlers.
@@ -695,59 +839,79 @@ class CustomBotManager {
       const assignedDiscordGuildId = config.discord_guild_id || null;
 
       if (!assignedDiscordGuildId) {
-        console.error(`[CustomBotManager] Missing Discord guild mapping for custom bot ${client.user.tag}; leaving existing commands untouched`);
+        console.error(
+          `[CustomBotManager] Missing Discord guild mapping for custom bot ${client.user.tag}; leaving existing commands untouched`,
+        );
       } else {
         const botGuildIds = client.guilds.cache.has(assignedDiscordGuildId)
           ? [assignedDiscordGuildId]
           : [];
 
         if (botGuildIds.length === 0) {
-          console.warn(`[CustomBotManager] Custom bot ${client.user.tag} is not in assigned guild ${assignedDiscordGuildId}; skipping guild command deploy`);
+          console.warn(
+            `[CustomBotManager] Custom bot ${client.user.tag} is not in assigned guild ${assignedDiscordGuildId}; skipping guild command deploy`,
+          );
         }
 
         const unassignedGuildIds = client.guilds.cache
-          .filter(guild => guild.id !== assignedDiscordGuildId)
-          .map(guild => guild.id);
+          .filter((guild) => guild.id !== assignedDiscordGuildId)
+          .map((guild) => guild.id);
 
-        await this.deployCommandsForBot(config.bot_token, applicationId, botGuildIds, {
-          clearGuildIds: unassignedGuildIds,
-        });
+        await this.deployCommandsForBot(
+          config.bot_token,
+          applicationId,
+          botGuildIds,
+          {
+            clearGuildIds: unassignedGuildIds,
+          },
+        );
       }
-      
+
       // Update bot profile (username and avatar)
       await this.updateBotProfile(client, config);
-      
+
       // Set presence
       await this.setPresence(client, config);
 
       // Send initial heartbeat
-      await this.sendHeartbeat(guildId, client, true, config.discord_guild_id || null);
+      await this.sendHeartbeat(
+        guildId,
+        client,
+        true,
+        config.discord_guild_id || null,
+      );
     });
 
-    client.on('error', (error) => {
-      console.error(`[CustomBotManager] Client error for ${guildId}:`, error.message);
+    client.on("error", (error) => {
+      console.error(
+        `[CustomBotManager] Client error for ${guildId}:`,
+        error.message,
+      );
     });
 
-    client.on('disconnect', () => {
+    client.on("disconnect", () => {
       console.log(`[CustomBotManager] Bot disconnected for ${guildId}`);
     });
 
     try {
       await client.login(config.bot_token);
-      
+
       this.bots.set(guildId, {
         client,
         config,
-        startedAt: new Date()
+        startedAt: new Date(),
       });
 
       return client;
     } catch (error) {
-      console.error(`[CustomBotManager] Failed to start bot for ${guildId}:`, error.message);
-      
+      console.error(
+        `[CustomBotManager] Failed to start bot for ${guildId}:`,
+        error.message,
+      );
+
       // Report error to API
       await this.reportBotError(guildId, error.message);
-      
+
       return null;
     }
   }
@@ -766,7 +930,10 @@ class CustomBotManager {
         bot.client.destroy();
       }
     } catch (error) {
-      console.error(`[CustomBotManager] Error stopping bot for ${guildId}:`, error.message);
+      console.error(
+        `[CustomBotManager] Error stopping bot for ${guildId}:`,
+        error.message,
+      );
     }
 
     this.bots.delete(guildId);
@@ -780,19 +947,22 @@ class CustomBotManager {
 
     try {
       await fetch(`${APP_API_BASE}/api/public/guild-bot-config`, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
-          'x-bot-secret': BOT_SECRET_KEY
+          "Content-Type": "application/json",
+          "x-bot-secret": BOT_SECRET_KEY,
         },
         body: JSON.stringify({
-          action: 'report_error',
+          action: "report_error",
           guild_id: guildId,
-          error: errorMessage
-        })
+          error: errorMessage,
+        }),
       });
     } catch (error) {
-      console.error('[CustomBotManager] Failed to report error:', error.message);
+      console.error(
+        "[CustomBotManager] Failed to report error:",
+        error.message,
+      );
     }
   }
 
@@ -800,12 +970,12 @@ class CustomBotManager {
    * Sync bot configurations - start/stop bots as needed
    */
   async syncConfigs() {
-    console.log('[CustomBotManager] Syncing bot configurations...');
+    console.log("[CustomBotManager] Syncing bot configurations...");
 
     const configs = await this.fetchBotConfigs();
-    const activeGuildIds = new Set(configs.map(c => c.guild_id));
+    const activeGuildIds = new Set(configs.map((c) => c.guild_id));
     this.customDiscordGuildIds = new Set(
-      configs.map(config => config.discord_guild_id).filter(Boolean)
+      configs.map((config) => config.discord_guild_id).filter(Boolean),
     );
 
     // Stop bots that are no longer active
@@ -819,27 +989,33 @@ class CustomBotManager {
     // Start/update bots that should be active
     for (const config of configs) {
       const existing = this.bots.get(config.guild_id);
-      
+
       if (!existing) {
         // Start new bot
         await this.startCustomBot(config);
       } else if (config.bot_token !== existing.config.bot_token) {
         // Token changed, restart bot
-        console.log(`[CustomBotManager] Token changed for ${config.guild_id}, restarting...`);
+        console.log(
+          `[CustomBotManager] Token changed for ${config.guild_id}, restarting...`,
+        );
         await this.stopCustomBot(config.guild_id);
         await this.startCustomBot(config);
       } else {
         // Update presence if changed
-        if (config.bot_status !== existing.config.bot_status ||
-            config.bot_activity_text !== existing.config.bot_activity_text ||
-            config.bot_activity_type !== existing.config.bot_activity_type) {
+        if (
+          config.bot_status !== existing.config.bot_status ||
+          config.bot_activity_text !== existing.config.bot_activity_text ||
+          config.bot_activity_type !== existing.config.bot_activity_type
+        ) {
           await this.setPresence(existing.client, config);
         }
         existing.config = config;
       }
     }
 
-    console.log(`[CustomBotManager] Sync complete. Running ${this.bots.size} custom bot(s)`);
+    console.log(
+      `[CustomBotManager] Sync complete. Running ${this.bots.size} custom bot(s)`,
+    );
   }
 
   /**
@@ -847,15 +1023,20 @@ class CustomBotManager {
    */
   async sendAllHeartbeats() {
     for (const [guildId, bot] of this.bots) {
-      await this.sendHeartbeat(guildId, bot.client, true, bot.config?.discord_guild_id || null);
+      await this.sendHeartbeat(
+        guildId,
+        bot.client,
+        true,
+        bot.config?.discord_guild_id || null,
+      );
     }
 
     // Also send for default client guilds, except guilds explicitly assigned to a custom bot.
     if (this.defaultClient && this.defaultClient.isReady()) {
       const customDiscordGuildIds = new Set(
         [...this.bots.values()]
-          .map(bot => bot.config?.discord_guild_id)
-          .filter(Boolean)
+          .map((bot) => bot.config?.discord_guild_id)
+          .filter(Boolean),
       );
 
       for (const [, guild] of this.defaultClient.guilds.cache) {
@@ -868,8 +1049,12 @@ class CustomBotManager {
 
   async resolveDefaultBotToken() {
     if (DEFAULT_BOT_TOKEN_CANDIDATES.length === 0) {
-      console.warn('[CustomBotManager] Intet token til GuildOS Bot fundet. Sætter kun custom bots i drift.');
-      console.warn('[CustomBotManager] Sæt DEFAULT_BOT_TOKEN, DISCORD_TOKEN eller DISCORD_BOT_TOKEN for at aktivere GuildOS Bot.');
+      console.warn(
+        "[CustomBotManager] Intet token til GuildOS Bot fundet. Sætter kun custom bots i drift.",
+      );
+      console.warn(
+        "[CustomBotManager] Sæt DEFAULT_BOT_TOKEN, DISCORD_TOKEN eller DISCORD_BOT_TOKEN for at aktivere GuildOS Bot.",
+      );
       return null;
     }
 
@@ -877,31 +1062,41 @@ class CustomBotManager {
       try {
         const controller = new AbortController();
         const timer = setTimeout(() => controller.abort(), 6000);
-        const response = await fetch('https://discord.com/api/v10/users/@me', {
+        const response = await fetch("https://discord.com/api/v10/users/@me", {
           headers: { Authorization: `Bot ${candidate.token}` },
           signal: controller.signal,
         });
         clearTimeout(timer);
 
         if (response.ok) {
-          console.log(`[CustomBotManager] ✅ Gyldigt GuildOS Bot-token fundet via ${candidate.source}`);
+          console.log(
+            `[CustomBotManager] ✅ Gyldigt GuildOS Bot-token fundet via ${candidate.source}`,
+          );
           return candidate.token;
         }
 
         if (response.status === 401) {
-          console.warn(`[CustomBotManager] ${candidate.source} er ugyldigt; prøver næste token-kilde`);
+          console.warn(
+            `[CustomBotManager] ${candidate.source} er ugyldigt; prøver næste token-kilde`,
+          );
           continue;
         }
 
-        console.warn(`[CustomBotManager] Kunne ikke validere ${candidate.source} (HTTP ${response.status}); forsøger login direkte`);
+        console.warn(
+          `[CustomBotManager] Kunne ikke validere ${candidate.source} (HTTP ${response.status}); forsøger login direkte`,
+        );
         return candidate.token;
       } catch (error) {
-        console.warn(`[CustomBotManager] Token-validering fejlede for ${candidate.source}: ${error?.message || error}; forsøger login direkte`);
+        console.warn(
+          `[CustomBotManager] Token-validering fejlede for ${candidate.source}: ${error?.message || error}; forsøger login direkte`,
+        );
         return candidate.token;
       }
     }
 
-    console.error('[CustomBotManager] Ingen gyldige GuildOS Bot-tokens blev fundet. Custom bots fortsætter.');
+    console.error(
+      "[CustomBotManager] Ingen gyldige GuildOS Bot-tokens blev fundet. Custom bots fortsætter.",
+    );
     return null;
   }
 
@@ -913,7 +1108,7 @@ class CustomBotManager {
     if (!defaultBotToken) return null;
 
     this.defaultBotToken = defaultBotToken;
-    console.log('[CustomBotManager] Starting GuildOS Bot...');
+    console.log("[CustomBotManager] Starting GuildOS Bot...");
 
     this.defaultClient = this.createClient();
 
@@ -924,11 +1119,11 @@ class CustomBotManager {
       try {
         factory(this.defaultClient, null, null);
       } catch (error) {
-        console.error('[CustomBotManager] Handler error for default:', error);
+        console.error("[CustomBotManager] Handler error for default:", error);
       }
     }
 
-    this.defaultClient.once('clientReady', async () => {
+    this.defaultClient.once("clientReady", async () => {
       // Keep the shared/default bot visibly branded as GuildOS Bot.
       // Custom bots intentionally keep the names configured by each guild.
       try {
@@ -936,55 +1131,72 @@ class CustomBotManager {
           await this.defaultClient.user.setUsername(GUILDOS_BRAND_NAME);
         }
       } catch (error) {
-        console.warn('[CustomBotManager] Kunne ikke ændre Discord-navn til GuildOS Bot:', error?.message || error);
+        console.warn(
+          "[CustomBotManager] Kunne ikke ændre Discord-navn til GuildOS Bot:",
+          error?.message || error,
+        );
       }
 
       try {
         this.defaultClient.user.setPresence({
-          status: 'online',
+          status: "online",
           activities: [{ name: GUILDOS_ACTIVITY, type: ActivityType.Watching }],
         });
       } catch (error) {
-        console.warn('[CustomBotManager] Kunne ikke sætte GuildOS Bot presence:', error?.message || error);
+        console.warn(
+          "[CustomBotManager] Kunne ikke sætte GuildOS Bot presence:",
+          error?.message || error,
+        );
       }
 
-      console.log(`[CustomBotManager] ✅ GuildOS Bot ready: ${this.defaultClient.user.tag}`);
-      console.log(`[CustomBotManager] Serving ${this.defaultClient.guilds.cache.size} guild(s)`);
+      console.log(
+        `[CustomBotManager] ✅ GuildOS Bot ready: ${this.defaultClient.user.tag}`,
+      );
+      console.log(
+        `[CustomBotManager] Serving ${this.defaultClient.guilds.cache.size} guild(s)`,
+      );
 
       if (
         GUILDOS_DISCOVERY_APPLICATION_ID &&
         this.defaultClient.user.id !== GUILDOS_DISCOVERY_APPLICATION_ID
       ) {
         console.warn(
-          `[CustomBotManager] ⚠️ Discovery app mismatch: running application ${this.defaultClient.user.id}, expected ${GUILDOS_DISCOVERY_APPLICATION_ID}. Check the production bot token.`
+          `[CustomBotManager] ⚠️ Discovery app mismatch: running application ${this.defaultClient.user.id}, expected ${GUILDOS_DISCOVERY_APPLICATION_ID}. Check the production bot token.`,
         );
       }
 
       // The official GuildOS bot uses global slash commands. Existing guild
       // registrations are cleared during this migration to prevent duplicates.
-      const guildIds = this.defaultClient.guilds.cache.map(g => g.id);
-      await this.deployCommandsForBot(defaultBotToken, this.defaultClient.user.id, guildIds, {
-        scope: 'global',
-        preserveExistingGlobals: true,
-      });
+      const guildIds = this.defaultClient.guilds.cache.map((g) => g.id);
+      await this.deployCommandsForBot(
+        defaultBotToken,
+        this.defaultClient.user.id,
+        guildIds,
+        {
+          scope: "global",
+          preserveExistingGlobals: true,
+        },
+      );
     });
 
     // Global commands automatically apply when the official bot joins a new
     // server. Clear any stale guild-level overrides from an older deployment.
-    this.defaultClient.on('guildCreate', async (guild) => {
-      console.log(`[CustomBotManager] 📥 Joined new guild: ${guild.name} (${guild.id})`);
+    this.defaultClient.on("guildCreate", async (guild) => {
+      console.log(
+        `[CustomBotManager] 📥 Joined new guild: ${guild.name} (${guild.id})`,
+      );
       if (this.defaultClient.user) {
         await this.deployCommandsToGuild(
           defaultBotToken,
           this.defaultClient.user.id,
           guild.id,
-          { scope: 'global' }
+          { scope: "global" },
         );
       }
     });
 
-    this.defaultClient.on('error', (error) => {
-      console.error('[CustomBotManager] Default client error:', error.message);
+    this.defaultClient.on("error", (error) => {
+      console.error("[CustomBotManager] Default client error:", error.message);
     });
 
     try {
@@ -993,10 +1205,17 @@ class CustomBotManager {
     } catch (error) {
       const message = error?.message || String(error);
       if (/invalid token/i.test(message)) {
-        console.error('[CustomBotManager] GuildOS Bot-tokenet er ugyldigt. Custom bots fortsætter med at starte.');
-        console.error('[CustomBotManager] Kontrollér DEFAULT_BOT_TOKEN / DISCORD_TOKEN / DISCORD_BOT_TOKEN i /bot/.env.');
+        console.error(
+          "[CustomBotManager] GuildOS Bot-tokenet er ugyldigt. Custom bots fortsætter med at starte.",
+        );
+        console.error(
+          "[CustomBotManager] Kontrollér DEFAULT_BOT_TOKEN / DISCORD_TOKEN / DISCORD_BOT_TOKEN i /bot/.env.",
+        );
       } else {
-        console.error('[CustomBotManager] Failed to start GuildOS Bot:', message);
+        console.error(
+          "[CustomBotManager] Failed to start GuildOS Bot:",
+          message,
+        );
       }
 
       try {
@@ -1013,11 +1232,11 @@ class CustomBotManager {
    */
   async start() {
     if (this.isRunning) {
-      console.log('[CustomBotManager] Already running');
+      console.log("[CustomBotManager] Already running");
       return;
     }
 
-    console.log('[CustomBotManager] Starting Custom Bot Manager...');
+    console.log("[CustomBotManager] Starting Custom Bot Manager...");
     this.isRunning = true;
 
     // Start default bot first
@@ -1028,26 +1247,26 @@ class CustomBotManager {
 
     // Start periodic config check
     this.configCheckInterval = setInterval(() => {
-      this.syncConfigs().catch(error => {
-        console.error('[CustomBotManager] Config sync error:', error.message);
+      this.syncConfigs().catch((error) => {
+        console.error("[CustomBotManager] Config sync error:", error.message);
       });
     }, CONFIG_CHECK_INTERVAL);
 
     // Start heartbeat
     this.heartbeatInterval = setInterval(() => {
-      this.sendAllHeartbeats().catch(error => {
-        console.error('[CustomBotManager] Heartbeat error:', error.message);
+      this.sendAllHeartbeats().catch((error) => {
+        console.error("[CustomBotManager] Heartbeat error:", error.message);
       });
     }, HEARTBEAT_INTERVAL);
 
-    console.log('[CustomBotManager] ✅ Manager started successfully');
+    console.log("[CustomBotManager] ✅ Manager started successfully");
   }
 
   /**
    * Stop all bots and the manager
    */
   async stop() {
-    console.log('[CustomBotManager] Stopping Custom Bot Manager...');
+    console.log("[CustomBotManager] Stopping Custom Bot Manager...");
 
     this.isRunning = false;
 
@@ -1073,7 +1292,7 @@ class CustomBotManager {
       this.defaultBotToken = null;
     }
 
-    console.log('[CustomBotManager] ✅ Manager stopped');
+    console.log("[CustomBotManager] ✅ Manager stopped");
   }
 
   /**
@@ -1083,7 +1302,7 @@ class CustomBotManager {
     const status = {
       isRunning: this.isRunning,
       defaultBot: null,
-      customBots: []
+      customBots: [],
     };
 
     if (this.defaultClient) {
@@ -1091,7 +1310,7 @@ class CustomBotManager {
         ready: this.defaultClient.isReady(),
         tag: this.defaultClient.user?.tag,
         guilds: this.defaultClient.guilds?.cache.size || 0,
-        ping: getWsPing(this.defaultClient)
+        ping: getWsPing(this.defaultClient),
       };
     }
 
@@ -1101,7 +1320,7 @@ class CustomBotManager {
         ready: bot.client?.isReady() || false,
         tag: bot.client?.user?.tag,
         ping: getWsPing(bot.client),
-        startedAt: bot.startedAt
+        startedAt: bot.startedAt,
       });
     }
 
@@ -1112,10 +1331,10 @@ class CustomBotManager {
 // Export singleton instance and class
 const manager = new CustomBotManager();
 
-module.exports = { 
+module.exports = {
   CustomBotManager,
   manager,
   // Convenience methods for backward compatibility
   getClient: (guildId) => manager.getClient(guildId),
-  getAllClients: () => manager.getAllClients()
+  getAllClients: () => manager.getAllClients(),
 };

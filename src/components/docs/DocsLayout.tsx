@@ -1,11 +1,11 @@
-import { Link, Outlet } from '@tanstack/react-router';
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
-import { Button } from '@/components/ui/button';
-import { Menu, BookOpen, ArrowLeft, Languages } from 'lucide-react';
-import { DocsSidebar } from './DocsSidebar';
-import { DocsSearch } from './DocsSearch';
-import { useLanguage } from '@/contexts/LanguageContext';
-import { useState } from 'react';
+import { Link, Outlet } from "@tanstack/react-router";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { Button } from "@/components/ui/button";
+import { Menu, BookOpen, ArrowLeft, Languages } from "lucide-react";
+import { DocsSidebar } from "./DocsSidebar";
+import { DocsSearch } from "./DocsSearch";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { useState } from "react";
 
 export function DocsLayout() {
   const { language, setLanguage } = useLanguage();
@@ -23,7 +23,10 @@ export function DocsLayout() {
             </SheetTrigger>
             <SheetContent side="left" className="w-72 overflow-y-auto p-0">
               <div className="border-b p-4">
-                <Link to="/docs" className="flex items-center gap-2 font-semibold">
+                <Link
+                  to="/docs"
+                  className="flex items-center gap-2 font-semibold"
+                >
                   <BookOpen className="h-5 w-5 text-primary" />
                   Docs
                 </Link>
@@ -44,7 +47,7 @@ export function DocsLayout() {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => setLanguage(language === 'da' ? 'en' : 'da')}
+              onClick={() => setLanguage(language === "da" ? "en" : "da")}
             >
               <Languages className="mr-1.5 h-4 w-4" />
               {language.toUpperCase()}
@@ -52,7 +55,7 @@ export function DocsLayout() {
             <Button variant="outline" size="sm" asChild>
               <Link to="/">
                 <ArrowLeft className="mr-1.5 h-4 w-4" />
-                {language === 'da' ? 'Til app' : 'To app'}
+                {language === "da" ? "Til app" : "To app"}
               </Link>
             </Button>
           </div>

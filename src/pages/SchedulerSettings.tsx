@@ -1,40 +1,52 @@
-import { useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Badge } from '@/components/ui/badge';
+import { useState } from "react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '@/components/ui/dialog';
+} from "@/components/ui/dialog";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import { Loader2, Calendar, Plus, Trash2, Clock, Send } from 'lucide-react';
-import { useScheduledMessages } from '@/hooks/useScheduledMessages';
-import { useAuth } from '@/contexts/AuthContext';
-import { ChannelSelect } from '@/components/ui/channel-select';
-import { format } from 'date-fns';
-import { da } from 'date-fns/locale';
+} from "@/components/ui/select";
+import { Loader2, Calendar, Plus, Trash2, Clock, Send } from "lucide-react";
+import { useScheduledMessages } from "@/hooks/useScheduledMessages";
+import { useAuth } from "@/contexts/AuthContext";
+import { ChannelSelect } from "@/components/ui/channel-select";
+import { format } from "date-fns";
+import { da } from "date-fns/locale";
 
 export default function SchedulerSettings() {
-  const { upcomingMessages, sentMessages, isLoading, createMessage, deleteMessage } = useScheduledMessages();
+  const {
+    upcomingMessages,
+    sentMessages,
+    isLoading,
+    createMessage,
+    deleteMessage,
+  } = useScheduledMessages();
   const { user } = useAuth();
 
   const [open, setOpen] = useState(false);
-  const [channelId, setChannelId] = useState('');
-  const [content, setContent] = useState('');
-  const [scheduledAt, setScheduledAt] = useState('');
-  const [repeatInterval, setRepeatInterval] = useState<string>('none');
+  const [channelId, setChannelId] = useState("");
+  const [content, setContent] = useState("");
+  const [scheduledAt, setScheduledAt] = useState("");
+  const [repeatInterval, setRepeatInterval] = useState<string>("none");
 
   const handleCreate = () => {
     if (!channelId || !scheduledAt || !content) return;
@@ -44,19 +56,22 @@ export default function SchedulerSettings() {
         channel_id: channelId,
         content,
         scheduled_at: new Date(scheduledAt).toISOString(),
-        repeat_interval: repeatInterval === 'none' ? null : (repeatInterval as 'daily' | 'weekly' | 'monthly'),
-        created_by_id: user?.id ?? 'unknown',
-        created_by_name: user?.email?.split('@')[0],
+        repeat_interval:
+          repeatInterval === "none"
+            ? null
+            : (repeatInterval as "daily" | "weekly" | "monthly"),
+        created_by_id: user?.id ?? "unknown",
+        created_by_name: user?.email?.split("@")[0],
       },
       {
         onSuccess: () => {
           setOpen(false);
-          setChannelId('');
-          setContent('');
-          setScheduledAt('');
-          setRepeatInterval('none');
+          setChannelId("");
+          setContent("");
+          setScheduledAt("");
+          setRepeatInterval("none");
         },
-      }
+      },
     );
   };
 
@@ -120,7 +135,10 @@ export default function SchedulerSettings() {
 
               <div className="space-y-2">
                 <Label>Gentag</Label>
-                <Select value={repeatInterval} onValueChange={setRepeatInterval}>
+                <Select
+                  value={repeatInterval}
+                  onValueChange={setRepeatInterval}
+                >
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -135,7 +153,12 @@ export default function SchedulerSettings() {
 
               <Button
                 onClick={handleCreate}
-                disabled={!channelId || !content || !scheduledAt || createMessage.isPending}
+                disabled={
+                  !channelId ||
+                  !content ||
+                  !scheduledAt ||
+                  createMessage.isPending
+                }
                 className="w-full"
               >
                 {createMessage.isPending ? (
@@ -164,7 +187,9 @@ export default function SchedulerSettings() {
             {upcomingMessages.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-8 text-center">
                 <Calendar className="h-12 w-12 text-muted-foreground/30" />
-                <p className="mt-4 text-muted-foreground">Ingen planlagte beskeder</p>
+                <p className="mt-4 text-muted-foreground">
+                  Ingen planlagte beskeder
+                </p>
               </div>
             ) : (
               <div className="space-y-4">
@@ -176,10 +201,14 @@ export default function SchedulerSettings() {
                     <div className="space-y-1">
                       <div className="flex items-center gap-2">
                         <Badge variant="outline">
-                          {format(new Date(msg.scheduled_at), 'PPP HH:mm', { locale: da })}
+                          {format(new Date(msg.scheduled_at), "PPP HH:mm", {
+                            locale: da,
+                          })}
                         </Badge>
                         {msg.repeat_interval && (
-                          <Badge variant="secondary">{msg.repeat_interval}</Badge>
+                          <Badge variant="secondary">
+                            {msg.repeat_interval}
+                          </Badge>
                         )}
                       </div>
                       <p className="line-clamp-2 text-sm">{msg.content}</p>
@@ -214,15 +243,27 @@ export default function SchedulerSettings() {
             {sentMessages.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-8 text-center">
                 <Send className="h-12 w-12 text-muted-foreground/30" />
-                <p className="mt-4 text-muted-foreground">Ingen sendte beskeder endnu</p>
+                <p className="mt-4 text-muted-foreground">
+                  Ingen sendte beskeder endnu
+                </p>
               </div>
             ) : (
               <div className="space-y-4">
                 {sentMessages.slice(0, 10).map((msg) => (
-                  <div key={msg.id} className="rounded-lg border p-4 opacity-60">
+                  <div
+                    key={msg.id}
+                    className="rounded-lg border p-4 opacity-60"
+                  >
                     <div className="flex items-center gap-2">
-                      <Badge variant="outline" className="bg-green-500/10 text-green-500">
-                        Sendt {msg.sent_at && format(new Date(msg.sent_at), 'PPP HH:mm', { locale: da })}
+                      <Badge
+                        variant="outline"
+                        className="bg-green-500/10 text-green-500"
+                      >
+                        Sendt{" "}
+                        {msg.sent_at &&
+                          format(new Date(msg.sent_at), "PPP HH:mm", {
+                            locale: da,
+                          })}
                       </Badge>
                     </div>
                     <p className="mt-2 line-clamp-2 text-sm">{msg.content}</p>

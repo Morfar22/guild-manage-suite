@@ -133,7 +133,14 @@ Deno.serve(async (req) => {
       }
 
       case "saveMessage": {
-        const { threadId, authorType, authorId, authorName, content, attachments } = params;
+        const {
+          threadId,
+          authorType,
+          authorId,
+          authorName,
+          content,
+          attachments,
+        } = params;
         const { error } = await supabase.from("modmail_messages").insert({
           thread_id: threadId,
           author_type: authorType,
@@ -203,7 +210,7 @@ Deno.serve(async (req) => {
 
       case "closeThread": {
         const { channelId } = params;
-        
+
         // First get the thread
         const { data: thread, error: threadError } = await supabase
           .from("modmail_threads")
@@ -214,13 +221,16 @@ Deno.serve(async (req) => {
           .maybeSingle();
 
         if (threadError || !thread) {
-          return new Response(JSON.stringify({ 
-            error: threadError?.message || "Thread not found",
-            thread: null 
-          }), {
-            status: threadError ? 500 : 404,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          });
+          return new Response(
+            JSON.stringify({
+              error: threadError?.message || "Thread not found",
+              thread: null,
+            }),
+            {
+              status: threadError ? 500 : 404,
+              headers: { ...corsHeaders, "Content-Type": "application/json" },
+            },
+          );
         }
 
         // Get close message from settings
@@ -248,13 +258,16 @@ Deno.serve(async (req) => {
           });
         }
 
-        return new Response(JSON.stringify({ 
-          success: true, 
-          thread, 
-          closeMessage: settings?.close_message 
-        }), {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+        return new Response(
+          JSON.stringify({
+            success: true,
+            thread,
+            closeMessage: settings?.close_message,
+          }),
+          {
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          },
+        );
       }
 
       case "claimThread": {
@@ -270,22 +283,28 @@ Deno.serve(async (req) => {
           .maybeSingle();
 
         if (threadError || !thread) {
-          return new Response(JSON.stringify({ 
-            error: threadError?.message || "Thread not found" 
-          }), {
-            status: threadError ? 500 : 404,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          });
+          return new Response(
+            JSON.stringify({
+              error: threadError?.message || "Thread not found",
+            }),
+            {
+              status: threadError ? 500 : 404,
+              headers: { ...corsHeaders, "Content-Type": "application/json" },
+            },
+          );
         }
 
         if (thread.claimed_by_id) {
-          return new Response(JSON.stringify({ 
-            error: "already_claimed",
-            claimedByName: thread.claimed_by_name 
-          }), {
-            status: 409,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          });
+          return new Response(
+            JSON.stringify({
+              error: "already_claimed",
+              claimedByName: thread.claimed_by_name,
+            }),
+            {
+              status: 409,
+              headers: { ...corsHeaders, "Content-Type": "application/json" },
+            },
+          );
         }
 
         // Update thread with claim info
@@ -318,7 +337,8 @@ Deno.serve(async (req) => {
     }
   } catch (error) {
     console.error("[Modmail] Unexpected error:", error);
-    const errorMessage = error instanceof Error ? error.message : "Unknown error";
+    const errorMessage =
+      error instanceof Error ? error.message : "Unknown error";
     return new Response(JSON.stringify({ error: errorMessage }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },

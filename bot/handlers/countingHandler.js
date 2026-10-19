@@ -1,11 +1,11 @@
 /**
  * Counting Channel Handler
- * 
+ *
  * Manages a counting game in a designated channel.
  * Users must count sequentially; wrong numbers reset the count.
  */
 
-const { Events, EmbedBuilder } = require('discord.js');
+const { Events, EmbedBuilder } = require("discord.js");
 
 const settingsCache = new Map();
 const CACHE_TTL = 300_000;
@@ -18,13 +18,20 @@ function setupCountingHandler(client, supabase, options = {}) {
     if (cached && Date.now() - cached._ts < CACHE_TTL) return cached.data;
 
     const { data: guild } = await supabase
-      .from('guilds').select('id').eq('guild_id', guildDiscordId).single();
+      .from("guilds")
+      .select("id")
+      .eq("guild_id", guildDiscordId)
+      .single();
     if (!guild) return null;
 
     const { data } = await supabase
-      .from('counting_settings').select('*').eq('guild_id', guild.id).maybeSingle();
+      .from("counting_settings")
+      .select("*")
+      .eq("guild_id", guild.id)
+      .maybeSingle();
 
-    const result = data && data.enabled ? { ...data, _guildUuid: guild.id } : null;
+    const result =
+      data && data.enabled ? { ...data, _guildUuid: guild.id } : null;
     settingsCache.set(guildDiscordId, { data: result, _ts: Date.now() });
     return result;
   }
@@ -44,48 +51,69 @@ function setupCountingHandler(client, supabase, options = {}) {
       const expectedNumber = settings.current_count + 1;
 
       // Check same user
-      if (!settings.allow_same_user && settings.last_counter_id === message.author.id) {
-        await message.react('❌').catch(() => {});
-        await message.reply({ content: `❌ Du kan ikke tælle to gange i træk! Tællingen nulstilles til **0**.`, allowedMentions: { repliedUser: false } }).catch(() => {});
+      if (
+        !settings.allow_same_user &&
+        settings.last_counter_id === message.author.id
+      ) {
+        await message.react("❌").catch(() => {});
+        await message
+          .reply({
+            content: `❌ Du kan ikke tælle to gange i træk! Tællingen nulstilles til **0**.`,
+            allowedMentions: { repliedUser: false },
+          })
+          .catch(() => {});
         await resetCount(settings);
         settingsCache.delete(message.guild.id);
         return;
       }
 
       if (number === expectedNumber) {
-        await message.react('✅').catch(() => {});
+        await message.react("✅").catch(() => {});
         const newHighScore = Math.max(settings.high_score, number);
 
-        await supabase.from('counting_settings')
-          .update({ current_count: number, last_counter_id: message.author.id, high_score: newHighScore })
-          .eq('id', settings.id);
+        await supabase
+          .from("counting_settings")
+          .update({
+            current_count: number,
+            last_counter_id: message.author.id,
+            high_score: newHighScore,
+          })
+          .eq("id", settings.id);
 
         settingsCache.delete(message.guild.id);
 
         if (number > settings.high_score) {
-          await message.reply({ content: `🎉 Ny rekord: **${number}**!`, allowedMentions: { repliedUser: false } }).catch(() => {});
+          await message
+            .reply({
+              content: `🎉 Ny rekord: **${number}**!`,
+              allowedMentions: { repliedUser: false },
+            })
+            .catch(() => {});
         }
       } else {
-        await message.react('❌').catch(() => {});
-        await message.reply({
-          content: `❌ Forkert! Det korrekte tal var **${expectedNumber}**. Tællingen nulstilles til **0**.`,
-          allowedMentions: { repliedUser: false }
-        }).catch(() => {});
+        await message.react("❌").catch(() => {});
+        await message
+          .reply({
+            content: `❌ Forkert! Det korrekte tal var **${expectedNumber}**. Tællingen nulstilles til **0**.`,
+            allowedMentions: { repliedUser: false },
+          })
+          .catch(() => {});
         await resetCount(settings);
         settingsCache.delete(message.guild.id);
       }
     } catch (err) {
-      console.error('[Counting] Error:', err.message);
+      console.error("[Counting] Error:", err.message);
     }
   });
 
   async function resetCount(settings) {
-    await supabase.from('counting_settings')
+    await supabase
+      .from("counting_settings")
       .update({ current_count: 0, last_counter_id: null })
-      .eq('id', settings.id);
+      .eq("id", settings.id);
   }
 
-  console.log('[Counting] Handler initialized');
+  console.log("[Counting] Handler initialized");
 }
 
 module.exports = { setupCountingHandler };

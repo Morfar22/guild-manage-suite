@@ -1,8 +1,8 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
-import { useGuild } from '@/contexts/GuildContext';
-import { toast } from 'sonner';
-import { invokeFunction } from '@/lib/functions-client';
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { useGuild } from "@/contexts/GuildContext";
+import { toast } from "sonner";
+import { invokeFunction } from "@/lib/functions-client";
 
 export interface ServerTemplate {
   id: string;
@@ -60,10 +60,10 @@ export interface CloneResults {
 
 export function useServerTemplates() {
   return useQuery({
-    queryKey: ['server-templates'],
+    queryKey: ["server-templates"],
     queryFn: async () => {
-      const { data, error } = await invokeFunction('server-clone', {
-        body: { action: 'list-templates' },
+      const { data, error } = await invokeFunction("server-clone", {
+        body: { action: "list-templates" },
       });
 
       if (error) throw error;
@@ -89,9 +89,9 @@ export function useExportTemplate() {
       isPublic?: boolean;
       options?: ExportOptions;
     }) => {
-      const { data, error } = await invokeFunction('server-clone', {
+      const { data, error } = await invokeFunction("server-clone", {
         body: {
-          action: 'export',
+          action: "export",
           sourceGuildId,
           templateName,
           templateDescription,
@@ -109,8 +109,8 @@ export function useExportTemplate() {
       return data.template as ServerTemplate;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['server-templates'] });
-      toast.success('Backup created!');
+      queryClient.invalidateQueries({ queryKey: ["server-templates"] });
+      toast.success("Backup created!");
     },
     onError: (error) => {
       toast.error(`Backup failed: ${error.message}`);
@@ -141,9 +141,9 @@ export function useCloneServer() {
       templateId?: string;
       loadOptions?: LoadOptions;
     }) => {
-      const { data, error } = await invokeFunction('server-clone', {
+      const { data, error } = await invokeFunction("server-clone", {
         body: {
-          action: 'clone',
+          action: "clone",
           sourceGuildId,
           targetGuildId,
           templateId,
@@ -157,16 +157,24 @@ export function useCloneServer() {
     onSuccess: (results) => {
       const parts = [];
       if (results.rolesDeleted > 0 || results.channelsDeleted > 0) {
-        parts.push(`Deleted: ${results.rolesDeleted} roles, ${results.channelsDeleted} channels`);
+        parts.push(
+          `Deleted: ${results.rolesDeleted} roles, ${results.channelsDeleted} channels`,
+        );
       }
-      parts.push(`Created: ${results.rolesCreated} roles, ${results.categoriesCreated} categories, ${results.channelsCreated} channels`);
-      if (results.messagesCreated) parts.push(`${results.messagesCreated} messages`);
+      parts.push(
+        `Created: ${results.rolesCreated} roles, ${results.categoriesCreated} categories, ${results.channelsCreated} channels`,
+      );
+      if (results.messagesCreated)
+        parts.push(`${results.messagesCreated} messages`);
       if (results.bansCreated) parts.push(`${results.bansCreated} bans`);
-      if (results.membersUpdated) parts.push(`${results.membersUpdated} members updated`);
-      
-      toast.success(parts.join('. '));
+      if (results.membersUpdated)
+        parts.push(`${results.membersUpdated} members updated`);
+
+      toast.success(parts.join(". "));
       if (results.errors.length > 0) {
-        toast.warning(`${results.errors.length} errors occurred during cloning.`);
+        toast.warning(
+          `${results.errors.length} errors occurred during cloning.`,
+        );
       }
     },
     onError: (error) => {
@@ -180,9 +188,9 @@ export function useDeleteTemplate() {
 
   return useMutation({
     mutationFn: async (templateId: string) => {
-      const { data, error } = await invokeFunction('server-clone', {
+      const { data, error } = await invokeFunction("server-clone", {
         body: {
-          action: 'delete-template',
+          action: "delete-template",
           templateId,
         },
       });
@@ -191,8 +199,8 @@ export function useDeleteTemplate() {
       return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['server-templates'] });
-      toast.success('Template deleted!');
+      queryClient.invalidateQueries({ queryKey: ["server-templates"] });
+      toast.success("Template deleted!");
     },
     onError: (error) => {
       toast.error(`Failed to delete template: ${error.message}`);

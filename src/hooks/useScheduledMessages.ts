@@ -1,7 +1,7 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
-import { useGuild } from '@/contexts/GuildContext';
-import { useToast } from '@/hooks/use-toast';
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { useGuild } from "@/contexts/GuildContext";
+import { useToast } from "@/hooks/use-toast";
 
 export interface ScheduledMessage {
   id: string;
@@ -10,7 +10,7 @@ export interface ScheduledMessage {
   content: string | null;
   embed: Record<string, any> | null;
   scheduled_at: string;
-  repeat_interval: 'daily' | 'weekly' | 'monthly' | null;
+  repeat_interval: "daily" | "weekly" | "monthly" | null;
   created_by_id: string;
   created_by_name: string | null;
   sent: boolean;
@@ -24,7 +24,7 @@ export interface CreateScheduledMessage {
   content?: string;
   embed?: Record<string, any>;
   scheduled_at: string;
-  repeat_interval?: 'daily' | 'weekly' | 'monthly' | null;
+  repeat_interval?: "daily" | "weekly" | "monthly" | null;
   created_by_id: string;
   created_by_name?: string;
 }
@@ -35,15 +35,15 @@ export function useScheduledMessages() {
   const queryClient = useQueryClient();
 
   const messagesQuery = useQuery({
-    queryKey: ['scheduled-messages', selectedGuild?.id],
+    queryKey: ["scheduled-messages", selectedGuild?.id],
     queryFn: async () => {
       if (!selectedGuild?.id) return [];
 
       const { data, error } = await supabase
-        .from('scheduled_messages')
-        .select('*')
-        .eq('guild_id', selectedGuild.id)
-        .order('scheduled_at', { ascending: true });
+        .from("scheduled_messages")
+        .select("*")
+        .eq("guild_id", selectedGuild.id)
+        .order("scheduled_at", { ascending: true });
 
       if (error) throw error;
       return data as ScheduledMessage[];
@@ -56,53 +56,64 @@ export function useScheduledMessages() {
 
   const createMessage = useMutation({
     mutationFn: async (message: CreateScheduledMessage) => {
-      if (!selectedGuild?.id) throw new Error('No guild selected');
+      if (!selectedGuild?.id) throw new Error("No guild selected");
 
-      const { error } = await supabase
-        .from('scheduled_messages')
-        .insert({
-          guild_id: selectedGuild.id,
-          ...message,
-        });
+      const { error } = await supabase.from("scheduled_messages").insert({
+        guild_id: selectedGuild.id,
+        ...message,
+      });
 
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['scheduled-messages', selectedGuild?.id] });
-      toast({ title: 'Besked planlagt' });
+      queryClient.invalidateQueries({
+        queryKey: ["scheduled-messages", selectedGuild?.id],
+      });
+      toast({ title: "Besked planlagt" });
     },
     onError: (error) => {
-      toast({ title: 'Fejl', description: error.message, variant: 'destructive' });
+      toast({
+        title: "Fejl",
+        description: error.message,
+        variant: "destructive",
+      });
     },
   });
 
   const updateMessage = useMutation({
-    mutationFn: async ({ id, ...updates }: Partial<ScheduledMessage> & { id: string }) => {
+    mutationFn: async ({
+      id,
+      ...updates
+    }: Partial<ScheduledMessage> & { id: string }) => {
       const { error } = await supabase
-        .from('scheduled_messages')
+        .from("scheduled_messages")
         .update(updates)
-        .eq('id', id);
+        .eq("id", id);
 
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['scheduled-messages', selectedGuild?.id] });
-      toast({ title: 'Besked opdateret' });
+      queryClient.invalidateQueries({
+        queryKey: ["scheduled-messages", selectedGuild?.id],
+      });
+      toast({ title: "Besked opdateret" });
     },
   });
 
   const deleteMessage = useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase
-        .from('scheduled_messages')
+        .from("scheduled_messages")
         .delete()
-        .eq('id', id);
+        .eq("id", id);
 
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['scheduled-messages', selectedGuild?.id] });
-      toast({ title: 'Besked slettet' });
+      queryClient.invalidateQueries({
+        queryKey: ["scheduled-messages", selectedGuild?.id],
+      });
+      toast({ title: "Besked slettet" });
     },
   });
 

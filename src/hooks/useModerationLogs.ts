@@ -1,8 +1,9 @@
-import { useEffect, useState, useCallback } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useGuild } from '@/contexts/GuildContext';
+import { useEffect, useState, useCallback } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { useGuild } from "@/contexts/GuildContext";
 
-export type ModerationActionType = 'ban' | 'kick' | 'mute' | 'warn' | 'delete' | 'timeout' | 'unban' | 'unmute';
+export type ModerationActionType =
+  "ban" | "kick" | "mute" | "warn" | "delete" | "timeout" | "unban" | "unmute";
 
 export interface ModerationLog {
   id: string;
@@ -37,23 +38,23 @@ export function useModerationLogs(options: UseModerationLogsOptions = {}) {
     if (!selectedGuild) return;
 
     let query = supabase
-      .from('moderation_logs')
-      .select('*', { count: 'exact' })
-      .eq('guild_id', selectedGuild.id)
-      .order('created_at', { ascending: false })
+      .from("moderation_logs")
+      .select("*", { count: "exact" })
+      .eq("guild_id", selectedGuild.id)
+      .order("created_at", { ascending: false })
       .limit(limit);
 
     if (actionType) {
-      query = query.eq('action_type', actionType);
+      query = query.eq("action_type", actionType);
     }
 
     const { data, error: fetchError, count } = await query;
 
     if (fetchError) {
-      console.error('Error fetching moderation logs:', fetchError);
+      console.error("Error fetching moderation logs:", fetchError);
       setError(fetchError.message);
     } else {
-      setLogs(data as ModerationLog[] || []);
+      setLogs((data as ModerationLog[]) || []);
       setTotalCount(count || 0);
       setError(null);
     }
@@ -78,18 +79,20 @@ export function useModerationLogs(options: UseModerationLogsOptions = {}) {
     const channel = supabase
       .channel(`moderation_logs_${selectedGuild.id}`)
       .on(
-        'postgres_changes',
+        "postgres_changes",
         {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'moderation_logs',
+          event: "INSERT",
+          schema: "public",
+          table: "moderation_logs",
           filter: `guild_id=eq.${selectedGuild.id}`,
         },
         (payload) => {
-          console.log('New moderation log:', payload);
-          setLogs((prev) => [payload.new as ModerationLog, ...prev].slice(0, limit));
+          console.log("New moderation log:", payload);
+          setLogs((prev) =>
+            [payload.new as ModerationLog, ...prev].slice(0, limit),
+          );
           setTotalCount((prev) => prev + 1);
-        }
+        },
       )
       .subscribe();
 

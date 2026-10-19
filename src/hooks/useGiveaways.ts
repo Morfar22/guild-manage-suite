@@ -1,8 +1,8 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
-import { useGuild } from '@/contexts/GuildContext';
-import { useToast } from '@/hooks/use-toast';
-import { invokeFunction } from '@/lib/functions-client';
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { useGuild } from "@/contexts/GuildContext";
+import { useToast } from "@/hooks/use-toast";
+import { invokeFunction } from "@/lib/functions-client";
 
 export interface Giveaway {
   id: string;
@@ -28,16 +28,20 @@ export function useGiveaways() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
-  const { data: giveaways, isLoading, error } = useQuery({
-    queryKey: ['giveaways', selectedGuild?.id],
+  const {
+    data: giveaways,
+    isLoading,
+    error,
+  } = useQuery({
+    queryKey: ["giveaways", selectedGuild?.id],
     queryFn: async () => {
       if (!selectedGuild?.id) return [];
-      
+
       const { data, error } = await supabase
-        .from('giveaways')
-        .select('*')
-        .eq('guild_id', selectedGuild.id)
-        .order('created_at', { ascending: false });
+        .from("giveaways")
+        .select("*")
+        .eq("guild_id", selectedGuild.id)
+        .order("created_at", { ascending: false });
 
       if (error) throw error;
       return data as Giveaway[];
@@ -56,12 +60,12 @@ export function useGiveaways() {
       host_user_id: string;
       host_username?: string;
     }) => {
-      if (!selectedGuild?.id) throw new Error('No guild selected');
+      if (!selectedGuild?.id) throw new Error("No guild selected");
 
       // Use edge function to create giveaway AND send embed to Discord
-      const { data, error } = await invokeFunction('giveaway-handler', {
+      const { data, error } = await invokeFunction("giveaway-handler", {
         body: {
-          action: 'create',
+          action: "create",
           giveawayData: {
             guild_id: selectedGuild.id,
             channel_id: giveaway.channel_id,
@@ -71,48 +75,50 @@ export function useGiveaways() {
             ends_at: giveaway.ends_at,
             required_role_id: giveaway.required_role_id || null,
             host_user_id: giveaway.host_user_id,
-            host_username: giveaway.host_username || 'Dashboard',
+            host_username: giveaway.host_username || "Dashboard",
           },
         },
       });
 
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
-      
+
       // Show warning if embed couldn't be sent
       if (data?.warning) {
         toast({
-          title: 'Advarsel',
+          title: "Advarsel",
           description: data.warning,
-          variant: 'default',
+          variant: "default",
         });
       }
 
       return data.giveaway;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['giveaways', selectedGuild?.id] });
+      queryClient.invalidateQueries({
+        queryKey: ["giveaways", selectedGuild?.id],
+      });
       toast({
-        title: 'Giveaway oprettet',
-        description: 'Din giveaway er nu aktiv og sendt til Discord.',
+        title: "Giveaway oprettet",
+        description: "Din giveaway er nu aktiv og sendt til Discord.",
       });
     },
     onError: (error) => {
       toast({
-        title: 'Fejl',
+        title: "Fejl",
         description: error.message,
-        variant: 'destructive',
+        variant: "destructive",
       });
     },
   });
 
   const endGiveaway = useMutation({
     mutationFn: async (giveawayId: string) => {
-      if (!selectedGuild?.id) throw new Error('No guild selected');
+      if (!selectedGuild?.id) throw new Error("No guild selected");
 
-      const { data, error } = await invokeFunction('giveaway-handler', {
+      const { data, error } = await invokeFunction("giveaway-handler", {
         body: {
-          action: 'end',
+          action: "end",
           guildId: selectedGuild.id,
           giveawayId,
         },
@@ -123,31 +129,34 @@ export function useGiveaways() {
       return data;
     },
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ['giveaways', selectedGuild?.id] });
+      queryClient.invalidateQueries({
+        queryKey: ["giveaways", selectedGuild?.id],
+      });
       const winnerCount = data?.winners?.length || 0;
       toast({
-        title: 'Giveaway afsluttet',
-        description: winnerCount > 0
-          ? `${winnerCount} vinder${winnerCount > 1 ? 'e' : ''} er blevet trukket og annonceret i Discord.`
-          : 'Ingen deltagere - ingen vindere trukket.',
+        title: "Giveaway afsluttet",
+        description:
+          winnerCount > 0
+            ? `${winnerCount} vinder${winnerCount > 1 ? "e" : ""} er blevet trukket og annonceret i Discord.`
+            : "Ingen deltagere - ingen vindere trukket.",
       });
     },
     onError: (error) => {
       toast({
-        title: 'Fejl',
+        title: "Fejl",
         description: error.message,
-        variant: 'destructive',
+        variant: "destructive",
       });
     },
   });
 
   const rerollGiveaway = useMutation({
     mutationFn: async (giveawayId: string) => {
-      if (!selectedGuild?.id) throw new Error('No guild selected');
+      if (!selectedGuild?.id) throw new Error("No guild selected");
 
-      const { data, error } = await invokeFunction('giveaway-handler', {
+      const { data, error } = await invokeFunction("giveaway-handler", {
         body: {
-          action: 'reroll',
+          action: "reroll",
           guildId: selectedGuild.id,
           giveawayId,
         },
@@ -158,28 +167,30 @@ export function useGiveaways() {
       return data;
     },
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ['giveaways', selectedGuild?.id] });
+      queryClient.invalidateQueries({
+        queryKey: ["giveaways", selectedGuild?.id],
+      });
       toast({
-        title: 'Ny vinder trukket',
+        title: "Ny vinder trukket",
         description: `En ny vinder er blevet trukket og annonceret i Discord.`,
       });
     },
     onError: (error) => {
       toast({
-        title: 'Fejl',
+        title: "Fejl",
         description: error.message,
-        variant: 'destructive',
+        variant: "destructive",
       });
     },
   });
 
   const deleteGiveaway = useMutation({
     mutationFn: async (giveawayId: string) => {
-      if (!selectedGuild?.id) throw new Error('No guild selected');
+      if (!selectedGuild?.id) throw new Error("No guild selected");
 
-      const { data, error } = await invokeFunction('giveaway-handler', {
+      const { data, error } = await invokeFunction("giveaway-handler", {
         body: {
-          action: 'delete',
+          action: "delete",
           guildId: selectedGuild.id,
           giveawayId,
         },
@@ -189,22 +200,28 @@ export function useGiveaways() {
       if (data?.error) throw new Error(data.error);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['giveaways', selectedGuild?.id] });
+      queryClient.invalidateQueries({
+        queryKey: ["giveaways", selectedGuild?.id],
+      });
       toast({
-        title: 'Giveaway slettet',
-        description: 'Giveaway er blevet fjernet.',
+        title: "Giveaway slettet",
+        description: "Giveaway er blevet fjernet.",
       });
     },
     onError: (error) => {
       toast({
-        title: 'Fejl',
+        title: "Fejl",
         description: error.message,
-        variant: 'destructive',
+        variant: "destructive",
       });
     },
   });
-  const activeGiveaways = giveaways?.filter(g => !g.ended && new Date(g.ends_at) > new Date()) || [];
-  const endedGiveaways = giveaways?.filter(g => g.ended || new Date(g.ends_at) <= new Date()) || [];
+  const activeGiveaways =
+    giveaways?.filter((g) => !g.ended && new Date(g.ends_at) > new Date()) ||
+    [];
+  const endedGiveaways =
+    giveaways?.filter((g) => g.ended || new Date(g.ends_at) <= new Date()) ||
+    [];
 
   return {
     giveaways,

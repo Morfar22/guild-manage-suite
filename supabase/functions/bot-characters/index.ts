@@ -2,14 +2,18 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-bot-secret",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type, x-bot-secret",
 };
 
-async function checkIPWhitelist(req: Request, supabase: any): Promise<{ allowed: boolean; ip: string }> {
-  const clientIp = 
-    req.headers.get("cf-connecting-ip") || 
-    req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || 
-    req.headers.get("x-real-ip") || 
+async function checkIPWhitelist(
+  req: Request,
+  supabase: any,
+): Promise<{ allowed: boolean; ip: string }> {
+  const clientIp =
+    req.headers.get("cf-connecting-ip") ||
+    req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+    req.headers.get("x-real-ip") ||
     "unknown";
 
   const { count, error: countError } = await supabase
@@ -50,7 +54,7 @@ Deno.serve(async (req) => {
 
   const supabase = createClient(
     Deno.env.get("SUPABASE_URL")!,
-    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
   );
 
   // Check IP whitelist
@@ -58,8 +62,14 @@ Deno.serve(async (req) => {
   if (!ipCheck.allowed) {
     console.error(`IP not whitelisted: ${ipCheck.ip}`);
     return new Response(
-      JSON.stringify({ error: "Forbidden - IP not whitelisted", ip: ipCheck.ip }),
-      { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      JSON.stringify({
+        error: "Forbidden - IP not whitelisted",
+        ip: ipCheck.ip,
+      }),
+      {
+        status: 403,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      },
     );
   }
 
@@ -68,7 +78,17 @@ Deno.serve(async (req) => {
 
     switch (action) {
       case "create": {
-        const { guildId, discordUserId, discordUsername, name, age, background, faction, occupation, appearance } = data;
+        const {
+          guildId,
+          discordUserId,
+          discordUsername,
+          name,
+          age,
+          background,
+          faction,
+          occupation,
+          appearance,
+        } = data;
 
         // Get internal guild ID
         const { data: guild } = await supabase
@@ -76,7 +96,7 @@ Deno.serve(async (req) => {
           .select("id")
           .eq("guild_id", guildId)
           .single();
-        
+
         if (!guild) {
           return new Response(JSON.stringify({ error: "Guild not found" }), {
             status: 404,
@@ -109,7 +129,7 @@ Deno.serve(async (req) => {
           })
           .select()
           .single();
-        
+
         if (error) throw error;
         return new Response(JSON.stringify({ character }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -125,7 +145,7 @@ Deno.serve(async (req) => {
           .select("id")
           .eq("guild_id", guildId)
           .single();
-        
+
         if (!guild) {
           return new Response(JSON.stringify({ character: null }), {
             headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -139,7 +159,7 @@ Deno.serve(async (req) => {
           .eq("discord_user_id", discordUserId)
           .eq("is_active", true)
           .maybeSingle();
-        
+
         return new Response(JSON.stringify({ character }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
@@ -154,7 +174,7 @@ Deno.serve(async (req) => {
           .select("id")
           .eq("guild_id", guildId)
           .single();
-        
+
         if (!guild) {
           return new Response(JSON.stringify({ characters: [] }), {
             headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -167,7 +187,7 @@ Deno.serve(async (req) => {
           .eq("guild_id", guild.id)
           .eq("discord_user_id", discordUserId)
           .order("created_at", { ascending: false });
-        
+
         return new Response(JSON.stringify({ characters: characters || [] }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
@@ -182,7 +202,7 @@ Deno.serve(async (req) => {
           .eq("id", characterId)
           .select()
           .single();
-        
+
         if (error) throw error;
         return new Response(JSON.stringify({ character }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -198,7 +218,7 @@ Deno.serve(async (req) => {
           .eq("id", characterId)
           .select()
           .single();
-        
+
         if (error) throw error;
         return new Response(JSON.stringify({ character }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -214,7 +234,7 @@ Deno.serve(async (req) => {
           .eq("id", characterId)
           .select()
           .single();
-        
+
         if (error) throw error;
         return new Response(JSON.stringify({ character }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },

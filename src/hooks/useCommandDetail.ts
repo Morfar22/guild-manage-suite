@@ -1,7 +1,7 @@
-import { useMemo } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
-import { useGuild } from '@/contexts/GuildContext';
+import { useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { useGuild } from "@/contexts/GuildContext";
 
 export interface CommandExecutionEvent {
   id: string;
@@ -24,7 +24,11 @@ export interface CommandAuditEvent {
   created_at: string | null;
 }
 
-export function useCommandDetail(commandName: string | null, days: number, enabled = true) {
+export function useCommandDetail(
+  commandName: string | null,
+  days: number,
+  enabled = true,
+) {
   const { selectedGuild } = useGuild();
 
   const sinceIso = useMemo(() => {
@@ -37,7 +41,7 @@ export function useCommandDetail(commandName: string | null, days: number, enabl
   const sinceDay = sinceIso.slice(0, 10);
 
   const query = useQuery({
-    queryKey: ['command-detail', selectedGuild?.id, commandName, days],
+    queryKey: ["command-detail", selectedGuild?.id, commandName, days],
     enabled: enabled && !!selectedGuild?.id && !!commandName,
     queryFn: async () => {
       if (!selectedGuild?.id || !commandName) {
@@ -46,27 +50,31 @@ export function useCommandDetail(commandName: string | null, days: number, enabl
 
       const [eventsResult, dailyResult, auditResult] = await Promise.all([
         supabase
-          .from('command_execution_events')
-          .select('id, command_name, user_id, channel_id, source, status, latency_ms, blocked_reason, error_message, created_at')
-          .eq('guild_id', selectedGuild.id)
-          .eq('command_name', commandName)
-          .gte('created_at', sinceIso)
-          .order('created_at', { ascending: false })
+          .from("command_execution_events")
+          .select(
+            "id, command_name, user_id, channel_id, source, status, latency_ms, blocked_reason, error_message, created_at",
+          )
+          .eq("guild_id", selectedGuild.id)
+          .eq("command_name", commandName)
+          .gte("created_at", sinceIso)
+          .order("created_at", { ascending: false })
           .limit(500),
         supabase
-          .from('command_execution_daily_stats')
-          .select('day, executions, successes, errors, blocked, avg_latency_ms, max_latency_ms, last_used_at')
-          .eq('guild_id', selectedGuild.id)
-          .eq('command_name', commandName)
-          .gte('day', sinceDay)
-          .order('day', { ascending: true }),
+          .from("command_execution_daily_stats")
+          .select(
+            "day, executions, successes, errors, blocked, avg_latency_ms, max_latency_ms, last_used_at",
+          )
+          .eq("guild_id", selectedGuild.id)
+          .eq("command_name", commandName)
+          .gte("day", sinceDay)
+          .order("day", { ascending: true }),
         supabase
-          .from('dashboard_audit_log')
-          .select('id, action, user_email, details, created_at')
-          .eq('guild_id', selectedGuild.id)
-          .eq('target_type', 'command')
-          .eq('target_id', commandName)
-          .order('created_at', { ascending: false })
+          .from("dashboard_audit_log")
+          .select("id, action, user_email, details, created_at")
+          .eq("guild_id", selectedGuild.id)
+          .eq("target_type", "command")
+          .eq("target_id", commandName)
+          .order("created_at", { ascending: false })
           .limit(50),
       ]);
 
@@ -113,9 +121,18 @@ export function useCommandDetail(commandName: string | null, days: number, enabl
     const blockedCounts = new Map<string, number>();
 
     for (const event of events) {
-      if (event.channel_id) channelCounts.set(event.channel_id, (channelCounts.get(event.channel_id) || 0) + 1);
-      if (event.user_id) userCounts.set(event.user_id, (userCounts.get(event.user_id) || 0) + 1);
-      if (event.blocked_reason) blockedCounts.set(event.blocked_reason, (blockedCounts.get(event.blocked_reason) || 0) + 1);
+      if (event.channel_id)
+        channelCounts.set(
+          event.channel_id,
+          (channelCounts.get(event.channel_id) || 0) + 1,
+        );
+      if (event.user_id)
+        userCounts.set(event.user_id, (userCounts.get(event.user_id) || 0) + 1);
+      if (event.blocked_reason)
+        blockedCounts.set(
+          event.blocked_reason,
+          (blockedCounts.get(event.blocked_reason) || 0) + 1,
+        );
     }
 
     const top = (map: Map<string, number>, limit = 6) =>
@@ -125,18 +142,24 @@ export function useCommandDetail(commandName: string | null, days: number, enabl
         .slice(0, limit);
 
     const latencies = events
-      .filter((event) => event.status === 'success' || event.status === 'error')
+      .filter((event) => event.status === "success" || event.status === "error")
       .map((event) => Number(event.latency_ms || 0))
       .sort((a, b) => a - b);
 
-    const p95Index = latencies.length ? Math.min(latencies.length - 1, Math.ceil(latencies.length * 0.95) - 1) : 0;
+    const p95Index = latencies.length
+      ? Math.min(latencies.length - 1, Math.ceil(latencies.length * 0.95) - 1)
+      : 0;
 
     return {
       events,
       daily,
       audit,
-      recentErrors: events.filter((event) => event.status === 'error').slice(0, 25),
-      recentBlocked: events.filter((event) => event.status === 'blocked').slice(0, 25),
+      recentErrors: events
+        .filter((event) => event.status === "error")
+        .slice(0, 25),
+      recentBlocked: events
+        .filter((event) => event.status === "blocked")
+        .slice(0, 25),
       topChannels: top(channelCounts),
       topUsers: top(userCounts),
       blockedReasons: top(blockedCounts),
@@ -145,8 +168,12 @@ export function useCommandDetail(commandName: string | null, days: number, enabl
         successes,
         errors,
         blocked,
-        successRate: handledCount > 0 ? Math.round((successes / handledCount) * 1000) / 10 : 0,
-        avgLatency: handledCount > 0 ? Math.round(handledLatency / handledCount) : 0,
+        successRate:
+          handledCount > 0
+            ? Math.round((successes / handledCount) * 1000) / 10
+            : 0,
+        avgLatency:
+          handledCount > 0 ? Math.round(handledLatency / handledCount) : 0,
         p95Latency: latencies.length ? latencies[p95Index] : 0,
       },
     };

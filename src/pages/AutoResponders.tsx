@@ -1,39 +1,51 @@
-import { useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Badge } from '@/components/ui/badge';
-import { Switch } from '@/components/ui/switch';
+import { useState } from "react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '@/components/ui/dialog';
+} from "@/components/ui/dialog";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import { Loader2, Plus, Trash2, MessageSquare, Zap, Brain } from 'lucide-react';
-import { useAutoResponders } from '@/hooks/useAutoResponders';
+} from "@/components/ui/select";
+import { Loader2, Plus, Trash2, MessageSquare, Zap, Brain } from "lucide-react";
+import { useAutoResponders } from "@/hooks/useAutoResponders";
 
 export default function AutoResponders() {
-  const { responders, isLoading, createResponder, updateResponder, deleteResponder } = useAutoResponders();
+  const {
+    responders,
+    isLoading,
+    createResponder,
+    updateResponder,
+    deleteResponder,
+  } = useAutoResponders();
 
   const [open, setOpen] = useState(false);
-  const [triggerText, setTriggerText] = useState('');
-  const [triggerType, setTriggerType] = useState('exact');
-  const [responseContent, setResponseContent] = useState('');
-  const [responseType, setResponseType] = useState('text');
+  const [triggerText, setTriggerText] = useState("");
+  const [triggerType, setTriggerType] = useState("exact");
+  const [responseContent, setResponseContent] = useState("");
+  const [responseType, setResponseType] = useState("text");
   const [cooldown, setCooldown] = useState(5);
   const [useAi, setUseAi] = useState(false);
-  const [aiInstructions, setAiInstructions] = useState('');
+  const [aiInstructions, setAiInstructions] = useState("");
 
   const handleCreate = () => {
     if (!triggerText || !responseContent) return;
@@ -51,15 +63,15 @@ export default function AutoResponders() {
       {
         onSuccess: () => {
           setOpen(false);
-          setTriggerText('');
-          setTriggerType('exact');
-          setResponseContent('');
-          setResponseType('text');
+          setTriggerText("");
+          setTriggerType("exact");
+          setResponseContent("");
+          setResponseType("text");
           setCooldown(5);
           setUseAi(false);
-          setAiInstructions('');
+          setAiInstructions("");
         },
-      }
+      },
     );
   };
 
@@ -157,7 +169,9 @@ export default function AutoResponders() {
                     <Brain className="h-4 w-4 text-primary" />
                     AI-Drevet Svar
                   </Label>
-                  <p className="text-xs text-muted-foreground">Brug AI til at generere kontekstuelle svar</p>
+                  <p className="text-xs text-muted-foreground">
+                    Brug AI til at generere kontekstuelle svar
+                  </p>
                 </div>
                 <Switch checked={useAi} onCheckedChange={setUseAi} />
               </div>
@@ -176,7 +190,9 @@ export default function AutoResponders() {
 
               <Button
                 onClick={handleCreate}
-                disabled={!triggerText || !responseContent || createResponder.isPending}
+                disabled={
+                  !triggerText || !responseContent || createResponder.isPending
+                }
                 className="w-full"
               >
                 {createResponder.isPending ? (
@@ -195,7 +211,9 @@ export default function AutoResponders() {
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12 text-center">
             <MessageSquare className="h-12 w-12 text-muted-foreground/30" />
-            <p className="mt-4 text-muted-foreground">Ingen auto-responders oprettet endnu</p>
+            <p className="mt-4 text-muted-foreground">
+              Ingen auto-responders oprettet endnu
+            </p>
           </CardContent>
         </Card>
       ) : (
@@ -205,7 +223,9 @@ export default function AutoResponders() {
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <CardTitle className="text-base font-mono">{responder.trigger_text}</CardTitle>
+                    <CardTitle className="text-base font-mono">
+                      {responder.trigger_text}
+                    </CardTitle>
                     <Badge variant="outline">{responder.trigger_type}</Badge>
                     {responder.use_ai && (
                       <Badge variant="secondary" className="gap-1">
@@ -221,20 +241,29 @@ export default function AutoResponders() {
                         updateResponder.mutate({ id: responder.id, enabled })
                       }
                     />
-                    <Button variant="ghost" size="icon" onClick={() => deleteResponder.mutate(responder.id)}>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => deleteResponder.mutate(responder.id)}
+                    >
                       <Trash2 className="h-4 w-4 text-destructive" />
                     </Button>
                   </div>
                 </div>
                 <CardDescription>
-                  {responder.response_type} • {responder.cooldown_seconds}s cooldown
-                  {responder.use_ai && ' • AI-drevet kontekstuel svar'}
+                  {responder.response_type} • {responder.cooldown_seconds}s
+                  cooldown
+                  {responder.use_ai && " • AI-drevet kontekstuel svar"}
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <p className="text-sm line-clamp-3">{responder.response_content}</p>
+                <p className="text-sm line-clamp-3">
+                  {responder.response_content}
+                </p>
                 {responder.ai_instructions && (
-                  <p className="text-xs text-muted-foreground mt-2 italic">AI: {responder.ai_instructions}</p>
+                  <p className="text-xs text-muted-foreground mt-2 italic">
+                    AI: {responder.ai_instructions}
+                  </p>
                 )}
               </CardContent>
             </Card>

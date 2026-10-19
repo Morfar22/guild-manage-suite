@@ -102,21 +102,21 @@ Revive har desuden en native fallback, hvis `gms_event_revive` ikke er sat.
 
 Standardværdierne passer til de fleste servere:
 
-| ConVar | Standard | Beskrivelse |
-| --- | ---: | --- |
-| `gms_api_base` | platform URL | Dashboard/API base |
-| `gms_guild_id` | - | Discord server ID |
-| `gms_api_key` | - | Bridge-nøgle fra dashboard |
-| `gms_server_id` | `main` | Unikt instance-ID |
-| `gms_framework` | `auto` | auto/qbox/qbcore/esx/standalone |
-| `gms_command_poll_ms` | `1500` | Command queue poll |
-| `gms_player_sync_ms` | `15000` | Spiller-sync |
-| `gms_heartbeat_ms` | `30000` | Heartbeat |
-| `gms_settings_refresh_ms` | `60000` | Settings refresh |
-| `gms_client_action_timeout_ms` | `8000` | Ventetid på client ACK |
-| `gms_api_timeout_ms` | `10000` | HTTP timeout |
-| `gms_fail_open` | `false` | Tillad join ved API-fejl under whitelist/ban-check |
-| `gms_debug` | `false` | Ekstra debug logs |
+| ConVar                         |     Standard | Beskrivelse                                        |
+| ------------------------------ | -----------: | -------------------------------------------------- |
+| `gms_api_base`                 | platform URL | Dashboard/API base                                 |
+| `gms_guild_id`                 |            - | Discord server ID                                  |
+| `gms_api_key`                  |            - | Bridge-nøgle fra dashboard                         |
+| `gms_server_id`                |       `main` | Unikt instance-ID                                  |
+| `gms_framework`                |       `auto` | auto/qbox/qbcore/esx/standalone                    |
+| `gms_command_poll_ms`          |       `1500` | Command queue poll                                 |
+| `gms_player_sync_ms`           |      `15000` | Spiller-sync                                       |
+| `gms_heartbeat_ms`             |      `30000` | Heartbeat                                          |
+| `gms_settings_refresh_ms`      |      `60000` | Settings refresh                                   |
+| `gms_client_action_timeout_ms` |       `8000` | Ventetid på client ACK                             |
+| `gms_api_timeout_ms`           |      `10000` | HTTP timeout                                       |
+| `gms_fail_open`                |      `false` | Tillad join ved API-fejl under whitelist/ban-check |
+| `gms_debug`                    |      `false` | Ekstra debug logs                                  |
 
 Bridgen clamp'er ekstremt lave intervaller, så en forkert config ikke ved et uheld hammer API'et.
 
@@ -191,7 +191,6 @@ gmsbridge
 
 Bridge v1.1 rapporterer sin version til dashboardet, så det er nemt at se, om en server stadig kører en gammel bridge.
 
-
 ## Nordisk RP ACE permissions
 
 Bridge v1.2.0 can use the FiveM ACE tree as the authoritative permission source for remote
@@ -210,32 +209,32 @@ the player's complete ACE graph, which allows staff assigned through another ide
 
 Examples:
 
-| FiveM action | Required ACE |
-| --- | --- |
-| kick | `nrp.staff.moderation.kick` |
-| temporary ban / jail | `nrp.staff.moderation.ban.temporary` |
-| permanent ban | `nrp.staff.moderation.ban.permanent` |
-| warn | `nrp.staff.moderation.warn` |
-| freeze | `nrp.staff.player.freeze` |
-| spectate | `nrp.staff.player.spectate` |
-| goto | `nrp.staff.player.goto` |
-| bring | `nrp.staff.player.bring` |
-| revive | `nrp.staff.player.revive` |
-| heal / health / armor | `nrp.staff.player.heal` |
-| noclip | `nrp.staff.tool.noclip` |
-| repair vehicle | `nrp.staff.tool.vehicle.repair` |
-| delete vehicle | `nrp.staff.tool.vehicle.delete` |
-| spawn vehicle | `nrp.staff.tool.vehicle.spawn` |
-| player identifiers / screenshot | `nrp.staff.player.inspect` |
-| edit job | `nrp.staff.player.job` |
-| economy / inventory changes | `nrp.staff.economy.manage` |
-| gang inspect | `nrp.staff.underworld.view` |
-| gang changes | `nrp.staff.underworld.manage` |
-| announcements | `nrp.staff.announcement.send` |
-| time / weather / bulk teleport | `nrp.staff.world.manage` |
-| resource management / dangerous global actions | `nrp.staff.server.manage` |
-| whitelist check | `nrp.staff.allowlist.review` |
-| whitelist add/remove/toggle | `nrp.staff.allowlist.decide` |
+| FiveM action                                   | Required ACE                         |
+| ---------------------------------------------- | ------------------------------------ |
+| kick                                           | `nrp.staff.moderation.kick`          |
+| temporary ban / jail                           | `nrp.staff.moderation.ban.temporary` |
+| permanent ban                                  | `nrp.staff.moderation.ban.permanent` |
+| warn                                           | `nrp.staff.moderation.warn`          |
+| freeze                                         | `nrp.staff.player.freeze`            |
+| spectate                                       | `nrp.staff.player.spectate`          |
+| goto                                           | `nrp.staff.player.goto`              |
+| bring                                          | `nrp.staff.player.bring`             |
+| revive                                         | `nrp.staff.player.revive`            |
+| heal / health / armor                          | `nrp.staff.player.heal`              |
+| noclip                                         | `nrp.staff.tool.noclip`              |
+| repair vehicle                                 | `nrp.staff.tool.vehicle.repair`      |
+| delete vehicle                                 | `nrp.staff.tool.vehicle.delete`      |
+| spawn vehicle                                  | `nrp.staff.tool.vehicle.spawn`       |
+| player identifiers / screenshot                | `nrp.staff.player.inspect`           |
+| edit job                                       | `nrp.staff.player.job`               |
+| economy / inventory changes                    | `nrp.staff.economy.manage`           |
+| gang inspect                                   | `nrp.staff.underworld.view`          |
+| gang changes                                   | `nrp.staff.underworld.manage`        |
+| announcements                                  | `nrp.staff.announcement.send`        |
+| time / weather / bulk teleport                 | `nrp.staff.world.manage`             |
+| resource management / dangerous global actions | `nrp.staff.server.manage`            |
+| whitelist check                                | `nrp.staff.allowlist.review`         |
+| whitelist add/remove/toggle                    | `nrp.staff.allowlist.decide`         |
 
 Read-only server info/count commands stay public inside the Discord command access rules.
 

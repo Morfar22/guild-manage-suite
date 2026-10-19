@@ -1,6 +1,6 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
-import { useGuild } from '@/contexts/GuildContext';
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { useGuild } from "@/contexts/GuildContext";
 
 export interface WelcomeSettings {
   id: string;
@@ -22,7 +22,7 @@ export interface WelcomeSettings {
   embed_footer: string;
   embed_image_url: string;
   leave_embed_enabled: boolean;
-  thumbnail_type: 'user_avatar' | 'server_icon';
+  thumbnail_type: "user_avatar" | "server_icon";
   created_at: string;
   updated_at: string;
 }
@@ -31,14 +31,14 @@ export function useWelcomeSettings() {
   const { selectedGuild } = useGuild();
 
   return useQuery({
-    queryKey: ['welcome-settings', selectedGuild?.id],
+    queryKey: ["welcome-settings", selectedGuild?.id],
     queryFn: async () => {
       if (!selectedGuild?.id) return null;
 
       const { data, error } = await supabase
-        .from('welcome_settings')
-        .select('*')
-        .eq('guild_id', selectedGuild.id)
+        .from("welcome_settings")
+        .select("*")
+        .eq("guild_id", selectedGuild.id)
         .maybeSingle();
 
       if (error) throw error;
@@ -54,21 +54,21 @@ export function useUpdateWelcomeSettings() {
 
   return useMutation({
     mutationFn: async (settings: Partial<WelcomeSettings>) => {
-      if (!selectedGuild?.id) throw new Error('No guild selected');
+      if (!selectedGuild?.id) throw new Error("No guild selected");
 
       // Check if settings exist
       const { data: existing } = await supabase
-        .from('welcome_settings')
-        .select('id')
-        .eq('guild_id', selectedGuild.id)
+        .from("welcome_settings")
+        .select("id")
+        .eq("guild_id", selectedGuild.id)
         .maybeSingle();
 
       if (existing) {
         // Update existing
         const { data, error } = await supabase
-          .from('welcome_settings')
+          .from("welcome_settings")
           .update(settings)
-          .eq('guild_id', selectedGuild.id)
+          .eq("guild_id", selectedGuild.id)
           .select()
           .single();
 
@@ -77,7 +77,7 @@ export function useUpdateWelcomeSettings() {
       } else {
         // Insert new
         const { data, error } = await supabase
-          .from('welcome_settings')
+          .from("welcome_settings")
           .insert({ ...settings, guild_id: selectedGuild.id })
           .select()
           .single();
@@ -87,7 +87,9 @@ export function useUpdateWelcomeSettings() {
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['welcome-settings', selectedGuild?.id] });
+      queryClient.invalidateQueries({
+        queryKey: ["welcome-settings", selectedGuild?.id],
+      });
     },
   });
 }

@@ -1,23 +1,32 @@
 // @ts-nocheck
 // Migrated from Supabase Edge Function `bot-characters` to a TanStack server route.
-import { createFileRoute } from '@tanstack/react-router'
-import { createClient } from '@supabase/supabase-js'
+import { createFileRoute } from "@tanstack/react-router";
+import { createClient } from "@supabase/supabase-js";
 
-const __env = (k: string) => process.env[k] ?? (k === 'SUPABASE_ANON_KEY' ? process.env['SUPABASE_PUBLISHABLE_KEY'] : undefined)
-let __handler: (req: Request) => Response | Promise<Response>
-const __serve = (fn: any, _opts?: any) => { __handler = fn }
-
+const __env = (k: string) =>
+  process.env[k] ??
+  (k === "SUPABASE_ANON_KEY"
+    ? process.env["SUPABASE_PUBLISHABLE_KEY"]
+    : undefined);
+let __handler: (req: Request) => Response | Promise<Response>;
+const __serve = (fn: any, _opts?: any) => {
+  __handler = fn;
+};
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-bot-secret",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type, x-bot-secret",
 };
 
-async function checkIPWhitelist(req: Request, supabase: any): Promise<{ allowed: boolean; ip: string }> {
-  const clientIp = 
-    req.headers.get("cf-connecting-ip") || 
-    req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || 
-    req.headers.get("x-real-ip") || 
+async function checkIPWhitelist(
+  req: Request,
+  supabase: any,
+): Promise<{ allowed: boolean; ip: string }> {
+  const clientIp =
+    req.headers.get("cf-connecting-ip") ||
+    req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+    req.headers.get("x-real-ip") ||
     "unknown";
 
   const { count, error: countError } = await supabase
@@ -58,7 +67,7 @@ __serve(async (req) => {
 
   const supabase = createClient(
     __env("SUPABASE_URL")!,
-    __env("SUPABASE_SERVICE_ROLE_KEY")!
+    __env("SUPABASE_SERVICE_ROLE_KEY")!,
   );
 
   // Check IP whitelist
@@ -66,8 +75,14 @@ __serve(async (req) => {
   if (!ipCheck.allowed) {
     console.error(`IP not whitelisted: ${ipCheck.ip}`);
     return new Response(
-      JSON.stringify({ error: "Forbidden - IP not whitelisted", ip: ipCheck.ip }),
-      { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      JSON.stringify({
+        error: "Forbidden - IP not whitelisted",
+        ip: ipCheck.ip,
+      }),
+      {
+        status: 403,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      },
     );
   }
 
@@ -76,7 +91,17 @@ __serve(async (req) => {
 
     switch (action) {
       case "create": {
-        const { guildId, discordUserId, discordUsername, name, age, background, faction, occupation, appearance } = data;
+        const {
+          guildId,
+          discordUserId,
+          discordUsername,
+          name,
+          age,
+          background,
+          faction,
+          occupation,
+          appearance,
+        } = data;
 
         // Get internal guild ID
         const { data: guild } = await supabase
@@ -84,7 +109,7 @@ __serve(async (req) => {
           .select("id")
           .eq("guild_id", guildId)
           .single();
-        
+
         if (!guild) {
           return new Response(JSON.stringify({ error: "Guild not found" }), {
             status: 404,
@@ -117,7 +142,7 @@ __serve(async (req) => {
           })
           .select()
           .single();
-        
+
         if (error) throw error;
         return new Response(JSON.stringify({ character }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -133,7 +158,7 @@ __serve(async (req) => {
           .select("id")
           .eq("guild_id", guildId)
           .single();
-        
+
         if (!guild) {
           return new Response(JSON.stringify({ character: null }), {
             headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -147,7 +172,7 @@ __serve(async (req) => {
           .eq("discord_user_id", discordUserId)
           .eq("is_active", true)
           .maybeSingle();
-        
+
         return new Response(JSON.stringify({ character }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
@@ -162,7 +187,7 @@ __serve(async (req) => {
           .select("id")
           .eq("guild_id", guildId)
           .single();
-        
+
         if (!guild) {
           return new Response(JSON.stringify({ characters: [] }), {
             headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -175,7 +200,7 @@ __serve(async (req) => {
           .eq("guild_id", guild.id)
           .eq("discord_user_id", discordUserId)
           .order("created_at", { ascending: false });
-        
+
         return new Response(JSON.stringify({ characters: characters || [] }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
@@ -190,7 +215,7 @@ __serve(async (req) => {
           .eq("id", characterId)
           .select()
           .single();
-        
+
         if (error) throw error;
         return new Response(JSON.stringify({ character }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -206,7 +231,7 @@ __serve(async (req) => {
           .eq("id", characterId)
           .select()
           .single();
-        
+
         if (error) throw error;
         return new Response(JSON.stringify({ character }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -222,7 +247,7 @@ __serve(async (req) => {
           .eq("id", characterId)
           .select()
           .single();
-        
+
         if (error) throw error;
         return new Response(JSON.stringify({ character }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -245,10 +270,9 @@ __serve(async (req) => {
   }
 });
 
+const __call = ({ request }: { request: Request }) => __handler(request);
 
-const __call = ({ request }: { request: Request }) => __handler(request)
-
-export const Route = createFileRoute('/api/public/bot-characters')({
+export const Route = createFileRoute("/api/public/bot-characters")({
   server: {
     handlers: {
       GET: __call,
@@ -259,4 +283,4 @@ export const Route = createFileRoute('/api/public/bot-characters')({
       OPTIONS: __call,
     },
   },
-})
+});

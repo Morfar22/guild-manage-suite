@@ -1,71 +1,97 @@
-import React from 'react';
-import { Link } from '@tanstack/react-router';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Gift, Send, Ticket, ShieldAlert, ArrowRight } from 'lucide-react';
-import { useLanguage } from '@/contexts/LanguageContext';
+import React from "react";
+import { Link } from "@tanstack/react-router";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Gift, Send, Ticket, ShieldAlert, ArrowRight } from "lucide-react";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface QuickActionProps {
   icon: React.ElementType;
   label: string;
   description: string;
   to: string;
-  variant?: 'default' | 'primary';
+  variant?: "default" | "primary";
 }
 
 const QuickAction = React.forwardRef<HTMLAnchorElement, QuickActionProps>(
-  ({ icon: Icon, label, description, to, variant = 'default' }, ref) => (
-    <Button variant="ghost" className="h-auto w-full flex items-start gap-3 rounded-xl border border-border/60 bg-secondary/30 p-4 text-left transition-all hover:border-primary/40 hover:bg-secondary/60 group" asChild>
+  ({ icon: Icon, label, description, to, variant = "default" }, ref) => (
+    <Button
+      variant="ghost"
+      className="h-auto w-full flex items-start gap-3 rounded-xl border border-border/60 bg-secondary/30 p-4 text-left transition-all hover:border-primary/40 hover:bg-secondary/60 group"
+      asChild
+    >
       <Link to={to} ref={ref}>
-        <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-border/60 ${variant === 'primary' ? 'bg-primary/15 text-primary' : 'bg-muted text-muted-foreground'}`}>
+        <div
+          className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-border/60 ${variant === "primary" ? "bg-primary/15 text-primary" : "bg-muted text-muted-foreground"}`}
+        >
           <Icon className="h-5 w-5" />
         </div>
         <div className="flex-1 min-w-0">
           <p className="font-medium text-foreground">{label}</p>
-          <p className="text-xs text-muted-foreground line-clamp-1">{description}</p>
+          <p className="text-xs text-muted-foreground line-clamp-1">
+            {description}
+          </p>
         </div>
         <ArrowRight className="h-4 w-4 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-primary" />
       </Link>
     </Button>
-  )
+  ),
 );
 
-QuickAction.displayName = 'QuickAction';
+QuickAction.displayName = "QuickAction";
 
 export function QuickActions() {
   const { t, language } = useLanguage();
-  const isDA = language === 'da';
+  const isDA = language === "da";
 
   return (
     <Card>
       <CardHeader className="pb-3">
-        <CardTitle className="text-lg">{t('quickActions.title')}</CardTitle>
-        <CardDescription>{isDA ? 'Genveje til hyppige handlinger' : 'Shortcuts to frequent actions'}</CardDescription>
+        <CardTitle className="text-lg">{t("quickActions.title")}</CardTitle>
+        <CardDescription>
+          {isDA
+            ? "Genveje til hyppige handlinger"
+            : "Shortcuts to frequent actions"}
+        </CardDescription>
       </CardHeader>
       <CardContent className="grid gap-2">
         <QuickAction
           icon={Gift}
-          label={isDA ? 'Opret Giveaway' : 'Create Giveaway'}
-          description={isDA ? 'Start en ny giveaway' : 'Start a new giveaway'}
+          label={isDA ? "Opret Giveaway" : "Create Giveaway"}
+          description={isDA ? "Start en ny giveaway" : "Start a new giveaway"}
           to="/dashboard/giveaways"
           variant="primary"
         />
         <QuickAction
           icon={Send}
-          label={isDA ? 'Test Velkomst' : 'Test Welcome'}
-          description={isDA ? 'Send en test velkomstbesked' : 'Send a test welcome message'}
+          label={isDA ? "Test Velkomst" : "Test Welcome"}
+          description={
+            isDA ? "Send en test velkomstbesked" : "Send a test welcome message"
+          }
           to="/dashboard/welcome"
         />
         <QuickAction
           icon={Ticket}
-          label={isDA ? 'Se Tickets' : 'View Tickets'}
-          description={isDA ? 'Administrer åbne tickets' : 'Manage open tickets'}
+          label={isDA ? "Se Tickets" : "View Tickets"}
+          description={
+            isDA ? "Administrer åbne tickets" : "Manage open tickets"
+          }
           to="/dashboard/tickets"
         />
         <QuickAction
           icon={ShieldAlert}
           label="AutoMod Logs"
-          description={isDA ? 'Se seneste automod handlinger' : 'View recent automod actions'}
+          description={
+            isDA
+              ? "Se seneste automod handlinger"
+              : "View recent automod actions"
+          }
           to="/dashboard/automod"
         />
       </CardContent>

@@ -8,7 +8,7 @@
  * tree-shaken out of the production SSR bundle.
  */
 export function installSsrStorageShim(): void {
-  if (typeof globalThis.localStorage !== 'undefined') return;
+  if (typeof globalThis.localStorage !== "undefined") return;
 
   const store = new Map<string, string>();
   const memoryStorage: Storage = {
@@ -26,12 +26,15 @@ export function installSsrStorageShim(): void {
     },
   };
 
-  Object.defineProperty(globalThis, 'localStorage', {
+  Object.defineProperty(globalThis, "localStorage", {
     value: memoryStorage,
     configurable: true,
   });
-  if (typeof (globalThis as { sessionStorage?: unknown }).sessionStorage === 'undefined') {
-    Object.defineProperty(globalThis, 'sessionStorage', {
+  if (
+    typeof (globalThis as { sessionStorage?: unknown }).sessionStorage ===
+    "undefined"
+  ) {
+    Object.defineProperty(globalThis, "sessionStorage", {
       value: memoryStorage,
       configurable: true,
     });

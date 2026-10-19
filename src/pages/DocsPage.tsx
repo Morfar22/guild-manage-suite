@@ -1,14 +1,23 @@
-import { Link, useParams } from '@tanstack/react-router';
-import { useLanguage } from '@/contexts/LanguageContext';
-import { findCategory, findPage } from '@/docs';
-import { Badge } from '@/components/ui/badge';
-import { ChevronRight, ArrowRight } from 'lucide-react';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { useMemo } from 'react';
-import { Helmet } from 'react-helmet-async';
+import { Link, useParams } from "@tanstack/react-router";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { findCategory, findPage } from "@/docs";
+import { Badge } from "@/components/ui/badge";
+import { ChevronRight, ArrowRight } from "lucide-react";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { useMemo } from "react";
+import { Helmet } from "react-helmet-async";
 
 export default function DocsPage() {
-  const { category = '', slug = '' } = useParams({ from: '/docs/$category/$slug' });
+  const { category = "", slug = "" } = useParams({
+    from: "/docs/$category/$slug",
+  });
   const { language } = useLanguage();
   const page = findPage(category, slug);
   const cat = findCategory(category);
@@ -27,12 +36,21 @@ export default function DocsPage() {
     return (
       <div className="text-center">
         <Helmet>
-          <title>{language === 'da' ? 'Side ikke fundet – GuildOS Bot Docs' : 'Page not found – GuildOS Bot Docs'}</title>
+          <title>
+            {language === "da"
+              ? "Side ikke fundet – GuildOS Bot Docs"
+              : "Page not found – GuildOS Bot Docs"}
+          </title>
           <meta name="robots" content="noindex" />
         </Helmet>
-        <h1 className="text-2xl font-bold">{language === 'da' ? 'Side ikke fundet' : 'Page not found'}</h1>
-        <Link to="/docs" className="mt-4 inline-block text-primary hover:underline">
-          {language === 'da' ? 'Tilbage til docs' : 'Back to docs'}
+        <h1 className="text-2xl font-bold">
+          {language === "da" ? "Side ikke fundet" : "Page not found"}
+        </h1>
+        <Link
+          to="/docs"
+          className="mt-4 inline-block text-primary hover:underline"
+        >
+          {language === "da" ? "Tilbage til docs" : "Back to docs"}
         </Link>
       </div>
     );
@@ -42,14 +60,13 @@ export default function DocsPage() {
   const pageDescription = page.description[language].slice(0, 155);
   const pageUrl = `https://bot.nethost-solutions.dk/docs/${category}/${slug}`;
   const articleLd = {
-    '@context': 'https://schema.org',
-    '@type': 'TechArticle',
+    "@context": "https://schema.org",
+    "@type": "TechArticle",
     headline: page.title[language],
     description: pageDescription,
-    author: { '@type': 'Organization', name: 'GuildOS Bot' },
+    author: { "@type": "Organization", name: "GuildOS Bot" },
     mainEntityOfPage: pageUrl,
   };
-
 
   return (
     <article className="mx-auto max-w-3xl">
@@ -64,7 +81,9 @@ export default function DocsPage() {
         <script type="application/ld+json">{JSON.stringify(articleLd)}</script>
       </Helmet>
       <nav className="mb-6 flex items-center gap-1 text-sm text-muted-foreground">
-        <Link to="/docs" className="hover:text-foreground">Docs</Link>
+        <Link to="/docs" className="hover:text-foreground">
+          Docs
+        </Link>
         <ChevronRight className="h-3.5 w-3.5" />
         <span>{cat.title[language]}</span>
         <ChevronRight className="h-3.5 w-3.5" />
@@ -72,14 +91,20 @@ export default function DocsPage() {
       </nav>
 
       <header className="mb-8 border-b pb-6">
-        <h1 className="mb-3 text-4xl font-bold tracking-tight">{page.title[language]}</h1>
-        <p className="text-lg text-muted-foreground">{page.description[language]}</p>
+        <h1 className="mb-3 text-4xl font-bold tracking-tight">
+          {page.title[language]}
+        </h1>
+        <p className="text-lg text-muted-foreground">
+          {page.description[language]}
+        </p>
       </header>
 
       <div className="space-y-8">
         {page.sections?.map((s, i) => (
           <section key={i}>
-            <h2 className="mb-3 text-2xl font-semibold">{s.heading[language]}</h2>
+            <h2 className="mb-3 text-2xl font-semibold">
+              {s.heading[language]}
+            </h2>
             <div className="whitespace-pre-line leading-relaxed text-muted-foreground">
               {s.body[language]}
             </div>
@@ -89,7 +114,7 @@ export default function DocsPage() {
         {page.setupSteps && page.setupSteps.length > 0 && (
           <section>
             <h2 className="mb-3 text-2xl font-semibold">
-              {language === 'da' ? 'Opsætning' : 'Setup'}
+              {language === "da" ? "Opsætning" : "Setup"}
             </h2>
             <ol className="space-y-3">
               {page.setupSteps.map((step, i) => (
@@ -97,7 +122,9 @@ export default function DocsPage() {
                   <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-semibold text-primary">
                     {i + 1}
                   </span>
-                  <span className="leading-relaxed text-muted-foreground">{step[language]}</span>
+                  <span className="leading-relaxed text-muted-foreground">
+                    {step[language]}
+                  </span>
                 </li>
               ))}
             </ol>
@@ -107,16 +134,22 @@ export default function DocsPage() {
         {page.commands && page.commands.length > 0 && (
           <section>
             <h2 className="mb-3 text-2xl font-semibold">
-              {language === 'da' ? 'Kommandoer' : 'Commands'}
+              {language === "da" ? "Kommandoer" : "Commands"}
             </h2>
             <div className="overflow-x-auto rounded-lg border">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>{language === 'da' ? 'Kommando' : 'Command'}</TableHead>
+                    <TableHead>
+                      {language === "da" ? "Kommando" : "Command"}
+                    </TableHead>
                     <TableHead>Prefix</TableHead>
-                    <TableHead>{language === 'da' ? 'Beskrivelse' : 'Description'}</TableHead>
-                    <TableHead>{language === 'da' ? 'Tilladelse' : 'Permission'}</TableHead>
+                    <TableHead>
+                      {language === "da" ? "Beskrivelse" : "Description"}
+                    </TableHead>
+                    <TableHead>
+                      {language === "da" ? "Tilladelse" : "Permission"}
+                    </TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -124,11 +157,15 @@ export default function DocsPage() {
                     <TableRow key={c.name}>
                       <TableCell className="font-mono">{c.name}</TableCell>
                       <TableCell className="font-mono text-muted-foreground">
-                        {c.prefix ?? '—'}
+                        {c.prefix ?? "—"}
                       </TableCell>
                       <TableCell>{c.description[language]}</TableCell>
                       <TableCell>
-                        {c.permission ? <Badge variant="outline">{c.permission}</Badge> : '—'}
+                        {c.permission ? (
+                          <Badge variant="outline">{c.permission}</Badge>
+                        ) : (
+                          "—"
+                        )}
                       </TableCell>
                     </TableRow>
                   ))}
@@ -161,21 +198,31 @@ export default function DocsPage() {
             to={`/docs/${prev.category}/${prev.slug}` as any}
             className="group flex flex-col rounded-lg border p-4 transition-colors hover:border-primary/50"
           >
-            <span className="text-xs text-muted-foreground">{language === 'da' ? 'Forrige' : 'Previous'}</span>
-            <span className="font-medium group-hover:text-primary">← {prev.title[language]}</span>
+            <span className="text-xs text-muted-foreground">
+              {language === "da" ? "Forrige" : "Previous"}
+            </span>
+            <span className="font-medium group-hover:text-primary">
+              ← {prev.title[language]}
+            </span>
           </Link>
-        ) : <div />}
+        ) : (
+          <div />
+        )}
         {next ? (
           <Link
             to={`/docs/${next.category}/${next.slug}` as any}
             className="group ml-auto flex flex-col rounded-lg border p-4 text-right transition-colors hover:border-primary/50"
           >
-            <span className="text-xs text-muted-foreground">{language === 'da' ? 'Næste' : 'Next'}</span>
+            <span className="text-xs text-muted-foreground">
+              {language === "da" ? "Næste" : "Next"}
+            </span>
             <span className="flex items-center gap-1 font-medium group-hover:text-primary">
               {next.title[language]} <ArrowRight className="h-4 w-4" />
             </span>
           </Link>
-        ) : <div />}
+        ) : (
+          <div />
+        )}
       </nav>
     </article>
   );

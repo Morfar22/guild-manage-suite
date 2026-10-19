@@ -1,7 +1,7 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
-import { useGuild } from '@/contexts/GuildContext';
-import { useToast } from '@/hooks/use-toast';
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { useGuild } from "@/contexts/GuildContext";
+import { useToast } from "@/hooks/use-toast";
 
 export interface UserLevel {
   id: string;
@@ -43,7 +43,7 @@ export interface XPMultiplier {
   id: string;
   guild_id: string;
   name: string;
-  multiplier_type: 'role' | 'channel' | 'global';
+  multiplier_type: "role" | "channel" | "global";
   target_id: string | null;
   multiplier: number;
   enabled: boolean;
@@ -69,15 +69,15 @@ export function useLeaderboard() {
   const { selectedGuild } = useGuild();
 
   return useQuery({
-    queryKey: ['leaderboard', selectedGuild?.id],
+    queryKey: ["leaderboard", selectedGuild?.id],
     queryFn: async () => {
       if (!selectedGuild?.id) return [];
 
       const { data, error } = await supabase
-        .from('user_levels')
-        .select('*')
-        .eq('guild_id', selectedGuild.id)
-        .order('xp', { ascending: false })
+        .from("user_levels")
+        .select("*")
+        .eq("guild_id", selectedGuild.id)
+        .order("xp", { ascending: false })
         .limit(100);
 
       if (error) throw error;
@@ -93,15 +93,15 @@ export function useLevelRoles() {
   const { toast } = useToast();
 
   const query = useQuery({
-    queryKey: ['level-roles', selectedGuild?.id],
+    queryKey: ["level-roles", selectedGuild?.id],
     queryFn: async () => {
       if (!selectedGuild?.id) return [];
 
       const { data, error } = await supabase
-        .from('level_roles')
-        .select('*')
-        .eq('guild_id', selectedGuild.id)
-        .order('level_required', { ascending: true });
+        .from("level_roles")
+        .select("*")
+        .eq("guild_id", selectedGuild.id)
+        .order("level_required", { ascending: true });
 
       if (error) throw error;
       return data as LevelRole[];
@@ -110,11 +110,19 @@ export function useLevelRoles() {
   });
 
   const addLevelRole = useMutation({
-    mutationFn: async ({ level_required, role_id, role_name }: { level_required: number; role_id: string; role_name: string }) => {
-      if (!selectedGuild?.id) throw new Error('No guild selected');
+    mutationFn: async ({
+      level_required,
+      role_id,
+      role_name,
+    }: {
+      level_required: number;
+      role_id: string;
+      role_name: string;
+    }) => {
+      if (!selectedGuild?.id) throw new Error("No guild selected");
 
       const { data, error } = await supabase
-        .from('level_roles')
+        .from("level_roles")
         .insert({
           guild_id: selectedGuild.id,
           level_required,
@@ -128,29 +136,41 @@ export function useLevelRoles() {
       return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['level-roles', selectedGuild?.id] });
-      toast({ title: 'Level rolle tilføjet' });
+      queryClient.invalidateQueries({
+        queryKey: ["level-roles", selectedGuild?.id],
+      });
+      toast({ title: "Level rolle tilføjet" });
     },
     onError: (error: Error) => {
-      toast({ title: 'Fejl', description: error.message, variant: 'destructive' });
+      toast({
+        title: "Fejl",
+        description: error.message,
+        variant: "destructive",
+      });
     },
   });
 
   const deleteLevelRole = useMutation({
     mutationFn: async (roleId: string) => {
       const { error } = await supabase
-        .from('level_roles')
+        .from("level_roles")
         .delete()
-        .eq('id', roleId);
+        .eq("id", roleId);
 
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['level-roles', selectedGuild?.id] });
-      toast({ title: 'Level rolle slettet' });
+      queryClient.invalidateQueries({
+        queryKey: ["level-roles", selectedGuild?.id],
+      });
+      toast({ title: "Level rolle slettet" });
     },
     onError: (error: Error) => {
-      toast({ title: 'Fejl', description: error.message, variant: 'destructive' });
+      toast({
+        title: "Fejl",
+        description: error.message,
+        variant: "destructive",
+      });
     },
   });
 
@@ -163,14 +183,14 @@ export function useLevelingSettings() {
   const { toast } = useToast();
 
   const query = useQuery({
-    queryKey: ['leveling-settings', selectedGuild?.id],
+    queryKey: ["leveling-settings", selectedGuild?.id],
     queryFn: async () => {
       if (!selectedGuild?.id) return null;
 
       const { data, error } = await supabase
-        .from('leveling_settings')
-        .select('*')
-        .eq('guild_id', selectedGuild.id)
+        .from("leveling_settings")
+        .select("*")
+        .eq("guild_id", selectedGuild.id)
         .maybeSingle();
 
       if (error) throw error;
@@ -181,20 +201,20 @@ export function useLevelingSettings() {
 
   const updateSettings = useMutation({
     mutationFn: async (settings: Partial<LevelingSettings>) => {
-      if (!selectedGuild?.id) throw new Error('No guild selected');
+      if (!selectedGuild?.id) throw new Error("No guild selected");
 
       // Check if settings exist
       const { data: existing } = await supabase
-        .from('leveling_settings')
-        .select('id')
-        .eq('guild_id', selectedGuild.id)
+        .from("leveling_settings")
+        .select("id")
+        .eq("guild_id", selectedGuild.id)
         .maybeSingle();
 
       if (existing) {
         const { data, error } = await supabase
-          .from('leveling_settings')
+          .from("leveling_settings")
           .update(settings)
-          .eq('guild_id', selectedGuild.id)
+          .eq("guild_id", selectedGuild.id)
           .select()
           .single();
 
@@ -202,7 +222,7 @@ export function useLevelingSettings() {
         return data;
       } else {
         const { data, error } = await supabase
-          .from('leveling_settings')
+          .from("leveling_settings")
           .insert({
             guild_id: selectedGuild.id,
             ...settings,
@@ -215,11 +235,17 @@ export function useLevelingSettings() {
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['leveling-settings', selectedGuild?.id] });
-      toast({ title: 'Indstillinger gemt' });
+      queryClient.invalidateQueries({
+        queryKey: ["leveling-settings", selectedGuild?.id],
+      });
+      toast({ title: "Indstillinger gemt" });
     },
     onError: (error: Error) => {
-      toast({ title: 'Fejl', description: error.message, variant: 'destructive' });
+      toast({
+        title: "Fejl",
+        description: error.message,
+        variant: "destructive",
+      });
     },
   });
 

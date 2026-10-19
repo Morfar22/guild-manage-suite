@@ -1,24 +1,33 @@
 // @ts-nocheck
-import { decryptBotToken as simpleDecrypt } from '@/lib/server/bot-token-crypto'
+import { decryptBotToken as simpleDecrypt } from "@/lib/server/bot-token-crypto";
 // Migrated from Supabase Edge Function `bot-tickets` to a TanStack server route.
-import { createFileRoute } from '@tanstack/react-router'
-import { createClient } from '@supabase/supabase-js'
+import { createFileRoute } from "@tanstack/react-router";
+import { createClient } from "@supabase/supabase-js";
 
-const __env = (k: string) => process.env[k] ?? (k === 'SUPABASE_ANON_KEY' ? process.env['SUPABASE_PUBLISHABLE_KEY'] : undefined)
-let __handler: (req: Request) => Response | Promise<Response>
-const __serve = (fn: any, _opts?: any) => { __handler = fn }
-
+const __env = (k: string) =>
+  process.env[k] ??
+  (k === "SUPABASE_ANON_KEY"
+    ? process.env["SUPABASE_PUBLISHABLE_KEY"]
+    : undefined);
+let __handler: (req: Request) => Response | Promise<Response>;
+const __serve = (fn: any, _opts?: any) => {
+  __handler = fn;
+};
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-bot-secret",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type, x-bot-secret",
 };
 
-async function checkIPWhitelist(req: Request, supabase: any): Promise<{ allowed: boolean; ip: string }> {
-  const clientIp = 
-    req.headers.get("cf-connecting-ip") || 
-    req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || 
-    req.headers.get("x-real-ip") || 
+async function checkIPWhitelist(
+  req: Request,
+  supabase: any,
+): Promise<{ allowed: boolean; ip: string }> {
+  const clientIp =
+    req.headers.get("cf-connecting-ip") ||
+    req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+    req.headers.get("x-real-ip") ||
     "unknown";
 
   // Check if whitelist has any entries
@@ -46,8 +55,10 @@ async function checkIPWhitelist(req: Request, supabase: any): Promise<{ allowed:
   return { allowed: !!whitelistData, ip: clientIp };
 }
 
-
-async function getBotTokenForGuild(supabase: any, guildId: string): Promise<string> {
+async function getBotTokenForGuild(
+  supabase: any,
+  guildId: string,
+): Promise<string> {
   const { data: settings } = await supabase
     .from("guild_bot_settings")
     .select("bot_token_encrypted")
@@ -104,7 +115,7 @@ __serve(async (req) => {
 
   const supabase = createClient(
     __env("SUPABASE_URL")!,
-    __env("SUPABASE_SERVICE_ROLE_KEY")!
+    __env("SUPABASE_SERVICE_ROLE_KEY")!,
   );
 
   // Check IP whitelist
@@ -112,8 +123,14 @@ __serve(async (req) => {
   if (!ipCheck.allowed) {
     console.error(`IP not whitelisted: ${ipCheck.ip}`);
     return new Response(
-      JSON.stringify({ error: "Forbidden - IP not whitelisted", ip: ipCheck.ip }),
-      { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      JSON.stringify({
+        error: "Forbidden - IP not whitelisted",
+        ip: ipCheck.ip,
+      }),
+      {
+        status: 403,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      },
     );
   }
 
@@ -155,7 +172,7 @@ __serve(async (req) => {
           .select("*, guilds!inner(id, guild_id)")
           .eq("id", categoryId)
           .single();
-        
+
         if (error) throw error;
         return new Response(JSON.stringify({ category }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -192,7 +209,17 @@ __serve(async (req) => {
       }
 
       case "createTicket": {
-        const { guildId, categoryId, channelId, creatorId, creatorName, ticketType, answers, applicationType, subject } = data;
+        const {
+          guildId,
+          categoryId,
+          channelId,
+          creatorId,
+          creatorName,
+          ticketType,
+          answers,
+          applicationType,
+          subject,
+        } = data;
         const { data: ticket, error } = await supabase
           .from("tickets")
           .insert({
@@ -207,7 +234,7 @@ __serve(async (req) => {
           })
           .select()
           .single();
-        
+
         if (error) throw error;
 
         // If this is an application-type ticket, also insert into applications table
@@ -223,7 +250,7 @@ __serve(async (req) => {
               status: "pending",
               answers: answers || [],
             });
-          
+
           if (appError) {
             console.error("Failed to create application record:", appError);
           }
@@ -276,12 +303,15 @@ __serve(async (req) => {
           });
         }
         if (current.claimed_by_id && current.claimed_by_id !== claimedById) {
-          return new Response(JSON.stringify({
-            error: `Ticket is already claimed by ${current.claimed_by_name || current.claimed_by_id}`,
-          }), {
-            status: 409,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          });
+          return new Response(
+            JSON.stringify({
+              error: `Ticket is already claimed by ${current.claimed_by_name || current.claimed_by_id}`,
+            }),
+            {
+              status: 409,
+              headers: { ...corsHeaders, "Content-Type": "application/json" },
+            },
+          );
         }
 
         const { error } = await supabase
@@ -318,18 +348,28 @@ __serve(async (req) => {
       }
 
       case "saveMessage": {
-        const { ticketChannelId, authorId, authorName, authorAvatar, content, attachments } = data;
+        const {
+          ticketChannelId,
+          authorId,
+          authorName,
+          authorAvatar,
+          content,
+          attachments,
+        } = data;
         // Find ticket by channel_id
         const { data: msgTicket, error: msgTicketErr } = await supabase
           .from("tickets")
           .select("id")
           .eq("channel_id", ticketChannelId)
           .maybeSingle();
-        
+
         if (msgTicketErr || !msgTicket) {
-          return new Response(JSON.stringify({ success: false, error: "Ticket not found" }), {
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          });
+          return new Response(
+            JSON.stringify({ success: false, error: "Ticket not found" }),
+            {
+              headers: { ...corsHeaders, "Content-Type": "application/json" },
+            },
+          );
         }
 
         const { error: msgErr } = await supabase
@@ -351,20 +391,27 @@ __serve(async (req) => {
 
       case "closeTicket": {
         const { channelId, closedById, closedByName } = data;
-        
+
         // First get the ticket and its messages for transcript
         const { data: ticket, error: ticketError } = await supabase
           .from("tickets")
           .select("*, ticket_messages(*)")
           .eq("channel_id", channelId)
           .single();
-        
+
         if (ticketError) throw ticketError;
 
         if (ticket.status === "closed") {
-          return new Response(JSON.stringify({ success: true, ticket_id: ticket.id, already_closed: true }), {
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          });
+          return new Response(
+            JSON.stringify({
+              success: true,
+              ticket_id: ticket.id,
+              already_closed: true,
+            }),
+            {
+              headers: { ...corsHeaders, "Content-Type": "application/json" },
+            },
+          );
         }
 
         // Update ticket status
@@ -377,7 +424,7 @@ __serve(async (req) => {
             status: "closed",
           })
           .eq("channel_id", channelId);
-        
+
         if (error) throw error;
 
         // Check if transcript channel is configured
@@ -387,65 +434,116 @@ __serve(async (req) => {
           .eq("guild_id", ticket.guild_id)
           .maybeSingle();
 
-        if (settings?.transcript_channel_id && settings.enable_transcripts !== false) {
+        if (
+          settings?.transcript_channel_id &&
+          settings.enable_transcripts !== false
+        ) {
           try {
-            const botToken = await getBotTokenForGuild(supabase, ticket.guild_id);
+            const botToken = await getBotTokenForGuild(
+              supabase,
+              ticket.guild_id,
+            );
             const messages = ticket.ticket_messages || [];
             const messageCount = messages.length;
             const createdAt = new Date(ticket.created_at);
             const closedAt = new Date();
-            const duration = Math.round((closedAt.getTime() - createdAt.getTime()) / (1000 * 60)); // minutes
+            const duration = Math.round(
+              (closedAt.getTime() - createdAt.getTime()) / (1000 * 60),
+            ); // minutes
 
             // Build transcript preview (last 10 messages)
             const recentMessages = messages
-              .sort((a: any, b: any) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
+              .sort(
+                (a: any, b: any) =>
+                  new Date(a.created_at).getTime() -
+                  new Date(b.created_at).getTime(),
+              )
               .slice(-10)
-              .map((m: any) => `**${m.author_name || m.author_id}:** ${m.content.slice(0, 100)}${m.content.length > 100 ? '...' : ''}`)
-              .join('\n');
+              .map(
+                (m: any) =>
+                  `**${m.author_name || m.author_id}:** ${m.content.slice(0, 100)}${m.content.length > 100 ? "..." : ""}`,
+              )
+              .join("\n");
 
             const embed = {
               title: `📝 Ticket Transcript`,
               description: `Ticket from **${ticket.creator_name || ticket.creator_id}** has been closed.`,
-              color: 0x5865F2,
+              color: 0x5865f2,
               fields: [
-                { name: "Type", value: ticket.ticket_type === "application" ? "Application" : "Support", inline: true },
+                {
+                  name: "Type",
+                  value:
+                    ticket.ticket_type === "application"
+                      ? "Application"
+                      : "Support",
+                  inline: true,
+                },
                 { name: "Messages", value: String(messageCount), inline: true },
                 { name: "Duration", value: `${duration} min`, inline: true },
-                { name: "Created", value: `<t:${Math.floor(createdAt.getTime() / 1000)}:R>`, inline: true },
-                { name: "Closed by", value: closedByName || closedById, inline: true },
-                ...(recentMessages ? [{ name: "Recent messages", value: recentMessages.slice(0, 1024), inline: false }] : []),
+                {
+                  name: "Created",
+                  value: `<t:${Math.floor(createdAt.getTime() / 1000)}:R>`,
+                  inline: true,
+                },
+                {
+                  name: "Closed by",
+                  value: closedByName || closedById,
+                  inline: true,
+                },
+                ...(recentMessages
+                  ? [
+                      {
+                        name: "Recent messages",
+                        value: recentMessages.slice(0, 1024),
+                        inline: false,
+                      },
+                    ]
+                  : []),
               ],
               timestamp: closedAt.toISOString(),
             };
 
-            await discordApi(`/channels/${settings.transcript_channel_id}/messages`, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ embeds: [embed] }),
-            }, botToken);
+            await discordApi(
+              `/channels/${settings.transcript_channel_id}/messages`,
+              {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ embeds: [embed] }),
+              },
+              botToken,
+            );
 
-            console.log(`Transcript sent to channel ${settings.transcript_channel_id}`);
+            console.log(
+              `Transcript sent to channel ${settings.transcript_channel_id}`,
+            );
           } catch (transcriptError) {
             console.error("Failed to send transcript:", transcriptError);
           }
         }
 
-        return new Response(JSON.stringify({ success: true, ticket_id: ticket.id }), {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+        return new Response(
+          JSON.stringify({ success: true, ticket_id: ticket.id }),
+          {
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          },
+        );
       }
 
       case "getTicket": {
         const { channelId } = data;
         const { data: ticket, error: ticketErr } = await supabase
           .from("tickets")
-          .select("id, channel_id, creator_id, creator_name, status, ticket_type, category_id, claimed_by_id, claimed_by_name, ticket_categories(staff_role_id, name)")
+          .select(
+            "id, channel_id, creator_id, creator_name, status, ticket_type, category_id, claimed_by_id, claimed_by_name, ticket_categories(staff_role_id, name)",
+          )
           .eq("channel_id", channelId)
           .maybeSingle();
 
         if (ticketErr) throw ticketErr;
         // Map creator_id to creator_discord_id for the bot handler
-        const mapped = ticket ? { ...ticket, creator_discord_id: ticket.creator_id } : null;
+        const mapped = ticket
+          ? { ...ticket, creator_discord_id: ticket.creator_id }
+          : null;
         return new Response(JSON.stringify({ ticket: mapped }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
@@ -467,10 +565,9 @@ __serve(async (req) => {
   }
 });
 
+const __call = ({ request }: { request: Request }) => __handler(request);
 
-const __call = ({ request }: { request: Request }) => __handler(request)
-
-export const Route = createFileRoute('/api/public/bot-tickets')({
+export const Route = createFileRoute("/api/public/bot-tickets")({
   server: {
     handlers: {
       GET: __call,
@@ -481,4 +578,4 @@ export const Route = createFileRoute('/api/public/bot-tickets')({
       OPTIONS: __call,
     },
   },
-})
+});

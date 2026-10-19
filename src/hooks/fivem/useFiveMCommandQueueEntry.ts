@@ -22,17 +22,20 @@ export function useFiveMCommandQueueEntry(commandId?: string | null) {
     queryKey: ["fivem-command-queue-entry", selectedGuild?.id, commandId],
     enabled: !!selectedGuild?.id && !!commandId,
     queryFn: async () => {
-      if (!selectedGuild?.id || !commandId) throw new Error("Missing guild/command id");
+      if (!selectedGuild?.id || !commandId)
+        throw new Error("Missing guild/command id");
 
       const { data, error } = await supabase
         .from("fivem_command_queue")
-        .select("id, guild_id, server_id, command_name, status, result, executed_at, created_at")
+        .select(
+          "id, guild_id, server_id, command_name, status, result, executed_at, created_at",
+        )
         .eq("guild_id", selectedGuild.id)
         .eq("id", commandId)
         .single();
 
       if (error) throw error;
-      
+
       return data as FiveMCommandQueueEntry;
     },
     // Poll every second while pending - use staleTime 0 to always refetch
@@ -41,7 +44,8 @@ export function useFiveMCommandQueueEntry(commandId?: string | null) {
       const entry = query.state.data as FiveMCommandQueueEntry | undefined;
       // Keep polling while the bridge still owns/executes the command.
       if (!entry) return 750;
-      if (entry.status === "pending" || entry.status === "processing") return 750;
+      if (entry.status === "pending" || entry.status === "processing")
+        return 750;
       return false;
     },
   });

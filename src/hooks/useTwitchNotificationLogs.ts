@@ -1,12 +1,12 @@
-import { useState, useEffect, useCallback } from 'react';
-import { useGuild } from '@/contexts/GuildContext';
-import { supabase } from '@/integrations/supabase/client';
+import { useState, useEffect, useCallback } from "react";
+import { useGuild } from "@/contexts/GuildContext";
+import { supabase } from "@/integrations/supabase/client";
 
 export interface TwitchNotificationLog {
   id: string;
   guild_id: string;
   streamer_id: string;
-  event_type: 'live' | 'offline';
+  event_type: "live" | "offline";
   stream_title: string | null;
   game_name: string | null;
   viewer_count: number | null;
@@ -31,16 +31,18 @@ export function useTwitchNotificationLogs() {
     try {
       // Fetch logs with streamer info
       const { data, error } = await supabase
-        .from('twitch_notification_logs')
-        .select(`
+        .from("twitch_notification_logs")
+        .select(
+          `
           *,
           twitch_streamers (
             display_name,
             profile_image_url
           )
-        `)
-        .eq('guild_id', selectedGuild.id)
-        .order('sent_at', { ascending: false })
+        `,
+        )
+        .eq("guild_id", selectedGuild.id)
+        .order("sent_at", { ascending: false })
         .limit(100);
 
       if (error) throw error;
@@ -53,7 +55,7 @@ export function useTwitchNotificationLogs() {
 
       setLogs(formattedLogs);
     } catch (error) {
-      console.error('Error fetching notification logs:', error);
+      console.error("Error fetching notification logs:", error);
     }
   }, [selectedGuild?.id]);
 
@@ -69,14 +71,18 @@ export function useTwitchNotificationLogs() {
     // Subscribe to realtime
     const channel = supabase
       .channel(`twitch-logs-${selectedGuild.id}`)
-      .on('postgres_changes', {
-        event: 'INSERT',
-        schema: 'public',
-        table: 'twitch_notification_logs',
-        filter: `guild_id=eq.${selectedGuild.id}`,
-      }, () => {
-        fetchLogs();
-      })
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "twitch_notification_logs",
+          filter: `guild_id=eq.${selectedGuild.id}`,
+        },
+        () => {
+          fetchLogs();
+        },
+      )
       .subscribe();
 
     return () => {

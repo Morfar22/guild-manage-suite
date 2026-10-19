@@ -1,69 +1,114 @@
 // @ts-nocheck
 // Migrated from Supabase Edge Function `invite-tracker` to a TanStack server route.
-import { createFileRoute } from '@tanstack/react-router'
-import { requireUser, requireGuildAdmin, requireBotSecret } from '@/lib/server/api-auth';
-import { createClient } from '@supabase/supabase-js'
+import { createFileRoute } from "@tanstack/react-router";
+import {
+  requireUser,
+  requireGuildAdmin,
+  requireBotSecret,
+} from "@/lib/server/api-auth";
+import { createClient } from "@supabase/supabase-js";
 
-const __env = (k: string) => process.env[k] ?? (k === 'SUPABASE_ANON_KEY' ? process.env['SUPABASE_PUBLISHABLE_KEY'] : undefined)
-let __handler: (req: Request) => Response | Promise<Response>
-const __serve = (fn: any, _opts?: any) => { __handler = fn }
-
+const __env = (k: string) =>
+  process.env[k] ??
+  (k === "SUPABASE_ANON_KEY"
+    ? process.env["SUPABASE_PUBLISHABLE_KEY"]
+    : undefined);
+let __handler: (req: Request) => Response | Promise<Response>;
+const __serve = (fn: any, _opts?: any) => {
+  __handler = fn;
+};
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-bot-secret",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type, x-bot-secret",
 };
 
 __serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+  if (req.method === "OPTIONS")
+    return new Response("ok", { headers: corsHeaders });
 
   const supabase = createClient(
     __env("SUPABASE_URL")!,
-    __env("SUPABASE_SERVICE_ROLE_KEY")!
+    __env("SUPABASE_SERVICE_ROLE_KEY")!,
   );
 
   try {
     const { action, data } = await req.json();
 
-    const isBot = Boolean(req.headers.get('x-bot-secret'));
+    const isBot = Boolean(req.headers.get("x-bot-secret"));
     let dashboardUser = null;
     if (isBot) requireBotSecret(req);
     else dashboardUser = await requireUser(req, supabase);
     const botActions = ["syncInvites", "logInviteUse", "markInviteLeft"];
-    if (botActions.includes(action) && !isBot) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+    if (botActions.includes(action) && !isBot)
+      return Response.json({ error: "Unauthorized" }, { status: 401 });
 
     // Get internal guild UUID from Discord guild_id
-    const getGuildUuid = async (discordGuildId: string): Promise<string | null> => {
-      const { data: g } = await supabase.from("guilds").select("id").eq("guild_id", discordGuildId).maybeSingle();
-      if (g?.id && dashboardUser) await requireGuildAdmin(supabase, dashboardUser.id, g.id);
+    const getGuildUuid = async (
+      discordGuildId: string,
+    ): Promise<string | null> => {
+      const { data: g } = await supabase
+        .from("guilds")
+        .select("id")
+        .eq("guild_id", discordGuildId)
+        .maybeSingle();
+      if (g?.id && dashboardUser)
+        await requireGuildAdmin(supabase, dashboardUser.id, g.id);
       return g?.id ?? null;
     };
 
     switch (action) {
       case "syncInvites": {
-        const { guildId, invites } = data as { guildId: string; invites: any[] };
+        const { guildId, invites } = data as {
+          guildId: string;
+          invites: any[];
+        };
         const uuid = await getGuildUuid(guildId);
-        if (!uuid) return new Response(JSON.stringify({ error: "Guild not found" }), { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        if (!uuid)
+          return new Response(JSON.stringify({ error: "Guild not found" }), {
+            status: 404,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
 
         for (const inv of invites) {
-          await supabase.from("invite_tracker").upsert({
-            guild_id: uuid,
-            invite_code: inv.invite_code,
-            inviter_discord_id: inv.inviter_discord_id,
-            inviter_username: inv.inviter_username,
-            channel_id: inv.channel_id,
-            uses: inv.uses,
-            max_uses: inv.max_uses,
-            expires_at: inv.expires_at,
-          }, { onConflict: "guild_id,invite_code" });
+          await supabase.from("invite_tracker").upsert(
+            {
+              guild_id: uuid,
+              invite_code: inv.invite_code,
+              inviter_discord_id: inv.inviter_discord_id,
+              inviter_username: inv.inviter_username,
+              channel_id: inv.channel_id,
+              uses: inv.uses,
+              max_uses: inv.max_uses,
+              expires_at: inv.expires_at,
+            },
+            { onConflict: "guild_id,invite_code" },
+          );
         }
-        return new Response(JSON.stringify({ success: true, count: invites.length }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        return new Response(
+          JSON.stringify({ success: true, count: invites.length }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
       }
 
       case "logInviteUse": {
-        const { guildId, inviteCode, inviterDiscordId, inviterUsername, joinedUserId, joinedUsername, joinedAccountCreatedAt, isFake } = data;
+        const {
+          guildId,
+          inviteCode,
+          inviterDiscordId,
+          inviterUsername,
+          joinedUserId,
+          joinedUsername,
+          joinedAccountCreatedAt,
+          isFake,
+        } = data;
         const uuid = await getGuildUuid(guildId);
-        if (!uuid) return new Response(JSON.stringify({ error: "Guild not found" }), { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        if (!uuid)
+          return new Response(JSON.stringify({ error: "Guild not found" }), {
+            status: 404,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
 
         await supabase.from("invite_uses").insert({
           guild_id: uuid,
@@ -109,15 +154,29 @@ __serve(async (req) => {
           }
         }
 
-        return new Response(JSON.stringify({ success: true, inviter: { discord_id: inviterDiscordId, username: inviterUsername }, stats }), {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+        return new Response(
+          JSON.stringify({
+            success: true,
+            inviter: {
+              discord_id: inviterDiscordId,
+              username: inviterUsername,
+            },
+            stats,
+          }),
+          {
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          },
+        );
       }
 
       case "markInviteLeft": {
         const { guildId, joinedUserId } = data;
         const uuid = await getGuildUuid(guildId);
-        if (!uuid) return new Response(JSON.stringify({ error: "Guild not found" }), { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        if (!uuid)
+          return new Response(JSON.stringify({ error: "Guild not found" }), {
+            status: 404,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
 
         await supabase
           .from("invite_uses")
@@ -126,13 +185,18 @@ __serve(async (req) => {
           .eq("joined_user_id", joinedUserId)
           .eq("has_left", false);
 
-        return new Response(JSON.stringify({ success: true }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        return new Response(JSON.stringify({ success: true }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
       }
 
       case "getLeaderboard": {
         const { guildId } = data;
         const uuid = await getGuildUuid(guildId);
-        if (!uuid) return new Response(JSON.stringify({ leaderboard: [] }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        if (!uuid)
+          return new Response(JSON.stringify({ leaderboard: [] }), {
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
 
         const { data: rows } = await supabase
           .from("invite_uses")
@@ -140,25 +204,50 @@ __serve(async (req) => {
           .eq("guild_id", uuid)
           .not("inviter_discord_id", "is", null);
 
-        const map = new Map<string, { id: string; username: string; real: number; fake: number; left: number; total: number }>();
+        const map = new Map<
+          string,
+          {
+            id: string;
+            username: string;
+            real: number;
+            fake: number;
+            left: number;
+            total: number;
+          }
+        >();
         (rows ?? []).forEach((r: any) => {
           const id = r.inviter_discord_id;
           if (!id) return;
-          if (!map.has(id)) map.set(id, { id, username: r.inviter_username || 'Unknown', real: 0, fake: 0, left: 0, total: 0 });
+          if (!map.has(id))
+            map.set(id, {
+              id,
+              username: r.inviter_username || "Unknown",
+              real: 0,
+              fake: 0,
+              left: 0,
+              total: 0,
+            });
           const e = map.get(id)!;
           e.total += 1;
           if (r.is_fake) e.fake += 1;
           else if (r.has_left) e.left += 1;
           else e.real += 1;
         });
-        const leaderboard = Array.from(map.values()).sort((a, b) => b.real - a.real);
-        return new Response(JSON.stringify({ leaderboard }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        const leaderboard = Array.from(map.values()).sort(
+          (a, b) => b.real - a.real,
+        );
+        return new Response(JSON.stringify({ leaderboard }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
       }
 
       case "getRecent": {
         const { guildId, limit = 50 } = data;
         const uuid = await getGuildUuid(guildId);
-        if (!uuid) return new Response(JSON.stringify({ recent: [] }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        if (!uuid)
+          return new Response(JSON.stringify({ recent: [] }), {
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
 
         const { data: recent } = await supabase
           .from("invite_uses")
@@ -167,7 +256,9 @@ __serve(async (req) => {
           .order("joined_at", { ascending: false })
           .limit(Math.min(limit, 200));
 
-        return new Response(JSON.stringify({ recent: recent ?? [] }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        return new Response(JSON.stringify({ recent: recent ?? [] }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
       }
 
       default:
@@ -179,17 +270,19 @@ __serve(async (req) => {
   } catch (e: any) {
     if (e instanceof Response) return e;
     console.error("invite-tracker error:", e?.message);
-    return new Response(JSON.stringify({ error: e?.message || "Unknown error" }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return new Response(
+      JSON.stringify({ error: e?.message || "Unknown error" }),
+      {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      },
+    );
   }
 });
 
+const __call = ({ request }: { request: Request }) => __handler(request);
 
-const __call = ({ request }: { request: Request }) => __handler(request)
-
-export const Route = createFileRoute('/api/public/invite-tracker')({
+export const Route = createFileRoute("/api/public/invite-tracker")({
   server: {
     handlers: {
       GET: __call,
@@ -200,4 +293,4 @@ export const Route = createFileRoute('/api/public/invite-tracker')({
       OPTIONS: __call,
     },
   },
-})
+});
