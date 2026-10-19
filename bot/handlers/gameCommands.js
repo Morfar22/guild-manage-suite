@@ -1,3 +1,4 @@
+const { adjustBalance } = require("../utils/economyAtomic");
 /**
  * Game Commands Handler
  *
@@ -216,11 +217,15 @@ function createGameHandlers(client, { supabase } = {}) {
   }
 
   async function settleBet(eco, delta, description) {
-    const newWallet = Math.max(0, (eco.account.wallet || 0) + delta);
-    await supabase
-      .from("economy_accounts")
-      .update({ wallet: newWallet })
-      .eq("id", eco.account.id);
+    // Atomic update; a loss never takes the wallet below zero.
+    let result = await adjustBalance(supabase, eco.account.id, {
+      wallet: delta,
+    });
+    if (!result.ok && result.reason === "insufficient" && delta < 0) {
+      result = await adjustBalance(supabase, eco.account.id, {
+        wallet: -(result.account?.wallet || 0),
+      });
+    }
     await supabase.from("economy_transactions").insert({
       guild_id: eco.guildUuid,
       to_user_id: delta > 0 ? eco.account.user_id : null,
@@ -229,7 +234,9 @@ function createGameHandlers(client, { supabase } = {}) {
       transaction_type: "gambling",
       description,
     });
-    return newWallet;
+    return result.ok
+      ? result.account.wallet
+      : Math.max(0, (eco.account.wallet || 0) + delta);
   }
 
   return {

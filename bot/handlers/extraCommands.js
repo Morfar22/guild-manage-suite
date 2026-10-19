@@ -11,6 +11,8 @@
  *   Object.assign(handlers, createExtraHandlers(client, { supabase, handlers, shopApi }));
  */
 
+const { checkPermissionOrDeny } = require("../utils/permissions");
+const { adjustBalance } = require("../utils/economyAtomic");
 const {
   EmbedBuilder,
   PermissionFlagsBits,
@@ -209,18 +211,24 @@ function createExtraHandlers(client, { supabase, handlers, shopApi } = {}) {
   }
 
   async function addBalance(eco, delta, type, description) {
-    const newWallet = Math.max(0, (eco.account.wallet || 0) + delta);
-    await supabase
-      .from("economy_accounts")
-      .update({
-        wallet: newWallet,
-        total_earned:
-          delta > 0
-            ? (eco.account.total_earned || 0) + delta
-            : eco.account.total_earned,
-        discord_username: eco.account.discord_username,
-      })
-      .eq("id", eco.account.id);
+    // Atomic wallet update (never below zero); total_earned is a statistic.
+    let result = await adjustBalance(supabase, eco.account.id, {
+      wallet: delta,
+    });
+    if (!result.ok && result.reason === "insufficient" && delta < 0) {
+      result = await adjustBalance(supabase, eco.account.id, {
+        wallet: -(result.account?.wallet || 0),
+      });
+    }
+    const newWallet = result.ok
+      ? result.account.wallet
+      : Math.max(0, (eco.account.wallet || 0) + delta);
+    if (delta > 0) {
+      await supabase
+        .from("economy_accounts")
+        .update({ total_earned: (eco.account.total_earned || 0) + delta })
+        .eq("id", eco.account.id);
+    }
     await supabase.from("economy_transactions").insert({
       guild_id: eco.guildUuid,
       to_user_id: delta > 0 ? eco.account.user_id : null,
@@ -233,17 +241,11 @@ function createExtraHandlers(client, { supabase, handlers, shopApi } = {}) {
   }
 
   function requireManageGuild(interaction) {
-    if (
-      !interaction.member?.permissions?.has(PermissionFlagsBits.ManageGuild)
-    ) {
-      interaction.reply({
-        content:
-          '❌ Du skal have "Administrer server" for at bruge denne kommando.',
-        flags: 64,
-      });
-      return false;
-    }
-    return true;
+    return checkPermissionOrDeny(
+      interaction,
+      PermissionFlagsBits.ManageGuild,
+      '❌ Du skal have "Administrer server" for at bruge denne kommando.',
+    );
   }
 
   async function updateLevel(interaction, userId, mutate) {

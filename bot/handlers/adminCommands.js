@@ -26,6 +26,8 @@ const {
   ButtonStyle,
 } = require("discord.js");
 
+const { requirePermission } = require("../utils/permissions");
+
 const BRAND = "#6366F1";
 
 function ephemeral(content) {
@@ -45,35 +47,19 @@ function createAdminHandlers(client, { supabase, handlers, getKazagumo } = {}) {
   }
 
   async function requireManageGuild(interaction) {
-    if (
-      !interaction.member?.permissions?.has(PermissionFlagsBits.ManageGuild)
-    ) {
-      await interaction
-        .reply(
-          ephemeral(
-            '❌ Du skal have "Administrer server" for at bruge denne kommando.',
-          ),
-        )
-        .catch(() => {});
-      return false;
-    }
-    return true;
+    return requirePermission(
+      interaction,
+      PermissionFlagsBits.ManageGuild,
+      '❌ Du skal have "Administrer server" for at bruge denne kommando.',
+    );
   }
 
   async function requireAdmin(interaction) {
-    if (
-      !interaction.member?.permissions?.has(PermissionFlagsBits.Administrator)
-    ) {
-      await interaction
-        .reply(
-          ephemeral(
-            "❌ Du skal være administrator for at bruge denne kommando.",
-          ),
-        )
-        .catch(() => {});
-      return false;
-    }
-    return true;
+    return requirePermission(
+      interaction,
+      PermissionFlagsBits.Administrator,
+      "❌ Du skal være administrator for at bruge denne kommando.",
+    );
   }
 
   async function upsertRow(table, guildUuid, patch) {

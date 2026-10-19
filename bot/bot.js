@@ -32,6 +32,7 @@ if (!/^https?:\/\//i.test(process.env.APP_API_BASE)) {
 }
 
 require("./utils/consoleLogger").installGlobalConsoleLogger();
+const { adjustBalance, transferWallet } = require("./utils/economyAtomic");
 
 const {
   Events,
@@ -2411,14 +2412,23 @@ function createSlashHandlers(client) {
           receiverAccount = newAccount;
         }
 
-        await supabase
-          .from("economy_accounts")
-          .update({ wallet: senderAccount.wallet - amount })
-          .eq("id", senderAccount.id);
-        await supabase
-          .from("economy_accounts")
-          .update({ wallet: (receiverAccount.wallet || 0) + amount })
-          .eq("id", receiverAccount.id);
+        if (!receiverAccount)
+          return interaction.editReply(
+            "❌ Kunne ikke oprette modtagerens konto.",
+          );
+
+        const transfer = await transferWallet(
+          supabase,
+          senderAccount.id,
+          receiverAccount.id,
+          amount,
+        );
+        if (!transfer.ok)
+          return interaction.editReply(
+            transfer.reason === "insufficient"
+              ? "❌ Du har ikke nok penge i din wallet."
+              : "❌ Betalingen kunne ikke gennemføres. Prøv igen.",
+          );
         await supabase.from("economy_transactions").insert({
           guild_id: guild.id,
           to_user_id: target.id,
@@ -2462,13 +2472,16 @@ function createSlashHandlers(client) {
             "❌ Du har ikke nok penge i din wallet.",
           );
 
-        await supabase
-          .from("economy_accounts")
-          .update({
-            wallet: account.wallet - amount,
-            bank: (account.bank || 0) + amount,
-          })
-          .eq("id", account.id);
+        const result = await adjustBalance(supabase, account.id, {
+          wallet: -amount,
+          bank: amount,
+        });
+        if (!result.ok)
+          return interaction.editReply(
+            result.reason === "insufficient"
+              ? "❌ Du har ikke nok penge i din wallet."
+              : "❌ Kunne ikke indsætte penge. Prøv igen.",
+          );
         await interaction.editReply(`🏦 Du indsatte **${amount}** i banken.`);
       } catch (error) {
         await interaction.editReply("❌ Kunne ikke indsætte penge.");
@@ -2498,13 +2511,16 @@ function createSlashHandlers(client) {
         if (!account || (account.bank || 0) < amount)
           return interaction.editReply("❌ Du har ikke nok penge i banken.");
 
-        await supabase
-          .from("economy_accounts")
-          .update({
-            wallet: (account.wallet || 0) + amount,
-            bank: account.bank - amount,
-          })
-          .eq("id", account.id);
+        const result = await adjustBalance(supabase, account.id, {
+          wallet: amount,
+          bank: -amount,
+        });
+        if (!result.ok)
+          return interaction.editReply(
+            result.reason === "insufficient"
+              ? "❌ Du har ikke nok penge i banken."
+              : "❌ Kunne ikke hæve penge. Prøv igen.",
+          );
         await interaction.editReply(`💰 Du hævede **${amount}** fra banken.`);
       } catch (error) {
         await interaction.editReply("❌ Kunne ikke hæve penge.");
@@ -2560,14 +2576,18 @@ function createSlashHandlers(client) {
         if (success) {
           const stolen =
             Math.floor(Math.random() * Math.min(targetAccount.wallet, 200)) + 1;
-          await supabase
-            .from("economy_accounts")
-            .update({ wallet: targetAccount.wallet - stolen })
-            .eq("id", targetAccount.id);
-          await supabase
-            .from("economy_accounts")
-            .update({ wallet: (robberAccount.wallet || 0) + stolen })
-            .eq("id", robberAccount.id);
+          if (!robberAccount)
+            return interaction.editReply("❌ Kunne ikke oprette din konto.");
+          const transfer = await transferWallet(
+            supabase,
+            targetAccount.id,
+            robberAccount.id,
+            stolen,
+          );
+          if (!transfer.ok)
+            return interaction.editReply(
+              "❌ Røveriet mislykkedes, offeret har ikke længere pengene.",
+            );
           await supabase.from("economy_transactions").insert({
             guild_id: guild.id,
             to_user_id: interaction.user.id,
@@ -2582,11 +2602,10 @@ function createSlashHandlers(client) {
         } else {
           const fine = Math.floor(Math.random() * 50) + 10;
           const actualFine = Math.min(fine, robberAccount.wallet || 0);
-          if (actualFine > 0) {
-            await supabase
-              .from("economy_accounts")
-              .update({ wallet: (robberAccount.wallet || 0) - actualFine })
-              .eq("id", robberAccount.id);
+          if (actualFine > 0 && robberAccount) {
+            await adjustBalance(supabase, robberAccount.id, {
+              wallet: -actualFine,
+            });
           }
           await interaction.editReply(
             `👮 Du blev fanget! Du mistede **${actualFine}** i bøde.`,

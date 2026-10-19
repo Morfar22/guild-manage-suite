@@ -4,6 +4,7 @@
  * Manages a shop where users can buy items (roles, etc.) with economy currency.
  */
 
+const { adjustBalance } = require("../utils/economyAtomic");
 const { EmbedBuilder } = require("discord.js");
 
 const shopCache = new Map();
@@ -127,19 +128,41 @@ function setupCurrencyShopHandler(client, supabase, options = {}) {
       return;
     }
 
-    // Deduct
-    await supabase
-      .from("economy_accounts")
-      .update({ wallet: balance - item.price })
-      .eq("guild_id", guild.id)
-      .eq("user_id", interaction.user.id);
-
-    // Update stock
+    // Reserve stock first (compare-and-swap), so two buyers cannot take the
+    // last item at the same time.
     if (item.stock !== null) {
-      await supabase
+      const { data: reserved } = await supabase
         .from("economy_shop_items")
         .update({ stock: item.stock - 1 })
-        .eq("id", item.id);
+        .eq("id", item.id)
+        .eq("stock", item.stock)
+        .select("id");
+      if (!reserved || reserved.length !== 1) {
+        await interaction.reply({
+          content: "❌ Varen blev netop udsolgt. Prøv igen.",
+          ephemeral: true,
+        });
+        return;
+      }
+    }
+
+    // Deduct atomically; refund the reserved stock if payment fails.
+    const payment = account
+      ? await adjustBalance(supabase, account.id, { wallet: -item.price })
+      : { ok: item.price <= 0 };
+    if (!payment.ok) {
+      if (item.stock !== null) {
+        await supabase
+          .from("economy_shop_items")
+          .update({ stock: item.stock })
+          .eq("id", item.id)
+          .eq("stock", item.stock - 1);
+      }
+      await interaction.reply({
+        content: "❌ Du har ikke nok penge til denne vare.",
+        ephemeral: true,
+      });
+      return;
     }
 
     // Grant role if applicable
