@@ -41,7 +41,7 @@ export function useRealtimeEvents(limit = 50) {
     if (!selectedGuild?.id) return;
 
     const channel = supabase
-      .channel(`realtime-events-${selectedGuild.id}`)
+      .channel(`realtime-events-${selectedGuild.id}_${crypto.randomUUID()}`)
       .on(
         'postgres_changes',
         {

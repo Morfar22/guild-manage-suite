@@ -77,7 +77,7 @@ export function BotConsoleViewer({ guildId, guildName, showGuildFilter = true }:
 
   useEffect(() => {
     const channel = supabase
-      .channel('bot-console-logs')
+      .channel(`bot-console-logs_${crypto.randomUUID()}`)
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'bot_console_logs' }, () => {
         refetch();
       })

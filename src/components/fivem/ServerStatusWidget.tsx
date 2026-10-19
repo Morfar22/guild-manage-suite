@@ -100,7 +100,7 @@ export default function ServerStatusWidget() {
     if (!selectedGuild?.id) return;
 
     const channel = supabase
-      .channel('fivem-server-status-changes')
+      .channel(`fivem-server-status-changes_${crypto.randomUUID()}`)
       .on(
         'postgres_changes',
         {
