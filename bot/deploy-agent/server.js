@@ -9,6 +9,7 @@ const express = require("express");
 const { exec } = require("child_process");
 const path = require("path");
 const fs = require("fs");
+const crypto = require("crypto");
 
 const {
   DEPLOY_AGENT_TOKEN,
@@ -17,9 +18,22 @@ const {
   PM2_NAME = "discord-bot",
 } = process.env;
 
-if (!DEPLOY_AGENT_TOKEN) {
-  console.error("FATAL: DEPLOY_AGENT_TOKEN mangler i .env");
+if (!DEPLOY_AGENT_TOKEN || DEPLOY_AGENT_TOKEN.length < 32) {
+  console.error(
+    "FATAL: DEPLOY_AGENT_TOKEN mangler eller er for kort (min. 32 tegn) i .env",
+  );
   process.exit(1);
+}
+// PM2_NAME interpoleres i shell-kommandoer; tillad kun sikre tegn.
+if (!/^[\w.-]+$/.test(PM2_NAME)) {
+  console.error(`FATAL: PM2_NAME "${PM2_NAME}" indeholder ugyldige tegn`);
+  process.exit(1);
+}
+
+function tokenMatches(supplied) {
+  const a = crypto.createHash("sha256").update(String(supplied)).digest();
+  const b = crypto.createHash("sha256").update(DEPLOY_AGENT_TOKEN).digest();
+  return crypto.timingSafeEqual(a, b);
 }
 if (!REPO_DIR || !fs.existsSync(REPO_DIR)) {
   console.error(`FATAL: REPO_DIR "${REPO_DIR}" findes ikke`);
@@ -36,7 +50,7 @@ app.get("/health", (_req, res) => res.json({ ok: true, ts: Date.now() }));
 app.use("/bot", (req, res, next) => {
   const auth = req.headers.authorization || "";
   const token = auth.replace(/^Bearer\s+/i, "");
-  if (token !== DEPLOY_AGENT_TOKEN) {
+  if (!token || !tokenMatches(token)) {
     return res.status(401).json({ error: "Unauthorized" });
   }
   next();
