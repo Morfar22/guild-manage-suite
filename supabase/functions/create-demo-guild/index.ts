@@ -44,7 +44,7 @@ serve(async (req) => {
     const { data: guild, error: guildError } = await supabase
       .from("guilds")
       .insert({
-        guild_id: body.guild_id || `demo_${Date.now()}`,
+        guild_id: `demo_${crypto.randomUUID()}`,
         guild_name: body.guild_name || "Demo Server",
         guild_icon: body.guild_icon || null,
         owner_id: user.id,
