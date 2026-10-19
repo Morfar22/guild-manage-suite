@@ -1,4 +1,4 @@
-import type { Untyped } from "../_shared/untyped";
+import type { Untyped } from "../_shared/untyped.ts";
 import {
   requireUser,
   requireGuildAdmin,

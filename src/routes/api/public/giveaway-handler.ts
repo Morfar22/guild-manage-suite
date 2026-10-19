@@ -1,4 +1,5 @@
 // @ts-nocheck
+import { requireGuildAdmin, safeEqual } from "@/lib/server/api-auth";
 import { decryptBotToken as simpleDecrypt } from "@/lib/server/bot-token-crypto";
 // Migrated from Supabase Edge Function `giveaway-handler` to a TanStack server route.
 import { createFileRoute } from "@tanstack/react-router";
@@ -138,7 +139,7 @@ __serve(async (req) => {
     ]);
     const authHeader = req.headers.get("Authorization");
     const botAuthHeader = req.headers.get("x-bot-secret");
-    const isBotRequest = !!botAuthHeader && botAuthHeader === botSecretKey;
+    const isBotRequest = safeEqual(botAuthHeader, botSecretKey);
 
     if (dashboardActions.has(action) && !isBotRequest) {
       if (!authHeader) {
@@ -157,6 +158,25 @@ __serve(async (req) => {
           status: 401,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
+      }
+
+      // Authz: dashboard callers must be admins of the target guild.
+      const targetGuildParam =
+        action === "create" ? giveawayData?.guild_id : guildId;
+      const { guild: targetGuild } = targetGuildParam
+        ? await getGuildInternal(targetGuildParam)
+        : { guild: null };
+      if (!targetGuild) {
+        return new Response(JSON.stringify({ error: "Guild not found" }), {
+          status: 404,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      try {
+        await requireGuildAdmin(supabase, claims.user.id, targetGuild.id);
+      } catch (res) {
+        if (res instanceof Response) return res;
+        throw res;
       }
     } else {
       if (!isBotRequest) {

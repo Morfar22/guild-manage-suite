@@ -1,4 +1,5 @@
 // @ts-nocheck
+import { safeEqual } from "@/lib/server/api-auth";
 import type { Untyped } from "@/types/untyped";
 import {
   decryptBotToken as simpleDecrypt,
@@ -54,7 +55,7 @@ __serve(async (req) => {
 
     // Bot-to-API calls (from VPS)
     if (botSecret) {
-      if (botSecret !== encryptionKey) {
+      if (!safeEqual(botSecret, encryptionKey)) {
         return new Response(JSON.stringify({ error: "Invalid bot secret" }), {
           status: 401,
           headers: { ...corsHeaders, "Content-Type": "application/json" },

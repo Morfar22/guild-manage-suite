@@ -1,5 +1,6 @@
 // Migrated from Supabase Edge Function `premium-api` to a TanStack server route.
 // @ts-nocheck
+import { safeEqual } from "@/lib/server/api-auth";
 import { createFileRoute } from "@tanstack/react-router";
 import { createClient } from "@supabase/supabase-js";
 import type { Untyped } from "@/types/untyped";
@@ -35,7 +36,7 @@ __serve(async (req) => {
       return json({ error: "Server misconfigured" }, 500);
     }
 
-    if (!apiKey || apiKey !== expectedKey) {
+    if (!safeEqual(apiKey, expectedKey)) {
       return json(
         { error: "Unauthorized – invalid or missing x-api-key" },
         401,

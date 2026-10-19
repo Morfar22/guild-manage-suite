@@ -1,5 +1,6 @@
+import { safeEqual } from "../_shared/api-auth.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import type { Untyped } from "../_shared/untyped";
+import type { Untyped } from "../_shared/untyped.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -78,7 +79,7 @@ Deno.serve(async (req) => {
       `Secret check: received="${receivedPrefix}..." expected="${expectedPrefix}..."`,
     );
 
-    if (!botSecret || botSecret !== expectedSecret) {
+    if (!safeEqual(botSecret, expectedSecret)) {
       console.error(
         `Invalid or missing bot secret. Received length: ${botSecret?.length ?? 0}, Expected length: ${expectedSecret?.length ?? 0}`,
       );

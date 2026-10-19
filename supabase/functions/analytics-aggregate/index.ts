@@ -1,6 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { requireBotSecret } from "../_shared/api-auth.ts";
-import type { Untyped } from "../_shared/untyped";
+import type { Untyped } from "../_shared/untyped.ts";
 
 const __env = (key: string) =>
   Deno.env.get(key) ??

@@ -1,4 +1,5 @@
 // @ts-nocheck
+import { requireGuildAdmin, safeEqual } from "@/lib/server/api-auth";
 import { decryptBotToken as decryptToken } from "@/lib/server/bot-token-crypto";
 // Migrated from Supabase Edge Function `twitch-handler` to a TanStack server route.
 import { createFileRoute } from "@tanstack/react-router";
@@ -679,6 +680,13 @@ __serve(async (req) => {
         });
       }
 
+      try {
+        await requireGuildAdmin(supabase, user.id, streamer.guild_id);
+      } catch (res) {
+        if (res instanceof Response) return res;
+        throw res;
+      }
+
       // Get guild settings
       const { data: settings } = await supabase
         .from("twitch_settings")
@@ -791,7 +799,9 @@ __serve(async (req) => {
       const botSecret = req.headers.get("x-bot-secret");
       const expectedSecret = __env("BOT_SECRET_KEY");
 
-      if (action === "check" && botSecret !== expectedSecret) {
+      // Fail closed: the check loop posts to Discord and assigns roles, so
+      // it must never run without the bot secret (also when action is missing).
+      if (!safeEqual(botSecret, expectedSecret)) {
         console.log("Invalid bot secret");
         return new Response(JSON.stringify({ error: "Invalid bot secret" }), {
           status: 401,
@@ -800,7 +810,7 @@ __serve(async (req) => {
       }
 
       // Check IP whitelist for bot requests
-      if (action === "check") {
+      {
         const ipCheck = await checkIPWhitelist(req, supabase);
         if (!ipCheck.allowed) {
           console.error(`IP not whitelisted: ${ipCheck.ip}`);
@@ -1500,7 +1510,7 @@ __serve(async (req) => {
     if (action === "partner_check") {
       const botSecret = req.headers.get("x-bot-secret");
       const expectedSecret = __env("BOT_SECRET_KEY");
-      if (botSecret !== expectedSecret) {
+      if (!safeEqual(botSecret, expectedSecret)) {
         return new Response(JSON.stringify({ error: "Invalid bot secret" }), {
           status: 401,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -1740,7 +1750,7 @@ __serve(async (req) => {
       const botSecret = req.headers.get("x-bot-secret");
       const expectedSecret = __env("BOT_SECRET_KEY");
 
-      if (botSecret !== expectedSecret) {
+      if (!safeEqual(botSecret, expectedSecret)) {
         return new Response(JSON.stringify({ error: "Invalid bot secret" }), {
           status: 401,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -1967,6 +1977,13 @@ __serve(async (req) => {
           status: 400,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
+      }
+
+      try {
+        await requireGuildAdmin(supabase, user.id, guildId);
+      } catch (res) {
+        if (res instanceof Response) return res;
+        throw res;
       }
 
       const DAY_NAMES_MANUAL = [

@@ -1,6 +1,7 @@
+import { requireGuildAdmin, safeEqual } from "../_shared/api-auth.ts";
 import { decryptBotToken as simpleDecrypt } from "../_shared/bot-token-crypto.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import type { Untyped } from "../_shared/untyped";
+import type { Untyped } from "../_shared/untyped.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -125,7 +126,7 @@ Deno.serve(async (req) => {
     ]);
     const authHeader = req.headers.get("Authorization");
     const botAuthHeader = req.headers.get("x-bot-secret");
-    const isBotRequest = !!botAuthHeader && botAuthHeader === botSecretKey;
+    const isBotRequest = safeEqual(botAuthHeader, botSecretKey);
 
     if (dashboardActions.has(action) && !isBotRequest) {
       if (!authHeader) {
@@ -144,6 +145,25 @@ Deno.serve(async (req) => {
           status: 401,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
+      }
+
+      // Authz: dashboard callers must be admins of the target guild.
+      const targetGuildParam =
+        action === "create" ? giveawayData?.guild_id : guildId;
+      const { guild: targetGuild } = targetGuildParam
+        ? await getGuildInternal(targetGuildParam)
+        : { guild: null };
+      if (!targetGuild) {
+        return new Response(JSON.stringify({ error: "Guild not found" }), {
+          status: 404,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      try {
+        await requireGuildAdmin(supabase, claims.user.id, targetGuild.id);
+      } catch (res) {
+        if (res instanceof Response) return res;
+        throw res;
       }
     } else {
       if (!isBotRequest) {

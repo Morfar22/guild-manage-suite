@@ -1,5 +1,6 @@
 // Migrated from Supabase Edge Function `xp-handler` to a TanStack server route.
 // @ts-nocheck
+import { requireGuildAdmin, safeEqual } from "@/lib/server/api-auth";
 import { createFileRoute } from "@tanstack/react-router";
 import { decryptBotToken } from "@/lib/server/bot-token-crypto";
 import { createClient } from "@supabase/supabase-js";
@@ -119,6 +120,12 @@ __serve(async (req) => {
           status: 404,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
+      }
+      try {
+        await requireGuildAdmin(supabase, claims.user.id, guild.id);
+      } catch (res) {
+        if (res instanceof Response) return res;
+        throw res;
       }
 
       // Get leveling settings
@@ -244,7 +251,7 @@ __serve(async (req) => {
     const botSecret = req.headers.get("x-bot-secret");
     const expectedSecret = __env("BOT_SECRET_KEY");
 
-    if (!botSecret || botSecret !== expectedSecret) {
+    if (!safeEqual(botSecret, expectedSecret)) {
       console.error("Unauthorized: Invalid bot secret");
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,

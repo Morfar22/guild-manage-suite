@@ -1,5 +1,6 @@
 // Migrated from Supabase Edge Function `automod-handler` to a TanStack server route.
 // @ts-nocheck
+import { safeEqual } from "@/lib/server/api-auth";
 import { createFileRoute } from "@tanstack/react-router";
 import { createClient } from "@supabase/supabase-js";
 import { openAIChatCompletion, openAIErrorResponse } from "@/lib/server/openai";
@@ -75,7 +76,7 @@ __serve(async (req) => {
     const botSecret = req.headers.get("x-bot-secret");
     const expectedSecret = __env("BOT_SECRET_KEY");
 
-    if (!botSecret || botSecret !== expectedSecret) {
+    if (!safeEqual(botSecret, expectedSecret)) {
       console.error("Unauthorized: Invalid bot secret");
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,

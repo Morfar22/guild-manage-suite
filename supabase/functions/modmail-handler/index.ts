@@ -1,3 +1,4 @@
+import { safeEqual } from "../_shared/api-auth.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
@@ -17,7 +18,7 @@ Deno.serve(async (req) => {
     const botSecret = req.headers.get("x-bot-secret");
     const expectedSecret = Deno.env.get("BOT_SECRET_KEY");
 
-    if (!botSecret || botSecret !== expectedSecret) {
+    if (!safeEqual(botSecret, expectedSecret)) {
       console.error("[Modmail] Invalid or missing bot secret");
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,

@@ -1,5 +1,6 @@
 // Migrated from Supabase Edge Function `tebex-handler` to a TanStack server route.
 // @ts-nocheck
+import { requireGuildAdmin } from "@/lib/server/api-auth";
 import { createFileRoute } from "@tanstack/react-router";
 import { createClient } from "@supabase/supabase-js";
 import type { Untyped } from "@/types/untyped";
@@ -48,6 +49,15 @@ __serve(async (req) => {
     const guildId = url.searchParams.get("guild_id");
     if (!guildId) {
       return jsonResponse({ error: "guild_id required" }, 400);
+    }
+
+    // Authz: only admins of this guild may read or change its Tebex config
+    // (the handler uses the service-role client, so RLS does not apply).
+    try {
+      await requireGuildAdmin(supabase, user.id, guildId);
+    } catch (res) {
+      if (res instanceof Response) return res;
+      throw res;
     }
 
     if (req.method === "GET") {

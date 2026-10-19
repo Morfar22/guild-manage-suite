@@ -1,7 +1,11 @@
 import { decryptBotToken as simpleDecrypt } from "../_shared/bot-token-crypto.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { requireUser, requireGuildAdmin } from "../_shared/api-auth.ts";
-import type { Untyped } from "../_shared/untyped";
+import {
+  requireUser,
+  requireGuildAdmin,
+  safeEqual,
+} from "../_shared/api-auth.ts";
+import type { Untyped } from "../_shared/untyped.ts";
 
 const __env = (key: string) =>
   Deno.env.get(key) ??
@@ -94,9 +98,7 @@ __serve(async (req) => {
 
     // Verify bot secret for bot-initiated requests
     const requestBotSecret = req.headers.get("x-bot-secret");
-    const isBotRequest = Boolean(
-      botSecretKey && requestBotSecret && requestBotSecret === botSecretKey,
-    );
+    const isBotRequest = Boolean(safeEqual(requestBotSecret, botSecretKey));
 
     // Check IP whitelist for bot requests
     if (isBotRequest) {

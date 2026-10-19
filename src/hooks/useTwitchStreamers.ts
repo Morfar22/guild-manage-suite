@@ -159,7 +159,7 @@ export function useTwitchStreamers() {
       } = await supabase.auth.getSession();
       if (!session) throw new Error("Not authenticated");
 
-      const response = await invokeFunction("twitch-handler", {
+      const response = await invokeFunction("twitch-handler?action=lookup", {
         body: { username },
         headers: { Authorization: `Bearer ${session.access_token}` },
       });

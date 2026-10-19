@@ -2,7 +2,11 @@
 // @ts-nocheck
 import { createFileRoute } from "@tanstack/react-router";
 import { createClient } from "@supabase/supabase-js";
-import { requireUser, requireGuildAdmin } from "@/lib/server/api-auth";
+import {
+  requireUser,
+  requireGuildAdmin,
+  safeEqual,
+} from "@/lib/server/api-auth";
 import { openAIChatCompletion, openAIErrorResponse } from "@/lib/server/openai";
 import type { Untyped } from "@/types/untyped";
 
@@ -493,9 +497,7 @@ __serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     const requestBotSecret = req.headers.get("x-bot-secret");
-    const isBotRequest = Boolean(
-      botSecretKey && requestBotSecret && requestBotSecret === botSecretKey,
-    );
+    const isBotRequest = Boolean(safeEqual(requestBotSecret, botSecretKey));
 
     if (isBotRequest) {
       const ipCheck = await checkIPWhitelist(req, supabase);

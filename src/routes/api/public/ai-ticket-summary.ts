@@ -1,7 +1,11 @@
 // Migrated from Supabase Edge Function `ai-ticket-summary` to a TanStack server route.
 // @ts-nocheck
 import { createFileRoute } from "@tanstack/react-router";
-import { requireUser, requireGuildAdmin } from "@/lib/server/api-auth";
+import {
+  requireUser,
+  requireGuildAdmin,
+  safeEqual,
+} from "@/lib/server/api-auth";
 import { createClient } from "@supabase/supabase-js";
 import { openAIChatCompletion, openAIErrorResponse } from "@/lib/server/openai";
 import type { Untyped } from "@/types/untyped";
@@ -33,7 +37,7 @@ __serve(async (req) => {
     // Allow both bot secret and authenticated dashboard users
     let authenticated = false;
     let dashboardUserId: string | null = null;
-    if (botSecret && botSecret === expectedSecret) {
+    if (safeEqual(botSecret, expectedSecret)) {
       authenticated = true;
     }
 

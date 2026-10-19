@@ -1,6 +1,7 @@
+import { requireGuildAdmin, safeEqual } from "../_shared/api-auth.ts";
 import { decryptBotToken as simpleDecrypt } from "../_shared/bot-token-crypto.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import type { Untyped } from "../_shared/untyped";
+import type { Untyped } from "../_shared/untyped.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -177,8 +178,7 @@ Deno.serve(async (req) => {
     console.log(`Application handler received action: ${action}`);
 
     const requestBotSecret = req.headers.get("x-bot-secret");
-    const isBotRequest =
-      !!botSecret && !!requestBotSecret && requestBotSecret === botSecret;
+    const isBotRequest = safeEqual(requestBotSecret, botSecret);
 
     // Bot requests: require matching bot secret + whitelist
     if (requestBotSecret && !isBotRequest) {
@@ -197,6 +197,7 @@ Deno.serve(async (req) => {
     }
 
     // Non-bot requests must have JWT
+    let authUserId: string | null = null;
     if (!isBotRequest) {
       const authHeader = req.headers.get("Authorization");
       if (!authHeader?.startsWith("Bearer ")) {
@@ -209,6 +210,13 @@ Deno.serve(async (req) => {
 
       if (authError || !userData.user) {
         return jsonResponse({ error: "Unauthorized" }, 401);
+      }
+      authUserId = userData.user.id;
+
+      // Dashboard users may only use dashboard actions; "submit" is bot-only
+      // because it trusts the Discord user_id in the body.
+      if (!["send_panel", "review", "get_form"].includes(action)) {
+        return jsonResponse({ error: "Forbidden" }, 403);
       }
     }
 
@@ -229,6 +237,15 @@ Deno.serve(async (req) => {
         if (guildError || !guild) {
           console.error("Guild not found:", guildError);
           return jsonResponse({ error: "Guild not found" }, 404);
+        }
+
+        if (authUserId) {
+          try {
+            await requireGuildAdmin(supabase, authUserId, guild_id);
+          } catch (res) {
+            if (res instanceof Response) return res;
+            throw res;
+          }
         }
 
         const { data: settings, error: settingsError } = await supabase
@@ -423,6 +440,15 @@ Deno.serve(async (req) => {
         if (submissionError || !submission) {
           console.error("Submission not found:", submissionError);
           return jsonResponse({ error: "Submission not found" }, 404);
+        }
+
+        if (authUserId) {
+          try {
+            await requireGuildAdmin(supabase, authUserId, submission.guild_id);
+          } catch (res) {
+            if (res instanceof Response) return res;
+            throw res;
+          }
         }
 
         const { data: guild } = await supabase

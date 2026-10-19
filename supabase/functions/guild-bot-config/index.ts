@@ -1,4 +1,5 @@
-import type { Untyped } from "../_shared/untyped";
+import { safeEqual } from "../_shared/api-auth.ts";
+import type { Untyped } from "../_shared/untyped.ts";
 import {
   decryptBotToken as simpleDecrypt,
   encryptBotToken as simpleEncrypt,
@@ -51,7 +52,7 @@ __serve(async (req) => {
 
     // Bot-to-API calls (from VPS)
     if (botSecret) {
-      if (botSecret !== encryptionKey) {
+      if (!safeEqual(botSecret, encryptionKey)) {
         return new Response(JSON.stringify({ error: "Invalid bot secret" }), {
           status: 401,
           headers: { ...corsHeaders, "Content-Type": "application/json" },

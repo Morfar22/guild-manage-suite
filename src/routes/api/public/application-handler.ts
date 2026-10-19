@@ -1,4 +1,5 @@
 // @ts-nocheck
+import { requireGuildAdmin, safeEqual } from "@/lib/server/api-auth";
 import { decryptBotToken as simpleDecrypt } from "@/lib/server/bot-token-crypto";
 // Migrated from Supabase Edge Function `application-handler` to a TanStack server route.
 import { createFileRoute } from "@tanstack/react-router";
@@ -190,8 +191,7 @@ __serve(async (req) => {
     console.log(`Application handler received action: ${action}`);
 
     const requestBotSecret = req.headers.get("x-bot-secret");
-    const isBotRequest =
-      !!botSecret && !!requestBotSecret && requestBotSecret === botSecret;
+    const isBotRequest = safeEqual(requestBotSecret, botSecret);
 
     // Bot requests: require matching bot secret + whitelist
     if (requestBotSecret && !isBotRequest) {
@@ -210,6 +210,7 @@ __serve(async (req) => {
     }
 
     // Non-bot requests must have JWT
+    let authUserId: string | null = null;
     if (!isBotRequest) {
       const authHeader = req.headers.get("Authorization");
       if (!authHeader?.startsWith("Bearer ")) {
@@ -222,6 +223,13 @@ __serve(async (req) => {
 
       if (authError || !userData.user) {
         return jsonResponse({ error: "Unauthorized" }, 401);
+      }
+      authUserId = userData.user.id;
+
+      // Dashboard users may only use dashboard actions; "submit" is bot-only
+      // because it trusts the Discord user_id in the body.
+      if (!["send_panel", "review", "get_form"].includes(action)) {
+        return jsonResponse({ error: "Forbidden" }, 403);
       }
     }
 
@@ -242,6 +250,15 @@ __serve(async (req) => {
         if (guildError || !guild) {
           console.error("Guild not found:", guildError);
           return jsonResponse({ error: "Guild not found" }, 404);
+        }
+
+        if (authUserId) {
+          try {
+            await requireGuildAdmin(supabase, authUserId, guild_id);
+          } catch (res) {
+            if (res instanceof Response) return res;
+            throw res;
+          }
         }
 
         const { data: settings, error: settingsError } = await supabase
@@ -436,6 +453,15 @@ __serve(async (req) => {
         if (submissionError || !submission) {
           console.error("Submission not found:", submissionError);
           return jsonResponse({ error: "Submission not found" }, 404);
+        }
+
+        if (authUserId) {
+          try {
+            await requireGuildAdmin(supabase, authUserId, submission.guild_id);
+          } catch (res) {
+            if (res instanceof Response) return res;
+            throw res;
+          }
         }
 
         const { data: guild } = await supabase

@@ -1,6 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { decryptBotToken } from "../_shared/bot-token-crypto.ts";
-import type { Untyped } from "../_shared/untyped";
+import type { Untyped } from "../_shared/untyped.ts";
 import {
   requireUser,
   requireGuildAdmin,

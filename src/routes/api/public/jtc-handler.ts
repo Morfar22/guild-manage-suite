@@ -3,7 +3,11 @@ import { decryptBotToken as simpleDecrypt } from "@/lib/server/bot-token-crypto"
 // Migrated from Supabase Edge Function `jtc-handler` to a TanStack server route.
 import { createFileRoute } from "@tanstack/react-router";
 import { createClient } from "@supabase/supabase-js";
-import { requireUser, requireGuildAdmin } from "@/lib/server/api-auth";
+import {
+  requireUser,
+  requireGuildAdmin,
+  safeEqual,
+} from "@/lib/server/api-auth";
 import type { Untyped } from "@/types/untyped";
 
 const __env = (k: string) =>
@@ -97,9 +101,7 @@ __serve(async (req) => {
 
     // Verify bot secret for bot-initiated requests
     const requestBotSecret = req.headers.get("x-bot-secret");
-    const isBotRequest = Boolean(
-      botSecretKey && requestBotSecret && requestBotSecret === botSecretKey,
-    );
+    const isBotRequest = Boolean(safeEqual(requestBotSecret, botSecretKey));
 
     // Check IP whitelist for bot requests
     if (isBotRequest) {

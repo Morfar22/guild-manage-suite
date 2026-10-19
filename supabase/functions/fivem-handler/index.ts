@@ -1,6 +1,7 @@
+import { safeEqual } from "../_shared/api-auth.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import type { Untyped } from "../_shared/untyped";
+import type { Untyped } from "../_shared/untyped.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -297,7 +298,7 @@ serve(async (req) => {
 
     // Verify bot secret
     const requestBotSecret = req.headers.get("x-bot-secret");
-    if (requestBotSecret !== botSecret) {
+    if (!safeEqual(requestBotSecret, botSecret)) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },

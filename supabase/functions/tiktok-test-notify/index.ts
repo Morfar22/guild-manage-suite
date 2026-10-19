@@ -1,6 +1,7 @@
+import { requireGuildAdmin } from "../_shared/api-auth.ts";
 import { decryptBotToken as decryptToken } from "../_shared/bot-token-crypto.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import type { Untyped } from "../_shared/untyped";
+import type { Untyped } from "../_shared/untyped.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -85,6 +86,14 @@ Deno.serve(async (req) => {
         status: 404,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
+    }
+
+    // Authz: the caller must be an admin of the guild that owns the account.
+    try {
+      await requireGuildAdmin(supabase, user.id, account.guild_id);
+    } catch (res) {
+      if (res instanceof Response) return res;
+      throw res;
     }
 
     const { data: settings } = await supabase

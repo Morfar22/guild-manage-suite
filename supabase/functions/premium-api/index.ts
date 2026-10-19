@@ -1,3 +1,4 @@
+import { safeEqual } from "../_shared/api-auth.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
@@ -22,7 +23,7 @@ serve(async (req) => {
       return json({ error: "Server misconfigured" }, 500);
     }
 
-    if (!apiKey || apiKey !== expectedKey) {
+    if (!safeEqual(apiKey, expectedKey)) {
       return json(
         { error: "Unauthorized – invalid or missing x-api-key" },
         401,

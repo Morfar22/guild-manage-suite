@@ -1,5 +1,9 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { requireUser, requireGuildAdmin } from "../_shared/api-auth.ts";
+import {
+  requireUser,
+  requireGuildAdmin,
+  safeEqual,
+} from "../_shared/api-auth.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
@@ -19,7 +23,7 @@ serve(async (req) => {
     // Allow both bot secret and authenticated dashboard users
     let authenticated = false;
     let dashboardUserId: string | null = null;
-    if (botSecret && botSecret === expectedSecret) {
+    if (safeEqual(botSecret, expectedSecret)) {
       authenticated = true;
     }
 

@@ -1,3 +1,4 @@
+import { requireGuildAdmin } from "../_shared/api-auth.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
@@ -35,6 +36,15 @@ serve(async (req) => {
     const guildId = url.searchParams.get("guild_id");
     if (!guildId) {
       return jsonResponse({ error: "guild_id required" }, 400);
+    }
+
+    // Authz: only admins of this guild may read or change its Tebex config
+    // (the handler uses the service-role client, so RLS does not apply).
+    try {
+      await requireGuildAdmin(supabase, user.id, guildId);
+    } catch (res) {
+      if (res instanceof Response) return res;
+      throw res;
     }
 
     if (req.method === "GET") {

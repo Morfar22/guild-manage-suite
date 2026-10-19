@@ -1,4 +1,5 @@
 // @ts-nocheck
+import { requireGuildAdmin } from "@/lib/server/api-auth";
 import { decryptBotToken as decryptToken } from "@/lib/server/bot-token-crypto";
 // Migrated from Supabase Edge Function `tiktok-test-notify` to a TanStack server route.
 import { createFileRoute } from "@tanstack/react-router";
@@ -98,6 +99,14 @@ __serve(async (req) => {
         status: 404,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
+    }
+
+    // Authz: the caller must be an admin of the guild that owns the account.
+    try {
+      await requireGuildAdmin(supabase, user.id, account.guild_id);
+    } catch (res) {
+      if (res instanceof Response) return res;
+      throw res;
     }
 
     const { data: settings } = await supabase

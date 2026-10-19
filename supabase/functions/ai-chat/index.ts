@@ -1,7 +1,11 @@
-import { requireUser, requireGuildAdmin } from "../_shared/api-auth.ts";
+import {
+  requireUser,
+  requireGuildAdmin,
+  safeEqual,
+} from "../_shared/api-auth.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import type { Untyped } from "../_shared/untyped";
+import type { Untyped } from "../_shared/untyped.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -481,9 +485,7 @@ serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     const requestBotSecret = req.headers.get("x-bot-secret");
-    const isBotRequest = Boolean(
-      botSecretKey && requestBotSecret && requestBotSecret === botSecretKey,
-    );
+    const isBotRequest = Boolean(safeEqual(requestBotSecret, botSecretKey));
 
     if (isBotRequest) {
       const ipCheck = await checkIPWhitelist(req, supabase);

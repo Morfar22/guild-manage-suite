@@ -1,6 +1,7 @@
+import { requireGuildAdmin, safeEqual } from "../_shared/api-auth.ts";
 import { decryptBotToken as decryptToken } from "../_shared/bot-token-crypto.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import type { Untyped } from "../_shared/untyped";
+import type { Untyped } from "../_shared/untyped.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -666,6 +667,13 @@ Deno.serve(async (req) => {
         });
       }
 
+      try {
+        await requireGuildAdmin(supabase, user.id, streamer.guild_id);
+      } catch (res) {
+        if (res instanceof Response) return res;
+        throw res;
+      }
+
       // Get guild settings
       const { data: settings } = await supabase
         .from("twitch_settings")
@@ -778,7 +786,9 @@ Deno.serve(async (req) => {
       const botSecret = req.headers.get("x-bot-secret");
       const expectedSecret = Deno.env.get("BOT_SECRET_KEY");
 
-      if (action === "check" && botSecret !== expectedSecret) {
+      // Fail closed: the check loop posts to Discord and assigns roles, so
+      // it must never run without the bot secret (also when action is missing).
+      if (!safeEqual(botSecret, expectedSecret)) {
         console.log("Invalid bot secret");
         return new Response(JSON.stringify({ error: "Invalid bot secret" }), {
           status: 401,
@@ -787,7 +797,7 @@ Deno.serve(async (req) => {
       }
 
       // Check IP whitelist for bot requests
-      if (action === "check") {
+      {
         const ipCheck = await checkIPWhitelist(req, supabase);
         if (!ipCheck.allowed) {
           console.error(`IP not whitelisted: ${ipCheck.ip}`);
@@ -1487,7 +1497,7 @@ Deno.serve(async (req) => {
     if (action === "partner_check") {
       const botSecret = req.headers.get("x-bot-secret");
       const expectedSecret = Deno.env.get("BOT_SECRET_KEY");
-      if (botSecret !== expectedSecret) {
+      if (!safeEqual(botSecret, expectedSecret)) {
         return new Response(JSON.stringify({ error: "Invalid bot secret" }), {
           status: 401,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -1727,7 +1737,7 @@ Deno.serve(async (req) => {
       const botSecret = req.headers.get("x-bot-secret");
       const expectedSecret = Deno.env.get("BOT_SECRET_KEY");
 
-      if (botSecret !== expectedSecret) {
+      if (!safeEqual(botSecret, expectedSecret)) {
         return new Response(JSON.stringify({ error: "Invalid bot secret" }), {
           status: 401,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -1954,6 +1964,13 @@ Deno.serve(async (req) => {
           status: 400,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
+      }
+
+      try {
+        await requireGuildAdmin(supabase, user.id, guildId);
+      } catch (res) {
+        if (res instanceof Response) return res;
+        throw res;
       }
 
       const DAY_NAMES_MANUAL = [

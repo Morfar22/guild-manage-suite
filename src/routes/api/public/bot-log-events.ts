@@ -1,4 +1,5 @@
 // @ts-nocheck
+import { safeEqual } from "@/lib/server/api-auth";
 import { decryptBotToken as simpleDecrypt } from "@/lib/server/bot-token-crypto";
 // Migrated from Supabase Edge Function `bot-log-events` to a TanStack server route.
 import { createFileRoute } from "@tanstack/react-router";
@@ -1175,7 +1176,7 @@ __serve(async (req) => {
     const botSecret = req.headers.get("x-bot-secret");
     const expectedSecret = __env("BOT_SECRET_KEY");
 
-    if (!botSecret || botSecret !== expectedSecret) {
+    if (!safeEqual(botSecret, expectedSecret)) {
       console.error("Invalid or missing bot secret");
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,

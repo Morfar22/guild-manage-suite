@@ -1,4 +1,5 @@
 // @ts-nocheck
+import { safeEqual } from "@/lib/server/api-auth";
 import { decryptBotToken as simpleDecrypt } from "@/lib/server/bot-token-crypto";
 // Migrated from Supabase Edge Function `fivem-handler` to a TanStack server route.
 import { createFileRoute } from "@tanstack/react-router";
@@ -446,7 +447,7 @@ __serve(async (req) => {
     // Backwards compatibility for trusted internal callers only. Never accept an
     // empty/missing platform secret, which the old comparison could accidentally do.
     if (!authenticatedWithBridgeKey && botSecret && requestBotSecret) {
-      authenticatedLegacy = requestBotSecret === botSecret;
+      authenticatedLegacy = safeEqual(requestBotSecret, botSecret);
     }
 
     if (!authenticatedWithBridgeKey && !authenticatedLegacy) {

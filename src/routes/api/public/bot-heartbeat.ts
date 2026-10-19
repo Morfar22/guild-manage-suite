@@ -1,5 +1,6 @@
 // Migrated from Supabase Edge Function `bot-heartbeat` to a TanStack server route.
 // @ts-nocheck
+import { safeEqual } from "@/lib/server/api-auth";
 import { createFileRoute } from "@tanstack/react-router";
 import { createClient } from "@supabase/supabase-js";
 import type { Untyped } from "@/types/untyped";
@@ -101,7 +102,7 @@ __serve(async (req) => {
       `Secret check: received="${receivedPrefix}..." expected="${expectedPrefix}..."`,
     );
 
-    if (!botSecret || botSecret !== expectedSecret) {
+    if (!safeEqual(botSecret, expectedSecret)) {
       console.error(
         `Invalid or missing bot secret. Received length: ${botSecret?.length ?? 0}, Expected length: ${expectedSecret?.length ?? 0}`,
       );
