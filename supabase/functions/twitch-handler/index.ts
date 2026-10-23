@@ -1059,11 +1059,9 @@ Deno.serve(async (req) => {
 
         const guildSettings = settingsMap.get(streamer.guild_id) || {};
 
-        // Determine channels (per-streamer override or global)
-        const clipsChannel =
-          streamer.clips_channel_id || guildSettings.clips_channel_id;
-        const vodsChannel =
-          streamer.vods_channel_id || guildSettings.vods_channel_id;
+        // Content channels belong to guild settings (not twitch_streamers).
+        const clipsChannel = guildSettings.clips_channel_id;
+        const vodsChannel = guildSettings.vods_channel_id;
 
         // Check clips
         if (guildSettings.notify_clips && clipsChannel) {
@@ -1322,7 +1320,7 @@ Deno.serve(async (req) => {
       // Get all partner-tracking-enabled guilds
       const { data: trackingSettings } = await supabase
         .from("twitch_settings")
-        .select("*, guilds!inner(id, guild_id, name)")
+        .select("*, guilds!inner(id, guild_id, guild_name)")
         .eq("partner_tracking_enabled", true);
 
       if (!trackingSettings || trackingSettings.length === 0) {
@@ -1354,7 +1352,7 @@ Deno.serve(async (req) => {
           supabase,
           settings.guild_id,
         );
-        const guildName = settings.guilds?.name || "serveren";
+        const guildName = settings.guilds?.guild_name || "serveren";
         const warnDays = settings.partner_warning_days_before ?? 2;
 
         for (const partner of partners) {
