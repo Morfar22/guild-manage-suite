@@ -1,10 +1,10 @@
 // @ts-nocheck
+import { verifyDiscordSignature, buildGiveawayMessagePayload, getGiveawayEntries } from "@/lib/server/discord-interactions-shared";
 import type { Untyped } from "@/types/untyped";
 import { resolveGuildBotToken } from "@/lib/server/guild-bot-token";
 // Migrated from Supabase Edge Function `discord-interactions` to a TanStack server route.
 import { createFileRoute } from "@tanstack/react-router";
 import { createClient } from "@supabase/supabase-js";
-import nacl from "tweetnacl";
 
 const __env = (k: string) =>
   process.env[k] ??
@@ -44,81 +44,6 @@ const TextInputStyle = {
   SHORT: 1,
   PARAGRAPH: 2,
 };
-
-// Verify Discord signature using tweetnacl
-async function verifyDiscordSignature(
-  request: Request,
-  body: string,
-): Promise<boolean> {
-  const signature = request.headers.get("X-Signature-Ed25519");
-  const timestamp = request.headers.get("X-Signature-Timestamp");
-  const publicKey = __env("DISCORD_PUBLIC_KEY");
-
-  if (!signature || !timestamp || !publicKey) {
-    // If this triggers, Discord will show "This interaction failed".
-    // We log what is missing to diagnose endpoint/proxy/header stripping issues.
-    const headerKeys: string[] = [];
-    try {
-      for (const [k] of request.headers) headerKeys.push(k);
-    } catch (_e) {
-      // ignore
-    }
-
-    const userAgent = request.headers.get("user-agent");
-    const contentType = request.headers.get("content-type");
-    const bodySnippet = typeof body === "string" ? body.slice(0, 300) : "";
-
-    // NOTE: Use a single JSON string to ensure the object shows up clearly in Edge logs.
-    console.error(
-      JSON.stringify(
-        {
-          msg: "Missing signature, timestamp, or public key",
-          url: request.url,
-          method: request.method,
-          hasSignature: !!signature,
-          hasTimestamp: !!timestamp,
-          hasPublicKey: !!publicKey,
-          publicKeyLen: publicKey ? publicKey.length : 0,
-          userAgent,
-          contentType,
-          headerKeys,
-          bodySnippet,
-        },
-        null,
-        2,
-      ),
-    );
-    return false;
-  }
-
-  try {
-    const encoder = new TextEncoder();
-    const message = encoder.encode(timestamp + body);
-
-    // Convert hex public key to Uint8Array
-    const keyBytes = new Uint8Array(
-      publicKey.match(/.{1,2}/g)!.map((byte) => parseInt(byte, 16)),
-    );
-
-    // Convert hex signature to Uint8Array
-    const signatureBytes = new Uint8Array(
-      signature.match(/.{1,2}/g)!.map((byte) => parseInt(byte, 16)),
-    );
-
-    // Verify the signature
-    const isValid = nacl.sign.detached.verify(
-      message,
-      signatureBytes,
-      keyBytes,
-    );
-
-    console.log("Signature verification result:", isValid);
-    return isValid;
-  } catch (error) {
-    console.error("Signature verification error:", error);
-    return false;
-  }
-}
 
 function waitUntil(promise: Promise<unknown>) {
   // Supabase Edge Runtime exposes EdgeRuntime.waitUntil for background work.
@@ -177,96 +102,6 @@ async function getInteractionBotToken(interaction: Untyped): Promise<string> {
     __env("SUPABASE_SERVICE_ROLE_KEY")!,
   );
   return resolveGuildBotToken(db, interaction.guild_id);
-}
-
-function getGiveawayEntries(entries: unknown): string[] {
-  return Array.isArray(entries)
-    ? entries.filter((entry): entry is string => typeof entry === "string")
-    : [];
-}
-
-function getGiveawayWinners(winners: unknown): string[] {
-  return Array.isArray(winners)
-    ? winners.filter((winner): winner is string => typeof winner === "string")
-    : [];
-}
-
-function buildGiveawayMessagePayload(giveaway: Untyped) {
-  const entries = getGiveawayEntries(giveaway.entries);
-  const winners = getGiveawayWinners(giveaway.winners);
-  const hasEnded = giveaway.ended || new Date(giveaway.ends_at) <= new Date();
-  const endsAtUnix = Math.floor(new Date(giveaway.ends_at).getTime() / 1000);
-  const fields: Array<{ name: string; value: string; inline?: boolean }> = [
-    {
-      name: hasEnded ? "⏱️ Sluttede" : "⏱️ Slutter",
-      value: `<t:${endsAtUnix}:${hasEnded ? "f" : "R"}>`,
-      inline: true,
-    },
-    {
-      name: "🏆 Vindere",
-      value: String(giveaway.winners_count),
-      inline: true,
-    },
-    {
-      name: "🎫 Deltagere",
-      value: String(entries.length),
-      inline: true,
-    },
-  ];
-
-  if (giveaway.required_role_id) {
-    fields.push({
-      name: "🔒 Krævet rolle",
-      value: `<@&${giveaway.required_role_id}>`,
-      inline: false,
-    });
-  }
-
-  if (hasEnded) {
-    fields.push({
-      name: "🎊 Resultat",
-      value:
-        winners.length > 0
-          ? winners.map((winnerId) => `<@${winnerId}>`).join(", ")
-          : "Ingen gyldige deltagere.",
-      inline: false,
-    });
-  }
-
-  return {
-    content: hasEnded
-      ? "🎉 Giveawayen er afsluttet."
-      : "Klik på knappen nedenfor for at deltage!",
-    embeds: [
-      {
-        title: hasEnded ? "🎉 Giveaway afsluttet" : "🎉 Giveaway!",
-        description: `**${giveaway.prize}**${giveaway.description ? `\n\n${giveaway.description}` : ""}`,
-        color: hasEnded ? 0x57f287 : 0x5865f2,
-        fields,
-        footer: {
-          text: `Giveaway ID: ${giveaway.id}`,
-        },
-        timestamp: new Date(giveaway.ends_at).toISOString(),
-      },
-    ],
-    components: [
-      {
-        type: 1,
-        components: [
-          {
-            type: 2,
-            style: hasEnded ? 2 : 3,
-            custom_id: `giveaway_enter_${giveaway.id}`,
-            label: hasEnded
-              ? "Giveaway afsluttet"
-              : `Deltag (${entries.length})`,
-            emoji: { name: "🎉" },
-            disabled: hasEnded,
-          },
-        ],
-      },
-    ],
-  };
 }
 
 // Show modal with questions for any category (support or application)
@@ -3004,7 +2839,7 @@ __serve(async (req) => {
     console.log("Received interaction request");
 
     // Verify Discord signature
-    const isValid = await verifyDiscordSignature(req, body);
+    const isValid = await verifyDiscordSignature(req, body, __env("DISCORD_PUBLIC_KEY"));
     if (!isValid) {
       console.error("Invalid signature");
       return new Response("Invalid signature", { status: 401 });
