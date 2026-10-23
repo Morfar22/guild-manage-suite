@@ -2,7 +2,8 @@
 ALTER USER authenticator WITH PASSWORD 'guildos-local-postgres';
 ALTER USER supabase_auth_admin WITH PASSWORD 'guildos-local-postgres';
 ALTER USER supabase_storage_admin WITH PASSWORD 'guildos-local-postgres';
-ALTER USER supabase_functions_admin WITH PASSWORD 'guildos-local-postgres';
+-- supabase_functions_admin is created later by pg_net, not by the base image.
+-- No local service logs in as that legacy role.
 ALTER USER supabase_admin WITH PASSWORD 'guildos-local-postgres';
 
 GRANT USAGE ON SCHEMA public TO anon, authenticated, service_role;

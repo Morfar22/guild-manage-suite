@@ -34,7 +34,12 @@ jobs:
         run: docker compose --profile test run --build --rm --no-deps tests
       - name: Collect service logs
         if: always()
-        run: docker compose logs --no-color
+        run: |
+          docker compose ps --all
+          for container in $(docker compose ps --all --quiet); do
+            docker inspect "$container" --format '{{.Name}} {{json .State.Health}}'
+          done
+          docker compose logs --no-color
       - name: Remove local containers and test data
         if: always()
         run: docker compose --profile test down --volumes --remove-orphans
