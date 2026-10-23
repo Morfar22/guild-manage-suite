@@ -1,3 +1,14 @@
+import {
+  getWeekStartDate,
+  describeProgress,
+  formatMessage,
+  createLiveEmbed,
+  createOfflineEmbed,
+  type TwitchStream,
+  type TwitchUser,
+  type TwitchClip,
+  type TwitchVideo,
+} from "../../../src/lib/server/twitch-notifications-shared.ts";
 import { requireGuildAdmin, safeEqual } from "../_shared/api-auth.ts";
 import { decryptBotToken as decryptToken } from "../_shared/bot-token-crypto.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -39,29 +50,6 @@ interface TwitchTokenResponse {
   access_token: string;
   expires_in: number;
   token_type: string;
-}
-
-interface TwitchStream {
-  id: string;
-  user_id: string;
-  user_login: string;
-  user_name: string;
-  game_id: string;
-  game_name: string;
-  type: string;
-  title: string;
-  viewer_count: number;
-  started_at: string;
-  language: string;
-  thumbnail_url: string;
-  is_mature: boolean;
-}
-
-interface TwitchUser {
-  id: string;
-  login: string;
-  display_name: string;
-  profile_image_url: string;
 }
 
 async function getTwitchToken(): Promise<string> {
@@ -141,43 +129,6 @@ async function getStreams(
 
   const data = await response.json();
   return data.data || [];
-}
-
-interface TwitchClip {
-  id: string;
-  url: string;
-  embed_url: string;
-  broadcaster_id: string;
-  broadcaster_name: string;
-  creator_id: string;
-  creator_name: string;
-  video_id: string;
-  game_id: string;
-  language: string;
-  title: string;
-  view_count: number;
-  created_at: string;
-  thumbnail_url: string;
-  duration: number;
-}
-
-interface TwitchVideo {
-  id: string;
-  stream_id: string | null;
-  user_id: string;
-  user_login: string;
-  user_name: string;
-  title: string;
-  description: string;
-  created_at: string;
-  published_at: string;
-  url: string;
-  thumbnail_url: string;
-  viewable: string;
-  view_count: number;
-  language: string;
-  type: string; // 'archive', 'highlight', 'upload'
-  duration: string;
 }
 
 async function getClips(
@@ -321,52 +272,6 @@ async function sendDiscordDM(
   }
 }
 
-// Get the start of the current week (Monday 00:00 UTC) as a YYYY-MM-DD date string
-function getWeekStartDate(date: Date = new Date()): string {
-  const d = new Date(date);
-  const day = d.getUTCDay(); // 0 = Sunday, 1 = Monday
-  const diff = day === 0 ? 6 : day - 1; // days since Monday
-  d.setUTCDate(d.getUTCDate() - diff);
-  d.setUTCHours(0, 0, 0, 0);
-  return d.toISOString().slice(0, 10);
-}
-
-// Compute progress / goal display string for a partner
-function describeProgress(streamer: Untyped): {
-  progress: string;
-  goal: string;
-  met: boolean;
-} {
-  const qt = streamer.quota_type || "streams";
-  const hours = (streamer.current_week_minutes || 0) / 60;
-  if (qt === "hours") {
-    const goal = Number(streamer.quota_hours_per_week || 0);
-    return {
-      progress: `${hours.toFixed(1)}t`,
-      goal: `${goal}t`,
-      met: hours >= goal,
-    };
-  }
-  if (qt === "both") {
-    const sGoal = streamer.quota_streams_per_week || 0;
-    const hGoal = Number(streamer.quota_hours_per_week || 0);
-    const sNow = streamer.current_week_streams || 0;
-    return {
-      progress: `${sNow} streams / ${hours.toFixed(1)}t`,
-      goal: `${sGoal} streams / ${hGoal}t`,
-      met: sNow >= sGoal && hours >= hGoal,
-    };
-  }
-  // streams
-  const sGoal = streamer.quota_streams_per_week || 0;
-  const sNow = streamer.current_week_streams || 0;
-  return {
-    progress: `${sNow} streams`,
-    goal: `${sGoal} streams`,
-    met: sNow >= sGoal,
-  };
-}
-
 async function sendDiscordNotification(
   channelId: string,
   embed: Record<string, unknown>,
@@ -437,104 +342,6 @@ async function resolveGuildBotToken(
     console.error("Error resolving guild bot token:", e);
   }
   return null;
-}
-
-function formatMessage(template: string, data: Record<string, string>): string {
-  let result = template;
-  for (const [key, value] of Object.entries(data)) {
-    result = result.replace(new RegExp(`{${key}}`, "g"), value);
-  }
-  return result;
-}
-
-function createLiveEmbed(
-  stream: TwitchStream,
-  user: TwitchUser,
-  settings: Record<string, unknown>,
-  message: string,
-): Record<string, unknown> {
-  const thumbnailUrl = stream.thumbnail_url
-    .replace("{width}", "1280")
-    .replace("{height}", "720");
-
-  // Calculate stream uptime
-  const startedAt = new Date(stream.started_at);
-  const now = new Date();
-  const uptimeMs = now.getTime() - startedAt.getTime();
-  const hours = Math.floor(uptimeMs / 3600000);
-  const minutes = Math.floor((uptimeMs % 3600000) / 60000);
-  const uptimeStr = hours > 0 ? `${hours}t ${minutes}m` : `${minutes}m`;
-
-  const embed: Record<string, unknown> = {
-    title: `🔴 LIVE: ${stream.title}`,
-    url: `https://twitch.tv/${stream.user_login}`,
-    color: parseInt(
-      ((settings.live_embed_color as string) || "#9146FF").replace("#", ""),
-      16,
-    ),
-    author: {
-      name: `${user.display_name} er nu LIVE på Twitch!`,
-      url: `https://twitch.tv/${stream.user_login}`,
-      icon_url: user.profile_image_url,
-    },
-    description: `**[Klik her for at se streamen](https://twitch.tv/${stream.user_login})**`,
-    timestamp: new Date().toISOString(),
-  };
-
-  const fields: Array<{ name: string; value: string; inline: boolean }> = [];
-
-  if (settings.show_game !== false && stream.game_name) {
-    fields.push({ name: "🎮 Spil", value: stream.game_name, inline: true });
-  }
-
-  if (settings.show_viewers !== false) {
-    fields.push({
-      name: "👀 Seere",
-      value: stream.viewer_count.toLocaleString(),
-      inline: true,
-    });
-  }
-
-  // Add uptime field
-  fields.push({ name: "⏱️ Uptime", value: uptimeStr, inline: true });
-
-  if (fields.length > 0) {
-    embed.fields = fields;
-  }
-
-  if (settings.show_thumbnail !== false) {
-    embed.image = { url: `${thumbnailUrl}?t=${Date.now()}` };
-  }
-
-  embed.thumbnail = { url: user.profile_image_url };
-  embed.footer = {
-    text: `Twitch • ${stream.language?.toUpperCase() || "DA"}`,
-    icon_url:
-      "https://static.twitchcdn.net/assets/favicon-32-d6025c14e900565d6177.png",
-  };
-
-  return embed;
-}
-
-function createOfflineEmbed(
-  user: TwitchUser,
-  settings: Record<string, unknown>,
-  message: string,
-): Record<string, unknown> {
-  return {
-    description: message,
-    color: parseInt(
-      ((settings.offline_embed_color as string) || "#6441A5").replace("#", ""),
-      16,
-    ),
-    thumbnail: { url: user.profile_image_url },
-    footer: {
-      text: "Twitch",
-      icon_url:
-        "https://static.twitchcdn.net/assets/favicon-32-d6025c14e900565d6177.png",
-    },
-    timestamp: new Date().toISOString(),
-  };
 }
 
 console.log("Twitch handler loaded");
@@ -1252,11 +1059,9 @@ Deno.serve(async (req) => {
 
         const guildSettings = settingsMap.get(streamer.guild_id) || {};
 
-        // Determine channels (per-streamer override or global)
-        const clipsChannel =
-          streamer.clips_channel_id || guildSettings.clips_channel_id;
-        const vodsChannel =
-          streamer.vods_channel_id || guildSettings.vods_channel_id;
+        // Content channels belong to guild settings (not twitch_streamers).
+        const clipsChannel = guildSettings.clips_channel_id;
+        const vodsChannel = guildSettings.vods_channel_id;
 
         // Check clips
         if (guildSettings.notify_clips && clipsChannel) {
@@ -1515,7 +1320,7 @@ Deno.serve(async (req) => {
       // Get all partner-tracking-enabled guilds
       const { data: trackingSettings } = await supabase
         .from("twitch_settings")
-        .select("*, guilds!inner(id, guild_id, name)")
+        .select("*, guilds!inner(id, guild_id, guild_name)")
         .eq("partner_tracking_enabled", true);
 
       if (!trackingSettings || trackingSettings.length === 0) {
@@ -1547,7 +1352,7 @@ Deno.serve(async (req) => {
           supabase,
           settings.guild_id,
         );
-        const guildName = settings.guilds?.name || "serveren";
+        const guildName = settings.guilds?.guild_name || "serveren";
         const warnDays = settings.partner_warning_days_before ?? 2;
 
         for (const partner of partners) {
