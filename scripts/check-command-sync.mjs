@@ -1,7 +1,10 @@
 import fs from "node:fs";
 
 const read = (path) =>
-  fs.readFileSync(new URL(`../${path}`, import.meta.url), "utf8");
+  // Source markers below use LF; Git may check these files out with CRLF on Windows.
+  fs
+    .readFileSync(new URL(`../${path}`, import.meta.url), "utf8")
+    .replace(/\r\n?/g, "\n");
 const routeConfig = JSON.parse(read("shared/command-routes.json"));
 
 function extractBalanced(source, start, open, close) {

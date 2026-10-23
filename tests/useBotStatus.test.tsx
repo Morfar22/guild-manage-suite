@@ -14,39 +14,16 @@ vi.mock("@/contexts/GuildContext", () => ({
   useGuild: () => ({ selectedGuild: mocks.guild }),
 }));
 
-vi.mock("@/integrations/supabase/client", () => ({
-  supabase: {
-    from: () => ({
-      select: () => ({
-        eq: () => ({
-          maybeSingle: async () => ({ data: null, error: null }),
-        }),
-      }),
+vi.mock("@/integrations/supabase/client", async () => {
+  const { createSupabaseStub } = await import("./mocks/supabase");
+  return {
+    supabase: createSupabaseStub({
+      channels: mocks.channels,
+      created: mocks.created,
+      removeChannel: mocks.removeChannel,
     }),
-    // Model Supabase topic reuse, including channels awaiting async removal.
-    channel: (topic: string) => {
-      if (mocks.channels.has(topic)) return mocks.channels.get(topic);
-      const channel = {
-        subscribed: false,
-        callback: (_payload: Untyped) => {},
-        on(_event: string, _filter: Untyped, callback: Untyped) {
-          if (this.subscribed)
-            throw new Error("cannot add callbacks after subscribe()");
-          this.callback = callback;
-          return this;
-        },
-        subscribe() {
-          this.subscribed = true;
-          return this;
-        },
-      };
-      mocks.channels.set(topic, channel);
-      mocks.created.push(channel);
-      return channel;
-    },
-    removeChannel: mocks.removeChannel,
-  },
-}));
+  };
+});
 
 import { useBotStatus } from "../src/hooks/useBotStatus";
 

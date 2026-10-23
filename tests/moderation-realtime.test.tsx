@@ -10,50 +10,17 @@ const mocks = vi.hoisted(() => ({
 vi.mock("@/contexts/GuildContext", () => ({
   useGuild: () => ({ selectedGuild: mocks.guild }),
 }));
-vi.mock("@/integrations/supabase/client", () => ({
-  supabase: {
-    from() {
-      return {
-        select() {
-          return this;
-        },
-        eq() {
-          return this;
-        },
-        order() {
-          return this;
-        },
-        limit() {
-          return this;
-        },
-        then(resolve: Untyped) {
-          return Promise.resolve({ data: [], count: 0, error: null }).then(
-            resolve,
-          );
-        },
-      };
-    },
-    channel(topic: string) {
-      if (mocks.channels.has(topic)) return mocks.channels.get(topic);
-      const channel = {
-        subscribed: false,
-        callback: (_payload: Untyped) => {},
-        on(_type: Untyped, _filter: Untyped, cb: Untyped) {
-          if (this.subscribed) throw Error("callbacks after subscribe");
-          this.callback = cb;
-          return this;
-        },
-        subscribe() {
-          this.subscribed = true;
-          return this;
-        },
-      };
-      mocks.channels.set(topic, channel);
-      return channel;
-    },
-    removeChannel: mocks.remove,
-  },
-}));
+vi.mock("@/integrations/supabase/client", async () => {
+  const { createSupabaseStub } = await import("./mocks/supabase");
+  return {
+    supabase: createSupabaseStub({
+      channels: mocks.channels,
+      removeChannel: mocks.remove,
+      result: () => ({ data: [], count: 0, error: null }),
+    }),
+  };
+});
+
 import { useModerationLogs } from "../src/hooks/useModerationLogs";
 afterEach(() => {
   cleanup();
