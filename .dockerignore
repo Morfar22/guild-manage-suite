@@ -1,0 +1,16 @@
+.git
+**/node_modules
+.env*
+!.env.test
+!.env.example
+**/.env
+**/.env.local
+**/.env.production
+dist
+.output
+.nitro
+.wrangler
+coverage
+*.log
+work
+outputs
