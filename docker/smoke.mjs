@@ -44,8 +44,14 @@ assert.ok(
 const anonymousGuilds = await fetch(`${base}/rest/v1/guilds?select=id`, {
   headers: { apikey: anonKey, Authorization: `Bearer ${anonKey}` },
 });
-assert.equal(anonymousGuilds.status, 200, await anonymousGuilds.clone().text());
-assert.deepEqual(await anonymousGuilds.json(), []);
+if (anonymousGuilds.status === 200) {
+  assert.deepEqual(await anonymousGuilds.json(), []);
+} else {
+  // The hardening migrations revoke anon table privileges outright. A 42501
+  // denial also proves isolation; there is no reason to grant SELECT back.
+  assert.ok([401, 403].includes(anonymousGuilds.status));
+  assert.equal((await anonymousGuilds.json()).code, "42501");
+}
 const page = await fetch("http://localhost:8080/auth");
 assert.equal(page.status, 200);
 assert.match(await page.text(), /GuildOS/);
