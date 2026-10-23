@@ -33,3 +33,6 @@ token.txt
 # TanStack/Nitro build output
 .output/
 .nitro/
+
+!.env.test
+coverage/
