@@ -1,5 +1,6 @@
 // Migrated from Supabase Edge Function `invite-tracker` to a TanStack server route.
 // @ts-nocheck
+import { logger } from "@/lib/server/logger";
 import { createFileRoute } from "@tanstack/react-router";
 import type { Untyped } from "@/types/untyped";
 import {
@@ -270,7 +271,7 @@ __serve(async (req) => {
     }
   } catch (e: Untyped) {
     if (e instanceof Response) return e;
-    console.error("invite-tracker error:", e?.message);
+    logger.error("invite-tracker error:", e?.message);
     return new Response(
       JSON.stringify({ error: e?.message || "Unknown error" }),
       {

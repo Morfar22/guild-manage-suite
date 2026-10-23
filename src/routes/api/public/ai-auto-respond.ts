@@ -1,5 +1,6 @@
 // Migrated from Supabase Edge Function `ai-auto-respond` to a TanStack server route.
 // @ts-nocheck
+import { logger } from "@/lib/server/logger";
 import { safeEqual } from "@/lib/server/api-auth";
 import { createFileRoute } from "@tanstack/react-router";
 import { createClient } from "@supabase/supabase-js";
@@ -93,7 +94,7 @@ Rules:
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error) {
-    console.error("AI Auto-Respond error:", error);
+    logger.error("AI Auto-Respond error:", error);
     const aiError = openAIErrorResponse(error, corsHeaders);
     if (aiError) return aiError;
     return new Response(

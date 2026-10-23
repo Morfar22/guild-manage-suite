@@ -1,0 +1,329 @@
+name: guildos-local
+
+# Development-only credentials. Ports bind to loopback; use DEPLOY_SELFHOST.md
+# and fresh secrets for a deployment. No .env or external accounts are needed.
+x-local-environment: &local-environment
+  SUPABASE_URL: http://gateway:8000
+  SUPABASE_ANON_KEY: &anon-key eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzAwMDAwMDAwLCJleHAiOjQxMDI0NDQ4MDB9.yd7PkvVp1alMstuU_BcVdKX9vNCgah_DI3QsLPA1ARw
+  SUPABASE_PUBLISHABLE_KEY: *anon-key
+  SUPABASE_SERVICE_ROLE_KEY: &service-key eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoic2VydmljZV9yb2xlIiwiaXNzIjoic3VwYWJhc2UiLCJpYXQiOjE3MDAwMDAwMDAsImV4cCI6NDEwMjQ0NDgwMH0.cXKUVBaQ7_6yE0kLVjvNw5NiFIRrVm3t-d1KbYToC0c
+  BOT_SECRET_KEY: guildos-local-bot-secret-do-not-deploy
+  APP_API_BASE: http://dashboard:8080
+
+services:
+  dashboard:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.dashboard
+    environment:
+      <<: *local-environment
+      VITE_SUPABASE_URL: http://localhost:54321
+      VITE_SUPABASE_PUBLISHABLE_KEY: *anon-key
+      VITE_DISCORD_BOT_CLIENT_ID: "1555371176224628787"
+      PUBLIC_APP_URL: http://localhost:8080
+      DISCORD_BOT_TOKEN: ${DISCORD_TOKEN:-}
+      DISCORD_CLIENT_ID: ${DISCORD_CLIENT_ID:-1555371176224628787}
+      DISCORD_PUBLIC_KEY: ${DISCORD_PUBLIC_KEY:-}
+      TWITCH_CLIENT_ID: ${TWITCH_CLIENT_ID:-}
+      TWITCH_CLIENT_SECRET: ${TWITCH_CLIENT_SECRET:-}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+    ports:
+      - "127.0.0.1:8080:8080"
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      gateway:
+        condition: service_healthy
+      seed:
+        condition: service_completed_successfully
+    healthcheck:
+      test:
+        [
+          CMD,
+          node,
+          -e,
+          "fetch('http://127.0.0.1:8080/auth').then(r=>{if(!r.ok)process.exit(1)})",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 60s
+
+  bot:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.bot
+    environment:
+      <<: *local-environment
+      BOT_OFFLINE: "true"
+      BOT_HEALTH_PORT: "3188"
+    depends_on:
+      dashboard:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          CMD,
+          node,
+          -e,
+          "fetch('http://127.0.0.1:3188/health').then(r=>{if(!r.ok)process.exit(1)})",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  # The full gateway bot requires a real application token. Explicitly opt in:
+  # docker compose --profile live up --build bot-live lavalink
+  bot-live:
+    profiles: [live]
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.bot
+    environment:
+      <<: *local-environment
+      BOT_OFFLINE: "false"
+      DISCORD_TOKEN: ${DISCORD_TOKEN:-}
+      DISCORD_CLIENT_ID: ${DISCORD_CLIENT_ID:-1555371176224628787}
+      LAVALINK_HOST: lavalink
+      LAVALINK_PORT: "2333"
+      LAVALINK_PASSWORD: guildos-local-lavalink
+      LAVALINK_SECURE: "false"
+    depends_on:
+      dashboard:
+        condition: service_healthy
+      lavalink:
+        condition: service_started
+
+  lavalink:
+    profiles: [live]
+    image: ghcr.io/lavalink-devs/lavalink:4.1.1
+    volumes:
+      - ./docker/lavalink.yml:/opt/Lavalink/application.yml:ro
+
+  db:
+    image: supabase/postgres:17.6.1.136
+    environment:
+      POSTGRES_PASSWORD: guildos-local-postgres
+      POSTGRES_DB: postgres
+      POSTGRES_HOST: /var/run/postgresql
+      POSTGRES_PORT: "5432"
+      PGPORT: "5432"
+      JWT_EXP: "3600"
+    command:
+      [
+        postgres,
+        -c,
+        config_file=/etc/postgresql/postgresql.conf,
+        -c,
+        wal_level=logical,
+      ]
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - postgres-config:/etc/postgresql-custom
+      - ./docker/db/roles.sql:/docker-entrypoint-initdb.d/init-scripts/99-roles.sql:ro
+      - ./docker/db/realtime.sql:/docker-entrypoint-initdb.d/migrations/99-realtime.sql:ro
+    healthcheck:
+      test: [CMD, pg_isready, -h, 127.0.0.1, -U, postgres]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  auth:
+    image: supabase/gotrue:v2.197.0
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      GOTRUE_API_HOST: 0.0.0.0
+      GOTRUE_API_PORT: "9999"
+      API_EXTERNAL_URL: http://localhost:54321/auth/v1
+      GOTRUE_DB_DRIVER: postgres
+      GOTRUE_DB_DATABASE_URL: postgres://supabase_auth_admin:guildos-local-postgres@db:5432/postgres
+      GOTRUE_SITE_URL: http://localhost:8080
+      GOTRUE_URI_ALLOW_LIST: http://localhost:8080/**
+      GOTRUE_DISABLE_SIGNUP: "false"
+      GOTRUE_EXTERNAL_EMAIL_ENABLED: "true"
+      GOTRUE_MAILER_AUTOCONFIRM: "true"
+      GOTRUE_JWT_ADMIN_ROLES: service_role
+      GOTRUE_JWT_AUD: authenticated
+      GOTRUE_JWT_DEFAULT_GROUP_NAME: authenticated
+      GOTRUE_JWT_EXP: "3600"
+      GOTRUE_JWT_SECRET: &jwt-secret guildos-local-development-jwt-secret-at-least-32-characters
+    healthcheck:
+      test:
+        [
+          CMD,
+          wget,
+          --no-verbose,
+          --tries=1,
+          --spider,
+          http://127.0.0.1:9999/health,
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  rest:
+    image: postgrest/postgrest:v14.18
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      PGRST_DB_URI: postgres://authenticator:guildos-local-postgres@db:5432/postgres
+      PGRST_DB_SCHEMAS: public,storage
+      PGRST_DB_ANON_ROLE: anon
+      PGRST_JWT_SECRET: *jwt-secret
+      PGRST_ADMIN_SERVER_PORT: "3001"
+      # --ready rejects the default special bind host (!4); use a concrete
+      # loopback address for the private admin listener and readiness probe.
+      PGRST_ADMIN_SERVER_HOST: 127.0.0.1
+    healthcheck:
+      test: [CMD, postgrest, --ready]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  realtime:
+    image: supabase/realtime:v2.143.3
+    hostname: realtime-dev.supabase-realtime
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      PORT: "4000"
+      DB_HOST: db
+      DB_PORT: "5432"
+      DB_USER: supabase_admin
+      DB_PASSWORD: guildos-local-postgres
+      DB_NAME: postgres
+      DB_AFTER_CONNECT_QUERY: SET search_path TO _realtime
+      DB_ENC_KEY: supabaserealtime
+      API_JWT_SECRET: *jwt-secret
+      SECRET_KEY_BASE: guildos-local-secret-key-base-with-at-least-sixty-four-characters-long
+      METRICS_JWT_SECRET: *jwt-secret
+      ERL_AFLAGS: -proto_dist inet_tcp
+      DNS_NODES: "''"
+      RLIMIT_NOFILE: "10000"
+      APP_NAME: realtime
+      SEED_SELF_HOST: "true"
+      RUN_JANITOR: "true"
+    healthcheck:
+      test:
+        [
+          CMD-SHELL,
+          "curl -fsS -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzAwMDAwMDAwLCJleHAiOjQxMDI0NDQ4MDB9.yd7PkvVp1alMstuU_BcVdKX9vNCgah_DI3QsLPA1ARw' http://127.0.0.1:4000/api/tenants/realtime-dev/health",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+
+  storage:
+    image: supabase/storage-api:v1.81.0
+    depends_on:
+      db:
+        condition: service_healthy
+      rest:
+        condition: service_healthy
+    environment:
+      ANON_KEY: *anon-key
+      SERVICE_KEY: *service-key
+      POSTGREST_URL: http://rest:3000
+      AUTH_JWT_SECRET: *jwt-secret
+      DATABASE_URL: postgres://supabase_storage_admin:guildos-local-postgres@db:5432/postgres
+      STORAGE_PUBLIC_URL: http://localhost:54321
+      STORAGE_BACKEND: file
+      FILE_STORAGE_BACKEND_PATH: /var/lib/storage
+      FILE_SIZE_LIMIT: "52428800"
+      GLOBAL_S3_BUCKET: local
+      TENANT_ID: local
+      REGION: local
+      ENABLE_IMAGE_TRANSFORMATION: "false"
+    volumes:
+      - storage-data:/var/lib/storage
+    healthcheck:
+      test:
+        [
+          CMD,
+          wget,
+          --no-verbose,
+          --tries=1,
+          --spider,
+          http://127.0.0.1:5000/status,
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  gateway:
+    image: nginx:1.29.1-alpine
+    ports:
+      - "127.0.0.1:54321:8000"
+    volumes:
+      - ./docker/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      auth:
+        condition: service_healthy
+      rest:
+        condition: service_healthy
+      realtime:
+        condition: service_healthy
+      storage:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          CMD,
+          wget,
+          --no-verbose,
+          --tries=1,
+          --spider,
+          http://127.0.0.1:8000/health,
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  migrate:
+    image: supabase/postgres:17.6.1.136
+    entrypoint: [sh, /scripts/migrate.sh]
+    environment:
+      PGHOST: db
+      PGUSER: supabase_admin
+      PGPASSWORD: guildos-local-postgres
+      PGDATABASE: postgres
+    volumes:
+      - ./docker/migrate.sh:/scripts/migrate.sh:ro
+      - ./supabase/migrations:/migrations:ro
+    depends_on:
+      auth:
+        condition: service_healthy
+      storage:
+        condition: service_healthy
+
+  seed:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.dashboard
+    command: [node, docker/seed.mjs]
+    environment:
+      <<: *local-environment
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      gateway:
+        condition: service_healthy
+
+  # Build with network access, then run tests with the network disabled:
+  # docker compose --profile test run --build --rm --no-deps tests
+  tests:
+    profiles: [test]
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.dashboard
+    command: [npm, test]
+    network_mode: none
+
+volumes:
+  postgres-data:
+  postgres-config:
+  storage-data:

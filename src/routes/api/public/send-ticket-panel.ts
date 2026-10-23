@@ -1,4 +1,5 @@
 // @ts-nocheck
+import { logger } from "@/lib/server/logger";
 import { decryptBotToken as simpleDecrypt } from "@/lib/server/bot-token-crypto";
 // Migrated from Supabase Edge Function `send-ticket-panel` to a TanStack server route.
 import { createFileRoute } from "@tanstack/react-router";
@@ -270,7 +271,7 @@ __serve(async (req) => {
 
     return json({ success: true, message_id: messageId });
   } catch (e) {
-    console.error(e);
+    logger.error(e);
     return json({ error: "Internal error", details: String(e) }, 500);
   }
 });

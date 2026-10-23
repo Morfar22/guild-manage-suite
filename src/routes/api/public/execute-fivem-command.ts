@@ -1,5 +1,6 @@
 // Migrated from Supabase Edge Function `execute-fivem-command` to a TanStack server route.
 // @ts-nocheck
+import { logger } from "@/lib/server/logger";
 import { createFileRoute } from "@tanstack/react-router";
 import { createClient } from "@supabase/supabase-js";
 import type { Untyped } from "@/types/untyped";
@@ -269,7 +270,7 @@ __serve(async (req) => {
       .single();
 
     if (queueError || !queuedRow?.id) {
-      console.error("Error queuing command:", queueError);
+      logger.error("Error queuing command:", queueError);
       return new Response(
         JSON.stringify({ error: "Failed to queue command" }),
         {
@@ -334,7 +335,7 @@ __serve(async (req) => {
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   } catch (error) {
-    console.error("Error:", error);
+    logger.error("Error:", error);
     return new Response(JSON.stringify({ error: "Internal server error" }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },

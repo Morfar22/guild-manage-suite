@@ -1,4 +1,5 @@
 // @ts-nocheck
+import { logger } from "@/lib/server/logger";
 import { safeEqual } from "@/lib/server/api-auth";
 import { decryptBotToken as simpleDecrypt } from "@/lib/server/bot-token-crypto";
 // Migrated from Supabase Edge Function `fivem-handler` to a TanStack server route.
@@ -43,7 +44,7 @@ async function checkIPWhitelist(
     .select("ip_address");
 
   if (error) {
-    console.error("Error fetching IP whitelist:", error);
+    logger.error("Error fetching IP whitelist:", error);
     return { allowed: true, ip };
   }
 
@@ -375,12 +376,12 @@ async function sendDiscordStatusEmbed(
       return data.id || null;
     }
     const errText = await response.text().catch(() => "unknown");
-    console.error(
+    logger.error(
       `Failed to create status message (${response.status}): ${errText}`,
     );
     return null;
   } catch (error) {
-    console.error("Error sending Discord status embed:", error);
+    logger.error("Error sending Discord status embed:", error);
     return null;
   }
 }
@@ -573,7 +574,7 @@ __serve(async (req) => {
 
         const { data: whitelistEntry, error } = await query.maybeSingle();
         if (error) {
-          console.error("Error checking whitelist:", error);
+          logger.error("Error checking whitelist:", error);
           return new Response(JSON.stringify({ error: "Database error" }), {
             status: 500,
             headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -712,7 +713,7 @@ __serve(async (req) => {
             .eq("id", existing.id);
 
           if (error) {
-            console.error("Error updating player:", error);
+            logger.error("Error updating player:", error);
             return new Response(
               JSON.stringify({ error: "Failed to update player" }),
               {
@@ -735,7 +736,7 @@ __serve(async (req) => {
           });
 
           if (error) {
-            console.error("Error registering player:", error);
+            logger.error("Error registering player:", error);
             return new Response(
               JSON.stringify({ error: "Failed to register player" }),
               {
@@ -915,7 +916,7 @@ __serve(async (req) => {
           .eq("discord_user_id", discordId);
 
         if (error) {
-          console.error("Error updating playtime:", error);
+          logger.error("Error updating playtime:", error);
         }
 
         return new Response(JSON.stringify({ success: true }), {
@@ -1033,7 +1034,7 @@ __serve(async (req) => {
           .upsert(payload, { onConflict: "guild_id,server_id,player_id" });
 
         if (error) {
-          console.error("Error upserting online player:", { error, payload });
+          logger.error("Error upserting online player:", { error, payload });
           return new Response(
             JSON.stringify({
               success: false,
@@ -1097,7 +1098,7 @@ __serve(async (req) => {
             .upsert(rows, { onConflict: "guild_id,server_id,player_id" });
 
           if (upsertError) {
-            console.error("Error syncing online players:", upsertError);
+            logger.error("Error syncing online players:", upsertError);
             return new Response(
               JSON.stringify({ error: "Failed to sync online players" }),
               {
@@ -1135,7 +1136,7 @@ __serve(async (req) => {
           .eq("guild_id", internalGuildId);
 
         if (error) {
-          console.error("Error fetching online players:", error);
+          logger.error("Error fetching online players:", error);
         }
 
         return new Response(JSON.stringify({ players: players || [] }), {
@@ -1523,7 +1524,7 @@ __serve(async (req) => {
         const upload = await fetch(webhookUrl, { method: "POST", body: form });
         if (!upload.ok) {
           const text = await upload.text();
-          console.error(
+          logger.error(
             "Screenshot webhook upload failed:",
             upload.status,
             text,
@@ -1651,7 +1652,7 @@ __serve(async (req) => {
           .eq("is_whitelisted", true);
 
         if (error) {
-          console.error("Error fetching whitelist:", error);
+          logger.error("Error fetching whitelist:", error);
         }
 
         return new Response(JSON.stringify({ whitelist }), {
@@ -1668,7 +1669,7 @@ __serve(async (req) => {
           .order("banned_at", { ascending: false });
 
         if (error) {
-          console.error("Error fetching bans:", error);
+          logger.error("Error fetching bans:", error);
         }
 
         return new Response(JSON.stringify({ bans }), {
@@ -1687,7 +1688,7 @@ __serve(async (req) => {
           .limit(limit);
 
         if (error) {
-          console.error("Error fetching action logs:", error);
+          logger.error("Error fetching action logs:", error);
         }
 
         return new Response(JSON.stringify({ logs }), {
@@ -1743,7 +1744,7 @@ __serve(async (req) => {
           .limit(10);
 
         if (error) {
-          console.error("Error fetching pending commands:", error);
+          logger.error("Error fetching pending commands:", error);
           return new Response(
             JSON.stringify({ error: "Failed to fetch commands" }),
             {
@@ -1815,7 +1816,7 @@ __serve(async (req) => {
           .eq("server_id", serverId);
 
         if (error) {
-          console.error("Error marking command as executed:", error);
+          logger.error("Error marking command as executed:", error);
           return new Response(
             JSON.stringify({ error: "Failed to update command status" }),
             {
@@ -1891,7 +1892,7 @@ __serve(async (req) => {
           .upsert(statusPayload, { onConflict: "guild_id,server_id" });
 
         if (error) {
-          console.error("Error updating server status:", error);
+          logger.error("Error updating server status:", error);
           return new Response(
             JSON.stringify({ error: "Failed to update server status" }),
             {
@@ -1953,7 +1954,7 @@ __serve(async (req) => {
         const { data: status, error } = await query.maybeSingle();
 
         if (error) {
-          console.error("Error fetching server status:", error);
+          logger.error("Error fetching server status:", error);
         }
 
         return new Response(JSON.stringify({ status: status || null }), {
@@ -2024,7 +2025,7 @@ __serve(async (req) => {
           .maybeSingle();
 
         if (error) {
-          console.error("Error fetching FiveM settings:", error);
+          logger.error("Error fetching FiveM settings:", error);
           return new Response(
             JSON.stringify({ error: "Failed to fetch settings" }),
             {
@@ -2051,7 +2052,7 @@ __serve(async (req) => {
         });
     }
   } catch (error: unknown) {
-    console.error("FiveM handler error:", error);
+    logger.error("FiveM handler error:", error);
     const message = error instanceof Error ? error.message : "Unknown error";
     return new Response(JSON.stringify({ error: message }), {
       status: 500,

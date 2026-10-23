@@ -9,7 +9,7 @@
     "build:dev": "vite build --mode development",
     "lint": "eslint .",
     "preview": "vite preview",
-    "test": "node --test tests/*.node.mjs && vitest run",
+    "test": "node --import ./tests/offline-env.mjs --test tests/*.node.mjs && vitest run",
     "test:watch": "vitest",
     "format": "prettier --write .",
     "check:commands": "node scripts/check-command-sync.mjs",
@@ -64,6 +64,7 @@
     "input-otp": "^1.4.2",
     "lucide-react": "^0.575.0",
     "next-themes": "^0.4.6",
+    "pino": "10.4.0",
     "react": "^19.2.0",
     "react-day-picker": "^9.14.0",
     "react-dom": "^19.2.0",
@@ -78,7 +79,7 @@
     "tweetnacl": "^1.0.3",
     "vaul": "^1.1.2",
     "vite-tsconfig-paths": "^6.0.2",
-    "zod": "^3.24.2"
+    "zod": "4.6.7"
   },
   "devDependencies": {
     "@electric-sql/pglite": "^0.5.10",
@@ -91,6 +92,7 @@
     "@types/react": "^19.2.0",
     "@types/react-dom": "^19.2.0",
     "@vitejs/plugin-react": "^5.2.0",
+    "@vitest/coverage-v8": "5.0.5",
     "eslint": "^9.32.0",
     "eslint-config-prettier": "^10.1.1",
     "eslint-plugin-prettier": "^5.2.6",
@@ -114,5 +116,8 @@
     "@tailwindcss/typography": {
       "postcss-selector-parser": "7.1.6"
     }
-  }
+  },
+  "workspaces": [
+    "bot"
+  ]
 }

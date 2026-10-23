@@ -1,4 +1,5 @@
 // @ts-nocheck
+import { logger } from "@/lib/server/logger";
 import { decryptBotToken as simpleDecrypt } from "@/lib/server/bot-token-crypto";
 // Migrated from Supabase Edge Function `bot-tickets` to a TanStack server route.
 import { createFileRoute } from "@tanstack/react-router";
@@ -37,7 +38,7 @@ async function checkIPWhitelist(
     .select("*", { count: "exact", head: true });
 
   if (countError) {
-    console.error("Error checking whitelist count:", countError);
+    logger.error("Error checking whitelist count:", countError);
     return { allowed: false, ip: clientIp };
   }
 
@@ -73,7 +74,7 @@ async function getBotTokenForGuild(
     try {
       return simpleDecrypt(settings.bot_token_encrypted, key);
     } catch (error) {
-      console.error("Failed to decrypt custom bot token:", error);
+      logger.error("Failed to decrypt custom bot token:", error);
     }
   }
 
@@ -93,7 +94,7 @@ async function discordApi(path: string, init: RequestInit, token: string) {
 
   const text = await res.text();
   if (!res.ok) {
-    console.error("Discord API error", res.status, text);
+    logger.error("Discord API error", res.status, text);
     throw new Error(`Discord API error (${res.status})`);
   }
 
@@ -122,7 +123,7 @@ __serve(async (req) => {
   // Check IP whitelist
   const ipCheck = await checkIPWhitelist(req, supabase);
   if (!ipCheck.allowed) {
-    console.error(`IP not whitelisted: ${ipCheck.ip}`);
+    logger.error(`IP not whitelisted: ${ipCheck.ip}`);
     return new Response(
       JSON.stringify({
         error: "Forbidden - IP not whitelisted",
@@ -253,7 +254,7 @@ __serve(async (req) => {
             });
 
           if (appError) {
-            console.error("Failed to create application record:", appError);
+            logger.error("Failed to create application record:", appError);
           }
         }
 
@@ -518,7 +519,7 @@ __serve(async (req) => {
               `Transcript sent to channel ${settings.transcript_channel_id}`,
             );
           } catch (transcriptError) {
-            console.error("Failed to send transcript:", transcriptError);
+            logger.error("Failed to send transcript:", transcriptError);
           }
         }
 
@@ -558,7 +559,7 @@ __serve(async (req) => {
     }
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : "Unknown error";
-    console.error("Error:", message);
+    logger.error("Error:", message);
     return new Response(JSON.stringify({ error: message }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },

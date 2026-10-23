@@ -1,4 +1,5 @@
 // @ts-nocheck
+import { logger } from "@/lib/server/logger";
 import { decryptBotToken as simpleDecrypt } from "@/lib/server/bot-token-crypto";
 // Migrated from Supabase Edge Function `discord-members` to a TanStack server route.
 import { createFileRoute } from "@tanstack/react-router";
@@ -181,7 +182,7 @@ __serve(async (req) => {
     const message = error instanceof Error ? error.message : "Unknown error";
     const status =
       message === "Unauthorized" ? 401 : message === "Forbidden" ? 403 : 500;
-    console.error("discord-members error:", message);
+    logger.error("discord-members error:", message);
     return new Response(JSON.stringify({ error: message }), {
       status,
       headers: { ...corsHeaders, "Content-Type": "application/json" },

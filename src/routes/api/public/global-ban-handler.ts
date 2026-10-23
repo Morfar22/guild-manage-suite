@@ -1,5 +1,6 @@
 // Migrated from Supabase Edge Function `global-ban-handler` to a TanStack server route.
 // @ts-nocheck
+import { logger } from "@/lib/server/logger";
 import { createFileRoute } from "@tanstack/react-router";
 import { createClient } from "@supabase/supabase-js";
 import type { Untyped } from "@/types/untyped";
@@ -50,7 +51,7 @@ async function broadcastGlobalBanNotification(
   try {
     const discordToken = __env("DISCORD_BOT_TOKEN");
     if (!discordToken) {
-      console.error("DISCORD_BOT_TOKEN not set, skipping broadcast");
+      logger.error("DISCORD_BOT_TOKEN not set, skipping broadcast");
       return;
     }
 
@@ -95,7 +96,7 @@ async function broadcastGlobalBanNotification(
           },
         );
       } catch (e) {
-        console.error(
+        logger.error(
           `Failed to send global ban notification to channel ${ls.log_channel_id}:`,
           e,
         );
@@ -104,7 +105,7 @@ async function broadcastGlobalBanNotification(
 
     await Promise.allSettled(promises);
   } catch (e) {
-    console.error("broadcastGlobalBanNotification error:", e);
+    logger.error("broadcastGlobalBanNotification error:", e);
   }
 }
 
@@ -677,7 +678,7 @@ __serve(async (req) => {
       headers: corsHeaders,
     });
   } catch (error) {
-    console.error("Error:", error);
+    logger.error("Error:", error);
     return new Response(JSON.stringify({ error: error.message }), {
       status: 500,
       headers: corsHeaders,

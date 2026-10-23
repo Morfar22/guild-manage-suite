@@ -1,4 +1,5 @@
 // @ts-nocheck
+import { logger } from "@/lib/server/logger";
 import { requireGuildAdmin, safeEqual } from "@/lib/server/api-auth";
 import { decryptBotToken as simpleDecrypt } from "@/lib/server/bot-token-crypto";
 // Migrated from Supabase Edge Function `giveaway-handler` to a TanStack server route.
@@ -67,7 +68,7 @@ async function getBotTokenForGuild(
     try {
       return simpleDecrypt(settings.bot_token_encrypted, encryptionKey);
     } catch (e) {
-      console.error(
+      logger.error(
         "Failed to decrypt custom bot token, falling back to global:",
         e instanceof Error ? e.message : String(e),
       );
@@ -188,7 +189,7 @@ __serve(async (req) => {
 
       const ipCheck = await checkIPWhitelist(req, supabase);
       if (!ipCheck.allowed) {
-        console.error(`IP not whitelisted: ${ipCheck.ip}`);
+        logger.error(`IP not whitelisted: ${ipCheck.ip}`);
         return new Response(
           JSON.stringify({
             error: "Forbidden - IP not whitelisted",
@@ -226,7 +227,7 @@ __serve(async (req) => {
       });
       if (!response.ok) {
         const text = await response.text();
-        console.error(`Discord API error: ${response.status} - ${text}`);
+        logger.error(`Discord API error: ${response.status} - ${text}`);
         throw new Error(`Discord API error: ${response.status}`);
       }
       if (response.status === 204) return null;
@@ -375,7 +376,7 @@ __serve(async (req) => {
           },
         );
       } catch (error) {
-        console.error("Failed to sync giveaway message:", error);
+        logger.error("Failed to sync giveaway message:", error);
       }
     }
 
@@ -422,7 +423,7 @@ __serve(async (req) => {
           .single();
 
         if (insertError) {
-          console.error("Insert error:", insertError);
+          logger.error("Insert error:", insertError);
           return new Response(JSON.stringify({ error: insertError.message }), {
             status: 500,
             headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -459,7 +460,7 @@ __serve(async (req) => {
             },
           );
         } catch (discordError) {
-          console.error("Failed to send Discord embed:", discordError);
+          logger.error("Failed to send Discord embed:", discordError);
           // Giveaway was created but embed failed - return partial success
           return new Response(
             JSON.stringify({
@@ -728,7 +729,7 @@ __serve(async (req) => {
               }),
             });
           } catch (e) {
-            console.error("Failed to send winner announcement:", e);
+            logger.error("Failed to send winner announcement:", e);
           }
         }
 
@@ -817,7 +818,7 @@ __serve(async (req) => {
               }),
             });
           } catch (e) {
-            console.error("Failed to send reroll announcement:", e);
+            logger.error("Failed to send reroll announcement:", e);
           }
         }
 
@@ -862,7 +863,7 @@ __serve(async (req) => {
               },
             );
           } catch (e) {
-            console.error("Failed to delete giveaway message from Discord:", e);
+            logger.error("Failed to delete giveaway message from Discord:", e);
           }
         }
 
@@ -933,7 +934,7 @@ __serve(async (req) => {
         });
     }
   } catch (error) {
-    console.error("Giveaway handler error:", error);
+    logger.error("Giveaway handler error:", error);
     const errorMessage =
       error instanceof Error ? error.message : "Unknown error";
     return new Response(JSON.stringify({ error: errorMessage }), {

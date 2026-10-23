@@ -1,5 +1,6 @@
 // Migrated from Supabase Edge Function `create-demo-guild` to a TanStack server route.
 // @ts-nocheck
+import { logger } from "@/lib/server/logger";
 import { createFileRoute } from "@tanstack/react-router";
 import { createClient } from "@supabase/supabase-js";
 import type { Untyped } from "@/types/untyped";
@@ -73,7 +74,7 @@ __serve(async (req) => {
       .single();
 
     if (guildError) {
-      console.error("Failed to create guild:", guildError);
+      logger.error("Failed to create guild:", guildError);
       return new Response(
         JSON.stringify({
           error: "Failed to create guild",
@@ -97,7 +98,7 @@ __serve(async (req) => {
     });
 
     if (linkError) {
-      console.error("Failed to link user to guild:", linkError);
+      logger.error("Failed to link user to guild:", linkError);
       // Clean up the guild if we couldn't link
       await supabase.from("guilds").delete().eq("id", guild.id);
       return new Response(
@@ -131,7 +132,7 @@ __serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error) {
-    console.error("Error:", error);
+    logger.error("Error:", error);
     return new Response(JSON.stringify({ error: "Internal server error" }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },

@@ -1,5 +1,6 @@
 // Migrated from Supabase Edge Function `review-application` to a TanStack server route.
 // @ts-nocheck
+import { logger } from "@/lib/server/logger";
 import { createFileRoute } from "@tanstack/react-router";
 import { createClient } from "@supabase/supabase-js";
 import type { Untyped } from "@/types/untyped";
@@ -36,7 +37,7 @@ async function discordApi(path: string, init: RequestInit) {
 
   const text = await res.text();
   if (!res.ok) {
-    console.error("Discord API error", res.status, text);
+    logger.error("Discord API error", res.status, text);
     throw new Error(`Discord API error (${res.status})`);
   }
 
@@ -68,7 +69,7 @@ __serve(async (req) => {
     const { data: claimsData, error: claimsError } =
       await supabaseAuthed.auth.getClaims(token);
     if (claimsError || !claimsData?.claims?.sub) {
-      console.error("getClaims failed", claimsError);
+      logger.error("getClaims failed", claimsError);
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -173,7 +174,7 @@ __serve(async (req) => {
         .eq("id", application.ticket_id)
         .maybeSingle();
       if (ticketError) {
-        console.error("Failed to fetch ticket", ticketError);
+        logger.error("Failed to fetch ticket", ticketError);
       } else {
         ticketChannelId = ticket?.channel_id ?? null;
       }
@@ -190,7 +191,7 @@ __serve(async (req) => {
           closed_by_name: reviewerDisplay,
         })
         .eq("id", application.ticket_id);
-      if (closeErr) console.error("Failed to close ticket", closeErr);
+      if (closeErr) logger.error("Failed to close ticket", closeErr);
     }
 
     const effects: Record<string, unknown> = {};
@@ -204,7 +205,7 @@ __serve(async (req) => {
         .maybeSingle();
 
       if (guildError) {
-        console.error("Failed to load guild", guildError);
+        logger.error("Failed to load guild", guildError);
       } else if (guild?.guild_id && effectiveRoleId) {
         await discordApi(
           `/guilds/${guild.guild_id}/members/${application.discord_user_id}/roles/${effectiveRoleId}`,
@@ -240,7 +241,7 @@ __serve(async (req) => {
 
         effects.dmSent = true;
       } catch (e) {
-        console.error("Failed to send denial DM", e);
+        logger.error("Failed to send denial DM", e);
         effects.dmSent = false;
         effects.dmError = e instanceof Error ? e.message : "Unknown error";
       }
@@ -303,7 +304,7 @@ __serve(async (req) => {
 
         effects.ticketMessageSent = true;
       } catch (e) {
-        console.error("Failed to send ticket status message", e);
+        logger.error("Failed to send ticket status message", e);
         effects.ticketMessageSent = false;
         effects.ticketMessageError =
           e instanceof Error ? e.message : "Unknown error";
@@ -316,7 +317,7 @@ __serve(async (req) => {
     );
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : "Unknown error";
-    console.error("review-application error:", message);
+    logger.error("review-application error:", message);
     return new Response(JSON.stringify({ error: message }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },

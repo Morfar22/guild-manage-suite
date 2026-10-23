@@ -39,6 +39,9 @@ jobs:
       - name: Install dashboard dependencies
         run: npm ci --ignore-scripts
 
+      - name: Audit production dependencies
+        run: npm audit --omit=dev --audit-level=high
+
       - name: Typecheck
         run: npm run typecheck
 
@@ -57,8 +60,16 @@ jobs:
       - name: Lint
         run: npm run lint
 
-      - name: Tests
-        run: npm test
+      - name: Tests with coverage
+        run: npm run test -- --coverage
+
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dashboard-coverage
+          path: coverage/
+          if-no-files-found: ignore
 
       - name: Build
         run: npm run build

@@ -55,6 +55,7 @@ for (const file of [
         return { createClient: () => client };
       if (name === "@tanstack/react-router")
         return { createFileRoute: () => (options) => options };
+      if (name === "@/lib/server/logger") return { logger: { error() {} } };
       throw Error(`Unexpected dependency: ${name}`);
     };
     const environment = new Proxy({}, { get: () => crypto.randomUUID() });

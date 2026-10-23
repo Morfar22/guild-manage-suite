@@ -1,5 +1,6 @@
 // Migrated from Supabase Edge Function `tebex-handler` to a TanStack server route.
 // @ts-nocheck
+import { logger } from "@/lib/server/logger";
 import { requireGuildAdmin } from "@/lib/server/api-auth";
 import { createFileRoute } from "@tanstack/react-router";
 import { createClient } from "@supabase/supabase-js";
@@ -70,7 +71,7 @@ __serve(async (req) => {
 
     return jsonResponse({ error: "Method not allowed" }, 405);
   } catch (err) {
-    console.error("Tebex handler error:", err);
+    logger.error("Tebex handler error:", err);
     return jsonResponse({ error: err.message }, 500);
   }
 });

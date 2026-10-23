@@ -1,4 +1,5 @@
 // @ts-nocheck
+import { logger } from "@/lib/server/logger";
 import { safeEqual } from "@/lib/server/api-auth";
 import { decryptBotToken as simpleDecrypt } from "@/lib/server/bot-token-crypto";
 // Migrated from Supabase Edge Function `bot-log-events` to a TanStack server route.
@@ -40,7 +41,7 @@ async function getBotTokenForGuild(
     try {
       return simpleDecrypt(settings.bot_token_encrypted, encryptionKey);
     } catch (e) {
-      console.error(
+      logger.error(
         "Failed to decrypt custom bot token, falling back to global:",
         e instanceof Error ? e.message : String(e),
       );
@@ -1177,7 +1178,7 @@ __serve(async (req) => {
     const expectedSecret = __env("BOT_SECRET_KEY");
 
     if (!safeEqual(botSecret, expectedSecret)) {
-      console.error("Invalid or missing bot secret");
+      logger.error("Invalid or missing bot secret");
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -1191,7 +1192,7 @@ __serve(async (req) => {
 
     const ipCheck = await checkIPWhitelist(req, supabase);
     if (!ipCheck.allowed) {
-      console.error(`IP not whitelisted: ${ipCheck.ip}`);
+      logger.error(`IP not whitelisted: ${ipCheck.ip}`);
       return new Response(
         JSON.stringify({
           error: "Forbidden - IP not whitelisted",
@@ -1234,7 +1235,7 @@ __serve(async (req) => {
       .single();
 
     if (guildError || !guild) {
-      console.error("Guild not found:", guildError);
+      logger.error("Guild not found:", guildError);
       return new Response(JSON.stringify({ error: "Guild not found" }), {
         status: 404,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -1322,7 +1323,7 @@ __serve(async (req) => {
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   } catch (error) {
-    console.error("[Logs] Unexpected error:", error);
+    logger.error("[Logs] Unexpected error:", error);
     return new Response(
       JSON.stringify({
         error: "Internal server error",

@@ -1,4 +1,5 @@
 // @ts-nocheck
+import { logger } from "@/lib/server/logger";
 import { decryptBotToken as simpleDecrypt } from "@/lib/server/bot-token-crypto";
 // Migrated from Supabase Edge Function `bot-welcome` to a TanStack server route.
 import { createFileRoute } from "@tanstack/react-router";
@@ -292,7 +293,7 @@ __serve(async (req) => {
       }
       const ipCheck = await checkIPWhitelist(req, supabase);
       if (!ipCheck.allowed) {
-        console.error(`IP not whitelisted: ${ipCheck.ip}`);
+        logger.error(`IP not whitelisted: ${ipCheck.ip}`);
         return new Response(
           JSON.stringify({
             error: "Forbidden - IP not whitelisted",
@@ -409,7 +410,7 @@ __serve(async (req) => {
             };
           }
         } catch (e) {
-          console.error("Inviter lookup failed:", e);
+          logger.error("Inviter lookup failed:", e);
         }
 
         const formatMessage = (msg: string) =>
@@ -480,7 +481,7 @@ __serve(async (req) => {
               const errorText = await res.text();
               const message = `Velkomstbesked fejlede (Discord ${res.status}): ${errorText.slice(0, 300)}`;
               errors.push(message);
-              console.error("[Welcome]", message);
+              logger.error("[Welcome]", message);
             } else {
               results.welcome.sent = true;
               console.log(
@@ -597,7 +598,7 @@ __serve(async (req) => {
                   error: errText.slice(0, 240),
                 });
                 errors.push(roleError);
-                console.error(`[AutoRole] ${roleError}`);
+                logger.error(`[AutoRole] ${roleError}`);
               } else {
                 results.roles.assigned.push(roleId);
                 console.log(
@@ -608,10 +609,7 @@ __serve(async (req) => {
               const message = e instanceof Error ? e.message : String(e);
               results.roles.failed.push({ roleId, error: message });
               errors.push(`Rolle ${roleId}: ${message}`);
-              console.error(
-                `[AutoRole] Exception assigning role ${roleId}:`,
-                e,
-              );
+              logger.error(`[AutoRole] Exception assigning role ${roleId}:`, e);
             }
           }
         }
@@ -741,7 +739,7 @@ __serve(async (req) => {
 
         if (!res.ok) {
           const errorText = await res.text();
-          console.error(
+          logger.error(
             "Discord API error (test welcome):",
             res.status,
             errorText,
@@ -851,7 +849,7 @@ __serve(async (req) => {
 
         if (!res.ok) {
           const errorText = await res.text();
-          console.error(
+          logger.error(
             "Discord API error (test leave):",
             res.status,
             errorText,
@@ -945,7 +943,7 @@ __serve(async (req) => {
 
         if (!leaveRes.ok) {
           const errorText = await leaveRes.text();
-          console.error(
+          logger.error(
             "Discord API error (leave):",
             leaveRes.status,
             errorText,
@@ -976,7 +974,7 @@ __serve(async (req) => {
     }
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : "Unknown error";
-    console.error("Error:", message);
+    logger.error("Error:", message);
     return new Response(JSON.stringify({ error: message }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },

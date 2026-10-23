@@ -1,5 +1,6 @@
 // Migrated from Supabase Edge Function `admin-check-ip` to a TanStack server route.
 // @ts-nocheck
+import { logger } from "@/lib/server/logger";
 import { createFileRoute } from "@tanstack/react-router";
 import { createClient } from "@supabase/supabase-js";
 import type { Untyped } from "@/types/untyped";
@@ -46,7 +47,7 @@ __serve(async (req) => {
     const { data: userData, error: userError } =
       await supabaseAuthed.auth.getUser(token);
     if (userError || !userData.user) {
-      console.error("Auth error:", userError);
+      logger.error("Auth error:", userError);
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -68,7 +69,7 @@ __serve(async (req) => {
     );
 
     if (roleError) {
-      console.error("Role check error:", roleError);
+      logger.error("Role check error:", roleError);
       return new Response(JSON.stringify({ error: "Failed to check role" }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -123,7 +124,7 @@ __serve(async (req) => {
       .maybeSingle();
 
     if (whitelistError) {
-      console.error("Whitelist check error:", whitelistError);
+      logger.error("Whitelist check error:", whitelistError);
       return new Response(
         JSON.stringify({ error: "Failed to check whitelist" }),
         {
@@ -139,7 +140,7 @@ __serve(async (req) => {
       .select("*", { count: "exact", head: true });
 
     if (countError) {
-      console.error("Count error:", countError);
+      logger.error("Count error:", countError);
     }
 
     const whitelistEmpty = (count ?? 0) === 0;
@@ -160,7 +161,7 @@ __serve(async (req) => {
     );
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : "Unknown error";
-    console.error("admin-check-ip error:", message);
+    logger.error("admin-check-ip error:", message);
     return new Response(JSON.stringify({ error: message }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },

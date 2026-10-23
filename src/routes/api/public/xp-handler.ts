@@ -1,5 +1,6 @@
 // Migrated from Supabase Edge Function `xp-handler` to a TanStack server route.
 // @ts-nocheck
+import { logger } from "@/lib/server/logger";
 import { requireGuildAdmin, safeEqual } from "@/lib/server/api-auth";
 import { createFileRoute } from "@tanstack/react-router";
 import { decryptBotToken } from "@/lib/server/bot-token-crypto";
@@ -167,7 +168,7 @@ __serve(async (req) => {
             console.log(`Using custom bot token for guild ${guild.id}`);
           }
         } catch (e) {
-          console.error("Failed to decrypt custom bot token:", e);
+          logger.error("Failed to decrypt custom bot token:", e);
         }
       }
 
@@ -220,7 +221,7 @@ __serve(async (req) => {
 
       if (!res.ok) {
         const errorText = await res.text();
-        console.error(
+        logger.error(
           "Discord API error (test level up):",
           res.status,
           errorText,
@@ -252,7 +253,7 @@ __serve(async (req) => {
     const expectedSecret = __env("BOT_SECRET_KEY");
 
     if (!safeEqual(botSecret, expectedSecret)) {
-      console.error("Unauthorized: Invalid bot secret");
+      logger.error("Unauthorized: Invalid bot secret");
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -262,7 +263,7 @@ __serve(async (req) => {
     // Check IP whitelist for bot requests
     const ipCheck = await checkIPWhitelist(req, supabase);
     if (!ipCheck.allowed) {
-      console.error(`IP not whitelisted: ${ipCheck.ip}`);
+      logger.error(`IP not whitelisted: ${ipCheck.ip}`);
       return new Response(
         JSON.stringify({
           error: "Forbidden - IP not whitelisted",
@@ -302,7 +303,7 @@ __serve(async (req) => {
       .maybeSingle();
 
     if (guildError || !guild) {
-      console.error("Guild not found:", guildError);
+      logger.error("Guild not found:", guildError);
       return new Response(JSON.stringify({ error: "Guild not found" }), {
         status: 404,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -444,7 +445,7 @@ __serve(async (req) => {
         .eq("id", userLevel.id);
 
       if (updateError) {
-        console.error("Error updating user level:", updateError);
+        logger.error("Error updating user level:", updateError);
         throw updateError;
       }
     } else {
@@ -465,7 +466,7 @@ __serve(async (req) => {
       });
 
       if (insertError) {
-        console.error("Error inserting user level:", insertError);
+        logger.error("Error inserting user level:", insertError);
         throw insertError;
       }
     }
@@ -527,7 +528,7 @@ __serve(async (req) => {
       },
     );
   } catch (error) {
-    console.error("XP handler error:", error);
+    logger.error("XP handler error:", error);
     const message = error instanceof Error ? error.message : "Unknown error";
     return new Response(JSON.stringify({ error: message }), {
       status: 500,
