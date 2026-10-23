@@ -1,4 +1,5 @@
 // @ts-nocheck
+import { logger } from "@/lib/server/logger";
 import { requireGuildAdmin } from "@/lib/server/api-auth";
 import { decryptBotToken as decryptToken } from "@/lib/server/bot-token-crypto";
 // Migrated from Supabase Edge Function `tiktok-test-notify` to a TanStack server route.
@@ -170,7 +171,7 @@ __serve(async (req) => {
 
     if (!discordRes.ok) {
       const errText = await discordRes.text();
-      console.error("Discord error:", discordRes.status, errText);
+      logger.error("Discord error:", discordRes.status, errText);
       return new Response(
         JSON.stringify({ error: "Failed to send Discord notification" }),
         {
@@ -186,7 +187,7 @@ __serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error) {
-    console.error("TikTok test error:", error);
+    logger.error("TikTok test error:", error);
     return new Response(
       JSON.stringify({
         error: error instanceof Error ? error.message : "Unknown error",

@@ -1,4 +1,5 @@
 // @ts-nocheck
+import { logger } from "@/lib/server/logger";
 import { decryptBotToken as simpleDecrypt } from "@/lib/server/bot-token-crypto";
 // Migrated from Supabase Edge Function `send-poll` to a TanStack server route.
 import { createFileRoute } from "@tanstack/react-router";
@@ -45,7 +46,7 @@ async function getBotTokenForGuild(
       return simpleDecrypt(settings.bot_token_encrypted, encryptionKey);
     } catch (e) {
       if (e instanceof Response) return e;
-      console.error(
+      logger.error(
         "Failed to decrypt custom bot token, falling back to global:",
         e instanceof Error ? e.message : String(e),
       );
@@ -208,7 +209,7 @@ __serve(async (req) => {
 
     if (!response.ok) {
       const err = await response.text();
-      console.error("Discord API error:", err);
+      logger.error("Discord API error:", err);
 
       await supabase
         .from("polls")
@@ -240,7 +241,7 @@ __serve(async (req) => {
     });
   } catch (e) {
     if (e instanceof Response) return e;
-    console.error("[SendPoll] Error:", e.message);
+    logger.error("[SendPoll] Error:", e.message);
     return new Response(JSON.stringify({ error: e.message }), {
       status: 500,
       headers: corsHeaders,

@@ -1,5 +1,6 @@
 // Migrated from Supabase Edge Function `ai-ticket-summary` to a TanStack server route.
 // @ts-nocheck
+import { logger } from "@/lib/server/logger";
 import { createFileRoute } from "@tanstack/react-router";
 import {
   requireUser,
@@ -157,7 +158,7 @@ Keep it under 200 words. Be factual and clear. Respond in the same language as t
     });
   } catch (error) {
     if (error instanceof Response) return error;
-    console.error("AI Ticket Summary error:", error);
+    logger.error("AI Ticket Summary error:", error);
     const aiError = openAIErrorResponse(error, corsHeaders);
     if (aiError) return aiError;
     return new Response(

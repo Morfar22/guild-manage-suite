@@ -21,13 +21,15 @@ require("dotenv").config({
   override: true,
 });
 
+const logger = require("./utils/logger");
+
 // Normalize APP_API_BASE BEFORE requiring handlers (they capture it at module load).
 // Roadmap: automod/other handlers failed when APP_API_BASE had a trailing slash or was empty.
 process.env.APP_API_BASE = (
   process.env.APP_API_BASE || "https://bot.nethost-solutions.dk"
 ).replace(/\/$/, "");
 if (!/^https?:\/\//i.test(process.env.APP_API_BASE)) {
-  console.error("[Bot] FATAL: APP_API_BASE skal være en absolut http(s)-URL");
+  logger.error("[Bot] FATAL: APP_API_BASE skal være en absolut http(s)-URL");
   process.exit(1);
 }
 
@@ -171,10 +173,10 @@ function requireRuntimeSecrets() {
   if (!APP_API_BASE || !/^https?:\/\//i.test(APP_API_BASE))
     missing.push("APP_API_BASE");
   if (missing.length) {
-    console.error(
+    logger.error(
       `[Bot] FATAL: mangler påkrævede env-variabler: ${missing.join(", ")}`,
     );
-    console.error(
+    logger.error(
       "[Bot] Botten kræver service-role + BOT_SECRET_KEY og må ikke falde tilbage til anon-nøglen.",
     );
     process.exit(1);
@@ -219,7 +221,7 @@ async function logModerationAction(
       });
     }
   } catch (error) {
-    console.error("Failed to log moderation action:", error);
+    logger.error("Failed to log moderation action:", error);
   }
 }
 
@@ -634,14 +636,14 @@ function startGiveawayAutoEnd(shouldHandleGuild) {
             `[Giveaway] Auto-ended giveaway ${giveaway.id} — ${result?.winners?.length || 0} winners`,
           );
         } catch (err) {
-          console.error(
+          logger.error(
             `[Giveaway] Auto-end failed for ${giveaway.id}:`,
             err.message,
           );
         }
       }
     } catch (err) {
-      console.error("[Giveaway] Auto-end check error:", err.message);
+      logger.error("[Giveaway] Auto-end check error:", err.message);
     }
   }
 
@@ -716,7 +718,7 @@ async function handleGiveawayButton(
         : `✅ Du er fjernet fra giveawayen. (${result.entriesCount ?? Math.max(entries.length - 1, 0)} deltagere)`,
     );
   } catch (error) {
-    console.error("[Bot] Giveaway button fejl:", error);
+    logger.error("[Bot] Giveaway button fejl:", error);
     const message = error.message || "Der skete en fejl ved giveaway-knappen.";
 
     if (interaction.deferred || interaction.replied) {
@@ -1397,7 +1399,7 @@ function createSlashHandlers(client) {
 
         await interaction.editReply({ embeds: [embed] });
       } catch (error) {
-        console.error("[Bot] Rank fejl:", error);
+        logger.error("[Bot] Rank fejl:", error);
         await interaction.editReply("❌ Kunne ikke hente rank data.");
       }
     },
@@ -1439,7 +1441,7 @@ function createSlashHandlers(client) {
 
         await interaction.editReply({ embeds: [embed] });
       } catch (error) {
-        console.error("[Bot] Leaderboard fejl:", error);
+        logger.error("[Bot] Leaderboard fejl:", error);
         await interaction.editReply("❌ Kunne ikke hente leaderboard.");
       }
     },
@@ -1748,7 +1750,7 @@ function createSlashHandlers(client) {
           .eq("message_id", deliveryClaim);
 
         if (messageIdError) {
-          console.error(
+          logger.error(
             "[Poll] Kunne ikke gemme message_id:",
             messageIdError.message,
           );
@@ -1823,7 +1825,7 @@ function createSlashHandlers(client) {
       });
 
       if (insertError) {
-        console.error("[Remind] Persist failed:", insertError.message);
+        logger.error("[Remind] Persist failed:", insertError.message);
         return interaction.reply({
           content: "❌ Kunne ikke gemme påmindelsen. Prøv igen.",
           flags: 64,
@@ -2104,7 +2106,7 @@ function createSlashHandlers(client) {
 
         await interaction.editReply({ embeds: [embed] });
       } catch (error) {
-        console.error("[Bot] Tebex verify fejl:", error);
+        logger.error("[Bot] Tebex verify fejl:", error);
         await interaction.editReply(
           "❌ Der skete en fejl under verificeringen.",
         );
@@ -2201,7 +2203,7 @@ function createSlashHandlers(client) {
 
         await interaction.editReply({ embeds: [embed] });
       } catch (error) {
-        console.error("[Bot] Daily fejl:", error);
+        logger.error("[Bot] Daily fejl:", error);
         await interaction.editReply("❌ Kunne ikke hente daglig belønning.");
       }
     },
@@ -2301,7 +2303,7 @@ function createSlashHandlers(client) {
           `💼 Du arbejdede som **${job}** og tjente **${currencySymbol} ${earned} ${currencyName}**!`,
         );
       } catch (error) {
-        console.error("[Bot] Work fejl:", error);
+        logger.error("[Bot] Work fejl:", error);
         await interaction.editReply("❌ Kunne ikke udføre arbejde.");
       }
     },
@@ -2359,7 +2361,7 @@ function createSlashHandlers(client) {
 
         await interaction.editReply({ embeds: [embed] });
       } catch (error) {
-        console.error("[Bot] Balance fejl:", error);
+        logger.error("[Bot] Balance fejl:", error);
         await interaction.editReply("❌ Kunne ikke hente balance.");
       }
     },
@@ -2442,7 +2444,7 @@ function createSlashHandlers(client) {
           `✅ Du betalte **${amount}** til **${target.tag}**.`,
         );
       } catch (error) {
-        console.error("[Bot] Pay fejl:", error);
+        logger.error("[Bot] Pay fejl:", error);
         await interaction.editReply("❌ Kunne ikke gennemføre betalingen.");
       }
     },
@@ -2612,7 +2614,7 @@ function createSlashHandlers(client) {
           );
         }
       } catch (error) {
-        console.error("[Bot] Rob fejl:", error);
+        logger.error("[Bot] Rob fejl:", error);
         await interaction.editReply("❌ Kunne ikke udføre røveriet.");
       }
     },
@@ -2661,7 +2663,7 @@ function createSlashHandlers(client) {
 
         await interaction.editReply({ embeds: [embed] });
       } catch (error) {
-        console.error("[Bot] Richest fejl:", error);
+        logger.error("[Bot] Richest fejl:", error);
         await interaction.editReply("❌ Kunne ikke hente leaderboard.");
       }
     },
@@ -2777,7 +2779,7 @@ function createSlashHandlers(client) {
           );
         }
       } catch (error) {
-        console.error("[Bot] Giveaway fejl:", error);
+        logger.error("[Bot] Giveaway fejl:", error);
         await interaction.editReply(
           `❌ ${error.message || "Der skete en fejl."}`,
         );
@@ -2829,7 +2831,7 @@ function createSlashHandlers(client) {
 
         await interaction.editReply("✅ Dit forslag er blevet sendt!");
       } catch (error) {
-        console.error("[Bot] Suggest fejl:", error);
+        logger.error("[Bot] Suggest fejl:", error);
         await interaction.editReply("❌ Kunne ikke sende forslaget.");
       }
     },
@@ -2863,7 +2865,7 @@ function createSlashHandlers(client) {
 
         await interaction.reply(`💤 Du er nu AFK: **${message}**`);
       } catch (error) {
-        console.error("[Bot] AFK fejl:", error);
+        logger.error("[Bot] AFK fejl:", error);
         await interaction.reply({
           content: "❌ Kunne ikke sætte AFK status.",
           flags: 64,
@@ -2917,7 +2919,7 @@ function createSlashHandlers(client) {
           `✅ Alle advarsler for **${user.tag}** er blevet slettet.`,
         );
       } catch (error) {
-        console.error("[Bot] Clearwarns fejl:", error);
+        logger.error("[Bot] Clearwarns fejl:", error);
         await interaction.editReply("❌ Kunne ikke slette advarsler.");
       }
     },
@@ -3026,7 +3028,7 @@ function createSlashHandlers(client) {
           .single();
 
         if (error) {
-          console.error("[Bot] GlobalBan report DB error:", error);
+          logger.error("[Bot] GlobalBan report DB error:", error);
           throw error;
         }
 
@@ -3037,7 +3039,7 @@ function createSlashHandlers(client) {
           "✅ Din rapport er blevet indsendt og vil blive gennemgået af en administrator. Tak!",
         );
       } catch (error) {
-        console.error("[Bot] GlobalBan report fejl:", error);
+        logger.error("[Bot] GlobalBan report fejl:", error);
         await interaction.editReply(
           "❌ Kunne ikke indsende rapporten. Prøv igen senere.",
         );
@@ -3110,7 +3112,7 @@ function createSlashHandlers(client) {
           }
         }
       } catch (e) {
-        console.error("[testall] DB error:", e);
+        logger.error("[testall] DB error:", e);
       }
 
       // 3. Check which modules are enabled
@@ -3135,7 +3137,7 @@ function createSlashHandlers(client) {
           }
         }
       } catch (e) {
-        console.error("[testall] Module DB error:", e);
+        logger.error("[testall] Module DB error:", e);
       }
 
       // 4. Check handler instances
@@ -3178,7 +3180,7 @@ function createSlashHandlers(client) {
           }
         }
       } catch (e) {
-        console.error("[testall] Could not fetch registered commands:", e);
+        logger.error("[testall] Could not fetch registered commands:", e);
       }
 
       // Find commands registered in Discord but no handler locally
@@ -3455,7 +3457,7 @@ function createSlashHandlers(client) {
           .single();
 
         if (queueError || !queuedRow?.id) {
-          console.error("[FiveM] Queue error:", queueError);
+          logger.error("[FiveM] Queue error:", queueError);
           return interaction.editReply(
             `❌ Kunne ikke lægge kommandoen i kø: ${queueError?.message || "ukendt fejl"}`,
           );
@@ -3510,7 +3512,7 @@ function createSlashHandlers(client) {
         }
         return interaction.editReply(message);
       } catch (error) {
-        console.error("[FiveM] Command error:", error);
+        logger.error("[FiveM] Command error:", error);
         return interaction
           .editReply("❌ Der opstod en intern fejl i FiveM-integrationen.")
           .catch(() => {});
@@ -3627,7 +3629,7 @@ manager.registerHandler((client, guildId, assignedDiscordGuildId) => {
     });
     console.log(`[Bot] ✅ Ticket handler for ${clientLabel}`);
   } catch (e) {
-    console.error(`[Bot] ❌ Ticket handler fejl:`, e.message);
+    logger.error(`[Bot] ❌ Ticket handler fejl:`, e.message);
   }
 
   try {
@@ -3638,35 +3640,35 @@ manager.registerHandler((client, guildId, assignedDiscordGuildId) => {
     handlerInstances.set(`welcome_${clientLabel}`, welcomeHandler);
     console.log(`[Bot] ✅ Welcome handler for ${clientLabel}`);
   } catch (e) {
-    console.error(`[Bot] ❌ Welcome handler fejl:`, e.message);
+    logger.error(`[Bot] ❌ Welcome handler fejl:`, e.message);
   }
 
   try {
     setupInviteTracker(client, { shouldHandleGuild });
     console.log(`[Bot] ✅ Invite tracker for ${clientLabel}`);
   } catch (e) {
-    console.error(`[Bot] ❌ Invite tracker fejl:`, e.message);
+    logger.error(`[Bot] ❌ Invite tracker fejl:`, e.message);
   }
 
   try {
     setupReactionRoleHandler(client, { shouldHandleGuild });
     console.log(`[Bot] ✅ Reaction role handler for ${clientLabel}`);
   } catch (e) {
-    console.error(`[Bot] ❌ Reaction role handler fejl:`, e.message);
+    logger.error(`[Bot] ❌ Reaction role handler fejl:`, e.message);
   }
 
   try {
     setupAIChatHandler(client, { shouldHandleGuild });
     console.log(`[Bot] ✅ AI Chat handler for ${clientLabel}`);
   } catch (e) {
-    console.error(`[Bot] ❌ AI Chat handler fejl:`, e.message);
+    logger.error(`[Bot] ❌ AI Chat handler fejl:`, e.message);
   }
 
   try {
     setupApplicationHandler(client, { shouldHandleGuild, supabase });
     console.log(`[Bot] ✅ Application handler for ${clientLabel}`);
   } catch (e) {
-    console.error(`[Bot] ❌ Application handler fejl:`, e.message);
+    logger.error(`[Bot] ❌ Application handler fejl:`, e.message);
   }
 
   try {
@@ -3680,14 +3682,14 @@ manager.registerHandler((client, guildId, assignedDiscordGuildId) => {
     });
     console.log(`[Bot] ✅ Honeypot handler for ${clientLabel}`);
   } catch (e) {
-    console.error(`[Bot] ❌ Honeypot handler fejl:`, e.message);
+    logger.error(`[Bot] ❌ Honeypot handler fejl:`, e.message);
   }
 
   try {
     initXPHandler(client, SUPABASE_URL, BOT_SECRET_KEY, { shouldHandleGuild });
     console.log(`[Bot] ✅ XP handler for ${clientLabel}`);
   } catch (e) {
-    console.error(`[Bot] ❌ XP handler fejl:`, e.message);
+    logger.error(`[Bot] ❌ XP handler fejl:`, e.message);
   }
 
   // Register log handlers (needs config object) - uses shouldLogGuild for compatibility
@@ -3699,7 +3701,7 @@ manager.registerHandler((client, guildId, assignedDiscordGuildId) => {
     });
     console.log(`[Bot] ✅ Log handlers for ${clientLabel}`);
   } catch (e) {
-    console.error(`[Bot] ❌ Log handlers fejl:`, e.message);
+    logger.error(`[Bot] ❌ Log handlers fejl:`, e.message);
   }
 
   // JTC handler
@@ -3713,7 +3715,7 @@ manager.registerHandler((client, guildId, assignedDiscordGuildId) => {
     );
     console.log(`[Bot] ✅ JTC handler for ${clientLabel}`);
   } catch (e) {
-    console.error(`[Bot] ❌ JTC handler fejl:`, e.message);
+    logger.error(`[Bot] ❌ JTC handler fejl:`, e.message);
   }
 
   // JTC button/modal handler (control panel interactions)
@@ -3723,7 +3725,7 @@ manager.registerHandler((client, guildId, assignedDiscordGuildId) => {
     });
     console.log(`[Bot] ✅ JTC button handler for ${clientLabel}`);
   } catch (e) {
-    console.error(`[Bot] ❌ JTC button handler fejl:`, e.message);
+    logger.error(`[Bot] ❌ JTC button handler fejl:`, e.message);
   }
 
   // Twitch checker
@@ -3731,7 +3733,7 @@ manager.registerHandler((client, guildId, assignedDiscordGuildId) => {
     startTwitchChecker(client, { shouldHandleGuild });
     console.log(`[Bot] ✅ Twitch checker for ${clientLabel}`);
   } catch (e) {
-    console.error(`[Bot] ❌ Twitch checker fejl:`, e.message);
+    logger.error(`[Bot] ❌ Twitch checker fejl:`, e.message);
   }
 
   // TikTok checker
@@ -3739,7 +3741,7 @@ manager.registerHandler((client, guildId, assignedDiscordGuildId) => {
     startTikTokChecker(client, { shouldHandleGuild });
     console.log(`[Bot] ✅ TikTok checker for ${clientLabel}`);
   } catch (e) {
-    console.error(`[Bot] ❌ TikTok checker fejl:`, e.message);
+    logger.error(`[Bot] ❌ TikTok checker fejl:`, e.message);
   }
 
   // YouTube checker
@@ -3747,7 +3749,7 @@ manager.registerHandler((client, guildId, assignedDiscordGuildId) => {
     startYouTubeChecker(client, { shouldHandleGuild });
     console.log(`[Bot] ✅ YouTube checker for ${clientLabel}`);
   } catch (e) {
-    console.error(`[Bot] ❌ YouTube checker fejl:`, e.message);
+    logger.error(`[Bot] ❌ YouTube checker fejl:`, e.message);
   }
 
   // Starboard Handler - tracks popular messages
@@ -3755,7 +3757,7 @@ manager.registerHandler((client, guildId, assignedDiscordGuildId) => {
     setupStarboardHandler(client, supabase, { shouldHandleGuild });
     console.log(`[Bot] ✅ Starboard handler for ${clientLabel}`);
   } catch (e) {
-    console.error(`[Bot] ❌ Starboard handler fejl:`, e.message);
+    logger.error(`[Bot] ❌ Starboard handler fejl:`, e.message);
   }
 
   // Warning Handler - points-based warning system
@@ -3767,7 +3769,7 @@ manager.registerHandler((client, guildId, assignedDiscordGuildId) => {
     handlerInstances.set(`warning_${clientLabel}`, warningHandler);
     console.log(`[Bot] ✅ Warning handler for ${clientLabel}`);
   } catch (e) {
-    console.error(`[Bot] ❌ Warning handler fejl:`, e.message);
+    logger.error(`[Bot] ❌ Warning handler fejl:`, e.message);
   }
 
   // Analytics Handler - tracks activity for dashboard
@@ -3777,11 +3779,11 @@ manager.registerHandler((client, guildId, assignedDiscordGuildId) => {
     });
     analyticsHandler
       .init()
-      .catch((err) => console.error(`[Bot] Analytics init error:`, err));
+      .catch((err) => logger.error(`[Bot] Analytics init error:`, err));
     handlerInstances.set(`analytics_${clientLabel}`, analyticsHandler);
     console.log(`[Bot] ✅ Analytics handler for ${clientLabel}`);
   } catch (e) {
-    console.error(`[Bot] ❌ Analytics handler fejl:`, e.message);
+    logger.error(`[Bot] ❌ Analytics handler fejl:`, e.message);
   }
 
   // Scheduler Handler - scheduled messages
@@ -3789,7 +3791,7 @@ manager.registerHandler((client, guildId, assignedDiscordGuildId) => {
     setupSchedulerHandler(client, supabase, { shouldHandleGuild });
     console.log(`[Bot] ✅ Scheduler handler for ${clientLabel}`);
   } catch (e) {
-    console.error(`[Bot] ❌ Scheduler handler fejl:`, e.message);
+    logger.error(`[Bot] ❌ Scheduler handler fejl:`, e.message);
   }
 
   // Modmail Handler - DM-to-channel system (uses edge function for DB operations)
@@ -3799,7 +3801,7 @@ manager.registerHandler((client, guildId, assignedDiscordGuildId) => {
     });
     console.log(`[Bot] ✅ Modmail handler for ${clientLabel}`);
   } catch (e) {
-    console.error(`[Bot] ❌ Modmail handler fejl:`, e.message);
+    logger.error(`[Bot] ❌ Modmail handler fejl:`, e.message);
   }
 
   // Tebex Handler - webhook queue polling for notifications and role grants
@@ -3807,7 +3809,7 @@ manager.registerHandler((client, guildId, assignedDiscordGuildId) => {
     setupTebexHandler(client, supabase, { shouldHandleGuild });
     console.log(`[Bot] ✅ Tebex handler for ${clientLabel}`);
   } catch (e) {
-    console.error(`[Bot] ❌ Tebex handler fejl:`, e.message);
+    logger.error(`[Bot] ❌ Tebex handler fejl:`, e.message);
   }
 
   // Suggestion Handler - voting on suggestions
@@ -3818,7 +3820,7 @@ manager.registerHandler((client, guildId, assignedDiscordGuildId) => {
     });
     console.log(`[Bot] ✅ Suggestion handler for ${clientLabel}`);
   } catch (e) {
-    console.error(`[Bot] ❌ Suggestion handler fejl:`, e.message);
+    logger.error(`[Bot] ❌ Suggestion handler fejl:`, e.message);
   }
 
   // Verification Handler - anti-raid verification
@@ -3830,7 +3832,7 @@ manager.registerHandler((client, guildId, assignedDiscordGuildId) => {
       handlerInstances.set(`verification_${clientLabel}`, verificationHandler);
     console.log(`[Bot] ✅ Verification handler for ${clientLabel}`);
   } catch (e) {
-    console.error(`[Bot] ❌ Verification handler fejl:`, e.message);
+    logger.error(`[Bot] ❌ Verification handler fejl:`, e.message);
   }
 
   // Stats Handler - auto-updating voice channel names
@@ -3843,7 +3845,7 @@ manager.registerHandler((client, guildId, assignedDiscordGuildId) => {
       handlerInstances.set(`stats_${clientLabel}`, statsHandler);
     console.log(`[Bot] ✅ Stats handler for ${clientLabel}`);
   } catch (e) {
-    console.error(`[Bot] ❌ Stats handler fejl:`, e.message);
+    logger.error(`[Bot] ❌ Stats handler fejl:`, e.message);
   }
 
   // Global Ban Handler - listens for global bans via realtime
@@ -3856,7 +3858,7 @@ manager.registerHandler((client, guildId, assignedDiscordGuildId) => {
       handlerInstances.set(`globalban_${clientLabel}`, globalBanHandler);
     console.log(`[Bot] ✅ Global Ban handler for ${clientLabel}`);
   } catch (e) {
-    console.error(`[Bot] ❌ Global Ban handler fejl:`, e.message);
+    logger.error(`[Bot] ❌ Global Ban handler fejl:`, e.message);
   }
 
   // Scheduled Action Handler - polls for pending moderation actions
@@ -3864,7 +3866,7 @@ manager.registerHandler((client, guildId, assignedDiscordGuildId) => {
     setupScheduledActionHandler(client, supabase, { shouldHandleGuild });
     console.log(`[Bot] ✅ Scheduled Action handler for ${clientLabel}`);
   } catch (e) {
-    console.error(`[Bot] ❌ Scheduled Action handler fejl:`, e.message);
+    logger.error(`[Bot] ❌ Scheduled Action handler fejl:`, e.message);
   }
 
   // AFK Handler
@@ -3872,7 +3874,7 @@ manager.registerHandler((client, guildId, assignedDiscordGuildId) => {
     setupAfkHandler(client, supabase, { shouldHandleGuild });
     console.log(`[Bot] ✅ AFK handler for ${clientLabel}`);
   } catch (e) {
-    console.error(`[Bot] ❌ AFK handler fejl:`, e.message);
+    logger.error(`[Bot] ❌ AFK handler fejl:`, e.message);
   }
 
   // Poll Handler
@@ -3883,7 +3885,7 @@ manager.registerHandler((client, guildId, assignedDiscordGuildId) => {
     });
     console.log(`[Bot] ✅ Poll handler for ${clientLabel}`);
   } catch (e) {
-    console.error(`[Bot] ❌ Poll handler fejl:`, e.message);
+    logger.error(`[Bot] ❌ Poll handler fejl:`, e.message);
   }
 
   // Auto-Responder Handler
@@ -3891,7 +3893,7 @@ manager.registerHandler((client, guildId, assignedDiscordGuildId) => {
     setupAutoResponderHandler(client, supabase, { shouldHandleGuild });
     console.log(`[Bot] ✅ Auto-Responder handler for ${clientLabel}`);
   } catch (e) {
-    console.error(`[Bot] ❌ Auto-Responder handler fejl:`, e.message);
+    logger.error(`[Bot] ❌ Auto-Responder handler fejl:`, e.message);
   }
 
   // Custom Command Handler
@@ -3899,7 +3901,7 @@ manager.registerHandler((client, guildId, assignedDiscordGuildId) => {
     setupCustomCommandHandler(client, supabase, { shouldHandleGuild });
     console.log(`[Bot] ✅ Custom Command handler for ${clientLabel}`);
   } catch (e) {
-    console.error(`[Bot] ❌ Custom Command handler fejl:`, e.message);
+    logger.error(`[Bot] ❌ Custom Command handler fejl:`, e.message);
   }
 
   // Reminder Handler - sends reminders to Discord channels
@@ -3907,7 +3909,7 @@ manager.registerHandler((client, guildId, assignedDiscordGuildId) => {
     setupReminderHandler(client, supabase, { shouldHandleGuild });
     console.log(`[Bot] ✅ Reminder handler for ${clientLabel}`);
   } catch (e) {
-    console.error(`[Bot] ❌ Reminder handler fejl:`, e.message);
+    logger.error(`[Bot] ❌ Reminder handler fejl:`, e.message);
   }
 
   // Auto-Report Handler - triggers periodic reports to Discord
@@ -3915,7 +3917,7 @@ manager.registerHandler((client, guildId, assignedDiscordGuildId) => {
     setupAutoReportHandler(client, supabase, { shouldHandleGuild });
     console.log(`[Bot] ✅ Auto-Report handler for ${clientLabel}`);
   } catch (e) {
-    console.error(`[Bot] ❌ Auto-Report handler fejl:`, e.message);
+    logger.error(`[Bot] ❌ Auto-Report handler fejl:`, e.message);
   }
 
   // Automod Rule Handler - banned words, links, invites, mentions, caps
@@ -3923,7 +3925,7 @@ manager.registerHandler((client, guildId, assignedDiscordGuildId) => {
     setupAutomodRuleHandler(client, supabase, { shouldHandleGuild });
     console.log(`[Bot] ✅ Automod Rule handler for ${clientLabel}`);
   } catch (e) {
-    console.error(`[Bot] ❌ Automod Rule handler fejl:`, e.message);
+    logger.error(`[Bot] ❌ Automod Rule handler fejl:`, e.message);
   }
 
   // AI Auto-Mod Handler - AI-powered message analysis
@@ -3931,7 +3933,7 @@ manager.registerHandler((client, guildId, assignedDiscordGuildId) => {
     setupAIAutomodHandler(client, supabase, { shouldHandleGuild });
     console.log(`[Bot] ✅ AI AutoMod handler for ${clientLabel}`);
   } catch (e) {
-    console.error(`[Bot] ❌ AI AutoMod handler fejl:`, e.message);
+    logger.error(`[Bot] ❌ AI AutoMod handler fejl:`, e.message);
   }
 
   // Dashboard Notification Handler - sends events to dashboard
@@ -3939,7 +3941,7 @@ manager.registerHandler((client, guildId, assignedDiscordGuildId) => {
     setupNotificationHandler(client, supabase, { shouldHandleGuild });
     console.log(`[Bot] ✅ Notification handler for ${clientLabel}`);
   } catch (e) {
-    console.error(`[Bot] ❌ Notification handler fejl:`, e.message);
+    logger.error(`[Bot] ❌ Notification handler fejl:`, e.message);
   }
 
   // Webhook Dispatcher - sends events to configured webhooks
@@ -3947,7 +3949,7 @@ manager.registerHandler((client, guildId, assignedDiscordGuildId) => {
     setupWebhookDispatcher(client, supabase, { shouldHandleGuild });
     console.log(`[Bot] ✅ Webhook dispatcher for ${clientLabel}`);
   } catch (e) {
-    console.error(`[Bot] ❌ Webhook dispatcher fejl:`, e.message);
+    logger.error(`[Bot] ❌ Webhook dispatcher fejl:`, e.message);
   }
 
   // Raid Protection Handler
@@ -3955,7 +3957,7 @@ manager.registerHandler((client, guildId, assignedDiscordGuildId) => {
     setupRaidProtectionHandler(client, supabase, { shouldHandleGuild });
     console.log(`[Bot] ✅ Raid Protection handler for ${clientLabel}`);
   } catch (e) {
-    console.error(`[Bot] ❌ Raid Protection handler fejl:`, e.message);
+    logger.error(`[Bot] ❌ Raid Protection handler fejl:`, e.message);
   }
 
   // Quarantine Handler
@@ -3963,7 +3965,7 @@ manager.registerHandler((client, guildId, assignedDiscordGuildId) => {
     setupQuarantineHandler(client, supabase, { shouldHandleGuild });
     console.log(`[Bot] ✅ Quarantine handler for ${clientLabel}`);
   } catch (e) {
-    console.error(`[Bot] ❌ Quarantine handler fejl:`, e.message);
+    logger.error(`[Bot] ❌ Quarantine handler fejl:`, e.message);
   }
 
   // Slowmode Scheduler
@@ -3971,7 +3973,7 @@ manager.registerHandler((client, guildId, assignedDiscordGuildId) => {
     setupSlowmodeScheduler(client, supabase, { shouldHandleGuild });
     console.log(`[Bot] ✅ Slowmode Scheduler for ${clientLabel}`);
   } catch (e) {
-    console.error(`[Bot] ❌ Slowmode Scheduler fejl:`, e.message);
+    logger.error(`[Bot] ❌ Slowmode Scheduler fejl:`, e.message);
   }
 
   // Alt Account Detection
@@ -3979,7 +3981,7 @@ manager.registerHandler((client, guildId, assignedDiscordGuildId) => {
     setupAltDetectionHandler(client, supabase, { shouldHandleGuild });
     console.log(`[Bot] ✅ Alt Detection handler for ${clientLabel}`);
   } catch (e) {
-    console.error(`[Bot] ❌ Alt Detection handler fejl:`, e.message);
+    logger.error(`[Bot] ❌ Alt Detection handler fejl:`, e.message);
   }
 
   // Counting Handler
@@ -3987,7 +3989,7 @@ manager.registerHandler((client, guildId, assignedDiscordGuildId) => {
     setupCountingHandler(client, supabase, { shouldHandleGuild });
     console.log(`[Bot] ✅ Counting handler for ${clientLabel}`);
   } catch (e) {
-    console.error(`[Bot] ❌ Counting handler fejl:`, e.message);
+    logger.error(`[Bot] ❌ Counting handler fejl:`, e.message);
   }
 
   // Confession Handler
@@ -3995,7 +3997,7 @@ manager.registerHandler((client, guildId, assignedDiscordGuildId) => {
     setupConfessionHandler(client, supabase, { shouldHandleGuild });
     console.log(`[Bot] ✅ Confession handler for ${clientLabel}`);
   } catch (e) {
-    console.error(`[Bot] ❌ Confession handler fejl:`, e.message);
+    logger.error(`[Bot] ❌ Confession handler fejl:`, e.message);
   }
 
   // Birthday Handler
@@ -4003,7 +4005,7 @@ manager.registerHandler((client, guildId, assignedDiscordGuildId) => {
     setupBirthdayHandler(client, supabase, { shouldHandleGuild });
     console.log(`[Bot] ✅ Birthday handler for ${clientLabel}`);
   } catch (e) {
-    console.error(`[Bot] ❌ Birthday handler fejl:`, e.message);
+    logger.error(`[Bot] ❌ Birthday handler fejl:`, e.message);
   }
 
   // Music Quiz Handler
@@ -4015,7 +4017,7 @@ manager.registerHandler((client, guildId, assignedDiscordGuildId) => {
     });
     console.log(`[Bot] ✅ Music Quiz handler for ${clientLabel}`);
   } catch (e) {
-    console.error(`[Bot] ❌ Music Quiz handler fejl:`, e.message);
+    logger.error(`[Bot] ❌ Music Quiz handler fejl:`, e.message);
   }
 
   // Currency Shop Handler
@@ -4024,7 +4026,7 @@ manager.registerHandler((client, guildId, assignedDiscordGuildId) => {
     shopApi = setupCurrencyShopHandler(client, supabase, { shouldHandleGuild });
     console.log(`[Bot] ✅ Currency Shop handler for ${clientLabel}`);
   } catch (e) {
-    console.error(`[Bot] ❌ Currency Shop handler fejl:`, e.message);
+    logger.error(`[Bot] ❌ Currency Shop handler fejl:`, e.message);
   }
 
   // Giveaway Auto-End Checker
@@ -4032,14 +4034,14 @@ manager.registerHandler((client, guildId, assignedDiscordGuildId) => {
     startGiveawayAutoEnd(shouldHandleGuild);
     console.log(`[Bot] ✅ Giveaway auto-end checker for ${clientLabel}`);
   } catch (e) {
-    console.error(`[Bot] ❌ Giveaway auto-end fejl:`, e.message);
+    logger.error(`[Bot] ❌ Giveaway auto-end fejl:`, e.message);
   }
 
   try {
     startHeartbeat(client, { shouldHandleGuild });
     console.log(`[Bot] ✅ Heartbeat handler for ${clientLabel}`);
   } catch (e) {
-    console.error(`[Bot] ❌ Heartbeat handler fejl:`, e.message);
+    logger.error(`[Bot] ❌ Heartbeat handler fejl:`, e.message);
   }
 
   // Create slash handlers for this client
@@ -4058,7 +4060,7 @@ manager.registerHandler((client, guildId, assignedDiscordGuildId) => {
     );
     console.log(`[Bot] ✅ Extra commands for ${clientLabel}`);
   } catch (e) {
-    console.error(`[Bot] ❌ Extra commands fejl:`, e.message);
+    logger.error(`[Bot] ❌ Extra commands fejl:`, e.message);
   }
 
   // Admin/config, reaction roles, leveling admin, musik-ekstra, utility
@@ -4073,7 +4075,7 @@ manager.registerHandler((client, guildId, assignedDiscordGuildId) => {
     );
     console.log(`[Bot] ✅ Admin commands for ${clientLabel}`);
   } catch (e) {
-    console.error(`[Bot] ❌ Admin commands fejl:`, e.message);
+    logger.error(`[Bot] ❌ Admin commands fejl:`, e.message);
   }
 
   // User-facing moderation appeals
@@ -4081,7 +4083,7 @@ manager.registerHandler((client, guildId, assignedDiscordGuildId) => {
     Object.assign(slashHandlers, createAppealHandlers(client, { supabase }));
     console.log(`[Bot] ✅ Appeal commands for ${clientLabel}`);
   } catch (e) {
-    console.error(`[Bot] ❌ Appeal commands fejl:`, e.message);
+    logger.error(`[Bot] ❌ Appeal commands fejl:`, e.message);
   }
 
   // Spil (trivia, ttt, connect4, hangman, wordle, blackjack)
@@ -4089,7 +4091,7 @@ manager.registerHandler((client, guildId, assignedDiscordGuildId) => {
     Object.assign(slashHandlers, createGameHandlers(client, { supabase }));
     console.log(`[Bot] ✅ Game commands for ${clientLabel}`);
   } catch (e) {
-    console.error(`[Bot] ❌ Game commands fejl:`, e.message);
+    logger.error(`[Bot] ❌ Game commands fejl:`, e.message);
   }
 
   // Advanced moderation commands + persistent temp actions
@@ -4108,7 +4110,7 @@ manager.registerHandler((client, guildId, assignedDiscordGuildId) => {
     );
     console.log(`[Bot] ✅ Advanced moderation for ${clientLabel}`);
   } catch (e) {
-    console.error(`[Bot] ❌ Advanced moderation fejl:`, e.message);
+    logger.error(`[Bot] ❌ Advanced moderation fejl:`, e.message);
   }
 
   // Platform V3 workflows, command-health alerts and ticket SLA alerts
@@ -4121,7 +4123,7 @@ manager.registerHandler((client, guildId, assignedDiscordGuildId) => {
       `[Bot] ✅ Platform V3 workflow/alert engine for ${clientLabel}`,
     );
   } catch (e) {
-    console.error(`[Bot] ❌ Platform V3 handler fejl:`, e.message);
+    logger.error(`[Bot] ❌ Platform V3 handler fejl:`, e.message);
   }
 
   // The official GuildOS application is Discovery-enabled and must not expose
@@ -4146,7 +4148,7 @@ manager.registerHandler((client, guildId, assignedDiscordGuildId) => {
     });
     console.log(`[Bot] ✅ Prefix handler for ${clientLabel}`);
   } catch (e) {
-    console.error(`[Bot] ❌ Prefix handler fejl:`, e.message);
+    logger.error(`[Bot] ❌ Prefix handler fejl:`, e.message);
   }
 
   // Register interaction handler for slash commands
@@ -4246,7 +4248,7 @@ manager.registerHandler((client, guildId, assignedDiscordGuildId) => {
         error,
       });
 
-      console.error(`[Bot] Fejl i command ${commandName}:`, error);
+      logger.error(`[Bot] Fejl i command ${commandName}:`, error);
       const reply = {
         content: "❌ Der skete en fejl under udførelse af kommandoen.",
         flags: 64,
@@ -4281,7 +4283,7 @@ manager
     );
   })
   .catch((error) => {
-    console.error("[Bot] ❌ Kunne ikke starte bot manager:", error);
+    logger.error("[Bot] ❌ Kunne ikke starte bot manager:", error);
     process.exit(1);
   });
 
@@ -4312,7 +4314,7 @@ process.on("SIGINT", async () => {
     await manager.stop();
     console.log("[Bot] ✅ Bot Manager stoppet");
   } catch (error) {
-    console.error("[Bot] ❌ Fejl under nedlukning:", error);
+    logger.error("[Bot] ❌ Fejl under nedlukning:", error);
   }
 
   process.exit(0);
@@ -4337,7 +4339,7 @@ process.on("SIGTERM", async () => {
     await manager.stop();
     console.log("[Bot] ✅ Bot Manager stoppet");
   } catch (error) {
-    console.error("[Bot] ❌ Fejl under nedlukning:", error);
+    logger.error("[Bot] ❌ Fejl under nedlukning:", error);
   }
 
   process.exit(0);
@@ -4345,7 +4347,7 @@ process.on("SIGTERM", async () => {
 
 // Handle uncaught exceptions — log and exit so process managers (PM2) restart cleanly.
 process.on("uncaughtException", (error) => {
-  console.error("[Bot] ❌ Uncaught Exception:", error);
+  logger.error("[Bot] ❌ Uncaught Exception:", error);
   try {
     botLog(
       "00000000-0000-0000-0000-000000000000",
@@ -4361,7 +4363,7 @@ process.on("uncaughtException", (error) => {
 });
 
 process.on("unhandledRejection", (error) => {
-  console.error("[Bot] ❌ Unhandled Rejection:", error);
+  logger.error("[Bot] ❌ Unhandled Rejection:", error);
   try {
     botLog(
       "00000000-0000-0000-0000-000000000000",

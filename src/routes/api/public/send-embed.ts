@@ -1,4 +1,5 @@
 // @ts-nocheck
+import { logger } from "@/lib/server/logger";
 import { decryptBotToken as simpleDecrypt } from "@/lib/server/bot-token-crypto";
 // Migrated from Supabase Edge Function `send-embed` to a TanStack server route.
 import { createFileRoute } from "@tanstack/react-router";
@@ -45,7 +46,7 @@ async function getBotTokenForGuild(
       return simpleDecrypt(settings.bot_token_encrypted, encryptionKey);
     } catch (e) {
       if (e instanceof Response) return e;
-      console.error(
+      logger.error(
         "Failed to decrypt custom bot token, falling back to global:",
         e.message,
       );

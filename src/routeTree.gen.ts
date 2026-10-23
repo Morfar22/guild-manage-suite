@@ -119,6 +119,7 @@ import { Route as ApiPublicGenerateTicketTranscriptRouteImport } from './routes/
 import { Route as ApiPublicGiveawayHandlerRouteImport } from './routes/api/public/giveaway-handler'
 import { Route as ApiPublicGlobalBanHandlerRouteImport } from './routes/api/public/global-ban-handler'
 import { Route as ApiPublicGuildBotConfigRouteImport } from './routes/api/public/guild-bot-config'
+import { Route as ApiPublicHealthRouteImport } from './routes/api/public/health'
 import { Route as ApiPublicInviteTrackerRouteImport } from './routes/api/public/invite-tracker'
 import { Route as ApiPublicJtcHandlerRouteImport } from './routes/api/public/jtc-handler'
 import { Route as ApiPublicLogActionRouteImport } from './routes/api/public/log-action'
@@ -715,6 +716,11 @@ const ApiPublicGuildBotConfigRoute = ApiPublicGuildBotConfigRouteImport.update({
   path: '/api/public/guild-bot-config',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicHealthRoute = ApiPublicHealthRouteImport.update({
+  id: '/api/public/health',
+  path: '/api/public/health',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicInviteTrackerRoute = ApiPublicInviteTrackerRouteImport.update({
   id: '/api/public/invite-tracker',
   path: '/api/public/invite-tracker',
@@ -991,6 +997,7 @@ export interface FileRoutesByFullPath {
   '/api/public/giveaway-handler': typeof ApiPublicGiveawayHandlerRoute
   '/api/public/global-ban-handler': typeof ApiPublicGlobalBanHandlerRoute
   '/api/public/guild-bot-config': typeof ApiPublicGuildBotConfigRoute
+  '/api/public/health': typeof ApiPublicHealthRoute
   '/api/public/invite-tracker': typeof ApiPublicInviteTrackerRoute
   '/api/public/jtc-handler': typeof ApiPublicJtcHandlerRoute
   '/api/public/log-action': typeof ApiPublicLogActionRoute
@@ -1131,6 +1138,7 @@ export interface FileRoutesByTo {
   '/api/public/giveaway-handler': typeof ApiPublicGiveawayHandlerRoute
   '/api/public/global-ban-handler': typeof ApiPublicGlobalBanHandlerRoute
   '/api/public/guild-bot-config': typeof ApiPublicGuildBotConfigRoute
+  '/api/public/health': typeof ApiPublicHealthRoute
   '/api/public/invite-tracker': typeof ApiPublicInviteTrackerRoute
   '/api/public/jtc-handler': typeof ApiPublicJtcHandlerRoute
   '/api/public/log-action': typeof ApiPublicLogActionRoute
@@ -1274,6 +1282,7 @@ export interface FileRoutesById {
   '/api/public/giveaway-handler': typeof ApiPublicGiveawayHandlerRoute
   '/api/public/global-ban-handler': typeof ApiPublicGlobalBanHandlerRoute
   '/api/public/guild-bot-config': typeof ApiPublicGuildBotConfigRoute
+  '/api/public/health': typeof ApiPublicHealthRoute
   '/api/public/invite-tracker': typeof ApiPublicInviteTrackerRoute
   '/api/public/jtc-handler': typeof ApiPublicJtcHandlerRoute
   '/api/public/log-action': typeof ApiPublicLogActionRoute
@@ -1418,6 +1427,7 @@ export interface FileRouteTypes {
     | '/api/public/giveaway-handler'
     | '/api/public/global-ban-handler'
     | '/api/public/guild-bot-config'
+    | '/api/public/health'
     | '/api/public/invite-tracker'
     | '/api/public/jtc-handler'
     | '/api/public/log-action'
@@ -1558,6 +1568,7 @@ export interface FileRouteTypes {
     | '/api/public/giveaway-handler'
     | '/api/public/global-ban-handler'
     | '/api/public/guild-bot-config'
+    | '/api/public/health'
     | '/api/public/invite-tracker'
     | '/api/public/jtc-handler'
     | '/api/public/log-action'
@@ -1700,6 +1711,7 @@ export interface FileRouteTypes {
     | '/api/public/giveaway-handler'
     | '/api/public/global-ban-handler'
     | '/api/public/guild-bot-config'
+    | '/api/public/health'
     | '/api/public/invite-tracker'
     | '/api/public/jtc-handler'
     | '/api/public/log-action'
@@ -1780,6 +1792,7 @@ export interface RootRouteChildren {
   ApiPublicGiveawayHandlerRoute: typeof ApiPublicGiveawayHandlerRoute
   ApiPublicGlobalBanHandlerRoute: typeof ApiPublicGlobalBanHandlerRoute
   ApiPublicGuildBotConfigRoute: typeof ApiPublicGuildBotConfigRoute
+  ApiPublicHealthRoute: typeof ApiPublicHealthRoute
   ApiPublicInviteTrackerRoute: typeof ApiPublicInviteTrackerRoute
   ApiPublicJtcHandlerRoute: typeof ApiPublicJtcHandlerRoute
   ApiPublicLogActionRoute: typeof ApiPublicLogActionRoute
@@ -2576,6 +2589,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicGuildBotConfigRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/health': {
+      id: '/api/public/health'
+      path: '/api/public/health'
+      fullPath: '/api/public/health'
+      preLoaderRoute: typeof ApiPublicHealthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/invite-tracker': {
       id: '/api/public/invite-tracker'
       path: '/api/public/invite-tracker'
@@ -2991,6 +3011,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicGiveawayHandlerRoute: ApiPublicGiveawayHandlerRoute,
   ApiPublicGlobalBanHandlerRoute: ApiPublicGlobalBanHandlerRoute,
   ApiPublicGuildBotConfigRoute: ApiPublicGuildBotConfigRoute,
+  ApiPublicHealthRoute: ApiPublicHealthRoute,
   ApiPublicInviteTrackerRoute: ApiPublicInviteTrackerRoute,
   ApiPublicJtcHandlerRoute: ApiPublicJtcHandlerRoute,
   ApiPublicLogActionRoute: ApiPublicLogActionRoute,

@@ -1,5 +1,6 @@
 // Migrated from Supabase Edge Function `bot-characters` to a TanStack server route.
 // @ts-nocheck
+import { logger } from "@/lib/server/logger";
 import { createFileRoute } from "@tanstack/react-router";
 import { createClient } from "@supabase/supabase-js";
 import type { Untyped } from "@/types/untyped";
@@ -35,7 +36,7 @@ async function checkIPWhitelist(
     .select("*", { count: "exact", head: true });
 
   if (countError) {
-    console.error("Error checking whitelist count:", countError);
+    logger.error("Error checking whitelist count:", countError);
     return { allowed: false, ip: clientIp };
   }
 
@@ -74,7 +75,7 @@ __serve(async (req) => {
   // Check IP whitelist
   const ipCheck = await checkIPWhitelist(req, supabase);
   if (!ipCheck.allowed) {
-    console.error(`IP not whitelisted: ${ipCheck.ip}`);
+    logger.error(`IP not whitelisted: ${ipCheck.ip}`);
     return new Response(
       JSON.stringify({
         error: "Forbidden - IP not whitelisted",
@@ -263,7 +264,7 @@ __serve(async (req) => {
     }
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : "Unknown error";
-    console.error("Error:", message);
+    logger.error("Error:", message);
     return new Response(JSON.stringify({ error: message }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },

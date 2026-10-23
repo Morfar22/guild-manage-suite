@@ -1,5 +1,6 @@
 // Migrated from Supabase Edge Function `bot-heartbeat` to a TanStack server route.
 // @ts-nocheck
+import { logger } from "@/lib/server/logger";
 import { safeEqual } from "@/lib/server/api-auth";
 import { createFileRoute } from "@tanstack/react-router";
 import { createClient } from "@supabase/supabase-js";
@@ -38,7 +39,7 @@ async function checkIPWhitelist(
     .select("*", { count: "exact", head: true });
 
   if (countError) {
-    console.error("Whitelist count error:", countError);
+    logger.error("Whitelist count error:", countError);
     return { allowed: false, ip: clientIp };
   }
 
@@ -103,7 +104,7 @@ __serve(async (req) => {
     );
 
     if (!safeEqual(botSecret, expectedSecret)) {
-      console.error(
+      logger.error(
         `Invalid or missing bot secret. Received length: ${botSecret?.length ?? 0}, Expected length: ${expectedSecret?.length ?? 0}`,
       );
       return new Response(
@@ -123,7 +124,7 @@ __serve(async (req) => {
     // Check IP whitelist
     const ipCheck = await checkIPWhitelist(req, supabase);
     if (!ipCheck.allowed) {
-      console.error(`IP not whitelisted: ${ipCheck.ip}`);
+      logger.error(`IP not whitelisted: ${ipCheck.ip}`);
       return new Response(
         JSON.stringify({
           error: "Forbidden - IP not whitelisted",
@@ -158,7 +159,7 @@ __serve(async (req) => {
       .single();
 
     if (guildError || !guild) {
-      console.error("Guild not found:", guildError);
+      logger.error("Guild not found:", guildError);
       return new Response(JSON.stringify({ error: "Guild not found" }), {
         status: 404,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -191,7 +192,7 @@ __serve(async (req) => {
     );
 
     if (upsertError) {
-      console.error("Error upserting bot status:", upsertError);
+      logger.error("Error upserting bot status:", upsertError);
       return new Response(
         JSON.stringify({ error: "Failed to update status" }),
         {
@@ -208,7 +209,7 @@ __serve(async (req) => {
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   } catch (error) {
-    console.error("Unexpected error:", error);
+    logger.error("Unexpected error:", error);
     return new Response(JSON.stringify({ error: "Internal server error" }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },

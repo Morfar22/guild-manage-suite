@@ -1,5 +1,6 @@
 // Migrated from Supabase Edge Function `automod-handler` to a TanStack server route.
 // @ts-nocheck
+import { logger } from "@/lib/server/logger";
 import { safeEqual } from "@/lib/server/api-auth";
 import { createFileRoute } from "@tanstack/react-router";
 import { createClient } from "@supabase/supabase-js";
@@ -77,7 +78,7 @@ __serve(async (req) => {
     const expectedSecret = __env("BOT_SECRET_KEY");
 
     if (!safeEqual(botSecret, expectedSecret)) {
-      console.error("Unauthorized: Invalid bot secret");
+      logger.error("Unauthorized: Invalid bot secret");
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -92,7 +93,7 @@ __serve(async (req) => {
     // Check IP whitelist
     const ipCheck = await checkIPWhitelist(req, supabase);
     if (!ipCheck.allowed) {
-      console.error(`IP not whitelisted: ${ipCheck.ip}`);
+      logger.error(`IP not whitelisted: ${ipCheck.ip}`);
       return new Response(
         JSON.stringify({
           error: "Forbidden - IP not whitelisted",
@@ -338,7 +339,7 @@ __serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error) {
-    console.error("Automod handler error:", error);
+    logger.error("Automod handler error:", error);
     const message = error instanceof Error ? error.message : "Unknown error";
     return new Response(JSON.stringify({ error: message }), {
       status: 500,

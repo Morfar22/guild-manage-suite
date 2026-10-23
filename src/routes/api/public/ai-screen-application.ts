@@ -1,5 +1,6 @@
 // Migrated from Supabase Edge Function `ai-screen-application` to a TanStack server route.
 // @ts-nocheck
+import { logger } from "@/lib/server/logger";
 import { createFileRoute } from "@tanstack/react-router";
 import { requireUser, requireGuildAdmin } from "@/lib/server/api-auth";
 import { createClient } from "@supabase/supabase-js";
@@ -238,7 +239,7 @@ Du skal returnere en struktureret vurdering via tool call.
     return json({ success: true, result, auto_action: autoAction });
   } catch (err) {
     if (err instanceof Response) return err;
-    console.error("ai-screen-application error:", err);
+    logger.error("ai-screen-application error:", err);
     const aiError = openAIErrorResponse(err, corsHeaders);
     if (aiError) return aiError;
     return json(

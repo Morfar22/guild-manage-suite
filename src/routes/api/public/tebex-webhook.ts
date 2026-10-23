@@ -1,5 +1,6 @@
 // Migrated from Supabase Edge Function `tebex-webhook` to a TanStack server route.
 // @ts-nocheck
+import { logger } from "@/lib/server/logger";
 import { verifyTebexSignature } from "@/lib/server/tebex-signature";
 import { createFileRoute } from "@tanstack/react-router";
 import { createClient } from "@supabase/supabase-js";
@@ -130,7 +131,7 @@ __serve(async (req) => {
       .insert(purchaseRecord);
 
     if (insertError) {
-      console.error("Insert error:", insertError);
+      logger.error("Insert error:", insertError);
     }
 
     // If it's a completed payment, check for role mappings
@@ -158,7 +159,7 @@ __serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (err) {
-    console.error("Tebex webhook error:", err);
+    logger.error("Tebex webhook error:", err);
     return new Response(JSON.stringify({ error: err.message }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },

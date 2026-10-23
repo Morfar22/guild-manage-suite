@@ -1,4 +1,5 @@
 // @ts-nocheck
+import { logger } from "@/lib/server/logger";
 import { safeEqual } from "@/lib/server/api-auth";
 import { decryptBotToken as simpleDecrypt } from "@/lib/server/bot-token-crypto";
 // Migrated from Supabase Edge Function `reaction-role-handler` to a TanStack server route.
@@ -84,7 +85,7 @@ __serve(async (req) => {
     if (action === "send_panel") {
       const authHeader = req.headers.get("Authorization");
       if (!authHeader?.startsWith("Bearer ")) {
-        console.error("Unauthorized: Missing auth token for send_panel");
+        logger.error("Unauthorized: Missing auth token for send_panel");
         return new Response(JSON.stringify({ error: "Unauthorized" }), {
           status: 401,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -102,7 +103,7 @@ __serve(async (req) => {
       const { data: claimsData, error: claimsError } =
         await userSupabase.auth.getClaims(token);
       if (claimsError || !claimsData?.claims) {
-        console.error("Unauthorized: Invalid JWT token");
+        logger.error("Unauthorized: Invalid JWT token");
         return new Response(JSON.stringify({ error: "Unauthorized" }), {
           status: 401,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -116,7 +117,7 @@ __serve(async (req) => {
       const expectedSecret = __env("BOT_SECRET_KEY");
 
       if (!safeEqual(botSecret, expectedSecret)) {
-        console.error("Unauthorized: Invalid bot secret");
+        logger.error("Unauthorized: Invalid bot secret");
         return new Response(JSON.stringify({ error: "Unauthorized" }), {
           status: 401,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -126,7 +127,7 @@ __serve(async (req) => {
       // Check IP whitelist for bot requests
       const ipCheck = await checkIPWhitelist(req, supabase);
       if (!ipCheck.allowed) {
-        console.error(`IP not whitelisted: ${ipCheck.ip}`);
+        logger.error(`IP not whitelisted: ${ipCheck.ip}`);
         return new Response(
           JSON.stringify({
             error: "Forbidden - IP not whitelisted",
@@ -160,7 +161,7 @@ __serve(async (req) => {
         .single();
 
       if (panelError || !panel) {
-        console.error("Panel not found:", panelError);
+        logger.error("Panel not found:", panelError);
         return new Response(JSON.stringify({ error: "Panel not found" }), {
           status: 404,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -175,7 +176,7 @@ __serve(async (req) => {
         .single();
 
       if (guildError || !guild) {
-        console.error("Guild not found:", guildError);
+        logger.error("Guild not found:", guildError);
         return new Response(JSON.stringify({ error: "Guild not found" }), {
           status: 404,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -316,7 +317,7 @@ __serve(async (req) => {
 
       if (!discordResponse.ok) {
         const error = await discordResponse.text();
-        console.error("Discord API error:", error);
+        logger.error("Discord API error:", error);
         return new Response(
           JSON.stringify({ error: "Failed to send embed to Discord" }),
           {
@@ -353,7 +354,7 @@ __serve(async (req) => {
               },
             );
           } catch (e) {
-            console.error("Failed to add reaction:", rr.emoji, e);
+            logger.error("Failed to add reaction:", rr.emoji, e);
           }
         }
       }
@@ -393,7 +394,7 @@ __serve(async (req) => {
       .maybeSingle();
 
     if (guildError || !guild) {
-      console.error("Guild not found:", guildError);
+      logger.error("Guild not found:", guildError);
       return new Response(JSON.stringify({ error: "Guild not found" }), {
         status: 404,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -410,7 +411,7 @@ __serve(async (req) => {
       .maybeSingle();
 
     if (rrError) {
-      console.error("Error fetching reaction role:", rrError);
+      logger.error("Error fetching reaction role:", rrError);
       throw rrError;
     }
 
@@ -445,7 +446,7 @@ __serve(async (req) => {
       },
     );
   } catch (error) {
-    console.error("Reaction role handler error:", error);
+    logger.error("Reaction role handler error:", error);
     const message = error instanceof Error ? error.message : "Unknown error";
     return new Response(JSON.stringify({ error: message }), {
       status: 500,

@@ -1,5 +1,6 @@
 // Migrated from Supabase Edge Function `bot-settings` to a TanStack server route.
 // @ts-nocheck
+import { logger } from "@/lib/server/logger";
 import { safeEqual } from "@/lib/server/api-auth";
 import { createFileRoute } from "@tanstack/react-router";
 import { createClient } from "@supabase/supabase-js";
@@ -59,7 +60,7 @@ __serve(async (req) => {
     const expectedSecret = __env("BOT_SECRET_KEY");
 
     if (!safeEqual(botSecret, expectedSecret)) {
-      console.error("Invalid or missing bot secret");
+      logger.error("Invalid or missing bot secret");
       return new Response(
         JSON.stringify({ error: "Unauthorized - Invalid bot secret" }),
         {
@@ -77,7 +78,7 @@ __serve(async (req) => {
     // Check IP whitelist
     const ipCheck = await checkIPWhitelist(req, supabase);
     if (!ipCheck.allowed) {
-      console.error(`IP not whitelisted: ${ipCheck.ip}`);
+      logger.error(`IP not whitelisted: ${ipCheck.ip}`);
       return new Response(
         JSON.stringify({
           error: "Forbidden - IP not whitelisted",
@@ -113,7 +114,7 @@ __serve(async (req) => {
       .single();
 
     if (guildError || !guild) {
-      console.error("Guild not found:", guildError);
+      logger.error("Guild not found:", guildError);
       return new Response(JSON.stringify({ error: "Guild not found" }), {
         status: 404,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -127,7 +128,7 @@ __serve(async (req) => {
       .eq("guild_id", guild.id);
 
     if (modulesError) {
-      console.error("Error fetching modules:", modulesError);
+      logger.error("Error fetching modules:", modulesError);
     }
 
     // Transform modules to object format
@@ -145,7 +146,7 @@ __serve(async (req) => {
       .eq("guild_id", guild.id);
 
     if (commandsError) {
-      console.error("Error fetching commands:", commandsError);
+      logger.error("Error fetching commands:", commandsError);
     }
 
     // Transform commands to object format
@@ -175,7 +176,7 @@ __serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error) {
-    console.error("Unexpected error:", error);
+    logger.error("Unexpected error:", error);
     return new Response(JSON.stringify({ error: "Internal server error" }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },

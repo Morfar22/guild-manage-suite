@@ -1,4 +1,5 @@
 // @ts-nocheck
+import { logger } from "@/lib/server/logger";
 import { decryptBotToken as simpleDecrypt } from "@/lib/server/bot-token-crypto";
 // Migrated from Supabase Edge Function `auto-report` to a TanStack server route.
 import { createFileRoute } from "@tanstack/react-router";
@@ -180,7 +181,7 @@ __serve(async (req) => {
         }
       } catch (e) {
         if (e instanceof Response) return e;
-        console.error(`Error sending report for guild ${setting.guild_id}:`, e);
+        logger.error(`Error sending report for guild ${setting.guild_id}:`, e);
       }
     }
 

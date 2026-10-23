@@ -1,5 +1,6 @@
 // Migrated from Supabase Edge Function `bot-deploy` to a TanStack server route.
 // @ts-nocheck
+import { logger } from "@/lib/server/logger";
 import { createFileRoute } from "@tanstack/react-router";
 import { createClient } from "@supabase/supabase-js";
 import type { Untyped } from "@/types/untyped";
@@ -119,7 +120,7 @@ __serve(async (req) => {
     return json({ ok: commandOk, status: upstream.status, data: payload }, 200);
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Unknown error";
-    console.error("[bot-deploy] error:", message);
+    logger.error("[bot-deploy] error:", message);
     return json({ error: message }, 500);
   }
 });

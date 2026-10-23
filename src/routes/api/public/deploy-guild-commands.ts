@@ -1,4 +1,5 @@
 // @ts-nocheck
+import { logger } from "@/lib/server/logger";
 import { decryptBotToken as simpleDecrypt } from "@/lib/server/bot-token-crypto";
 // Migrated from Supabase Edge Function `deploy-guild-commands` to a TanStack server route.
 import { createFileRoute } from "@tanstack/react-router";
@@ -38,7 +39,7 @@ async function getBotCredentialsForDiscordGuild(
     .maybeSingle();
 
   if (guildLookupError) {
-    console.error(
+    logger.error(
       "Failed to resolve guild for command deploy:",
       guildLookupError,
     );
@@ -68,7 +69,7 @@ async function getBotCredentialsForDiscordGuild(
     .maybeSingle();
 
   if (settingsError) {
-    console.error(
+    logger.error(
       "Failed to fetch guild bot settings for command deploy:",
       settingsError,
     );
@@ -98,7 +99,7 @@ async function getBotCredentialsForDiscordGuild(
       botName: settings.bot_name || undefined,
     };
   } catch (error) {
-    console.error(
+    logger.error(
       "Failed to decrypt custom bot token for command deploy:",
       error,
     );
@@ -1750,7 +1751,7 @@ __serve(async (req) => {
     );
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : "Unknown error";
-    console.error("Error:", message);
+    logger.error("Error:", message);
     return new Response(JSON.stringify({ error: message }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },

@@ -1,5 +1,6 @@
 // Migrated from Supabase Edge Function `send-verification-panel` to a TanStack server route.
 // @ts-nocheck
+import { logger } from "@/lib/server/logger";
 import { createFileRoute } from "@tanstack/react-router";
 import { createClient } from "@supabase/supabase-js";
 import { decryptBotToken } from "@/lib/server/bot-token-crypto";
@@ -123,7 +124,7 @@ __serve(async (req) => {
 
     if (!discordRes.ok) {
       const err = await discordRes.text();
-      console.error("Discord API error:", err);
+      logger.error("Discord API error:", err);
       return new Response(
         JSON.stringify({ error: "Failed to send panel to Discord" }),
         {
@@ -149,7 +150,7 @@ __serve(async (req) => {
     );
   } catch (error) {
     if (error instanceof Response) return error;
-    console.error("Send verification panel error:", error);
+    logger.error("Send verification panel error:", error);
     return new Response(JSON.stringify({ error: error.message }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },

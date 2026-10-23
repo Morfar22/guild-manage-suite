@@ -1,5 +1,6 @@
 // Migrated from Supabase Edge Function `admin-users` to a TanStack server route.
 // @ts-nocheck
+import { logger } from "@/lib/server/logger";
 import { createFileRoute } from "@tanstack/react-router";
 import { createClient } from "@supabase/supabase-js";
 import type { Untyped } from "@/types/untyped";
@@ -49,7 +50,7 @@ __serve(async (req) => {
       await userClient.auth.getClaims(token);
 
     if (claimsError || !claimsData?.claims) {
-      console.error("Auth error:", claimsError);
+      logger.error("Auth error:", claimsError);
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -90,7 +91,7 @@ __serve(async (req) => {
       } = await adminClient.auth.admin.listUsers();
 
       if (usersError) {
-        console.error("Error listing users:", usersError);
+        logger.error("Error listing users:", usersError);
         return new Response(JSON.stringify({ error: "Failed to list users" }), {
           status: 500,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -114,7 +115,7 @@ __serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error) {
-    console.error("Error:", error);
+    logger.error("Error:", error);
     return new Response(JSON.stringify({ error: "Internal server error" }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },

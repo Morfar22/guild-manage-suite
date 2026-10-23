@@ -1,5 +1,6 @@
 // Migrated from Supabase Edge Function `discord-oauth` to a TanStack server route.
 // @ts-nocheck
+import { logger } from "@/lib/server/logger";
 import { createFileRoute } from "@tanstack/react-router";
 import { createClient } from "@supabase/supabase-js";
 import type { Untyped } from "@/types/untyped";
@@ -63,7 +64,7 @@ __serve(async (req) => {
   const SUPABASE_SERVICE_ROLE_KEY = __env("SUPABASE_SERVICE_ROLE_KEY");
 
   if (!DISCORD_CLIENT_ID || !DISCORD_CLIENT_SECRET) {
-    console.error("Discord credentials not configured");
+    logger.error("Discord credentials not configured");
     return new Response(
       JSON.stringify({ error: "Discord OAuth not configured" }),
       {
@@ -151,7 +152,7 @@ __serve(async (req) => {
 
       if (!tokenResponse.ok) {
         const error = await tokenResponse.text();
-        console.error("Token exchange failed:", error);
+        logger.error("Token exchange failed:", error);
         return new Response(
           JSON.stringify({ error: "Failed to exchange authorization code" }),
           {
@@ -172,7 +173,7 @@ __serve(async (req) => {
       });
 
       if (!userResponse.ok) {
-        console.error("Failed to fetch Discord user");
+        logger.error("Failed to fetch Discord user");
         return new Response(
           JSON.stringify({ error: "Failed to fetch Discord user" }),
           {
@@ -200,7 +201,7 @@ __serve(async (req) => {
       );
 
       if (!guildsResponse.ok) {
-        console.error("Failed to fetch Discord guilds");
+        logger.error("Failed to fetch Discord guilds");
         return new Response(
           JSON.stringify({ error: "Failed to fetch Discord guilds" }),
           {
@@ -252,7 +253,7 @@ __serve(async (req) => {
           });
 
         if (createError) {
-          console.error("Failed to create user:", createError);
+          logger.error("Failed to create user:", createError);
           return new Response(
             JSON.stringify({ error: "Failed to create user account" }),
             {
@@ -294,7 +295,7 @@ __serve(async (req) => {
 
           console.log("User promoted to admin successfully");
         } else {
-          console.error("Failed to assign admin role:", roleError);
+          logger.error("Failed to assign admin role:", roleError);
         }
       }
 
@@ -349,7 +350,7 @@ __serve(async (req) => {
           .select("id, guild_id");
 
         if (guildError) {
-          console.error("Failed to upsert guilds:", guildError);
+          logger.error("Failed to upsert guilds:", guildError);
         } else if (upserted) {
           guildRows = upserted;
         }
@@ -374,7 +375,7 @@ __serve(async (req) => {
           .from("user_guilds")
           .upsert(linkRows, { onConflict: "user_id,guild_id" });
         if (linkError) {
-          console.error("Failed to link user to guilds:", linkError);
+          logger.error("Failed to link user to guilds:", linkError);
         }
       }
 
@@ -399,7 +400,7 @@ __serve(async (req) => {
           .from("guild_modules")
           .upsert(moduleRows, { onConflict: "guild_id,module_type" });
         if (moduleError) {
-          console.error("Failed to init guild modules:", moduleError);
+          logger.error("Failed to init guild modules:", moduleError);
         }
       }
 
@@ -411,7 +412,7 @@ __serve(async (req) => {
         });
 
       if (sessionError) {
-        console.error("Failed to generate session:", sessionError);
+        logger.error("Failed to generate session:", sessionError);
         return new Response(
           JSON.stringify({
             error: `Failed to create session: ${sessionError.message}`,
@@ -447,7 +448,7 @@ __serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error) {
-    console.error("Discord OAuth error:", error);
+    logger.error("Discord OAuth error:", error);
     return new Response(JSON.stringify({ error: "Internal server error" }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },

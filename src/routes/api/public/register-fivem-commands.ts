@@ -1,5 +1,6 @@
 // Migrated from Supabase Edge Function `register-fivem-commands` to a TanStack server route.
 // @ts-nocheck
+import { logger } from "@/lib/server/logger";
 import { createFileRoute } from "@tanstack/react-router";
 import { createClient } from "@supabase/supabase-js";
 import type { Untyped } from "@/types/untyped";
@@ -1185,7 +1186,7 @@ __serve(async (req) => {
       },
     );
   } catch (error) {
-    console.error("Error:", error);
+    logger.error("Error:", error);
     return new Response(JSON.stringify({ error: "Internal server error" }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },

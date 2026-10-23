@@ -1,5 +1,6 @@
 // Migrated from Supabase Edge Function `modmail-handler` to a TanStack server route.
 // @ts-nocheck
+import { logger } from "@/lib/server/logger";
 import { safeEqual } from "@/lib/server/api-auth";
 import { createFileRoute } from "@tanstack/react-router";
 import { createClient } from "@supabase/supabase-js";
@@ -33,7 +34,7 @@ __serve(async (req) => {
     const expectedSecret = __env("BOT_SECRET_KEY");
 
     if (!safeEqual(botSecret, expectedSecret)) {
-      console.error("[Modmail] Invalid or missing bot secret");
+      logger.error("[Modmail] Invalid or missing bot secret");
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -60,7 +61,7 @@ __serve(async (req) => {
           .maybeSingle();
 
         if (error) {
-          console.error("[Modmail] Error fetching guild:", error);
+          logger.error("[Modmail] Error fetching guild:", error);
           return new Response(JSON.stringify({ error: error.message }), {
             status: 500,
             headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -83,7 +84,7 @@ __serve(async (req) => {
           .maybeSingle();
 
         if (error) {
-          console.error("[Modmail] Error fetching settings:", error);
+          logger.error("[Modmail] Error fetching settings:", error);
           return new Response(JSON.stringify({ error: error.message }), {
             status: 500,
             headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -107,7 +108,7 @@ __serve(async (req) => {
           .maybeSingle();
 
         if (error) {
-          console.error("[Modmail] Error fetching thread:", error);
+          logger.error("[Modmail] Error fetching thread:", error);
           return new Response(JSON.stringify({ error: error.message }), {
             status: 500,
             headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -135,7 +136,7 @@ __serve(async (req) => {
           .single();
 
         if (error) {
-          console.error("[Modmail] Error creating thread:", error);
+          logger.error("[Modmail] Error creating thread:", error);
           return new Response(JSON.stringify({ error: error.message }), {
             status: 500,
             headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -166,7 +167,7 @@ __serve(async (req) => {
         });
 
         if (error) {
-          console.error("[Modmail] Error saving message:", error);
+          logger.error("[Modmail] Error saving message:", error);
           return new Response(JSON.stringify({ error: error.message }), {
             status: 500,
             headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -189,7 +190,7 @@ __serve(async (req) => {
           .maybeSingle();
 
         if (error) {
-          console.error("[Modmail] Error fetching thread by channel:", error);
+          logger.error("[Modmail] Error fetching thread by channel:", error);
           return new Response(JSON.stringify({ error: error.message }), {
             status: 500,
             headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -211,7 +212,7 @@ __serve(async (req) => {
           .maybeSingle();
 
         if (error) {
-          console.error("[Modmail] Error fetching settings:", error);
+          logger.error("[Modmail] Error fetching settings:", error);
           return new Response(JSON.stringify({ error: error.message }), {
             status: 500,
             headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -266,7 +267,7 @@ __serve(async (req) => {
           .eq("id", thread.id);
 
         if (updateError) {
-          console.error("[Modmail] Error closing thread:", updateError);
+          logger.error("[Modmail] Error closing thread:", updateError);
           return new Response(JSON.stringify({ error: updateError.message }), {
             status: 500,
             headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -332,7 +333,7 @@ __serve(async (req) => {
           .eq("id", thread.id);
 
         if (updateError) {
-          console.error("[Modmail] Error claiming thread:", updateError);
+          logger.error("[Modmail] Error claiming thread:", updateError);
           return new Response(JSON.stringify({ error: updateError.message }), {
             status: 500,
             headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -351,7 +352,7 @@ __serve(async (req) => {
         });
     }
   } catch (error) {
-    console.error("[Modmail] Unexpected error:", error);
+    logger.error("[Modmail] Unexpected error:", error);
     const errorMessage =
       error instanceof Error ? error.message : "Unknown error";
     return new Response(JSON.stringify({ error: errorMessage }), {

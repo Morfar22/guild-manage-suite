@@ -1,4 +1,5 @@
 // @ts-nocheck
+import { logger } from "@/lib/server/logger";
 import { createFileRoute } from "@tanstack/react-router";
 import { createClient } from "@supabase/supabase-js";
 import type { Untyped } from "@/types/untyped";
@@ -126,7 +127,7 @@ __serve(async (req) => {
         .maybeSingle();
 
       if (settingsError && !isMissingBridgeSchema(settingsError)) {
-        console.error(
+        logger.error(
           "[FiveM Setup] Failed to read bridge status:",
           settingsError,
         );
@@ -171,7 +172,7 @@ __serve(async (req) => {
         .maybeSingle();
 
       if (existingError) {
-        console.error(
+        logger.error(
           "[FiveM Setup] Failed to inspect settings row:",
           existingError,
         );
@@ -201,7 +202,7 @@ __serve(async (req) => {
       const { error } = await write;
 
       if (error) {
-        console.error("[FiveM Setup] Failed to rotate bridge token:", error);
+        logger.error("[FiveM Setup] Failed to rotate bridge token:", error);
         return json(
           databaseErrorBody(error, "Kunne ikke oprette bridge-nøgle"),
           isMissingBridgeSchema(error) ? 409 : 500,
@@ -235,7 +236,7 @@ __serve(async (req) => {
         .eq("guild_id", guild_id);
 
       if (error) {
-        console.error("[FiveM Setup] Failed to revoke bridge token:", error);
+        logger.error("[FiveM Setup] Failed to revoke bridge token:", error);
         return json(
           databaseErrorBody(error, "Kunne ikke tilbagekalde bridge-nøglen"),
           isMissingBridgeSchema(error) ? 409 : 500,
@@ -246,7 +247,7 @@ __serve(async (req) => {
 
     return json({ error: "Invalid action" }, 400);
   } catch (error) {
-    console.error("[FiveM Setup] Error:", error);
+    logger.error("[FiveM Setup] Error:", error);
     return json(
       {
         error: error instanceof Error ? error.message : "Internal server error",

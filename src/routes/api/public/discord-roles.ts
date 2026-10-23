@@ -1,5 +1,6 @@
 // Migrated from Supabase Edge Function `discord-roles` to a TanStack server route.
 // @ts-nocheck
+import { logger } from "@/lib/server/logger";
 import { createFileRoute } from "@tanstack/react-router";
 import { createClient } from "@supabase/supabase-js";
 import { vpsDiscordRequest } from "@/lib/vps-discord-bridge";
@@ -54,7 +55,7 @@ __serve(async (req) => {
     const { data: claimsData, error: claimsError } =
       await supabaseAuthed.auth.getClaims(token);
     if (claimsError || !claimsData?.claims?.sub) {
-      console.error("getClaims failed", claimsError);
+      logger.error("getClaims failed", claimsError);
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -201,7 +202,7 @@ __serve(async (req) => {
     );
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : "Unknown error";
-    console.error("discord-roles error:", message);
+    logger.error("discord-roles error:", message);
     return new Response(JSON.stringify({ error: message }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },

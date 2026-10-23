@@ -1,3 +1,4 @@
+import { logger } from "@/lib/server/logger";
 import { createFileRoute } from "@tanstack/react-router";
 
 async function getPlatformStats() {
@@ -45,7 +46,7 @@ async function handler() {
       },
     });
   } catch (error) {
-    console.error("[PlatformStats] Failed to load public stats:", error);
+    logger.error("[PlatformStats] Failed to load public stats:", error);
     return new Response(JSON.stringify({ error: "Stats unavailable" }), {
       status: 503,
       headers: {

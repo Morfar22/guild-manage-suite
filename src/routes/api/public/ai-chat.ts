@@ -1,5 +1,6 @@
 // Migrated from Supabase Edge Function `ai-chat` to a TanStack server route.
 // @ts-nocheck
+import { logger } from "@/lib/server/logger";
 import { createFileRoute } from "@tanstack/react-router";
 import { createClient } from "@supabase/supabase-js";
 import {
@@ -439,7 +440,7 @@ async function logIllegalContent(
   });
 
   if (insertError) {
-    console.error("🚨 AI SAFETY LOG INSERT FAILED", {
+    logger.error("🚨 AI SAFETY LOG INSERT FAILED", {
       userId,
       guildId,
       categories: allCategories,
@@ -502,7 +503,7 @@ __serve(async (req) => {
     if (isBotRequest) {
       const ipCheck = await checkIPWhitelist(req, supabase);
       if (!ipCheck.allowed) {
-        console.error(`IP not whitelisted: ${ipCheck.ip}`);
+        logger.error(`IP not whitelisted: ${ipCheck.ip}`);
         return new Response(
           JSON.stringify({
             error: "Forbidden - IP not whitelisted",
@@ -879,7 +880,7 @@ __serve(async (req) => {
     }
   } catch (error) {
     if (error instanceof Response) return error;
-    console.error("AI Chat Handler error:", error);
+    logger.error("AI Chat Handler error:", error);
     const aiError = openAIErrorResponse(error, corsHeaders);
     if (aiError) return aiError;
     const errorMessage =

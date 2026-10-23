@@ -1,4 +1,5 @@
 // @ts-nocheck
+import { logger } from "@/lib/server/logger";
 import { decryptBotToken as simpleDecrypt } from "@/lib/server/bot-token-crypto";
 // Migrated from Supabase Edge Function `jtc-handler` to a TanStack server route.
 import { createFileRoute } from "@tanstack/react-router";
@@ -49,7 +50,7 @@ async function getBotTokenForGuild(
       }
     } catch (e) {
       if (e instanceof Response) return e;
-      console.error(
+      logger.error(
         "JTC failed to decrypt custom bot token, falling back to default:",
         e instanceof Error ? e.message : String(e),
       );
@@ -107,7 +108,7 @@ __serve(async (req) => {
     if (isBotRequest) {
       const ipCheck = await checkIPWhitelist(req, supabase);
       if (!ipCheck.allowed) {
-        console.error(`IP not whitelisted: ${ipCheck.ip}`);
+        logger.error(`IP not whitelisted: ${ipCheck.ip}`);
         return new Response(
           JSON.stringify({
             error: "Forbidden - IP not whitelisted",
@@ -447,7 +448,7 @@ __serve(async (req) => {
         const discordBody = await discordResponse.text();
 
         if (!discordResponse.ok) {
-          console.error("Discord create channel failed:", {
+          logger.error("Discord create channel failed:", {
             status: discordResponse.status,
             body: discordBody,
             payload: createPayload,
@@ -497,7 +498,7 @@ __serve(async (req) => {
         );
 
         if (!moveResponse.ok) {
-          console.error("Failed moving user:", await moveResponse.text());
+          logger.error("Failed moving user:", await moveResponse.text());
         }
 
         // Send control panel message in the voice channel's text chat
@@ -606,7 +607,7 @@ __serve(async (req) => {
           );
 
           if (!panelRes.ok) {
-            console.error(
+            logger.error(
               "Failed to send JTC control panel:",
               panelRes.status,
               await panelRes.text(),
@@ -615,7 +616,7 @@ __serve(async (req) => {
             console.log(`Sent JTC control panel in channel ${cid}`);
           }
         } catch (panelErr) {
-          console.error(
+          logger.error(
             "JTC control panel error:",
             panelErr instanceof Error ? panelErr.message : String(panelErr),
           );
@@ -754,7 +755,7 @@ __serve(async (req) => {
                 };
               }
             } catch (err) {
-              console.error(
+              logger.error(
                 `Failed to fetch channel info for ${channel.channel_id}:`,
                 err,
               );
@@ -792,7 +793,7 @@ __serve(async (req) => {
 
         // Even if Discord delete fails (channel might already be gone), remove from DB
         if (!deleteResponse.ok && deleteResponse.status !== 404) {
-          console.error(
+          logger.error(
             "Failed to delete channel from Discord:",
             await deleteResponse.text(),
           );
@@ -819,7 +820,7 @@ __serve(async (req) => {
     }
   } catch (error) {
     if (error instanceof Response) return error;
-    console.error("JTC Handler error:", error);
+    logger.error("JTC Handler error:", error);
     const errorMessage =
       error instanceof Error ? error.message : "Unknown error";
     return new Response(JSON.stringify({ error: errorMessage }), {

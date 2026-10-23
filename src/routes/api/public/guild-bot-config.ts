@@ -1,4 +1,5 @@
 // @ts-nocheck
+import { logger } from "@/lib/server/logger";
 import type { Untyped } from "@/types/untyped";
 import { safeEqual } from "@/lib/server/api-auth";
 import { resolveGuildBotToken } from "@/lib/server/guild-bot-token";
@@ -138,7 +139,7 @@ __serve(async (req) => {
           .eq("is_active", true);
 
         if (error) {
-          console.error("Error fetching active configs:", error);
+          logger.error("Error fetching active configs:", error);
           return new Response(
             JSON.stringify({ error: "Failed to fetch configs" }),
             {
@@ -195,7 +196,7 @@ __serve(async (req) => {
               .maybeSingle();
 
           if (guildLookupError) {
-            console.error(
+            logger.error(
               "Error resolving guild snowflake to uuid:",
               guildLookupError,
             );
@@ -233,7 +234,7 @@ __serve(async (req) => {
           );
 
         if (statusError) {
-          console.error("Error updating bot status:", statusError);
+          logger.error("Error updating bot status:", statusError);
         }
 
         // Update last_connected_at if custom bot
@@ -253,7 +254,7 @@ __serve(async (req) => {
       if (action === "report_error") {
         const { guild_id, error: errorMsg } = body;
 
-        console.error(`Bot error for guild ${guild_id}:`, errorMsg);
+        logger.error(`Bot error for guild ${guild_id}:`, errorMsg);
 
         // Optionally disable the bot on repeated errors
         // For now just log it
@@ -285,7 +286,7 @@ __serve(async (req) => {
           .eq("is_custom_bot", true);
 
         if (clearAvatarError) {
-          console.error(
+          logger.error(
             "Failed to clear invalid bot avatar URL:",
             clearAvatarError,
           );
@@ -323,7 +324,7 @@ __serve(async (req) => {
           .eq("is_online", true);
 
         if (statusError) {
-          console.error("Error fetching bot statuses:", statusError);
+          logger.error("Error fetching bot statuses:", statusError);
           return new Response(
             JSON.stringify({ error: "Failed to fetch bot statuses" }),
             {
@@ -422,7 +423,7 @@ __serve(async (req) => {
 
           if (!discordResponse.ok) {
             const errorText = await discordResponse.text();
-            console.error("Discord API error:", errorText);
+            logger.error("Discord API error:", errorText);
             return new Response(
               JSON.stringify({
                 valid: false,
@@ -456,7 +457,7 @@ __serve(async (req) => {
             { headers: { ...corsHeaders, "Content-Type": "application/json" } },
           );
         } catch (error) {
-          console.error("Error testing token:", error);
+          logger.error("Error testing token:", error);
           return new Response(
             JSON.stringify({ valid: false, error: "Network error" }),
             { headers: { ...corsHeaders, "Content-Type": "application/json" } },
@@ -490,7 +491,7 @@ __serve(async (req) => {
     const { data: userData, error: userError } =
       await supabase.auth.getUser(token);
     if (userError || !userData?.user) {
-      console.error("Auth error:", userError);
+      logger.error("Auth error:", userError);
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -523,7 +524,7 @@ __serve(async (req) => {
 
           if (!discordResponse.ok) {
             const errorText = await discordResponse.text();
-            console.error("Discord API error:", errorText);
+            logger.error("Discord API error:", errorText);
             return new Response(
               JSON.stringify({
                 valid: false,
@@ -556,7 +557,7 @@ __serve(async (req) => {
             { headers: { ...corsHeaders, "Content-Type": "application/json" } },
           );
         } catch (error) {
-          console.error("Error testing token:", error);
+          logger.error("Error testing token:", error);
           return new Response(
             JSON.stringify({ valid: false, error: "Network error" }),
             { headers: { ...corsHeaders, "Content-Type": "application/json" } },
@@ -578,7 +579,7 @@ __serve(async (req) => {
         );
 
         if (roleError) {
-          console.error("Error checking admin/staff role:", roleError);
+          logger.error("Error checking admin/staff role:", roleError);
           return new Response(
             JSON.stringify({ error: "Failed to check permissions" }),
             {
@@ -607,7 +608,7 @@ __serve(async (req) => {
           .order("last_heartbeat", { ascending: false });
 
         if (statusError) {
-          console.error("Error fetching all bot statuses:", statusError);
+          logger.error("Error fetching all bot statuses:", statusError);
           return new Response(
             JSON.stringify({ error: "Failed to fetch bot statuses" }),
             {
@@ -747,7 +748,7 @@ __serve(async (req) => {
               encryptionKey,
             );
           } catch (err) {
-            console.error("Failed to decrypt custom bot token:", err);
+            logger.error("Failed to decrypt custom bot token:", err);
           }
         }
 
@@ -765,7 +766,7 @@ __serve(async (req) => {
             );
             if (!leaveRes.ok && leaveRes.status !== 404) {
               const errText = await leaveRes.text();
-              console.error(
+              logger.error(
                 `Discord leave guild failed (${leaveRes.status}):`,
                 errText,
               );
@@ -788,7 +789,7 @@ __serve(async (req) => {
             }
             console.log(`[Admin] Bot left Discord guild ${discordGuildId}`);
           } catch (err) {
-            console.error("Error calling Discord leave guild:", err);
+            logger.error("Error calling Discord leave guild:", err);
             return new Response(
               JSON.stringify({ error: "Kunne ikke kontakte Discord API" }),
               {
@@ -839,7 +840,7 @@ __serve(async (req) => {
             .eq("has_admin_permission", true);
 
         if (adminGuildsError) {
-          console.error("Error fetching admin guilds:", adminGuildsError);
+          logger.error("Error fetching admin guilds:", adminGuildsError);
           return new Response(
             JSON.stringify({ error: "Failed to fetch permissions" }),
             {
@@ -865,7 +866,7 @@ __serve(async (req) => {
           .in("guild_id", guildIds);
 
         if (statusError) {
-          console.error("Error fetching bot statuses:", statusError);
+          logger.error("Error fetching bot statuses:", statusError);
           return new Response(
             JSON.stringify({ error: "Failed to fetch bot statuses" }),
             {
@@ -961,7 +962,7 @@ __serve(async (req) => {
         .single();
 
       if (userGuildError || !userGuild?.has_admin_permission) {
-        console.error("Permission denied:", userGuildError);
+        logger.error("Permission denied:", userGuildError);
         return new Response(JSON.stringify({ error: "Permission denied" }), {
           status: 403,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -978,7 +979,7 @@ __serve(async (req) => {
         .maybeSingle();
 
       if (error) {
-        console.error("Error fetching settings:", error);
+        logger.error("Error fetching settings:", error);
         return new Response(
           JSON.stringify({ error: "Failed to fetch settings" }),
           {
@@ -1110,7 +1111,7 @@ __serve(async (req) => {
         .eq("guild_id", guildId);
 
       if (error) {
-        console.error("Error deleting settings:", error);
+        logger.error("Error deleting settings:", error);
         return new Response(
           JSON.stringify({ error: "Failed to delete settings" }),
           {
@@ -1130,7 +1131,7 @@ __serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error) {
-    console.error("Unexpected error:", error);
+    logger.error("Unexpected error:", error);
     return new Response(JSON.stringify({ error: "Internal server error" }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },

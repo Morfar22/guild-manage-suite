@@ -1,5 +1,6 @@
 // Migrated from Supabase Edge Function `premium-api` to a TanStack server route.
 // @ts-nocheck
+import { logger } from "@/lib/server/logger";
 import { safeEqual } from "@/lib/server/api-auth";
 import { createFileRoute } from "@tanstack/react-router";
 import { createClient } from "@supabase/supabase-js";
@@ -32,7 +33,7 @@ __serve(async (req) => {
     const expectedKey = __env("HOSTING_API_KEY");
 
     if (!expectedKey) {
-      console.error("HOSTING_API_KEY not configured");
+      logger.error("HOSTING_API_KEY not configured");
       return json({ error: "Server misconfigured" }, 500);
     }
 
@@ -60,7 +61,7 @@ __serve(async (req) => {
 
     return json({ error: "Method not allowed" }, 405);
   } catch (err) {
-    console.error("Premium API error:", err);
+    logger.error("Premium API error:", err);
     return json({ error: err.message }, 500);
   }
 });

@@ -1,4 +1,5 @@
 // @ts-nocheck
+import { logger } from "@/lib/server/logger";
 import { requireGuildAdmin, safeEqual } from "@/lib/server/api-auth";
 import { decryptBotToken as simpleDecrypt } from "@/lib/server/bot-token-crypto";
 // Migrated from Supabase Edge Function `application-handler` to a TanStack server route.
@@ -49,7 +50,7 @@ async function checkIPWhitelist(
     .select("*", { count: "exact", head: true });
 
   if (countError) {
-    console.error("Failed to read IP whitelist count:", countError);
+    logger.error("Failed to read IP whitelist count:", countError);
     return { allowed: false, ip: clientIp };
   }
 
@@ -65,7 +66,7 @@ async function checkIPWhitelist(
     .maybeSingle();
 
   if (whitelistError) {
-    console.error("Failed to check IP whitelist entry:", whitelistError);
+    logger.error("Failed to check IP whitelist entry:", whitelistError);
     return { allowed: false, ip: clientIp };
   }
 
@@ -120,7 +121,7 @@ async function getBotTokenForGuild(
     .maybeSingle();
 
   if (error) {
-    console.error("Failed to fetch guild bot settings:", error);
+    logger.error("Failed to fetch guild bot settings:", error);
   }
 
   const encryptionKey = __env("BOT_SECRET_KEY");
@@ -129,7 +130,7 @@ async function getBotTokenForGuild(
     try {
       return simpleDecrypt(settings.bot_token_encrypted, encryptionKey);
     } catch (e) {
-      console.error(
+      logger.error(
         "Failed to decrypt custom bot token, falling back to global:",
         e instanceof Error ? e.message : String(e),
       );
@@ -201,7 +202,7 @@ __serve(async (req) => {
     if (isBotRequest) {
       const ipCheck = await checkIPWhitelist(req, supabase);
       if (!ipCheck.allowed) {
-        console.error(`IP not whitelisted: ${ipCheck.ip}`);
+        logger.error(`IP not whitelisted: ${ipCheck.ip}`);
         return jsonResponse(
           { error: "Forbidden - IP not whitelisted", ip: ipCheck.ip },
           403,
@@ -248,7 +249,7 @@ __serve(async (req) => {
           .single();
 
         if (guildError || !guild) {
-          console.error("Guild not found:", guildError);
+          logger.error("Guild not found:", guildError);
           return jsonResponse({ error: "Guild not found" }, 404);
         }
 
@@ -268,7 +269,7 @@ __serve(async (req) => {
           .single();
 
         if (settingsError || !settings?.panel_channel_id) {
-          console.error(
+          logger.error(
             "Settings not found or no panel channel:",
             settingsError,
           );
@@ -286,7 +287,7 @@ __serve(async (req) => {
           .order("created_at", { ascending: true });
 
         if (formsError) {
-          console.error("Error fetching forms:", formsError);
+          logger.error("Error fetching forms:", formsError);
           return jsonResponse({ error: "Failed to fetch forms" }, 500);
         }
 
@@ -397,7 +398,7 @@ __serve(async (req) => {
 
         if (!response.ok) {
           const errorText = await response.text();
-          console.error("Discord API error:", errorText);
+          logger.error("Discord API error:", errorText);
           return jsonResponse(
             { error: "Failed to send panel to Discord" },
             500,
@@ -451,7 +452,7 @@ __serve(async (req) => {
           .single();
 
         if (submissionError || !submission) {
-          console.error("Submission not found:", submissionError);
+          logger.error("Submission not found:", submissionError);
           return jsonResponse({ error: "Submission not found" }, 404);
         }
 
@@ -488,7 +489,7 @@ __serve(async (req) => {
           .eq("id", submission_id);
 
         if (updateError) {
-          console.error("Error updating submission:", updateError);
+          logger.error("Error updating submission:", updateError);
           return jsonResponse({ error: "Failed to update submission" }, 500);
         }
 
@@ -524,7 +525,7 @@ __serve(async (req) => {
               `Granted role ${form.granted_role_id} to user ${submission.discord_user_id}`,
             );
           } catch (e) {
-            console.error("Failed to grant role:", e);
+            logger.error("Failed to grant role:", e);
           }
         }
 
@@ -573,7 +574,7 @@ __serve(async (req) => {
               );
             }
           } catch (e) {
-            console.error("Failed to send DM:", e);
+            logger.error("Failed to send DM:", e);
           }
         }
 
@@ -605,7 +606,7 @@ __serve(async (req) => {
               },
             );
           } catch (e) {
-            console.error("Failed to post to channel:", e);
+            logger.error("Failed to post to channel:", e);
           }
         }
 
@@ -652,7 +653,7 @@ __serve(async (req) => {
               },
             );
           } catch (e) {
-            console.error("Failed to log:", e);
+            logger.error("Failed to log:", e);
           }
         }
 
@@ -706,7 +707,7 @@ __serve(async (req) => {
           .single();
 
         if (submitError) {
-          console.error("Error creating submission:", submitError);
+          logger.error("Error creating submission:", submitError);
           return jsonResponse({ error: "Failed to create submission" }, 500);
         }
 
@@ -747,7 +748,7 @@ __serve(async (req) => {
               );
             }
           } catch (e) {
-            console.error("Failed to send confirmation DM:", e);
+            logger.error("Failed to send confirmation DM:", e);
           }
         }
 
@@ -772,7 +773,7 @@ __serve(async (req) => {
               },
             );
           } catch (e) {
-            console.error("Failed to log:", e);
+            logger.error("Failed to log:", e);
           }
         }
 
@@ -794,7 +795,7 @@ __serve(async (req) => {
           .maybeSingle();
 
         if (error) {
-          console.error("Error fetching form:", error);
+          logger.error("Error fetching form:", error);
           return jsonResponse({ error: "Failed to fetch form" }, 500);
         }
 
@@ -811,7 +812,7 @@ __serve(async (req) => {
   } catch (error) {
     const errorMessage =
       error instanceof Error ? error.message : "Internal server error";
-    console.error("Application handler error:", error);
+    logger.error("Application handler error:", error);
     return jsonResponse({ error: errorMessage }, 500);
   }
 });

@@ -1,5 +1,6 @@
 // Migrated from Supabase Edge Function `discord-channels` to a TanStack server route.
 // @ts-nocheck
+import { logger } from "@/lib/server/logger";
 import { createFileRoute } from "@tanstack/react-router";
 import { createClient } from "@supabase/supabase-js";
 import type { Untyped } from "@/types/untyped";
@@ -53,7 +54,7 @@ __serve(async (req) => {
     const { data: claimsData, error: claimsError } =
       await supabaseAuthed.auth.getClaims(token);
     if (claimsError || !claimsData?.claims?.sub) {
-      console.error("getClaims failed", claimsError);
+      logger.error("getClaims failed", claimsError);
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -168,7 +169,7 @@ __serve(async (req) => {
         signal: AbortSignal.timeout(12000),
       });
     } catch (error) {
-      console.error("VPS bridge unreachable:", error);
+      logger.error("VPS bridge unreachable:", error);
       return new Response(
         JSON.stringify({
           error:
@@ -182,7 +183,7 @@ __serve(async (req) => {
     }
     const payload = await bridgeResponse.json().catch(() => null);
     if (!bridgeResponse.ok) {
-      console.error(
+      logger.error(
         "VPS bridge returned status",
         bridgeResponse.status,
         payload?.code,
@@ -229,7 +230,7 @@ __serve(async (req) => {
       },
     );
   } catch (error) {
-    console.error("Error:", error);
+    logger.error("Error:", error);
     return new Response(
       JSON.stringify({
         error: error instanceof Error ? error.message : "Unknown error",

@@ -1,5 +1,6 @@
 // Migrated from Supabase Edge Function `ai-automod` to a TanStack server route.
 // @ts-nocheck
+import { logger } from "@/lib/server/logger";
 import { safeEqual } from "@/lib/server/api-auth";
 import { createFileRoute } from "@tanstack/react-router";
 import { createClient } from "@supabase/supabase-js";
@@ -149,7 +150,7 @@ Flag the message if confidence exceeds ${sensitivity}%.`;
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error) {
-    console.error("AI Automod error:", error);
+    logger.error("AI Automod error:", error);
     const aiError = openAIErrorResponse(error, corsHeaders);
     if (aiError) return aiError;
     return new Response(

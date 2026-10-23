@@ -1,5 +1,6 @@
 // Migrated from Supabase Edge Function `analytics-aggregate` to a TanStack server route.
 // @ts-nocheck
+import { logger } from "@/lib/server/logger";
 import { createFileRoute } from "@tanstack/react-router";
 import { createClient } from "@supabase/supabase-js";
 import { requireBotSecret } from "@/lib/server/api-auth";
@@ -136,7 +137,7 @@ __serve(async (req) => {
     );
   } catch (e) {
     if (e instanceof Response) return e;
-    console.error("Aggregation error:", e);
+    logger.error("Aggregation error:", e);
     return new Response(JSON.stringify({ error: e.message }), {
       status: 500,
       headers: corsHeaders,
