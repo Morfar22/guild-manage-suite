@@ -1,10 +1,25 @@
-// @ts-nocheck
-import type { Untyped } from "@/types/untyped";
+import { logger } from "@/lib/server/logger";
+import {
+  verifyDiscordSignature,
+  buildGiveawayMessagePayload,
+  getGiveawayEntries,
+} from "@/lib/server/discord-interactions-shared";
+import type { Database, Json } from "@/integrations/supabase/types";
+import type { SupabaseClient } from "@supabase/supabase-js";
+import {
+  discordInteractionSchema,
+  ticketQuestionsSchema,
+  pollOptionsSchema,
+  pollSettingsSchema,
+  discordChannelSchema,
+  discordEmbedSchema,
+  type DiscordInteraction,
+  type DiscordCommandOption,
+} from "@/lib/server/discord-interactions-schema";
 import { resolveGuildBotToken } from "@/lib/server/guild-bot-token";
 // Migrated from Supabase Edge Function `discord-interactions` to a TanStack server route.
 import { createFileRoute } from "@tanstack/react-router";
 import { createClient } from "@supabase/supabase-js";
-import nacl from "tweetnacl";
 
 const __env = (k: string) =>
   process.env[k] ??
@@ -12,7 +27,7 @@ const __env = (k: string) =>
     ? process.env["SUPABASE_PUBLISHABLE_KEY"]
     : undefined);
 let __handler: (req: Request) => Response | Promise<Response>;
-const __serve = (fn: Untyped, _opts?: Untyped) => {
+const __serve = (fn: (req: Request) => Response | Promise<Response>) => {
   __handler = fn;
 };
 
@@ -45,92 +60,20 @@ const TextInputStyle = {
   PARAGRAPH: 2,
 };
 
-// Verify Discord signature using tweetnacl
-async function verifyDiscordSignature(
-  request: Request,
-  body: string,
-): Promise<boolean> {
-  const signature = request.headers.get("X-Signature-Ed25519");
-  const timestamp = request.headers.get("X-Signature-Timestamp");
-  const publicKey = __env("DISCORD_PUBLIC_KEY");
-
-  if (!signature || !timestamp || !publicKey) {
-    // If this triggers, Discord will show "This interaction failed".
-    // We log what is missing to diagnose endpoint/proxy/header stripping issues.
-    const headerKeys: string[] = [];
-    try {
-      for (const [k] of request.headers) headerKeys.push(k);
-    } catch (_e) {
-      // ignore
-    }
-
-    const userAgent = request.headers.get("user-agent");
-    const contentType = request.headers.get("content-type");
-    const bodySnippet = typeof body === "string" ? body.slice(0, 300) : "";
-
-    // NOTE: Use a single JSON string to ensure the object shows up clearly in Edge logs.
-    console.error(
-      JSON.stringify(
-        {
-          msg: "Missing signature, timestamp, or public key",
-          url: request.url,
-          method: request.method,
-          hasSignature: !!signature,
-          hasTimestamp: !!timestamp,
-          hasPublicKey: !!publicKey,
-          publicKeyLen: publicKey ? publicKey.length : 0,
-          userAgent,
-          contentType,
-          headerKeys,
-          bodySnippet,
-        },
-        null,
-        2,
-      ),
-    );
-    return false;
-  }
-
-  try {
-    const encoder = new TextEncoder();
-    const message = encoder.encode(timestamp + body);
-
-    // Convert hex public key to Uint8Array
-    const keyBytes = new Uint8Array(
-      publicKey.match(/.{1,2}/g)!.map((byte) => parseInt(byte, 16)),
-    );
-
-    // Convert hex signature to Uint8Array
-    const signatureBytes = new Uint8Array(
-      signature.match(/.{1,2}/g)!.map((byte) => parseInt(byte, 16)),
-    );
-
-    // Verify the signature
-    const isValid = nacl.sign.detached.verify(
-      message,
-      signatureBytes,
-      keyBytes,
-    );
-
-    console.log("Signature verification result:", isValid);
-    return isValid;
-  } catch (error) {
-    console.error("Signature verification error:", error);
-    return false;
-  }
-}
-
 function waitUntil(promise: Promise<unknown>) {
   // Supabase Edge Runtime exposes EdgeRuntime.waitUntil for background work.
   // Fallback keeps behavior in local/unknown runtimes.
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const er = (globalThis as any)?.EdgeRuntime;
+  const er = (
+    globalThis as typeof globalThis & {
+      EdgeRuntime?: { waitUntil(promise: Promise<unknown>): void };
+    }
+  ).EdgeRuntime;
   if (er?.waitUntil) {
     er.waitUntil(promise);
     return;
   }
   // last resort
-  promise.catch((e) => console.error("Background task failed:", e));
+  promise.catch((e) => logger.error("Background task failed:", e));
 }
 
 function deferredEphemeral(content: string): Response {
@@ -146,11 +89,14 @@ function deferredEphemeral(content: string): Response {
   );
 }
 
-async function sendFollowupEphemeral(interaction: Untyped, content: string) {
+async function sendFollowupEphemeral(
+  interaction: DiscordInteraction,
+  content: string,
+) {
   const applicationId = interaction.application_id;
   const token = interaction.token;
   if (!applicationId || !token) {
-    console.error("Missing application_id or token for followup");
+    logger.error("Missing application_id or token for followup");
     return;
   }
 
@@ -165,120 +111,32 @@ async function sendFollowupEphemeral(interaction: Untyped, content: string) {
 
   if (!res.ok) {
     const t = await res.text().catch(() => "");
-    console.error("Failed to send follow-up:", res.status, t);
+    logger.error("Failed to send follow-up:", res.status, t);
   }
 }
 
 const getBotTokenForGuild = resolveGuildBotToken;
 
-async function getInteractionBotToken(interaction: Untyped): Promise<string> {
-  const db = createClient(
+async function getInteractionBotToken(
+  interaction: DiscordInteraction,
+): Promise<string> {
+  const db = createClient<Database>(
     __env("SUPABASE_URL")!,
     __env("SUPABASE_SERVICE_ROLE_KEY")!,
   );
   return resolveGuildBotToken(db, interaction.guild_id);
 }
 
-function getGiveawayEntries(entries: unknown): string[] {
-  return Array.isArray(entries)
-    ? entries.filter((entry): entry is string => typeof entry === "string")
-    : [];
-}
-
-function getGiveawayWinners(winners: unknown): string[] {
-  return Array.isArray(winners)
-    ? winners.filter((winner): winner is string => typeof winner === "string")
-    : [];
-}
-
-function buildGiveawayMessagePayload(giveaway: Untyped) {
-  const entries = getGiveawayEntries(giveaway.entries);
-  const winners = getGiveawayWinners(giveaway.winners);
-  const hasEnded = giveaway.ended || new Date(giveaway.ends_at) <= new Date();
-  const endsAtUnix = Math.floor(new Date(giveaway.ends_at).getTime() / 1000);
-  const fields: Array<{ name: string; value: string; inline?: boolean }> = [
-    {
-      name: hasEnded ? "⏱️ Sluttede" : "⏱️ Slutter",
-      value: `<t:${endsAtUnix}:${hasEnded ? "f" : "R"}>`,
-      inline: true,
-    },
-    {
-      name: "🏆 Vindere",
-      value: String(giveaway.winners_count),
-      inline: true,
-    },
-    {
-      name: "🎫 Deltagere",
-      value: String(entries.length),
-      inline: true,
-    },
-  ];
-
-  if (giveaway.required_role_id) {
-    fields.push({
-      name: "🔒 Krævet rolle",
-      value: `<@&${giveaway.required_role_id}>`,
-      inline: false,
-    });
-  }
-
-  if (hasEnded) {
-    fields.push({
-      name: "🎊 Resultat",
-      value:
-        winners.length > 0
-          ? winners.map((winnerId) => `<@${winnerId}>`).join(", ")
-          : "Ingen gyldige deltagere.",
-      inline: false,
-    });
-  }
-
-  return {
-    content: hasEnded
-      ? "🎉 Giveawayen er afsluttet."
-      : "Klik på knappen nedenfor for at deltage!",
-    embeds: [
-      {
-        title: hasEnded ? "🎉 Giveaway afsluttet" : "🎉 Giveaway!",
-        description: `**${giveaway.prize}**${giveaway.description ? `\n\n${giveaway.description}` : ""}`,
-        color: hasEnded ? 0x57f287 : 0x5865f2,
-        fields,
-        footer: {
-          text: `Giveaway ID: ${giveaway.id}`,
-        },
-        timestamp: new Date(giveaway.ends_at).toISOString(),
-      },
-    ],
-    components: [
-      {
-        type: 1,
-        components: [
-          {
-            type: 2,
-            style: hasEnded ? 2 : 3,
-            custom_id: `giveaway_enter_${giveaway.id}`,
-            label: hasEnded
-              ? "Giveaway afsluttet"
-              : `Deltag (${entries.length})`,
-            emoji: { name: "🎉" },
-            disabled: hasEnded,
-          },
-        ],
-      },
-    ],
-  };
-}
-
 // Show modal with questions for any category (support or application)
 async function showTicketModal(
-  interaction: Untyped,
+  interaction: DiscordInteraction,
   categoryId: string,
-  category: Untyped,
+  category: { questions?: Json; emoji?: string | null; name: string },
 ): Promise<Response> {
-  const questions = category.questions || [];
+  const questions = ticketQuestionsSchema.parse(category.questions);
 
   // Build modal components (text inputs) from questions
-  const components = questions.slice(0, 5).map((q: Untyped, index: number) => ({
+  const components = questions.slice(0, 5).map((q, index: number) => ({
     type: 1, // Action row
     components: [
       {
@@ -299,6 +157,7 @@ async function showTicketModal(
 
   // Include channel_id in custom_id so we have it on modal submit
   const channelId = interaction.channel_id;
+  if (!channelId) return jtcEphemeral("❌ Channel is required.");
 
   return new Response(
     JSON.stringify({
@@ -315,11 +174,11 @@ async function showTicketModal(
 
 // Create a ticket thread (work function - do NOT use as direct interaction response)
 async function createTicketThreadWork(
-  interaction: Untyped,
+  interaction: DiscordInteraction,
   categoryId: string,
   applicationAnswers?: { question: string; answer: string }[],
 ): Promise<{ threadId: string }> {
-  const supabase = createClient(
+  const supabase = createClient<Database>(
     __env("SUPABASE_URL")!,
     __env("SUPABASE_SERVICE_ROLE_KEY")!,
   );
@@ -351,7 +210,7 @@ async function createTicketThreadWork(
     .single();
 
   if (catError || !category) {
-    console.error("Category not found:", catError);
+    logger.error("Category not found:", catError);
     throw new Error("Category not found");
   }
 
@@ -366,7 +225,7 @@ async function createTicketThreadWork(
   const channelId = settings?.thread_category_id || interactionChannelId;
 
   if (!channelId) {
-    console.error("No channel ID available for thread creation");
+    logger.error("No channel ID available for thread creation");
     throw new Error("No channel for thread creation");
   }
 
@@ -394,7 +253,7 @@ async function createTicketThreadWork(
 
     if (!threadResponse.ok) {
       const errorText = await threadResponse.text();
-      console.error("Failed to create thread:", errorText);
+      logger.error("Failed to create thread:", errorText);
 
       throw new Error(
         "Could not create ticket. Please check that the bot has permission to create threads.",
@@ -569,21 +428,21 @@ async function createTicketThreadWork(
       .single();
 
     if (ticketError) {
-      console.error("Failed to save ticket:", ticketError);
+      logger.error("Failed to save ticket:", ticketError);
     } else {
       console.log("Ticket saved:", ticket.id);
     }
 
     return { threadId: thread.id };
   } catch (error) {
-    console.error("Error creating ticket:", error);
+    logger.error("Error creating ticket:", error);
 
     throw error;
   }
 }
 
 function deferAndCreateTicket(
-  interaction: Untyped,
+  interaction: DiscordInteraction,
   categoryId: string,
   applicationAnswers?: { question: string; answer: string }[],
 ): Response {
@@ -600,10 +459,10 @@ function deferAndCreateTicket(
           interaction,
           `✅ Your ticket has been created! View it here: <#${threadId}>`,
         );
-      } catch (e: Untyped) {
-        console.error("Background ticket creation failed:", e);
+      } catch (e) {
+        logger.error("Background ticket creation failed:", e);
         const msg =
-          typeof e?.message === "string" && e.message.length
+          e instanceof Error && e.message.length
             ? e.message
             : "An error occurred. Please try again later.";
         await sendFollowupEphemeral(interaction, `❌ ${msg}`);
@@ -615,7 +474,9 @@ function deferAndCreateTicket(
 }
 
 // Handle modal submission for all ticket types
-async function handleModalSubmit(interaction: Untyped): Promise<Response> {
+async function handleModalSubmit(
+  interaction: DiscordInteraction,
+): Promise<Response> {
   const customId = interaction.data?.custom_id || "";
 
   if (!customId.startsWith("ticket_modal_")) {
@@ -649,7 +510,7 @@ async function handleModalSubmit(interaction: Untyped): Promise<Response> {
   );
 
   // Get the category to retrieve questions
-  const supabase = createClient(
+  const supabase = createClient<Database>(
     __env("SUPABASE_URL")!,
     __env("SUPABASE_SERVICE_ROLE_KEY")!,
   );
@@ -660,13 +521,13 @@ async function handleModalSubmit(interaction: Untyped): Promise<Response> {
     .eq("id", categoryId)
     .single();
 
-  const questions = category?.questions || [];
+  const questions = ticketQuestionsSchema.parse(category?.questions);
 
   // Extract answers from modal components
   const answers: { question: string; answer: string }[] = [];
   const components = interaction.data?.components || [];
 
-  components.forEach((row: Untyped, index: number) => {
+  components.forEach((row, index: number) => {
     const input = row.components?.[0];
     if (input) {
       const question = questions[index]?.label || `Question ${index + 1}`;
@@ -685,10 +546,10 @@ async function handleModalSubmit(interaction: Untyped): Promise<Response> {
 
 // Handle claim ticket
 async function handleClaimTicket(
-  interaction: Untyped,
+  interaction: DiscordInteraction,
   threadId: string,
 ): Promise<Response> {
-  const supabase = createClient(
+  const supabase = createClient<Database>(
     __env("SUPABASE_URL")!,
     __env("SUPABASE_SERVICE_ROLE_KEY")!,
   );
@@ -708,16 +569,16 @@ async function handleClaimTicket(
     .eq("channel_id", threadId);
 
   if (error) {
-    console.error("Failed to claim ticket:", error);
+    logger.error("Failed to claim ticket:", error);
   }
 
   return new Response(
     JSON.stringify({
       type: InteractionResponseType.UPDATE_MESSAGE,
       data: {
-        embeds: interaction.message.embeds.map((embed: Untyped) => ({
+        embeds: interaction.message.embeds.map((embed) => ({
           ...embed,
-          fields: embed.fields?.map((field: Untyped) =>
+          fields: embed.fields?.map((field) =>
             field.name === "Status"
               ? {
                   name: "Status",
@@ -764,7 +625,7 @@ async function handleClaimTicket(
 
 // Handle close ticket (archive or delete)
 async function handleCloseTicket(
-  interaction: Untyped,
+  interaction: DiscordInteraction,
   threadId: string,
   deleteThread: boolean = false,
 ): Promise<Response> {
@@ -776,7 +637,7 @@ async function handleCloseTicket(
   waitUntil(
     (async () => {
       try {
-        const supabase = createClient(
+        const supabase = createClient<Database>(
           __env("SUPABASE_URL")!,
           __env("SUPABASE_SERVICE_ROLE_KEY")!,
         );
@@ -819,13 +680,13 @@ async function handleCloseTicket(
 
             const recentMessages = messages
               .sort(
-                (a: Untyped, b: Untyped) =>
+                (a, b) =>
                   new Date(a.created_at).getTime() -
                   new Date(b.created_at).getTime(),
               )
               .slice(-10)
               .map(
-                (m: Untyped) =>
+                (m) =>
                   `**${m.author_name || m.author_id}:** ${(m.content || "").slice(0, 100)}${(m.content || "").length > 100 ? "..." : ""}`,
               )
               .join("\n");
@@ -878,7 +739,7 @@ async function handleCloseTicket(
 
             if (!transcriptRes.ok) {
               const errText = await transcriptRes.text();
-              console.error(
+              logger.error(
                 "Failed to send transcript:",
                 transcriptRes.status,
                 errText,
@@ -933,7 +794,7 @@ async function handleCloseTicket(
           await archiveRes.text();
         }
       } catch (e) {
-        console.error("Error in close ticket background work:", e);
+        logger.error("Error in close ticket background work:", e);
       }
     })(),
   );
@@ -943,10 +804,10 @@ async function handleCloseTicket(
     JSON.stringify({
       type: InteractionResponseType.UPDATE_MESSAGE,
       data: {
-        embeds: interaction.message.embeds.map((embed: Untyped) => ({
+        embeds: interaction.message.embeds.map((embed) => ({
           ...embed,
           color: 0xed4245,
-          fields: embed.fields?.map((field: Untyped) =>
+          fields: embed.fields?.map((field) =>
             field.name === "Status"
               ? {
                   name: "Status",
@@ -979,10 +840,10 @@ async function handleCloseTicket(
 
 // Handle approve application
 async function handleApproveApplication(
-  interaction: Untyped,
+  interaction: DiscordInteraction,
   threadId: string,
 ): Promise<Response> {
-  const supabase = createClient(
+  const supabase = createClient<Database>(
     __env("SUPABASE_URL")!,
     __env("SUPABASE_SERVICE_ROLE_KEY")!,
   );
@@ -1036,7 +897,7 @@ async function handleApproveApplication(
       );
       console.log("Whitelist role assigned to user:", ticket.creator_id);
     } catch (e) {
-      console.error("Failed to assign role:", e);
+      logger.error("Failed to assign role:", e);
     }
   }
 
@@ -1084,10 +945,10 @@ async function handleApproveApplication(
     JSON.stringify({
       type: InteractionResponseType.UPDATE_MESSAGE,
       data: {
-        embeds: interaction.message.embeds.map((embed: Untyped) => ({
+        embeds: interaction.message.embeds.map((embed) => ({
           ...embed,
           color: 0x57f287,
-          fields: embed.fields?.map((field: Untyped) =>
+          fields: embed.fields?.map((field) =>
             field.name === "Status"
               ? {
                   name: "Status",
@@ -1120,10 +981,10 @@ async function handleApproveApplication(
 
 // Handle deny application
 async function handleDenyApplication(
-  interaction: Untyped,
+  interaction: DiscordInteraction,
   threadId: string,
 ): Promise<Response> {
-  const supabase = createClient(
+  const supabase = createClient<Database>(
     __env("SUPABASE_URL")!,
     __env("SUPABASE_SERVICE_ROLE_KEY")!,
   );
@@ -1207,10 +1068,10 @@ async function handleDenyApplication(
     JSON.stringify({
       type: InteractionResponseType.UPDATE_MESSAGE,
       data: {
-        embeds: interaction.message.embeds.map((embed: Untyped) => ({
+        embeds: interaction.message.embeds.map((embed) => ({
           ...embed,
           color: 0xed4245,
-          fields: embed.fields?.map((field: Untyped) =>
+          fields: embed.fields?.map((field) =>
             field.name === "Status"
               ? {
                   name: "Status",
@@ -1242,13 +1103,16 @@ async function handleDenyApplication(
 }
 
 // Handle modmail claim button
-async function handleModmailClaim(interaction: Untyped): Promise<Response> {
-  const supabase = createClient(
+async function handleModmailClaim(
+  interaction: DiscordInteraction,
+): Promise<Response> {
+  const supabase = createClient<Database>(
     __env("SUPABASE_URL")!,
     __env("SUPABASE_SERVICE_ROLE_KEY")!,
   );
 
   const channelId = interaction.channel_id;
+  if (!channelId) return jtcEphemeral("❌ Channel is required.");
   const claimedById = interaction.member?.user?.id || interaction.user?.id;
   const claimedByName =
     interaction.member?.user?.username || interaction.user?.username;
@@ -1302,7 +1166,7 @@ async function handleModmailClaim(interaction: Untyped): Promise<Response> {
     .eq("id", thread.id);
 
   if (updateError) {
-    console.error("[Modmail] Error claiming thread:", updateError);
+    logger.error("[Modmail] Error claiming thread:", updateError);
     return new Response(
       JSON.stringify({
         type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
@@ -1355,14 +1219,17 @@ async function handleModmailClaim(interaction: Untyped): Promise<Response> {
 }
 
 // Handle modmail close button
-async function handleModmailClose(interaction: Untyped): Promise<Response> {
-  const supabase = createClient(
+async function handleModmailClose(
+  interaction: DiscordInteraction,
+): Promise<Response> {
+  const supabase = createClient<Database>(
     __env("SUPABASE_URL")!,
     __env("SUPABASE_SERVICE_ROLE_KEY")!,
   );
 
   const botToken = await getInteractionBotToken(interaction);
   const channelId = interaction.channel_id;
+  if (!channelId) return jtcEphemeral("❌ Channel is required.");
 
   console.log(`[Modmail] Closing thread in channel ${channelId}`);
 
@@ -1407,7 +1274,7 @@ async function handleModmailClose(interaction: Untyped): Promise<Response> {
     .eq("id", thread.id);
 
   if (updateError) {
-    console.error("[Modmail] Error closing thread:", updateError);
+    logger.error("[Modmail] Error closing thread:", updateError);
     return new Response(
       JSON.stringify({
         type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
@@ -1470,7 +1337,7 @@ async function handleModmailClose(interaction: Untyped): Promise<Response> {
       },
     });
   } catch (e) {
-    console.error("[Modmail] Could not delete channel:", e);
+    logger.error("[Modmail] Could not delete channel:", e);
   }
 
   // Return ephemeral confirmation (channel might be deleted before this shows)
@@ -1488,10 +1355,10 @@ async function handleModmailClose(interaction: Untyped): Promise<Response> {
 
 // NEW APPLICATION SYSTEM: Handle submission approve from log channel buttons
 async function handleSubmissionApprove(
-  interaction: Untyped,
+  interaction: DiscordInteraction,
   submissionId: string,
 ): Promise<Response> {
-  const supabase = createClient(
+  const supabase = createClient<Database>(
     __env("SUPABASE_URL")!,
     __env("SUPABASE_SERVICE_ROLE_KEY")!,
   );
@@ -1569,10 +1436,10 @@ async function handleSubmissionApprove(
             if (roleRes.ok) {
               console.log("Role granted to user:", submission.discord_user_id);
             } else {
-              console.error("Failed to grant role:", await roleRes.text());
+              logger.error("Failed to grant role:", await roleRes.text());
             }
           } catch (e) {
-            console.error("Failed to grant role:", e);
+            logger.error("Failed to grant role:", e);
           }
         }
 
@@ -1631,7 +1498,7 @@ async function handleSubmissionApprove(
               );
             }
           } catch (e) {
-            console.error("Failed to send approval DM:", e);
+            logger.error("Failed to send approval DM:", e);
           }
         }
 
@@ -1660,11 +1527,11 @@ async function handleSubmissionApprove(
               },
             );
           } catch (e) {
-            console.error("Failed to post to approval channel:", e);
+            logger.error("Failed to post to approval channel:", e);
           }
         }
       } catch (e) {
-        console.error("Background approve work failed:", e);
+        logger.error("Background approve work failed:", e);
       }
     })(),
   );
@@ -1674,7 +1541,7 @@ async function handleSubmissionApprove(
     JSON.stringify({
       type: InteractionResponseType.UPDATE_MESSAGE,
       data: {
-        embeds: interaction.message.embeds.map((embed: Untyped) => ({
+        embeds: interaction.message.embeds.map((embed) => ({
           ...embed,
           color: 0x57f287, // Green
           title: embed.title?.replace("📥", "✅") || "✅ Approved",
@@ -1702,10 +1569,10 @@ async function handleSubmissionApprove(
 
 // NEW APPLICATION SYSTEM: Handle submission deny from log channel buttons
 async function handleSubmissionDeny(
-  interaction: Untyped,
+  interaction: DiscordInteraction,
   submissionId: string,
 ): Promise<Response> {
-  const supabase = createClient(
+  const supabase = createClient<Database>(
     __env("SUPABASE_URL")!,
     __env("SUPABASE_SERVICE_ROLE_KEY")!,
   );
@@ -1823,7 +1690,7 @@ async function handleSubmissionDeny(
               );
             }
           } catch (e) {
-            console.error("Failed to send denial DM:", e);
+            logger.error("Failed to send denial DM:", e);
           }
         }
 
@@ -1852,11 +1719,11 @@ async function handleSubmissionDeny(
               },
             );
           } catch (e) {
-            console.error("Failed to post to denial channel:", e);
+            logger.error("Failed to post to denial channel:", e);
           }
         }
       } catch (e) {
-        console.error("Background deny work failed:", e);
+        logger.error("Background deny work failed:", e);
       }
     })(),
   );
@@ -1866,7 +1733,7 @@ async function handleSubmissionDeny(
     JSON.stringify({
       type: InteractionResponseType.UPDATE_MESSAGE,
       data: {
-        embeds: interaction.message.embeds.map((embed: Untyped) => ({
+        embeds: interaction.message.embeds.map((embed) => ({
           ...embed,
           color: 0xed4245, // Red
           title: embed.title?.replace("📥", "❌") || "❌ Denied",
@@ -1893,10 +1760,10 @@ async function handleSubmissionDeny(
 }
 
 async function handleApplicationStart(
-  interaction: Untyped,
+  interaction: DiscordInteraction,
   formId: string,
 ): Promise<Response> {
-  const supabase = createClient(
+  const supabase = createClient<Database>(
     __env("SUPABASE_URL")!,
     __env("SUPABASE_SERVICE_ROLE_KEY")!,
   );
@@ -1942,7 +1809,7 @@ async function handleApplicationStart(
     );
   }
 
-  const questions = (form.questions || []) as Untyped[];
+  const questions = ticketQuestionsSchema.parse(form.questions);
 
   // If no questions, just acknowledge
   if (questions.length === 0) {
@@ -1959,26 +1826,24 @@ async function handleApplicationStart(
   }
 
   // Build modal with questions (Discord max 5 text inputs per modal)
-  const modalComponents = questions
-    .slice(0, 5)
-    .map((q: Untyped, index: number) => ({
-      type: 1, // Action row
-      components: [
-        {
-          type: 4, // Text input
-          custom_id: String(q.id || `question_${index}`).substring(0, 100),
-          label: String(q.label || "Question").substring(0, 45),
-          style:
-            q.type === "long" ? TextInputStyle.PARAGRAPH : TextInputStyle.SHORT,
-          ...(typeof q.placeholder === "string" && q.placeholder.length > 0
-            ? { placeholder: q.placeholder.substring(0, 100) }
-            : {}),
-          required: q.required !== false,
-          min_length: q.required !== false ? 1 : 0,
-          max_length: q.type === "long" ? 1024 : 256,
-        },
-      ],
-    }));
+  const modalComponents = questions.slice(0, 5).map((q, index: number) => ({
+    type: 1, // Action row
+    components: [
+      {
+        type: 4, // Text input
+        custom_id: String(q.id || `question_${index}`).substring(0, 100),
+        label: String(q.label || "Question").substring(0, 45),
+        style:
+          q.type === "long" ? TextInputStyle.PARAGRAPH : TextInputStyle.SHORT,
+        ...(typeof q.placeholder === "string" && q.placeholder.length > 0
+          ? { placeholder: q.placeholder.substring(0, 100) }
+          : {}),
+        required: q.required !== false,
+        min_length: q.required !== false ? 1 : 0,
+        max_length: q.type === "long" ? 1024 : 256,
+      },
+    ],
+  }));
 
   return new Response(
     JSON.stringify({
@@ -1995,7 +1860,7 @@ async function handleApplicationStart(
 
 // Handle application form modal submit
 async function handleApplicationFormSubmit(
-  interaction: Untyped,
+  interaction: DiscordInteraction,
 ): Promise<Response> {
   const customId = interaction.data?.custom_id || "";
   const formId = customId.replace("application_form_", "");
@@ -2025,7 +1890,7 @@ async function handleApplicationFormSubmit(
 
   waitUntil(
     (async () => {
-      const supabase = createClient(
+      const supabase = createClient<Database>(
         __env("SUPABASE_URL")!,
         __env("SUPABASE_SERVICE_ROLE_KEY")!,
       );
@@ -2056,20 +1921,18 @@ async function handleApplicationFormSubmit(
           return;
         }
 
-        const formQuestions = Array.isArray(form.questions)
-          ? (form.questions as Untyped[])
-          : [];
+        const formQuestions = ticketQuestionsSchema.parse(form.questions);
 
         // Extract answers from modal
         const components = interaction.data?.components || [];
         const answers: { question: string; answer: string }[] = [];
 
-        components.forEach((row: Untyped) => {
+        components.forEach((row) => {
           const input = row.components?.[0];
           if (!input) return;
 
           const questionDef = formQuestions.find(
-            (q: Untyped) => q.id === input.custom_id,
+            (q) => q.id === input.custom_id,
           );
           answers.push({
             question: questionDef?.label || input.custom_id,
@@ -2093,7 +1956,7 @@ async function handleApplicationFormSubmit(
           .single();
 
         if (submitError || !submission) {
-          console.error("Failed to save application submission:", submitError);
+          logger.error("Failed to save application submission:", submitError);
           await sendFollowupEphemeral(
             interaction,
             "❌ Could not save your application. Please try again.",
@@ -2149,7 +2012,7 @@ async function handleApplicationFormSubmit(
               );
             }
           } catch (e) {
-            console.error("Failed to send DM:", e);
+            logger.error("Failed to send DM:", e);
           }
         }
 
@@ -2207,7 +2070,7 @@ async function handleApplicationFormSubmit(
               },
             );
           } catch (e) {
-            console.error("Failed to log application:", e);
+            logger.error("Failed to log application:", e);
           }
         }
 
@@ -2216,7 +2079,7 @@ async function handleApplicationFormSubmit(
           "✅ Your application has been submitted! You will receive a message when it has been reviewed.",
         );
       } catch (error) {
-        console.error("Application submit background error:", error);
+        logger.error("Application submit background error:", error);
         await sendFollowupEphemeral(
           interaction,
           "❌ Could not save your application. Please try again.",
@@ -2237,16 +2100,16 @@ async function handleApplicationFormSubmit(
 // Handle FiveM slash commands - queue for FiveM server execution
 // Now supports subcommand structure: /fivem <group> <subcommand> <options>
 function handleFiveMSlashCommand(
-  interaction: Untyped,
+  interaction: DiscordInteraction,
   group: string | null,
   subcommand: string,
-  subcommandOptions: Untyped[],
+  subcommandOptions: DiscordCommandOption[],
 ): Response {
   // Defer immediately to avoid Discord's 3-second timeout
   waitUntil(
     (async () => {
       try {
-        const supabase = createClient(
+        const supabase = createClient<Database>(
           __env("SUPABASE_URL")!,
           __env("SUPABASE_SERVICE_ROLE_KEY")!,
         );
@@ -2256,7 +2119,7 @@ function handleFiveMSlashCommand(
         const userName =
           interaction.member?.user?.username || interaction.user?.username;
 
-        const commandData: Record<string, Untyped> = {
+        const commandData: Record<string, Json | undefined> = {
           moderatorDiscordId: userId,
           moderatorName: userName,
           group: group || subcommand,
@@ -2339,7 +2202,7 @@ function handleFiveMSlashCommand(
             return;
           }
 
-          const lines = players.map((p: Untyped) => {
+          const lines = players.map((p) => {
             const name =
               p.character_name ||
               p.discord_username ||
@@ -2393,7 +2256,13 @@ function handleFiveMSlashCommand(
             guild_id: internalGuildId,
             command_name: effectiveCommand,
             command_data: commandData,
-            target_player_id: commandData.targetPlayerId || null,
+            target_player_id:
+              typeof commandData.targetPlayerId === "number"
+                ? commandData.targetPlayerId
+                : typeof commandData.targetPlayerId === "string" &&
+                    /^\d+$/.test(commandData.targetPlayerId)
+                  ? Number(commandData.targetPlayerId)
+                  : null,
             target_discord_id: null,
             target_name: null,
             moderator_discord_id: userId,
@@ -2404,7 +2273,7 @@ function handleFiveMSlashCommand(
           .single();
 
         if (queueError || !queuedRow?.id) {
-          console.error("Error queuing FiveM command:", queueError);
+          logger.error("Error queuing FiveM command:", queueError);
           await sendFollowupEphemeral(
             interaction,
             "❌ Failed to queue command.",
@@ -2416,11 +2285,18 @@ function handleFiveMSlashCommand(
         await supabase.from("fivem_action_logs").insert({
           guild_id: internalGuildId,
           action_type: effectiveCommand,
-          target_discord_id: commandData.targetDiscordId || null,
-          target_name: commandData.targetName || null,
+          target_discord_id:
+            typeof commandData.targetDiscordId === "string"
+              ? commandData.targetDiscordId
+              : null,
+          target_name:
+            typeof commandData.targetName === "string"
+              ? commandData.targetName
+              : null,
           moderator_discord_id: userId,
           moderator_name: userName,
-          reason: commandData.reason || null,
+          reason:
+            typeof commandData.reason === "string" ? commandData.reason : null,
           metadata: commandData,
         });
 
@@ -2459,11 +2335,11 @@ function handleFiveMSlashCommand(
         if (rawResult)
           responseMessage += `\n\`\`\`\n${rawResult.slice(0, 1800)}\n\`\`\``;
         await sendFollowupEphemeral(interaction, responseMessage);
-      } catch (e: Untyped) {
-        console.error("Background FiveM command failed:", e);
+      } catch (e) {
+        logger.error("Background FiveM command failed:", e);
         await sendFollowupEphemeral(
           interaction,
-          `❌ ${e?.message || "An error occurred."}`,
+          `❌ ${e instanceof Error ? e.message : "An error occurred."}`,
         );
       }
     })(),
@@ -2482,7 +2358,7 @@ function handleFiveMSlashCommand(
 // ===== JTC Control Panel Handlers =====
 
 async function verifyJTCOwner(
-  supabase: Untyped,
+  supabase: SupabaseClient<Database>,
   voiceChannelId: string,
   userId: string,
 ) {
@@ -2511,7 +2387,7 @@ function jtcEphemeral(content: string): Response {
 }
 
 async function handleJTCControl(
-  interaction: Untyped,
+  interaction: DiscordInteraction,
   customId: string,
 ): Promise<Response> {
   const userId = interaction.member?.user?.id || interaction.user?.id;
@@ -2521,7 +2397,7 @@ async function handleJTCControl(
   const action = parts[1]; // lock, rename, limit, hide, kick, block, allow
   const voiceChannelId = parts.slice(2).join("_");
 
-  const supabase = createClient(
+  const supabase = createClient<Database>(
     __env("SUPABASE_URL")!,
     __env("SUPABASE_SERVICE_ROLE_KEY")!,
   );
@@ -2542,12 +2418,10 @@ async function handleJTCControl(
         },
       );
       if (!channelRes.ok) return jtcEphemeral("❌ Kunne ikke hente kanalinfo.");
-      const channelData = await channelRes.json();
+      const channelData = discordChannelSchema.parse(await channelRes.json());
 
       const overwrites = channelData.permission_overwrites || [];
-      const everyoneOverwrite = overwrites.find(
-        (o: Untyped) => o.id === guildId,
-      );
+      const everyoneOverwrite = overwrites.find((o) => o.id === guildId);
       // Check if CONNECT (1048576) is denied
       const connectDenied =
         everyoneOverwrite &&
@@ -2590,12 +2464,10 @@ async function handleJTCControl(
         },
       );
       if (!channelRes.ok) return jtcEphemeral("❌ Kunne ikke hente kanalinfo.");
-      const channelData = await channelRes.json();
+      const channelData = discordChannelSchema.parse(await channelRes.json());
 
       const overwrites = channelData.permission_overwrites || [];
-      const everyoneOverwrite = overwrites.find(
-        (o: Untyped) => o.id === guildId,
-      );
+      const everyoneOverwrite = overwrites.find((o) => o.id === guildId);
       const viewDenied =
         everyoneOverwrite &&
         (BigInt(everyoneOverwrite.deny || "0") & BigInt(1024)) !== BigInt(0);
@@ -2784,12 +2656,12 @@ async function handleJTCControl(
 }
 
 async function handleJTCRenameSubmit(
-  interaction: Untyped,
+  interaction: DiscordInteraction,
   customId: string,
 ): Promise<Response> {
   const voiceChannelId = customId.replace("jtc_rename_modal_", "");
   const userId = interaction.member?.user?.id || interaction.user?.id;
-  const supabase = createClient(
+  const supabase = createClient<Database>(
     __env("SUPABASE_URL")!,
     __env("SUPABASE_SERVICE_ROLE_KEY")!,
   );
@@ -2817,12 +2689,12 @@ async function handleJTCRenameSubmit(
 }
 
 async function handleJTCLimitSubmit(
-  interaction: Untyped,
+  interaction: DiscordInteraction,
   customId: string,
 ): Promise<Response> {
   const voiceChannelId = customId.replace("jtc_limit_modal_", "");
   const userId = interaction.member?.user?.id || interaction.user?.id;
-  const supabase = createClient(
+  const supabase = createClient<Database>(
     __env("SUPABASE_URL")!,
     __env("SUPABASE_SERVICE_ROLE_KEY")!,
   );
@@ -2830,7 +2702,7 @@ async function handleJTCLimitSubmit(
   if (!check.ok) return jtcEphemeral(`❌ ${check.reason}`);
 
   const limitStr = interaction.data?.components?.[0]?.components?.[0]?.value;
-  const limit = parseInt(limitStr, 10);
+  const limit = parseInt(limitStr || "", 10);
   if (isNaN(limit) || limit < 0 || limit > 99)
     return jtcEphemeral("❌ Ugyldig grænse. Brug et tal mellem 0-99.");
 
@@ -2856,12 +2728,12 @@ async function handleJTCLimitSubmit(
 }
 
 async function handleJTCKickSubmit(
-  interaction: Untyped,
+  interaction: DiscordInteraction,
   customId: string,
 ): Promise<Response> {
   const voiceChannelId = customId.replace("jtc_kick_modal_", "");
   const userId = interaction.member?.user?.id || interaction.user?.id;
-  const supabase = createClient(
+  const supabase = createClient<Database>(
     __env("SUPABASE_URL")!,
     __env("SUPABASE_SERVICE_ROLE_KEY")!,
   );
@@ -2897,12 +2769,12 @@ async function handleJTCKickSubmit(
 }
 
 async function handleJTCBlockSubmit(
-  interaction: Untyped,
+  interaction: DiscordInteraction,
   customId: string,
 ): Promise<Response> {
   const voiceChannelId = customId.replace("jtc_block_modal_", "");
   const userId = interaction.member?.user?.id || interaction.user?.id;
-  const supabase = createClient(
+  const supabase = createClient<Database>(
     __env("SUPABASE_URL")!,
     __env("SUPABASE_SERVICE_ROLE_KEY")!,
   );
@@ -2953,12 +2825,12 @@ async function handleJTCBlockSubmit(
 }
 
 async function handleJTCAllowSubmit(
-  interaction: Untyped,
+  interaction: DiscordInteraction,
   customId: string,
 ): Promise<Response> {
   const voiceChannelId = customId.replace("jtc_allow_modal_", "");
   const userId = interaction.member?.user?.id || interaction.user?.id;
-  const supabase = createClient(
+  const supabase = createClient<Database>(
     __env("SUPABASE_URL")!,
     __env("SUPABASE_SERVICE_ROLE_KEY")!,
   );
@@ -3004,13 +2876,26 @@ __serve(async (req) => {
     console.log("Received interaction request");
 
     // Verify Discord signature
-    const isValid = await verifyDiscordSignature(req, body);
+    const isValid = await verifyDiscordSignature(
+      req,
+      body,
+      __env("DISCORD_PUBLIC_KEY"),
+    );
     if (!isValid) {
-      console.error("Invalid signature");
+      logger.error("Invalid signature");
       return new Response("Invalid signature", { status: 401 });
     }
 
-    const interaction = JSON.parse(body);
+    let parsedBody: unknown;
+    try {
+      parsedBody = JSON.parse(body);
+    } catch {
+      return new Response("Invalid JSON", { status: 400 });
+    }
+    const parsed = discordInteractionSchema.safeParse(parsedBody);
+    if (!parsed.success)
+      return new Response("Invalid interaction payload", { status: 400 });
+    const interaction = parsed.data;
     console.log(
       "Interaction type:",
       interaction.type,
@@ -3085,7 +2970,7 @@ __serve(async (req) => {
       // Handle /leaderboard
       if (commandName === "leaderboard") {
         const discordGuildId = interaction.guild_id;
-        const supabase = createClient(
+        const supabase = createClient<Database>(
           __env("SUPABASE_URL")!,
           __env("SUPABASE_SERVICE_ROLE_KEY")!,
         );
@@ -3218,7 +3103,7 @@ __serve(async (req) => {
         const selectedCategoryId = interaction.data?.values?.[0];
         if (selectedCategoryId) {
           // Check if this is an application category with questions
-          const supabase = createClient(
+          const supabase = createClient<Database>(
             __env("SUPABASE_URL")!,
             __env("SUPABASE_SERVICE_ROLE_KEY")!,
           );
@@ -3230,7 +3115,7 @@ __serve(async (req) => {
             .single();
 
           if (category) {
-            const questions = category.questions || [];
+            const questions = ticketQuestionsSchema.parse(category.questions);
             // If any category has questions, show modal first
             if (questions.length > 0) {
               console.log(
@@ -3385,14 +3270,14 @@ __serve(async (req) => {
                 );
               } else {
                 const errText = await res.text().catch(() => "");
-                console.error(`Role toggle failed: ${res.status} ${errText}`);
+                logger.error(`Role toggle failed: ${res.status} ${errText}`);
                 await sendFollowupEphemeral(
                   interaction,
                   "❌ Kunne ikke ændre din rolle. Tjek at botten har de rette tilladelser.",
                 );
               }
             } catch (e) {
-              console.error("Reaction role toggle error:", e);
+              logger.error("Reaction role toggle error:", e);
               await sendFollowupEphemeral(
                 interaction,
                 "❌ Der opstod en fejl.",
@@ -3429,7 +3314,7 @@ __serve(async (req) => {
         waitUntil(
           (async () => {
             try {
-              const supabase = createClient(
+              const supabase = createClient<Database>(
                 __env("SUPABASE_URL")!,
                 __env("SUPABASE_SERVICE_ROLE_KEY")!,
               );
@@ -3448,11 +3333,7 @@ __serve(async (req) => {
                 return;
               }
 
-              const pollOptions = (poll.options || []) as Array<{
-                label: string;
-                votes: number;
-                voters: string[];
-              }>;
+              const pollOptions = pollOptionsSchema.parse(poll.options);
 
               if (pollOptions[optionIndex]?.voters?.includes(userId)) {
                 await sendFollowupEphemeral(
@@ -3462,8 +3343,9 @@ __serve(async (req) => {
                 return;
               }
 
-              const allowMultiple =
-                (poll.votes as Untyped)?.allow_multiple ?? false;
+              const allowMultiple = pollSettingsSchema.parse(
+                poll.votes,
+              ).allow_multiple;
               if (!allowMultiple) {
                 for (const opt of pollOptions) {
                   opt.voters = (opt.voters || []).filter(
@@ -3487,11 +3369,11 @@ __serve(async (req) => {
               if (poll.message_id && botToken) {
                 try {
                   const totalVotes = pollOptions.reduce(
-                    (sum: number, o: Untyped) => sum + o.votes,
+                    (sum: number, o) => sum + o.votes,
                     0,
                   );
                   const updatedDesc = pollOptions
-                    .map((o: Untyped, i: number) => {
+                    .map((o, i: number) => {
                       const pct =
                         totalVotes > 0
                           ? Math.round((o.votes / totalVotes) * 100)
@@ -3530,7 +3412,7 @@ __serve(async (req) => {
                     }
                   }
                 } catch (e) {
-                  console.error("[Poll] Failed to update message:", e);
+                  logger.error("[Poll] Failed to update message:", e);
                 }
               }
 
@@ -3538,8 +3420,8 @@ __serve(async (req) => {
                 interaction,
                 `✅ Du stemte på **${pollOptions[optionIndex].label}**!`,
               );
-            } catch (e: Untyped) {
-              console.error("[Poll] Vote error:", e);
+            } catch (e) {
+              logger.error("[Poll] Vote error:", e);
               await sendFollowupEphemeral(
                 interaction,
                 "❌ Kunne ikke registrere din stemme.",
@@ -3575,7 +3457,7 @@ __serve(async (req) => {
         waitUntil(
           (async () => {
             try {
-              const innerSupabase = createClient(
+              const innerSupabase = createClient<Database>(
                 __env("SUPABASE_URL")!,
                 __env("SUPABASE_SERVICE_ROLE_KEY")!,
               );
@@ -3671,7 +3553,7 @@ __serve(async (req) => {
                   : `✅ Du deltager nu i giveawayen! (${updatedEntries.length} deltagere)`,
               );
             } catch (e) {
-              console.error("Giveaway button error:", e);
+              logger.error("Giveaway button error:", e);
               await sendFollowupEphemeral(
                 interaction,
                 "❌ Der opstod en fejl ved giveaway-knappen.",
@@ -3709,7 +3591,7 @@ __serve(async (req) => {
       { headers: { "Content-Type": "application/json" } },
     );
   } catch (error) {
-    console.error("Error handling interaction:", error);
+    logger.error("Error handling interaction:", error);
     return new Response("Internal error", { status: 500 });
   }
 });
