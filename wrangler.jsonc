@@ -10,4 +10,7 @@
   "secrets": {
     "required": ["OPENAI_API_KEY"],
   },
+  // Required by the PR build's `wrangler preview` command. Preview bindings and
+  // secrets are configured separately from production in Cloudflare Previews Base.
+  "previews": {},
 }
