@@ -1,3 +1,19 @@
+import { logger } from "@/lib/server/logger";
+import {
+  delay,
+  fetchChannelMessages,
+  fetchGuildBans,
+  fetchGuildMembers,
+  fetchGuildThreads,
+  fetchGuildSettings,
+  type DiscordChannel,
+  type DiscordRole,
+  type DiscordMessage,
+  type DiscordBan,
+  type DiscordMember,
+  type DiscordThread,
+  type DiscordGuildSettings,
+} from "@/lib/server/server-clone-shared";
 // Migrated from Supabase Edge Function `server-clone` to a TanStack server route.
 // @ts-nocheck
 import { createFileRoute } from "@tanstack/react-router";
@@ -20,217 +36,7 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-interface DiscordChannel {
-  id: string;
-  name: string;
-  type: number;
-  parent_id: string | null;
-  position: number;
-  permission_overwrites?: Untyped[];
-  topic?: string;
-  nsfw?: boolean;
-  rate_limit_per_user?: number;
-  bitrate?: number;
-  user_limit?: number;
-}
-
-interface DiscordRole {
-  id: string;
-  name: string;
-  color: number;
-  position: number;
-  permissions: string;
-  mentionable: boolean;
-  hoist: boolean;
-  managed: boolean;
-}
-
-interface DiscordMessage {
-  id: string;
-  channel_id: string;
-  author: {
-    id: string;
-    username: string;
-    avatar: string | null;
-    bot?: boolean;
-  };
-  content: string;
-  timestamp: string;
-  attachments: Untyped[];
-  embeds: Untyped[];
-  pinned: boolean;
-}
-
-interface DiscordBan {
-  user: { id: string; username: string; avatar: string | null };
-  reason: string | null;
-}
-
-interface DiscordMember {
-  user: { id: string; username: string; avatar: string | null; bot?: boolean };
-  nick: string | null;
-  roles: string[];
-  joined_at: string;
-}
-
-interface DiscordThread {
-  id: string;
-  name: string;
-  parent_id: string;
-  type: number;
-  thread_metadata?: Untyped;
-  message_count?: number;
-}
-
-interface DiscordGuildSettings {
-  name: string;
-  icon: string | null;
-  splash: string | null;
-  banner: string | null;
-  description: string | null;
-  verification_level: number;
-  default_message_notifications: number;
-  explicit_content_filter: number;
-  afk_channel_id: string | null;
-  afk_timeout: number;
-  system_channel_id: string | null;
-  system_channel_flags: number;
-  rules_channel_id: string | null;
-  public_updates_channel_id: string | null;
-  preferred_locale: string;
-}
-
-async function delay(ms: number) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-// Fetch messages from a channel with pagination
-async function fetchChannelMessages(
-  botToken: string,
-  channelId: string,
-  limit: number = 100,
-): Promise<DiscordMessage[]> {
-  const messages: DiscordMessage[] = [];
-  let before: string | undefined;
-
-  while (messages.length < limit) {
-    const fetchLimit = Math.min(100, limit - messages.length);
-    let url = `https://discord.com/api/v10/channels/${channelId}/messages?limit=${fetchLimit}`;
-    if (before) url += `&before=${before}`;
-
-    await delay(500); // Rate limiting
-    const res = await fetch(url, {
-      headers: { Authorization: `Bot ${botToken}` },
-    });
-
-    if (!res.ok) break;
-
-    const batch: DiscordMessage[] = await res.json();
-    if (batch.length === 0) break;
-
-    messages.push(...batch);
-    before = batch[batch.length - 1].id;
-
-    if (batch.length < fetchLimit) break;
-  }
-
-  return messages;
-}
-
-// Fetch all bans from a guild
-async function fetchGuildBans(
-  botToken: string,
-  guildId: string,
-): Promise<DiscordBan[]> {
-  const res = await fetch(
-    `https://discord.com/api/v10/guilds/${guildId}/bans?limit=1000`,
-    { headers: { Authorization: `Bot ${botToken}` } },
-  );
-
-  if (!res.ok) return [];
-  return await res.json();
-}
-
-// Fetch all members from a guild (paginated)
-async function fetchGuildMembers(
-  botToken: string,
-  guildId: string,
-  limit: number = 1000,
-): Promise<DiscordMember[]> {
-  const members: DiscordMember[] = [];
-  let after: string | undefined;
-
-  while (members.length < limit) {
-    const fetchLimit = Math.min(1000, limit - members.length);
-    let url = `https://discord.com/api/v10/guilds/${guildId}/members?limit=${fetchLimit}`;
-    if (after) url += `&after=${after}`;
-
-    await delay(500);
-    const res = await fetch(url, {
-      headers: { Authorization: `Bot ${botToken}` },
-    });
-
-    if (!res.ok) break;
-
-    const batch: DiscordMember[] = await res.json();
-    if (batch.length === 0) break;
-
-    members.push(...batch);
-    after = batch[batch.length - 1].user.id;
-
-    if (batch.length < fetchLimit) break;
-  }
-
-  return members;
-}
-
-// Fetch threads from a guild
-async function fetchGuildThreads(
-  botToken: string,
-  guildId: string,
-): Promise<DiscordThread[]> {
-  const res = await fetch(
-    `https://discord.com/api/v10/guilds/${guildId}/threads/active`,
-    { headers: { Authorization: `Bot ${botToken}` } },
-  );
-
-  if (!res.ok) return [];
-  const data = await res.json();
-  return data.threads || [];
-}
-
-// Fetch guild settings
-async function fetchGuildSettings(
-  botToken: string,
-  guildId: string,
-): Promise<DiscordGuildSettings | null> {
-  const res = await fetch(`https://discord.com/api/v10/guilds/${guildId}`, {
-    headers: { Authorization: `Bot ${botToken}` },
-  });
-
-  if (!res.ok) return null;
-  const guild = await res.json();
-
-  return {
-    name: guild.name,
-    icon: guild.icon,
-    splash: guild.splash,
-    banner: guild.banner,
-    description: guild.description,
-    verification_level: guild.verification_level,
-    default_message_notifications: guild.default_message_notifications,
-    explicit_content_filter: guild.explicit_content_filter,
-    afk_channel_id: guild.afk_channel_id,
-    afk_timeout: guild.afk_timeout,
-    system_channel_id: guild.system_channel_id,
-    system_channel_flags: guild.system_channel_flags,
-    rules_channel_id: guild.rules_channel_id,
-    public_updates_channel_id: guild.public_updates_channel_id,
-    preferred_locale: guild.preferred_locale,
-  };
-}
-
-__serve(async (req) => {
+__serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
@@ -238,7 +44,7 @@ __serve(async (req) => {
   try {
     const authHeader = req.headers.get("Authorization");
     if (!authHeader?.startsWith("Bearer ")) {
-      console.error("Missing or invalid authorization header");
+      logger.error("Missing or invalid authorization header");
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -261,7 +67,7 @@ __serve(async (req) => {
     const { data: userData, error: userError } =
       await supabaseAuthed.auth.getUser(token);
     if (userError || !userData?.user?.id) {
-      console.error("Auth error:", userError);
+      logger.error("Auth error:", userError);
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -452,7 +258,7 @@ __serve(async (req) => {
               });
             }
           } catch (e) {
-            console.error(`Failed to fetch messages for ${channel.name}:`, e);
+            logger.error(`Failed to fetch messages for ${channel.name}:`, e);
           }
         }
         console.log(`Fetched messages from ${messagesData.length} channels`);
@@ -1287,7 +1093,7 @@ __serve(async (req) => {
         async start(controller) {
           const send = (type: string, payload: Untyped) => {
             if (type === "error") {
-              console.error("clone-stream error:", payload);
+              logger.error("clone-stream error:", payload);
             }
             controller.enqueue(
               encoder.encode(`data: ${JSON.stringify({ type, payload })}\n\n`),
@@ -1476,7 +1282,7 @@ __serve(async (req) => {
             );
             const existingChannelsData = await existingChannelsRes.json();
             if (!Array.isArray(existingChannelsData)) {
-              console.error(
+              logger.error(
                 "Failed to fetch target channels:",
                 existingChannelsData,
               );
@@ -1500,7 +1306,7 @@ __serve(async (req) => {
             );
             const existingRolesData = await existingRolesRes.json();
             if (!Array.isArray(existingRolesData)) {
-              console.error("Failed to fetch target roles:", existingRolesData);
+              logger.error("Failed to fetch target roles:", existingRolesData);
               send("error", {
                 error: `Failed to fetch target roles: ${existingRolesData?.message || "Unknown error"}`,
               });
@@ -1975,7 +1781,7 @@ __serve(async (req) => {
             controller.close();
           } catch (err) {
             const errMsg = err instanceof Error ? err.message : "Unknown error";
-            console.error("clone-stream fatal error:", err);
+            logger.error("clone-stream fatal error:", err);
             send("error", { error: errMsg });
             controller.close();
           }
@@ -2033,7 +1839,7 @@ __serve(async (req) => {
     });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : "Unknown error";
-    console.error("server-clone error:", message);
+    logger.error("server-clone error:", message);
     return new Response(JSON.stringify({ error: message }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
