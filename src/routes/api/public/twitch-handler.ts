@@ -1,10 +1,29 @@
-// @ts-nocheck
+import { logger } from "@/lib/server/logger";
+import {
+  getWeekStartDate,
+  describeProgress,
+  formatMessage,
+  createLiveEmbed,
+  createOfflineEmbed,
+  type TwitchStream,
+  type TwitchUser,
+  type TwitchClip,
+  type TwitchVideo,
+} from "@/lib/server/twitch-notifications-shared";
 import { requireGuildAdmin, safeEqual } from "@/lib/server/api-auth";
 import { decryptBotToken as decryptToken } from "@/lib/server/bot-token-crypto";
 // Migrated from Supabase Edge Function `twitch-handler` to a TanStack server route.
 import { createFileRoute } from "@tanstack/react-router";
-import { createClient } from "@supabase/supabase-js";
-import type { Untyped } from "@/types/untyped";
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import type { Database } from "@/integrations/supabase/types";
+import {
+  InvalidTwitchBody,
+  parseTwitchBody,
+  twitchEventSubBodySchema,
+  twitchLookupBodySchema,
+  twitchSchedulePostBodySchema,
+  twitchTestBodySchema,
+} from "@/lib/server/twitch-request-schema";
 
 const __env = (k: string) =>
   process.env[k] ??
@@ -12,7 +31,7 @@ const __env = (k: string) =>
     ? process.env["SUPABASE_PUBLISHABLE_KEY"]
     : undefined);
 let __handler: (req: Request) => Response | Promise<Response>;
-const __serve = (fn: Untyped, _opts?: Untyped) => {
+const __serve = (fn: (req: Request) => Response | Promise<Response>) => {
   __handler = fn;
 };
 
@@ -25,7 +44,7 @@ const corsHeaders = {
 // Helper function to check if IP is whitelisted
 async function checkIPWhitelist(
   req: Request,
-  supabase: Untyped,
+  supabase: SupabaseClient<Database>,
 ): Promise<{ allowed: boolean; ip: string }> {
   const clientIp =
     req.headers.get("cf-connecting-ip") ||
@@ -52,29 +71,6 @@ interface TwitchTokenResponse {
   access_token: string;
   expires_in: number;
   token_type: string;
-}
-
-interface TwitchStream {
-  id: string;
-  user_id: string;
-  user_login: string;
-  user_name: string;
-  game_id: string;
-  game_name: string;
-  type: string;
-  title: string;
-  viewer_count: number;
-  started_at: string;
-  language: string;
-  thumbnail_url: string;
-  is_mature: boolean;
-}
-
-interface TwitchUser {
-  id: string;
-  login: string;
-  display_name: string;
-  profile_image_url: string;
 }
 
 async function getTwitchToken(): Promise<string> {
@@ -120,7 +116,7 @@ async function getTwitchUser(
   );
 
   if (!response.ok) {
-    console.error(`Failed to get Twitch user: ${response.status}`);
+    logger.error(`Failed to get Twitch user: ${response.status}`);
     return null;
   }
 
@@ -148,49 +144,12 @@ async function getStreams(
   );
 
   if (!response.ok) {
-    console.error(`Failed to get streams: ${response.status}`);
+    logger.error(`Failed to get streams: ${response.status}`);
     return [];
   }
 
   const data = await response.json();
   return data.data || [];
-}
-
-interface TwitchClip {
-  id: string;
-  url: string;
-  embed_url: string;
-  broadcaster_id: string;
-  broadcaster_name: string;
-  creator_id: string;
-  creator_name: string;
-  video_id: string;
-  game_id: string;
-  language: string;
-  title: string;
-  view_count: number;
-  created_at: string;
-  thumbnail_url: string;
-  duration: number;
-}
-
-interface TwitchVideo {
-  id: string;
-  stream_id: string | null;
-  user_id: string;
-  user_login: string;
-  user_name: string;
-  title: string;
-  description: string;
-  created_at: string;
-  published_at: string;
-  url: string;
-  thumbnail_url: string;
-  viewable: string;
-  view_count: number;
-  language: string;
-  type: string; // 'archive', 'highlight', 'upload'
-  duration: string;
 }
 
 async function getClips(
@@ -212,7 +171,7 @@ async function getClips(
   });
 
   if (!response.ok) {
-    console.error(`Failed to get clips: ${response.status}`);
+    logger.error(`Failed to get clips: ${response.status}`);
     return [];
   }
 
@@ -240,7 +199,7 @@ async function getVideos(
   });
 
   if (!response.ok) {
-    console.error(`Failed to get videos: ${response.status}`);
+    logger.error(`Failed to get videos: ${response.status}`);
     return [];
   }
 
@@ -258,7 +217,7 @@ async function manageGuildRole(
 ): Promise<boolean> {
   const botToken = customBotToken || __env("DISCORD_BOT_TOKEN");
   if (!botToken) {
-    console.error("[live-role] Discord bot token not configured");
+    logger.error("[live-role] Discord bot token not configured");
     return false;
   }
 
@@ -274,7 +233,7 @@ async function manageGuildRole(
 
     if (!response.ok && response.status !== 204) {
       const errorText = await response.text().catch(() => "");
-      console.error(
+      logger.error(
         `[live-role] Failed to ${action} role ${roleId} for user ${userId}: ${response.status} ${errorText}`,
       );
       return false;
@@ -285,7 +244,7 @@ async function manageGuildRole(
     );
     return true;
   } catch (e) {
-    console.error(`[live-role] Error managing role:`, e);
+    logger.error(`[live-role] Error managing role:`, e);
     return false;
   }
 }
@@ -312,7 +271,7 @@ async function sendDiscordDM(
       },
     );
     if (!dmRes.ok) {
-      console.error(`[partner-dm] Failed to open DM channel: ${dmRes.status}`);
+      logger.error(`[partner-dm] Failed to open DM channel: ${dmRes.status}`);
       return false;
     }
     const dm = await dmRes.json();
@@ -329,55 +288,9 @@ async function sendDiscordDM(
     );
     return msgRes.ok;
   } catch (e) {
-    console.error("[partner-dm] Error:", e);
+    logger.error("[partner-dm] Error:", e);
     return false;
   }
-}
-
-// Get the start of the current week (Monday 00:00 UTC) as a YYYY-MM-DD date string
-function getWeekStartDate(date: Date = new Date()): string {
-  const d = new Date(date);
-  const day = d.getUTCDay(); // 0 = Sunday, 1 = Monday
-  const diff = day === 0 ? 6 : day - 1; // days since Monday
-  d.setUTCDate(d.getUTCDate() - diff);
-  d.setUTCHours(0, 0, 0, 0);
-  return d.toISOString().slice(0, 10);
-}
-
-// Compute progress / goal display string for a partner
-function describeProgress(streamer: Untyped): {
-  progress: string;
-  goal: string;
-  met: boolean;
-} {
-  const qt = streamer.quota_type || "streams";
-  const hours = (streamer.current_week_minutes || 0) / 60;
-  if (qt === "hours") {
-    const goal = Number(streamer.quota_hours_per_week || 0);
-    return {
-      progress: `${hours.toFixed(1)}t`,
-      goal: `${goal}t`,
-      met: hours >= goal,
-    };
-  }
-  if (qt === "both") {
-    const sGoal = streamer.quota_streams_per_week || 0;
-    const hGoal = Number(streamer.quota_hours_per_week || 0);
-    const sNow = streamer.current_week_streams || 0;
-    return {
-      progress: `${sNow} streams / ${hours.toFixed(1)}t`,
-      goal: `${sGoal} streams / ${hGoal}t`,
-      met: sNow >= sGoal && hours >= hGoal,
-    };
-  }
-  // streams
-  const sGoal = streamer.quota_streams_per_week || 0;
-  const sNow = streamer.current_week_streams || 0;
-  return {
-    progress: `${sNow} streams`,
-    goal: `${sGoal} streams`,
-    met: sNow >= sGoal,
-  };
 }
 
 async function sendDiscordNotification(
@@ -388,7 +301,7 @@ async function sendDiscordNotification(
 ): Promise<boolean> {
   const botToken = customBotToken || __env("DISCORD_BOT_TOKEN");
   if (!botToken) {
-    console.error("Discord bot token not configured");
+    logger.error("Discord bot token not configured");
     return false;
   }
 
@@ -411,7 +324,7 @@ async function sendDiscordNotification(
 
   if (!response.ok) {
     const error = await response.text();
-    console.error(
+    logger.error(
       `Failed to send Discord message: ${response.status} - ${error}`,
     );
     return false;
@@ -424,7 +337,7 @@ async function sendDiscordNotification(
 
 // Resolve the correct bot token for a guild (custom bot or default)
 async function resolveGuildBotToken(
-  supabase: Untyped,
+  supabase: SupabaseClient<Database>,
   guildId: string,
 ): Promise<string | null> {
   try {
@@ -447,107 +360,9 @@ async function resolveGuildBotToken(
       }
     }
   } catch (e) {
-    console.error("Error resolving guild bot token:", e);
+    logger.error("Error resolving guild bot token:", e);
   }
   return null;
-}
-
-function formatMessage(template: string, data: Record<string, string>): string {
-  let result = template;
-  for (const [key, value] of Object.entries(data)) {
-    result = result.replace(new RegExp(`{${key}}`, "g"), value);
-  }
-  return result;
-}
-
-function createLiveEmbed(
-  stream: TwitchStream,
-  user: TwitchUser,
-  settings: Record<string, unknown>,
-  message: string,
-): Record<string, unknown> {
-  const thumbnailUrl = stream.thumbnail_url
-    .replace("{width}", "1280")
-    .replace("{height}", "720");
-
-  // Calculate stream uptime
-  const startedAt = new Date(stream.started_at);
-  const now = new Date();
-  const uptimeMs = now.getTime() - startedAt.getTime();
-  const hours = Math.floor(uptimeMs / 3600000);
-  const minutes = Math.floor((uptimeMs % 3600000) / 60000);
-  const uptimeStr = hours > 0 ? `${hours}t ${minutes}m` : `${minutes}m`;
-
-  const embed: Record<string, unknown> = {
-    title: `🔴 LIVE: ${stream.title}`,
-    url: `https://twitch.tv/${stream.user_login}`,
-    color: parseInt(
-      ((settings.live_embed_color as string) || "#9146FF").replace("#", ""),
-      16,
-    ),
-    author: {
-      name: `${user.display_name} er nu LIVE på Twitch!`,
-      url: `https://twitch.tv/${stream.user_login}`,
-      icon_url: user.profile_image_url,
-    },
-    description: `**[Klik her for at se streamen](https://twitch.tv/${stream.user_login})**`,
-    timestamp: new Date().toISOString(),
-  };
-
-  const fields: Array<{ name: string; value: string; inline: boolean }> = [];
-
-  if (settings.show_game !== false && stream.game_name) {
-    fields.push({ name: "🎮 Spil", value: stream.game_name, inline: true });
-  }
-
-  if (settings.show_viewers !== false) {
-    fields.push({
-      name: "👀 Seere",
-      value: stream.viewer_count.toLocaleString(),
-      inline: true,
-    });
-  }
-
-  // Add uptime field
-  fields.push({ name: "⏱️ Uptime", value: uptimeStr, inline: true });
-
-  if (fields.length > 0) {
-    embed.fields = fields;
-  }
-
-  if (settings.show_thumbnail !== false) {
-    embed.image = { url: `${thumbnailUrl}?t=${Date.now()}` };
-  }
-
-  embed.thumbnail = { url: user.profile_image_url };
-  embed.footer = {
-    text: `Twitch • ${stream.language?.toUpperCase() || "DA"}`,
-    icon_url:
-      "https://static.twitchcdn.net/assets/favicon-32-d6025c14e900565d6177.png",
-  };
-
-  return embed;
-}
-
-function createOfflineEmbed(
-  user: TwitchUser,
-  settings: Record<string, unknown>,
-  message: string,
-): Record<string, unknown> {
-  return {
-    description: message,
-    color: parseInt(
-      ((settings.offline_embed_color as string) || "#6441A5").replace("#", ""),
-      16,
-    ),
-    thumbnail: { url: user.profile_image_url },
-    footer: {
-      text: "Twitch",
-      icon_url:
-        "https://static.twitchcdn.net/assets/favicon-32-d6025c14e900565d6177.png",
-    },
-    timestamp: new Date().toISOString(),
-  };
 }
 
 console.log("Twitch handler loaded");
@@ -560,9 +375,23 @@ __serve(async (req) => {
   }
 
   try {
+    if (req.headers.has("twitch-eventsub-message-type")) {
+      await parseTwitchBody(req, twitchEventSubBodySchema);
+      return new Response(
+        JSON.stringify({
+          error:
+            "EventSub callbacks are not supported by this polling endpoint",
+        }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
+    }
+
     const supabaseUrl = __env("SUPABASE_URL")!;
     const supabaseServiceKey = __env("SUPABASE_SERVICE_ROLE_KEY")!;
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    const supabase = createClient<Database>(supabaseUrl, supabaseServiceKey);
 
     const url = new URL(req.url);
     const action = url.searchParams.get("action");
@@ -598,7 +427,7 @@ __serve(async (req) => {
         });
       }
 
-      const body = await req.json();
+      const body = await parseTwitchBody(req, twitchLookupBodySchema);
       const { username } = body;
 
       if (!username) {
@@ -656,7 +485,7 @@ __serve(async (req) => {
         });
       }
 
-      const body = await req.json();
+      const body = await parseTwitchBody(req, twitchTestBodySchema);
       const { streamer_id } = body;
 
       if (!streamer_id) {
@@ -813,7 +642,7 @@ __serve(async (req) => {
       {
         const ipCheck = await checkIPWhitelist(req, supabase);
         if (!ipCheck.allowed) {
-          console.error(`IP not whitelisted: ${ipCheck.ip}`);
+          logger.error(`IP not whitelisted: ${ipCheck.ip}`);
           return new Response(
             JSON.stringify({
               error: "Forbidden - IP not whitelisted",
@@ -840,7 +669,7 @@ __serve(async (req) => {
 
       const { data: streamers, error: streamersError } = await query;
       if (streamersError) {
-        console.error("Failed to fetch streamers:", streamersError);
+        logger.error("Failed to fetch streamers:", streamersError);
         return new Response(
           JSON.stringify({ error: "Failed to fetch streamers" }),
           {
@@ -927,7 +756,9 @@ __serve(async (req) => {
         if (!streamer.twitch_user_id) continue;
 
         const stream = liveStreamMap.get(streamer.twitch_user_id);
-        const settings = settingsMap.get(streamer.guild_id) || {};
+        const settings: Partial<
+          Database["public"]["Tables"]["twitch_settings"]["Row"]
+        > = settingsMap.get(streamer.guild_id) || {};
         const wasLive = streamer.is_live;
         const isNowLive = !!stream;
 
@@ -950,11 +781,12 @@ __serve(async (req) => {
           // this guard, two overlapping poll requests can both read is_live=false
           // and send the same went-live notification.
           const claimedAt = new Date().toISOString();
-          const claimUpdate: Record<string, unknown> = {
-            is_live: true,
-            last_stream_id: stream.id,
-            last_went_live_at: claimedAt,
-          };
+          const claimUpdate: Database["public"]["Tables"]["twitch_streamers"]["Update"] =
+            {
+              is_live: true,
+              last_stream_id: stream.id,
+              last_went_live_at: claimedAt,
+            };
 
           if (streamer.is_partner) {
             claimUpdate.current_stream_started_at = claimedAt;
@@ -970,7 +802,7 @@ __serve(async (req) => {
             .select("id");
 
           if (claimError) {
-            console.error(
+            logger.error(
               `Failed to claim Twitch live transition for ${streamer.twitch_username}:`,
               claimError,
             );
@@ -985,11 +817,12 @@ __serve(async (req) => {
           }
 
           const rollbackLiveClaim = async () => {
-            const rollbackUpdate: Record<string, unknown> = {
-              is_live: Boolean(streamer.is_live),
-              last_stream_id: streamer.last_stream_id || null,
-              last_went_live_at: streamer.last_went_live_at || null,
-            };
+            const rollbackUpdate: Database["public"]["Tables"]["twitch_streamers"]["Update"] =
+              {
+                is_live: Boolean(streamer.is_live),
+                last_stream_id: streamer.last_stream_id || null,
+                last_went_live_at: streamer.last_went_live_at || null,
+              };
 
             if (streamer.is_partner) {
               rollbackUpdate.current_stream_started_at =
@@ -1005,7 +838,7 @@ __serve(async (req) => {
               .eq("last_stream_id", stream.id);
 
             if (rollbackError) {
-              console.error(
+              logger.error(
                 `Failed to rollback Twitch live claim for ${streamer.twitch_username}:`,
                 rollbackError,
               );
@@ -1068,7 +901,7 @@ __serve(async (req) => {
               sent_at: new Date().toISOString(),
             });
           } else {
-            console.error(
+            logger.error(
               `FAILED to send live notification for ${streamer.twitch_username} to channel ${streamer.notification_channel_id}`,
             );
             // Release the claim so a later poll can retry the delivery.
@@ -1188,10 +1021,11 @@ __serve(async (req) => {
             );
           }
 
-          const offlineUpdate: Record<string, unknown> = {
-            is_live: false,
-            last_went_offline_at: new Date().toISOString(),
-          };
+          const offlineUpdate: Database["public"]["Tables"]["twitch_streamers"]["Update"] =
+            {
+              is_live: false,
+              last_went_offline_at: new Date().toISOString(),
+            };
           if (streamer.is_partner) {
             offlineUpdate.current_week_minutes = updatedWeekMinutes;
             offlineUpdate.current_stream_started_at = null;
@@ -1246,7 +1080,7 @@ __serve(async (req) => {
               sent_at: new Date().toISOString(),
             });
           } else {
-            console.error(
+            logger.error(
               `FAILED to send offline notification for ${streamer.twitch_username} to channel ${streamer.notification_channel_id}`,
             );
           }
@@ -1263,13 +1097,13 @@ __serve(async (req) => {
       for (const streamer of streamers) {
         if (!streamer.twitch_user_id) continue;
 
-        const guildSettings = settingsMap.get(streamer.guild_id) || {};
+        const guildSettings: Partial<
+          Database["public"]["Tables"]["twitch_settings"]["Row"]
+        > = settingsMap.get(streamer.guild_id) || {};
 
-        // Determine channels (per-streamer override or global)
-        const clipsChannel =
-          streamer.clips_channel_id || guildSettings.clips_channel_id;
-        const vodsChannel =
-          streamer.vods_channel_id || guildSettings.vods_channel_id;
+        // Content channels belong to guild settings (not twitch_streamers).
+        const clipsChannel = guildSettings.clips_channel_id;
+        const vodsChannel = guildSettings.vods_channel_id;
 
         // Check clips
         if (guildSettings.notify_clips && clipsChannel) {
@@ -1367,7 +1201,7 @@ __serve(async (req) => {
               }
             }
           } catch (e) {
-            console.error(
+            logger.error(
               `Error checking clips for ${streamer.twitch_username}:`,
               e,
             );
@@ -1484,7 +1318,7 @@ __serve(async (req) => {
               }
             }
           } catch (e) {
-            console.error(
+            logger.error(
               `Error checking videos for ${streamer.twitch_username}:`,
               e,
             );
@@ -1528,7 +1362,7 @@ __serve(async (req) => {
       // Get all partner-tracking-enabled guilds
       const { data: trackingSettings } = await supabase
         .from("twitch_settings")
-        .select("*, guilds!inner(id, guild_id, name)")
+        .select("*, guilds!inner(id, guild_id, guild_name)")
         .eq("partner_tracking_enabled", true);
 
       if (!trackingSettings || trackingSettings.length === 0) {
@@ -1560,7 +1394,7 @@ __serve(async (req) => {
           supabase,
           settings.guild_id,
         );
-        const guildName = settings.guilds?.name || "serveren";
+        const guildName = settings.guilds?.guild_name || "serveren";
         const warnDays = settings.partner_warning_days_before ?? 2;
 
         for (const partner of partners) {
@@ -1970,7 +1804,7 @@ __serve(async (req) => {
         });
       }
 
-      const body = await req.json();
+      const body = await parseTwitchBody(req, twitchSchedulePostBodySchema);
       const guildId = body.guild_id;
       if (!guildId) {
         return new Response(JSON.stringify({ error: "guild_id required" }), {
@@ -2028,8 +1862,8 @@ __serve(async (req) => {
         const day = entry.day_of_week;
         if (!dayGroups[day]) dayGroups[day] = [];
         const name =
-          (entry as Untyped).twitch_streamers?.display_name ||
-          (entry as Untyped).twitch_streamers?.twitch_username ||
+          entry.twitch_streamers?.display_name ||
+          entry.twitch_streamers?.twitch_username ||
           "Ukendt";
         const time = `${entry.start_time.slice(0, 5)} - ${entry.end_time.slice(0, 5)}`;
         const game = entry.game_name ? ` • ${entry.game_name}` : "";
@@ -2086,7 +1920,7 @@ __serve(async (req) => {
                   );
                 }
               } catch (e) {
-                console.error(
+                logger.error(
                   "Twitch schedule fetch failed for",
                   s.twitch_username,
                   e,
@@ -2095,7 +1929,7 @@ __serve(async (req) => {
             }
           }
         } catch (e) {
-          console.error("fetch_from_twitch error:", e);
+          logger.error("fetch_from_twitch error:", e);
         }
       }
 
@@ -2170,7 +2004,13 @@ __serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error) {
-    console.error("Twitch handler error:", error);
+    if (error instanceof InvalidTwitchBody) {
+      return new Response(JSON.stringify({ error: error.message }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    logger.error("Twitch handler error:", error);
     return new Response(
       JSON.stringify({
         error: error instanceof Error ? error.message : "Unknown error",
@@ -2183,7 +2023,9 @@ __serve(async (req) => {
   }
 });
 
-const __call = ({ request }: { request: Request }) => __handler(request);
+export const handleTwitchRequest = (request: Request) => __handler(request);
+const __call = ({ request }: { request: Request }) =>
+  handleTwitchRequest(request);
 
 export const Route = createFileRoute("/api/public/twitch-handler")({
   server: {
