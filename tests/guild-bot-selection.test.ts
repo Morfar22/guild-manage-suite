@@ -151,11 +151,13 @@ test("actual signed JTC rename sends custom token to Discord", async () => {
   vi.stubEnv("DISCORD_PUBLIC_KEY", Buffer.from(keys.publicKey).toString("hex"));
   const body = JSON.stringify({
     type: 5,
+    application_id: "application",
+    token: "interaction-token",
     guild_id: guild,
     member: { user: { id: "owner" } },
     data: {
       custom_id: "jtc_rename_modal_123456789012345678",
-      components: [{ components: [{ value: "New name" }] }],
+      components: [{ components: [{ custom_id: "name", value: "New name" }] }],
     },
   });
   const timestamp = String(Math.floor(Date.now() / 1000));
