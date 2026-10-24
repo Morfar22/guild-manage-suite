@@ -155,7 +155,12 @@ app.post("/bot/deploy", async (_req, res) => {
 });
 
 const BIND = process.env.BIND_ADDRESS || "0.0.0.0";
-app.listen(PORT, BIND, () => {
+app.listen(PORT, BIND, (error) => {
+  if (error) {
+    console.error("[deploy-agent] failed to listen:", error);
+    process.exit(1);
+    return;
+  }
   console.log(`[deploy-agent] listening on ${BIND}:${PORT}`);
   console.log(`[deploy-agent] REPO_DIR=${REPO_DIR}  PM2_NAME=${PM2_NAME}`);
 });
