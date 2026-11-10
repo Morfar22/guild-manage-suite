@@ -857,10 +857,11 @@ export function useOperationsCenter() {
     commandHealth: healthQuery.data ?? [],
     unhealthyCommands,
     scheduledModeration: scheduledModerationQuery.data ?? [],
+    // Alert page/filter loading belongs inside its tab; replacing the whole
+    // screen would reset the active tab and unmount the focused search input.
     isLoading:
       casesQuery.isLoading ||
       appealsQuery.isLoading ||
-      alertCenter.query.isLoading ||
       workflowsQuery.isLoading ||
       profilesQuery.isLoading ||
       staffQuery.isLoading ||
