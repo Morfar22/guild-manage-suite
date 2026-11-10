@@ -1,3 +1,4 @@
+import { Link } from "@tanstack/react-router";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -52,6 +53,8 @@ export default function DashboardNotifications() {
   const {
     notifications,
     unreadCount,
+    error,
+    refetch,
     isLoading,
     markAsRead,
     markAllAsRead,
@@ -73,15 +76,15 @@ export default function DashboardNotifications() {
           <h1 className="text-3xl font-bold flex items-center gap-3">
             <Bell className="h-8 w-8 text-primary" />
             Notifikationer
-            {unreadCount > 0 && (
+            {(unreadCount ?? 0) > 0 && (
               <Badge variant="destructive">{unreadCount} ulæste</Badge>
             )}
           </h1>
           <p className="text-muted-foreground mt-1">
-            Real-time alerts fra din server og bot
+            De seneste 50 notifikationer fra din server og bot
           </p>
         </div>
-        {unreadCount > 0 && (
+        {(unreadCount ?? 0) > 0 && (
           <Button
             variant="outline"
             onClick={() => markAllAsRead.mutate()}
@@ -94,7 +97,28 @@ export default function DashboardNotifications() {
         )}
       </div>
 
-      {notifications.length === 0 ? (
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <p className="text-sm text-muted-foreground">
+          {unreadCount === null
+            ? "Antal ulæste er ukendt"
+            : `${unreadCount} ulæste i alt`}
+        </p>
+        <Link to="/dashboard/operations">
+          <Button variant="outline">Åbn hele Alert Center</Button>
+        </Link>
+      </div>
+      {error && (
+        <div
+          role="alert"
+          className="flex items-center justify-between gap-2 rounded-lg border border-warning p-3"
+        >
+          <span>Notifikationer kunne ikke hentes fuldstændigt.</span>
+          <Button variant="outline" onClick={refetch}>
+            Prøv igen
+          </Button>
+        </div>
+      )}
+      {!error && notifications.length === 0 ? (
         <Card>
           <CardContent className="py-16 text-center">
             <BellOff className="h-12 w-12 mx-auto mb-4 opacity-30" />

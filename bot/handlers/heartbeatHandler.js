@@ -7,6 +7,34 @@
 
 const os = require("os");
 const fs = require("fs");
+const { botLog } = require("../consoleLogger");
+const observedHeartbeats = new Map();
+
+function recordHeartbeat(guildId, internalId, success, metadata = {}) {
+  const previous = observedHeartbeats.get(guildId);
+  const now = Date.now();
+  const resolvedId = internalId || previous?.internalId || null;
+  if (
+    !previous ||
+    previous.success !== success ||
+    now - previous.loggedAt >= (success ? 60_000 : 300_000)
+  ) {
+    // Only an API-resolved internal UUID belongs in guild_id. A Discord
+    // snowflake/unknown guild becomes a staff-only system event instead.
+    botLog(
+      resolvedId,
+      success ? "info" : "error",
+      "heartbeat",
+      success ? "Heartbeat modtaget" : "Heartbeat kunne ikke leveres",
+      metadata,
+    );
+    observedHeartbeats.set(guildId, {
+      internalId: resolvedId,
+      success,
+      loggedAt: now,
+    });
+  }
+}
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const BOT_SECRET_KEY = process.env.BOT_SECRET_KEY;
@@ -155,6 +183,7 @@ async function sendHeartbeat(client, guild, metrics) {
         "x-bot-secret": BOT_SECRET_KEY,
       },
       body: JSON.stringify(payload),
+      signal: AbortSignal.timeout(10_000),
     });
 
     if (!response.ok) {
@@ -175,9 +204,18 @@ async function sendHeartbeat(client, guild, metrics) {
       }
 
       console.error(`[Heartbeat] Fejl for guild ${guild.name}:`, error);
+      recordHeartbeat(guild.id, null, false, { status: response.status });
     } else {
       unregisteredGuildUntil.delete(guild.id);
       const ping = getWsPing(client);
+      const result = await response.json().catch(() => null);
+      if (typeof result?.guild_id === "string") {
+        recordHeartbeat(guild.id, result.guild_id, true, {
+          latency_ms: ping,
+          member_count: guild.memberCount,
+          message_count_today: dailyMessageCount.get(guild.id) || 0,
+        });
+      }
       console.log(
         ping === null
           ? `[Heartbeat] Sendt for ${guild.name} (latency afventer)`
@@ -185,6 +223,7 @@ async function sendHeartbeat(client, guild, metrics) {
       );
     }
   } catch (error) {
+    recordHeartbeat(guild.id, null, false, { error: error.message });
     console.error(
       `[Heartbeat] Network fejl for guild ${guild.name}:`,
       error.message,

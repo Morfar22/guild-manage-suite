@@ -116,7 +116,7 @@ Deno.serve(async (req) => {
 
       // Verify user has access
       const { data: userGuild } = await supabaseAdmin
-        .from("user_guilds")
+        .from("verified_user_guilds")
         .select("has_admin_permission")
         .eq("guild_id", sourceGuildId)
         .eq("user_id", userId)
@@ -359,7 +359,7 @@ Deno.serve(async (req) => {
 
       // Verify user has access to target guild
       const { data: targetUserGuild } = await supabaseAdmin
-        .from("user_guilds")
+        .from("verified_user_guilds")
         .select("has_admin_permission")
         .eq("guild_id", targetGuildId)
         .eq("user_id", userId)
@@ -440,7 +440,7 @@ Deno.serve(async (req) => {
       // If cloning directly from another guild
       else if (sourceGuildId) {
         const { data: sourceUserGuild } = await supabaseAdmin
-          .from("user_guilds")
+          .from("verified_user_guilds")
           .select("has_admin_permission")
           .eq("guild_id", sourceGuildId)
           .eq("user_id", userId)
@@ -1044,7 +1044,7 @@ Deno.serve(async (req) => {
 
       // Verify access
       const { data: targetUserGuild } = await supabaseAdmin
-        .from("user_guilds")
+        .from("verified_user_guilds")
         .select("has_admin_permission")
         .eq("guild_id", targetGuildId)
         .eq("user_id", userId)
@@ -1136,7 +1136,7 @@ Deno.serve(async (req) => {
               serverSettings = template.server_settings || {};
             } else if (sourceGuildId) {
               const { data: sourceUserGuild } = await supabaseAdmin
-                .from("user_guilds")
+                .from("verified_user_guilds")
                 .select("has_admin_permission")
                 .eq("guild_id", sourceGuildId)
                 .eq("user_id", userId)

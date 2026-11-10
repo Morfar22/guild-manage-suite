@@ -1,13 +1,15 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import { useGuild } from "@/contexts/GuildContext";
 
 export function useOperationsSummary() {
   const { selectedGuild } = useGuild();
+  const { user } = useAuth();
 
   return useQuery({
-    queryKey: ["operations-summary", selectedGuild?.id],
-    enabled: !!selectedGuild?.id,
+    queryKey: ["operations-summary", selectedGuild?.id, user?.id],
+    enabled: !!selectedGuild?.id && !!user?.id,
     refetchInterval: 30_000,
     queryFn: async () => {
       if (!selectedGuild?.id) {
@@ -75,6 +77,16 @@ export function useOperationsSummary() {
       ].filter(Boolean);
 
       if (errors.length) throw errors[0];
+      if (
+        [
+          casesResult,
+          appealsResult,
+          alertsResult,
+          ticketsResult,
+          scheduledResult,
+        ].some((result) => result.count == null)
+      )
+        throw new Error("Driftsoptælling er ikke tilgængelig");
 
       const commandIssues = (healthResult.data ?? []).filter(
         (item) =>

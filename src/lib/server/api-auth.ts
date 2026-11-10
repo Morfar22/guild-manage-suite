@@ -25,7 +25,7 @@ export async function requireGuildAdmin(
   if (typeof guildId !== "string" || !guildId)
     throw apiError(400, "guildId required");
   const { data, error } = await supabase
-    .from("user_guilds")
+    .from("verified_user_guilds")
     .select("has_admin_permission")
     .eq("user_id", userId)
     .eq("guild_id", guildId)

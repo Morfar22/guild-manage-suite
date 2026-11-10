@@ -2,6 +2,7 @@
 // Discord and Postgres do not share a transaction: message nonces reduce duplicate
 // delivery after an ambiguous network failure, but cannot promise exactly-once.
 const { createHash } = require("node:crypto");
+const { botLog } = require("../consoleLogger");
 
 const LEASE_SECONDS = 90;
 const HEARTBEAT_MS = 30_000;
@@ -123,6 +124,11 @@ async function runJob(supabase, table, candidate, deliver, nextAt = null) {
         error: describeError(error),
         permanent: isPermanentError(error),
       });
+      botLog(job.guild_id, "error", "scheduled-jobs", describeError(error), {
+        table,
+        job_id: job.id,
+        attempt: job.attempt_count,
+      });
       console.error(`[Jobs] ${table}/${job.id}:`, describeError(error));
       return false;
     }
@@ -132,6 +138,15 @@ async function runJob(supabase, table, candidate, deliver, nextAt = null) {
       nextAt: typeof nextAt === "function" ? nextAt(job) : nextAt,
     });
     return true;
+  } catch (error) {
+    botLog(
+      job.guild_id,
+      "error",
+      "scheduled-jobs",
+      "Opgavens databasekvittering kunne ikke gemmes",
+      { table, job_id: job.id, error: error.message },
+    );
+    throw error;
   } finally {
     clearInterval(heartbeat);
   }

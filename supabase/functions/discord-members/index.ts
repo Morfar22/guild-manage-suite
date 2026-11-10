@@ -69,7 +69,7 @@ async function verifyGuildAccess(
 
   if (!isGlobalAdmin) {
     const { data: userGuild, error } = await supabaseAdmin
-      .from("user_guilds")
+      .from("verified_user_guilds")
       .select("guild_id, has_admin_permission")
       .eq("guild_id", guildId)
       .eq("user_id", userId)

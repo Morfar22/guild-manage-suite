@@ -691,90 +691,101 @@ function createAdvancedModerationHandlers(client, { supabase }) {
   };
 }
 
+async function executeScheduledModeration(client, action) {
+  const { permanentOperationalError } = require("../utils/operationalJobs");
+  const guild =
+    client.guilds.cache.get(action.discord_guild_id) ||
+    (await client.guilds.fetch(action.discord_guild_id));
+  if (action.action_type === "unban") {
+    try {
+      await guild.members.unban(action.target_id, "Tempban udløbet");
+    } catch (error) {
+      if (Number(error.code) !== 10026) throw error;
+    } // Already unbanned.
+  } else if (action.action_type === "remove_role") {
+    let member;
+    try {
+      member = await guild.members.fetch(action.target_id);
+    } catch (error) {
+      if (Number(error.code) === 10007) return;
+      throw error;
+    } // Member left: role is absent.
+    try {
+      await member.roles.remove(action.role_id, "Quarantine udløbet");
+    } catch (error) {
+      if (Number(error.code) !== 10011) throw error;
+    } // Deleted role is already absent.
+  } else throw permanentOperationalError("Ukendt planlagt moderationshandling");
+}
+
+async function processDueModerationActions(
+  client,
+  supabase,
+  shouldHandleGuild = () => true,
+) {
+  if (!client.isReady?.()) return;
+  const guildIds = [...client.guilds.cache.keys()].filter(shouldHandleGuild);
+  if (!guildIds.length) return;
+  const { runOperationalJob } = require("../utils/operationalJobs");
+  const { data, error } = await supabase
+    .from("moderation_scheduled_actions")
+    .select("*")
+    .in("discord_guild_id", guildIds)
+    .in("status", ["pending", "executing"])
+    .lte("execute_at", new Date().toISOString())
+    .order("execute_at", { ascending: true })
+    .limit(50);
+  if (error) throw error;
+  for (const candidate of data || []) {
+    if (!shouldHandleGuild(candidate.discord_guild_id)) continue;
+    try {
+      await runOperationalJob(
+        supabase,
+        "moderation",
+        candidate.id,
+        async (job, guard) => {
+          guard();
+          await executeScheduledModeration(client, job);
+        },
+      );
+    } catch (error) {
+      if (!error.operationalLogged)
+        require("../consoleLogger").botLog(
+          candidate.guild_id,
+          "error",
+          "moderation-scheduler",
+          error.message,
+          { job_id: candidate.id },
+        );
+      console.error(
+        "[ModScheduler] Recovery/acknowledgement failed:",
+        error.message,
+      );
+    }
+  }
+}
+
 function setupModerationScheduler(client, { supabase, shouldHandleGuild }) {
   let running = false;
-
-  const processDue = async () => {
-    if (running || !client.isReady?.()) return;
+  let disposed = false;
+  const tick = async () => {
+    if (running || disposed) return;
     running = true;
-
     try {
-      const { data: actions, error } = await supabase
-        .from("moderation_scheduled_actions")
-        .select("*")
-        .eq("status", "pending")
-        .lte("execute_at", new Date().toISOString())
-        .order("execute_at", { ascending: true })
-        .limit(50);
-
-      if (error) throw error;
-
-      for (const action of actions || []) {
-        if (shouldHandleGuild && !shouldHandleGuild(action.discord_guild_id))
-          continue;
-
-        const { data: claimed, error: claimError } = await supabase
-          .from("moderation_scheduled_actions")
-          .update({ status: "executing", updated_at: new Date().toISOString() })
-          .eq("id", action.id)
-          .eq("status", "pending")
-          .select("id")
-          .maybeSingle();
-
-        if (claimError || !claimed) continue;
-
-        try {
-          const guild =
-            client.guilds.cache.get(action.discord_guild_id) ||
-            (await client.guilds.fetch(action.discord_guild_id));
-
-          if (action.action_type === "unban") {
-            await guild.members.unban(action.target_id, "Tempban udløbet");
-          } else if (action.action_type === "remove_role") {
-            const member = await guild.members.fetch(action.target_id);
-            await member.roles.remove(action.role_id, "Quarantine udløbet");
-          }
-
-          await supabase
-            .from("moderation_scheduled_actions")
-            .update({
-              status: "executed",
-              executed_at: new Date().toISOString(),
-              updated_at: new Date().toISOString(),
-              last_error: null,
-            })
-            .eq("id", action.id);
-        } catch (actionError) {
-          console.error(
-            "[ModScheduler] Scheduled moderation action failed:",
-            actionError,
-          );
-          await supabase
-            .from("moderation_scheduled_actions")
-            .update({
-              status: "failed",
-              last_error: String(actionError?.message || actionError).slice(
-                0,
-                1000,
-              ),
-              updated_at: new Date().toISOString(),
-            })
-            .eq("id", action.id);
-        }
-      }
+      await processDueModerationActions(client, supabase, shouldHandleGuild);
     } catch (error) {
-      console.error("[ModScheduler] Sweep failed:", error);
+      console.error("[ModScheduler] Sweep failed:", error.message);
     } finally {
       running = false;
     }
   };
-
-  const interval = setInterval(() => void processDue(), 30_000);
-  setTimeout(() => void processDue(), 5_000);
-
+  const interval = setInterval(() => void tick(), 30_000);
+  const initial = setTimeout(() => void tick(), 5_000);
   return {
     destroy() {
+      disposed = true;
       clearInterval(interval);
+      clearTimeout(initial);
     },
   };
 }
@@ -782,4 +793,6 @@ function setupModerationScheduler(client, { supabase, shouldHandleGuild }) {
 module.exports = {
   createAdvancedModerationHandlers,
   setupModerationScheduler,
+  processDueModerationActions,
+  executeScheduledModeration,
 };

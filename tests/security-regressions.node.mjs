@@ -50,7 +50,7 @@ function database({
         },
       };
       function result() {
-        if (table === "user_guilds")
+        if (["user_guilds", "verified_user_guilds"].includes(table))
           return { data: admin ? { has_admin_permission: true } : null };
         if (table === "guilds")
           return { data: { id: "guild-a", guild_id: "111111111111111111" } };

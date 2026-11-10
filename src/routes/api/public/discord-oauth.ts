@@ -369,6 +369,8 @@ __serve(async (req) => {
           guild_id: internalId,
           discord_user_id: discordUser.id,
           has_admin_permission: true,
+          admin_verified_until: new Date(Date.now() + 120_000).toISOString(),
+          is_demo_access: false,
         }));
       if (linkRows.length > 0) {
         const { error: linkError } = await supabase

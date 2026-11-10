@@ -33,7 +33,13 @@ if (!/^https?:\/\//i.test(process.env.APP_API_BASE)) {
   process.exit(1);
 }
 
-require("./utils/consoleLogger").installGlobalConsoleLogger();
+const { botLog, flushLogs } = require("./consoleLogger");
+logger.setApplicationSink(({ level, message }) =>
+  botLog(null, level, "runtime", message),
+);
+require("./utils/consoleLogger").installGlobalConsoleLogger({
+  sink: ({ level, message }) => botLog(null, level, "runtime", message),
+});
 const { economyOperation } = require("./utils/economyAtomic");
 
 const {
@@ -105,7 +111,6 @@ const {
   sendOfflineStatus,
   countMessage,
 } = require("./handlers/heartbeatHandler");
-const { botLog, flushLogs } = require("./consoleLogger");
 const { setupReminderHandler } = require("./handlers/reminderHandler");
 const { setupAutoReportHandler } = require("./handlers/autoReportHandler");
 const { setupAIAutomodHandler } = require("./handlers/aiAutomodHandler");
@@ -124,6 +129,7 @@ const { setupConfessionHandler } = require("./handlers/confessionHandler");
 const { setupBirthdayHandler } = require("./handlers/birthdayHandler");
 const { setupMusicQuizHandler } = require("./handlers/musicQuizHandler");
 const { setupCurrencyShopHandler } = require("./handlers/currencyShopHandler");
+const { setupGuildAccessVerifier } = require("./handlers/guildAccessVerifier");
 const {
   createExtraHandlers,
   setupSnipeTracker,
@@ -3434,6 +3440,13 @@ function createGuildFilter(
  */
 manager.registerHandler((client, guildId, assignedDiscordGuildId) => {
   const clientLabel = guildId ? `custom:${guildId}` : "default";
+  // A custom client may be replaced without restarting the Node process.
+  // Dispose its previous timers before registering handlers for the replacement.
+  for (const [key, handler] of handlerInstances) {
+    if (!key.endsWith(`_${clientLabel}`)) continue;
+    handler.destroy?.();
+    handlerInstances.delete(key);
+  }
   const shouldHandleGuild = createGuildFilter(
     client,
     guildId,
@@ -3441,6 +3454,12 @@ manager.registerHandler((client, guildId, assignedDiscordGuildId) => {
   );
 
   console.log(`[Bot] Registrerer handlers for ${clientLabel}...`);
+  const accessVerifier = setupGuildAccessVerifier(client, supabase, {
+    shouldHandleGuild,
+  });
+  handlerInstances.set(`guild_access_${clientLabel}`, {
+    destroy: accessVerifier.cleanup,
+  });
 
   // Initialize music for every Discord client.
   // Each custom bot needs its own Discord gateway voice session even though
@@ -3858,6 +3877,9 @@ manager.registerHandler((client, guildId, assignedDiscordGuildId) => {
   let shopApi = null;
   try {
     shopApi = setupCurrencyShopHandler(client, supabase, { shouldHandleGuild });
+    handlerInstances.set(`currency_shop_${clientLabel}`, {
+      destroy: () => shopApi?.cleanup?.(),
+    });
     console.log(`[Bot] ✅ Currency Shop handler for ${clientLabel}`);
   } catch (e) {
     logger.error(`[Bot] ❌ Currency Shop handler fejl:`, e.message);
@@ -4146,6 +4168,7 @@ process.on("SIGINT", async () => {
     clearInterval(commandExecutionFlushInterval);
     await flushCommandExecutionEvents();
     await manager.stop();
+    await flushLogsWithinDeadline();
     console.log("[Bot] ✅ Bot Manager stoppet");
   } catch (error) {
     logger.error("[Bot] ❌ Fejl under nedlukning:", error);
@@ -4171,6 +4194,7 @@ process.on("SIGTERM", async () => {
     clearInterval(commandExecutionFlushInterval);
     await flushCommandExecutionEvents();
     await manager.stop();
+    await flushLogsWithinDeadline();
     console.log("[Bot] ✅ Bot Manager stoppet");
   } catch (error) {
     logger.error("[Bot] ❌ Fejl under nedlukning:", error);
@@ -4180,6 +4204,13 @@ process.on("SIGTERM", async () => {
 });
 
 // Handle uncaught exceptions — log and exit so process managers (PM2) restart cleanly.
+function flushLogsWithinDeadline() {
+  return Promise.race([
+    flushLogs(),
+    new Promise((resolve) => setTimeout(resolve, 2000)),
+  ]);
+}
+
 process.on("uncaughtException", (error) => {
   logger.error("[Bot] ❌ Uncaught Exception:", error);
   try {
@@ -4193,7 +4224,7 @@ process.on("uncaughtException", (error) => {
   } catch (_) {
     /* ignore logging failures during crash */
   }
-  setTimeout(() => process.exit(1), 500).unref?.();
+  void flushLogsWithinDeadline().finally(() => process.exit(1));
 });
 
 process.on("unhandledRejection", (error) => {

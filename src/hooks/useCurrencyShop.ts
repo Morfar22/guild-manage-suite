@@ -1,13 +1,67 @@
 import type { TablesUpdate } from "@/integrations/supabase/types";
+import { useState } from "react";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useGuild } from "@/contexts/GuildContext";
 import { toast } from "sonner";
 
+export interface ShopOrder {
+  id: string;
+  user_id: string;
+  user_name: string | null;
+  item_name: string;
+  price: number;
+  status:
+    | "rejected"
+    | "pending"
+    | "processing"
+    | "delivered"
+    | "refunded"
+    | "manual_review";
+  attempt_count: number;
+  last_error: string | null;
+  created_at: string;
+}
+
 export function useCurrencyShop() {
   const { selectedGuild } = useGuild();
   const qc = useQueryClient();
   const guildId = selectedGuild?.id;
+  const [orderCursor, setOrderCursor] = useState<{
+    guildId: string | undefined;
+    page: number;
+    filter: "attention" | "all";
+  }>({ guildId, page: 0, filter: "attention" });
+  const cursor =
+    orderCursor.guildId === guildId
+      ? orderCursor
+      : { guildId, page: 0, filter: "attention" as const };
+  const ordersQuery = useQuery({
+    queryKey: ["shop-orders", guildId, cursor.page, cursor.filter],
+    queryFn: async () => {
+      // New migration-owned table: regenerate the Supabase types after rollout.
+      const client = supabase as unknown as SupabaseClient;
+      let query = client
+        .from("bot_shop_orders")
+        .select(
+          "id,user_id,user_name,item_name,price,status,attempt_count,last_error,created_at",
+          { count: "exact" },
+        )
+        .eq("guild_id", guildId!)
+        .order("created_at", { ascending: false });
+      if (cursor.filter === "attention")
+        query = query.in("status", ["pending", "processing", "manual_review"]);
+      const { data, count, error } = await query.range(
+        cursor.page * 25,
+        cursor.page * 25 + 24,
+      );
+      if (error) throw error;
+      return { rows: (data || []) as ShopOrder[], count: count || 0 };
+    },
+    enabled: !!guildId,
+    refetchInterval: 15000,
+  });
 
   const itemsQuery = useQuery({
     queryKey: ["shop-items", guildId],
@@ -95,6 +149,16 @@ export function useCurrencyShop() {
   return {
     items: itemsQuery.data || [],
     purchases: purchasesQuery.data || [],
+    orders: ordersQuery.data?.rows || [],
+    ordersCount: ordersQuery.data?.count || 0,
+    ordersPage: cursor.page,
+    ordersFilter: cursor.filter,
+    setOrdersPage: (page: number) => setOrderCursor({ ...cursor, page }),
+    setOrdersFilter: (filter: "attention" | "all") =>
+      setOrderCursor({ guildId, page: 0, filter }),
+    ordersLoading: ordersQuery.isLoading,
+    ordersError: ordersQuery.isError,
+    refreshOrders: ordersQuery.refetch,
     isLoading: itemsQuery.isLoading,
     createItem,
     updateItem,

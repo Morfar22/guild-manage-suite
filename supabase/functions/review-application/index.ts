@@ -105,7 +105,7 @@ Deno.serve(async (req) => {
     // Verify reviewer can manage this guild
     const { data: reviewerGuild, error: reviewerGuildError } =
       await supabaseAdmin
-        .from("user_guilds")
+        .from("verified_user_guilds")
         .select("discord_user_id, has_admin_permission")
         .eq("guild_id", application.guild_id)
         .eq("user_id", reviewerUserId)

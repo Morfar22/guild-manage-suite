@@ -2,6 +2,7 @@ import type { Untyped } from "@/types/untyped";
 import type { TablesUpdate } from "@/integrations/supabase/types";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import { useGuild } from "@/contexts/GuildContext";
 import { useEffect } from "react";
 
@@ -25,10 +26,11 @@ export interface DashboardNotification {
 
 export function useDashboardNotifications() {
   const { selectedGuild } = useGuild();
+  const { user } = useAuth();
   const queryClient = useQueryClient();
 
   const query = useQuery({
-    queryKey: ["dashboard-notifications", selectedGuild?.id],
+    queryKey: ["dashboard-notifications", selectedGuild?.id, user?.id],
     queryFn: async () => {
       if (!selectedGuild?.id) return [];
       const { data, error } = await supabase
@@ -40,9 +42,37 @@ export function useDashboardNotifications() {
       if (error) throw error;
       return data as DashboardNotification[];
     },
-    enabled: !!selectedGuild?.id,
+    enabled: !!selectedGuild?.id && !!user?.id,
   });
 
+  const unreadQuery = useQuery({
+    queryKey: ["dashboard-unread-count", selectedGuild?.id, user?.id],
+    enabled: !!selectedGuild?.id && !!user?.id,
+    refetchInterval: 15_000,
+    queryFn: async () => {
+      const { count, error } = await supabase
+        .from("dashboard_notifications")
+        .select("id", { head: true, count: "exact" })
+        .eq("guild_id", selectedGuild!.id)
+        .eq("is_read", false);
+      if (error) throw error;
+      if (count == null) throw new Error("Antallet af ulæste kan ikke hentes");
+      return count;
+    },
+  });
+  const refresh = (targetGuildId = selectedGuild?.id) => {
+    for (const key of [
+      "dashboard-notifications",
+      "dashboard-unread-count",
+      "operations-summary",
+      "ops-alerts",
+      "ops-alert-counts",
+      "ops-alert-preview",
+    ])
+      void queryClient.invalidateQueries({
+        queryKey: [key, targetGuildId],
+      });
+  };
   // Realtime subscription
   useEffect(() => {
     if (!selectedGuild?.id) return;
@@ -51,15 +81,23 @@ export function useDashboardNotifications() {
       .on(
         "postgres_changes",
         {
-          event: "INSERT",
+          event: "*",
           schema: "public",
           table: "dashboard_notifications",
           filter: `guild_id=eq.${selectedGuild.id}`,
         },
         () => {
-          queryClient.invalidateQueries({
-            queryKey: ["dashboard-notifications", selectedGuild.id],
-          });
+          for (const key of [
+            "dashboard-notifications",
+            "dashboard-unread-count",
+            "operations-summary",
+            "ops-alerts",
+            "ops-alert-counts",
+            "ops-alert-preview",
+          ])
+            void queryClient.invalidateQueries({
+              queryKey: [key, selectedGuild.id],
+            });
         },
       )
       .subscribe();
@@ -70,14 +108,23 @@ export function useDashboardNotifications() {
 
   const markAsRead = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase
+      if (!selectedGuild?.id) throw new Error("Ingen server valgt");
+      const guildId = selectedGuild.id;
+      const { data, error } = await supabase
         .from("dashboard_notifications")
         .update({ is_read: true })
-        .eq("id", id);
+        .eq("id", id)
+        .eq("guild_id", guildId)
+        .select("id")
+        .maybeSingle();
       if (error) throw error;
+      if (!data)
+        throw new Error(
+          "Notifikationen kunne ikke ændres. Kontrollér din adgang.",
+        );
+      return guildId;
     },
-    onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: ["dashboard-notifications"] }),
+    onSuccess: refresh,
   });
 
   const markAllAsRead = useMutation({
@@ -89,9 +136,9 @@ export function useDashboardNotifications() {
         .eq("guild_id", selectedGuild.id)
         .eq("is_read", false);
       if (error) throw error;
+      return selectedGuild.id;
     },
-    onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: ["dashboard-notifications"] }),
+    onSuccess: refresh,
   });
 
   const updateStatus = useMutation({
@@ -111,24 +158,33 @@ export function useDashboardNotifications() {
         values.acknowledged_at = new Date().toISOString();
       if (status === "resolved") values.resolved_at = new Date().toISOString();
 
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from("dashboard_notifications")
         .update(values)
         .eq("id", id)
-        .eq("guild_id", selectedGuild.id);
+        .eq("guild_id", selectedGuild.id)
+        .select("id")
+        .maybeSingle();
       if (error) throw error;
+      if (!data)
+        throw new Error(
+          "Notifikationen kunne ikke ændres. Kontrollér din adgang.",
+        );
+      return selectedGuild.id;
     },
-    onSuccess: () =>
-      queryClient.invalidateQueries({
-        queryKey: ["dashboard-notifications", selectedGuild?.id],
-      }),
+    onSuccess: refresh,
   });
 
-  const unreadCount = query.data?.filter((n) => !n.is_read).length ?? 0;
+  const unreadCount = unreadQuery.isError ? null : (unreadQuery.data ?? null);
 
   return {
     notifications: query.data ?? [],
     unreadCount,
+    error: query.error || unreadQuery.error,
+    refetch: () => {
+      void query.refetch();
+      void unreadQuery.refetch();
+    },
     isLoading: query.isLoading,
     markAsRead,
     markAllAsRead,

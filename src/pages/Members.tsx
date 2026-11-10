@@ -1,4 +1,8 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useRef, useCallback } from "react";
+import {
+  runBulkRoleUpdates,
+  type BulkRoleResult,
+} from "@/lib/bulk-role-runner";
 import {
   useDiscordMembers,
   DiscordMember,
@@ -141,12 +145,13 @@ function MemberRoleManager({
   );
 }
 
-function BulkRoleDialog({
+export function BulkRoleDialog({
   allRoles,
   members,
   open,
   onOpenChange,
   onToggleRole,
+  onComplete,
   isToggling,
 }: {
   allRoles: DiscordRole[];
@@ -157,73 +162,117 @@ function BulkRoleDialog({
     memberId: string,
     roleId: string,
     action: "add" | "remove",
-  ) => void;
+    signal: AbortSignal,
+  ) => Promise<void>;
+  onComplete: () => void;
   isToggling: boolean;
 }) {
-  const [selectedRoleId, setSelectedRoleId] = useState<string>("");
+  const [selectedRoleId, setSelectedRoleId] = useState("");
   const [action, setAction] = useState<"add" | "remove">("add");
   const [running, setRunning] = useState(false);
-
+  const [result, setResult] = useState<BulkRoleResult | null>(null);
+  const controller = useRef<AbortController | null>(null);
+  const mounted = useRef(false);
+  const operation = useRef(0);
+  const invalidateOperation = useCallback(() => {
+    operation.current++;
+  }, []);
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+      invalidateOperation();
+      controller.current?.abort();
+    };
+  }, [invalidateOperation]);
+  useEffect(() => {
+    if (!open) {
+      operation.current++;
+      controller.current?.abort();
+      setRunning(false);
+    } else {
+      setResult(null);
+    }
+  }, [open]);
   const assignableRoles = allRoles
     .filter((r) => r.name !== "@everyone" && !r.managed)
     .sort((a, b) => b.position - a.position);
-
-  const handleBulk = async () => {
-    if (!selectedRoleId) return;
+  const targets = members.filter((m) =>
+    action === "add"
+      ? !m.roles.includes(selectedRoleId)
+      : m.roles.includes(selectedRoleId),
+  );
+  const handleBulk = async (retryFailed = false) => {
+    if (!selectedRoleId || running) return;
+    const ids = retryFailed
+      ? (result?.failed.map((item) => item.memberId) ?? [])
+      : targets.map((m) => m.user.id);
+    if (!ids.length) return;
+    const run = ++operation.current;
+    const abort = new AbortController();
+    controller.current = abort;
     setRunning(true);
-    let successCount = 0;
-    const targets = members.filter((m) => {
-      const hasRole = m.roles.includes(selectedRoleId);
-      return (action === "add" && !hasRole) || (action === "remove" && hasRole);
-    });
-    for (const member of targets) {
-      try {
-        onToggleRole(member.user.id, selectedRoleId, action);
-        successCount++;
-        // Wait 1.5s between requests to respect Discord rate limits
-        await new Promise((r) => setTimeout(r, 1500));
-      } catch {
-        // continue
-      }
-    }
-    setRunning(false);
-    toast.success(
-      `${action === "add" ? "Tilføjet" : "Fjernet"} rolle for ${successCount} medlemmer`,
+    setResult({ succeeded: [], failed: [], remaining: ids, cancelled: false });
+    const completed = await runBulkRoleUpdates(
+      ids,
+      (memberId, signal) =>
+        onToggleRole(memberId, selectedRoleId, action, signal),
+      {
+        signal: abort.signal,
+        onProgress: (progress) => {
+          if (mounted.current && operation.current === run) setResult(progress);
+        },
+      },
     );
-    onOpenChange(false);
+    if (!mounted.current || operation.current !== run) return;
+    setResult(completed);
+    setRunning(false);
+    onComplete();
+    if (!completed.failed.length && !completed.cancelled)
+      toast.success(`${completed.succeeded.length} rolleændringer bekræftet`);
   };
-
+  const close = (value: boolean) => {
+    if (!value) controller.current?.abort();
+    onOpenChange(value);
+  };
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-sm">
+    <Dialog open={open} onOpenChange={close}>
+      <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle>Masse-rolletildeling</DialogTitle>
           <DialogDescription>
-            Tilføj eller fjern en rolle for alle viste medlemmer
+            Tilføj eller fjern en rolle for de filtrerede medlemmer. Stop
+            forhindrer nye forespørgsler; den igangværende kan allerede være
+            gennemført.
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
-          <Select value={selectedRoleId} onValueChange={setSelectedRoleId}>
+          <Select
+            value={selectedRoleId}
+            disabled={running}
+            onValueChange={(value) => {
+              setSelectedRoleId(value);
+              setResult(null);
+            }}
+          >
             <SelectTrigger>
               <SelectValue placeholder="Vælg rolle" />
             </SelectTrigger>
             <SelectContent>
               {assignableRoles.map((role) => (
                 <SelectItem key={role.id} value={role.id}>
-                  <div className="flex items-center gap-2">
-                    <div
-                      className="h-2 w-2 rounded-full"
-                      style={{ backgroundColor: intToHex(role.color) }}
-                    />
-                    {role.name}
-                  </div>
+                  {role.name}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
           <Select
             value={action}
-            onValueChange={(v) => setAction(v as "add" | "remove")}
+            disabled={running}
+            onValueChange={(value) => {
+              setAction(value as "add" | "remove");
+              setResult(null);
+            }}
           >
             <SelectTrigger>
               <SelectValue />
@@ -233,13 +282,54 @@ function BulkRoleDialog({
               <SelectItem value="remove">Fjern rolle</SelectItem>
             </SelectContent>
           </Select>
-          <Button
-            className="w-full"
-            onClick={handleBulk}
-            disabled={!selectedRoleId || running || isToggling}
-          >
-            {running ? "Arbejder..." : `Anvend på ${members.length} medlemmer`}
-          </Button>
+          {result && (
+            <div
+              aria-live="polite"
+              className="space-y-2 rounded-lg border p-3 text-sm"
+            >
+              <p>
+                {result.succeeded.length} bekræftet · {result.failed.length}{" "}
+                fejlet · {result.remaining.length} ikke behandlet
+              </p>
+              {result.cancelled && (
+                <p>Opgaven er stoppet. Gennemførte ændringer bevares.</p>
+              )}
+              {result.failed.length > 0 && (
+                <ul className="max-h-36 overflow-auto space-y-1">
+                  {result.failed.map((item) => (
+                    <li key={item.memberId}>
+                      {members.find((m) => m.user.id === item.memberId)?.user
+                        .username ?? item.memberId}
+                      : {item.error}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          )}
+          <div className="flex flex-wrap gap-2">
+            <Button
+              onClick={() => void handleBulk()}
+              disabled={
+                !selectedRoleId || running || isToggling || !targets.length
+              }
+            >
+              Anvend på {targets.length} medlemmer
+            </Button>
+            {running && (
+              <Button
+                variant="outline"
+                onClick={() => controller.current?.abort()}
+              >
+                Stop
+              </Button>
+            )}
+            {!running && !!result?.failed.length && (
+              <Button variant="outline" onClick={() => void handleBulk(true)}>
+                Prøv kun fejlede igen ({result.failed.length})
+              </Button>
+            )}
+          </div>
         </div>
       </DialogContent>
     </Dialog>
@@ -247,8 +337,16 @@ function BulkRoleDialog({
 }
 
 export default function Members() {
-  const { members, roles, loading, error, toggleRole, refetch } =
-    useDiscordMembers();
+  const {
+    members,
+    roles,
+    loading,
+    error,
+    toggleRole,
+    refetch,
+    guildId,
+    scopeKey,
+  } = useDiscordMembers();
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState<string>("all");
   const [selectedMember, setSelectedMember] = useState<DiscordMember | null>(
@@ -283,7 +381,7 @@ export default function Members() {
     roleId: string,
     action: "add" | "remove",
   ) => {
-    toggleRole.mutate({ memberId, roleId, action });
+    toggleRole.mutate({ memberId, roleId, action, guildId });
   };
 
   if (loading) {
@@ -465,11 +563,22 @@ export default function Members() {
 
       {/* Bulk Role Dialog */}
       <BulkRoleDialog
+        key={scopeKey}
         allRoles={roles}
         members={filtered}
         open={bulkOpen}
         onOpenChange={setBulkOpen}
-        onToggleRole={handleToggle}
+        onToggleRole={async (memberId, roleId, action, signal) => {
+          await toggleRole.mutateAsync({
+            memberId,
+            roleId,
+            action,
+            signal,
+            guildId,
+            silent: true,
+          });
+        }}
+        onComplete={() => void refetch()}
         isToggling={toggleRole.isPending}
       />
     </div>

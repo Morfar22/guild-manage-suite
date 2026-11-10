@@ -318,9 +318,9 @@ export default function OperationsCenter() {
         />
         <Metric
           label="Aktive alerts"
-          value={ops.openAlerts.length}
+          value={ops.activeAlertCount ?? "—"}
           icon={<Bell className="h-4 w-4" />}
-          danger={ops.openAlerts.some((item) => item.severity === "critical")}
+          danger={(ops.alertCenter.counts.data?.critical ?? 0) > 0}
         />
         <Metric
           label="Workflows"
@@ -387,44 +387,46 @@ export default function OperationsCenter() {
           <div className="grid gap-5 lg:grid-cols-2">
             <Card>
               <CardHeader>
-                <CardTitle>Seneste kritiske signaler</CardTitle>
+                <CardTitle>Seneste aktive alerts</CardTitle>
                 <CardDescription>
-                  Åbne alerts med højeste severity.
+                  De nyeste uløste alerts. Alle ældre alerts kan åbnes i Alert
+                  Center.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-2">
-                {ops.openAlerts
-                  .filter((item) =>
-                    ["critical", "error", "warning"].includes(item.severity),
-                  )
-                  .slice(0, 6)
-                  .map((alert) => (
-                    <div
-                      key={alert.id}
-                      className="flex items-start justify-between gap-3 rounded-lg border p-3"
-                    >
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <Badge
-                            variant={
-                              severityVariant[alert.severity] ?? "outline"
-                            }
-                          >
-                            {alert.severity}
-                          </Badge>
-                          <span className="font-medium">{alert.title}</span>
-                        </div>
-                        <p className="mt-1 text-sm text-muted-foreground">
-                          {alert.message}
-                        </p>
+                {ops.openAlerts.map((alert) => (
+                  <div
+                    key={alert.id}
+                    className="flex items-start justify-between gap-3 rounded-lg border p-3"
+                  >
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <Badge
+                          variant={severityVariant[alert.severity] ?? "outline"}
+                        >
+                          {alert.severity}
+                        </Badge>
+                        <span className="font-medium">{alert.title}</span>
                       </div>
-                      <span className="whitespace-nowrap text-xs text-muted-foreground">
-                        {formatDate(alert.created_at)}
-                      </span>
+                      <p className="mt-1 text-sm text-muted-foreground">
+                        {alert.message}
+                      </p>
                     </div>
-                  ))}
+                    <span className="whitespace-nowrap text-xs text-muted-foreground">
+                      {formatDate(alert.created_at)}
+                    </span>
+                  </div>
+                ))}
                 {!ops.openAlerts.length && (
-                  <Empty text="Ingen aktive alerts." />
+                  <Empty
+                    text={
+                      ops.alertCenter.preview.isError
+                        ? "Aktive alerts kunne ikke hentes."
+                        : ops.alertCenter.preview.isPending
+                          ? "Henter aktive alerts..."
+                          : "Ingen aktive alerts."
+                    }
+                  />
                 )}
               </CardContent>
             </Card>
@@ -756,7 +758,54 @@ export default function OperationsCenter() {
                 driftssignaler.
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-2">
+            <CardContent className="space-y-3">
+              <div className="flex flex-wrap gap-2">
+                <Select
+                  value={ops.alertCenter.status}
+                  onValueChange={(value) =>
+                    ops.alertCenter.setStatus(
+                      value as import("@/hooks/useAlertCenterData").AlertStatusFilter,
+                    )
+                  }
+                >
+                  <SelectTrigger className="w-48" aria-label="Alertstatus">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="active">Alle aktive</SelectItem>
+                    <SelectItem value="open">Åbne</SelectItem>
+                    <SelectItem value="acknowledged">Bekræftede</SelectItem>
+                    <SelectItem value="resolved">Løste</SelectItem>
+                    <SelectItem value="all">Alle statustyper</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Input
+                  aria-label="Søg alerts"
+                  placeholder="Søg titel, besked eller kilde..."
+                  value={ops.alertCenter.search}
+                  onChange={(event) =>
+                    ops.alertCenter.setSearch(event.target.value)
+                  }
+                  className="max-w-sm"
+                />
+              </div>
+              {(ops.alertCenter.query.isError ||
+                ops.alertCenter.counts.isError ||
+                ops.alertCenter.preview.isError) && (
+                <div
+                  role="alert"
+                  className="flex items-center justify-between gap-2 rounded-lg border border-warning p-3"
+                >
+                  <span>
+                    Alerts kunne ikke hentes fuldstændigt. Optællingen er
+                    ukendt.
+                  </span>
+                  <Button variant="outline" onClick={ops.alertCenter.retry}>
+                    Prøv igen
+                  </Button>
+                </div>
+              )}
+              {ops.alertCenter.query.isPending && <p>Henter alerts...</p>}
               {ops.alerts.map((alert) => (
                 <div
                   key={alert.id}
@@ -808,7 +857,45 @@ export default function OperationsCenter() {
                   )}
                 </div>
               ))}
-              {!ops.alerts.length && <Empty text="Ingen alerts." />}
+              {!ops.alertCenter.query.isPending &&
+                !ops.alertCenter.query.isError &&
+                !ops.alerts.length && (
+                  <Empty text="Ingen alerts matcher filtrene." />
+                )}
+              <div className="flex flex-wrap items-center justify-between gap-2 border-t pt-3 text-sm">
+                <span>
+                  {ops.alertCenter.query.isError
+                    ? "Ukendt antal"
+                    : `${ops.alertCenter.query.data?.count ?? "…"} alerts`}{" "}
+                  · Side {ops.alertCenter.page + 1} af{" "}
+                  {ops.alertCenter.query.data ? ops.alertCenter.pageCount : "…"}
+                </span>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    disabled={
+                      !ops.alertCenter.page || ops.alertCenter.query.isFetching
+                    }
+                    onClick={() =>
+                      ops.alertCenter.setPage(ops.alertCenter.page - 1)
+                    }
+                  >
+                    Forrige
+                  </Button>
+                  <Button
+                    variant="outline"
+                    disabled={
+                      ops.alertCenter.page + 1 >= ops.alertCenter.pageCount ||
+                      ops.alertCenter.query.isFetching
+                    }
+                    onClick={() =>
+                      ops.alertCenter.setPage(ops.alertCenter.page + 1)
+                    }
+                  >
+                    Næste
+                  </Button>
+                </div>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>

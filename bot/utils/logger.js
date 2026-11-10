@@ -1,6 +1,15 @@
 "use strict";
 
 const pino = require("pino");
+let applicationSink = null;
+function notify(level, values) {
+  if (!applicationSink) return;
+  try {
+    applicationSink({ level, message: values.map(formatValue).join(" ") });
+  } catch {
+    /* Preserve local logging if application logging is unavailable. */
+  }
+}
 
 const sink = pino({
   serializers: { err: (value) => value },
@@ -37,6 +46,9 @@ function formatValue(value) {
 }
 
 module.exports = {
+  setApplicationSink(callback) {
+    applicationSink = callback;
+  },
   error(...values) {
     const error = values.find((value) => value instanceof Error);
     sink.error(
@@ -51,7 +63,11 @@ module.exports = {
         : {},
       values.map(formatValue).join(" "),
     );
+    notify("error", values);
   },
   info: sink.info.bind(sink),
-  warn: sink.warn.bind(sink),
+  warn(...values) {
+    sink.warn(...values);
+    notify("warn", values);
+  },
 };

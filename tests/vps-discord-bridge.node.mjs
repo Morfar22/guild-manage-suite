@@ -1,6 +1,9 @@
 import { afterEach, beforeEach, test } from "node:test";
 import assert from "node:assert/strict";
-import { vpsDiscordRequest } from "../src/lib/vps-discord-bridge.ts";
+import {
+  DiscordBridgeError,
+  vpsDiscordRequest,
+} from "../src/lib/vps-discord-bridge.ts";
 
 const guild = "123456789012345678";
 const member = "123456789012345679";
@@ -9,6 +12,21 @@ const originalFetch = globalThis.fetch;
 const originalUrl = process.env.GUILDOS_BRIDGE_URL;
 const originalSecret = process.env.GUILDOS_BRIDGE_SECRET;
 let calls;
+
+test("Discord rate limits preserve status and provider retry-after for bulk actions", async () => {
+  globalThis.fetch = async () =>
+    Response.json(
+      { code: "DISCORD_429", retry_after: 2.5 },
+      { status: 429, headers: { "Retry-After": "2.5" } },
+    );
+  await assert.rejects(
+    vpsDiscordRequest(guild, `/members/${member}/roles/${role}`, "PUT"),
+    (error) =>
+      error instanceof DiscordBridgeError &&
+      error.status === 429 &&
+      error.retryAfter === 2.5,
+  );
+});
 
 beforeEach(() => {
   calls = [];

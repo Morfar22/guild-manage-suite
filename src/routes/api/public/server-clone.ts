@@ -130,7 +130,7 @@ __serve(async (req: Request) => {
 
       // Verify user has access
       const { data: userGuild } = await supabaseAdmin
-        .from("user_guilds")
+        .from("verified_user_guilds")
         .select("has_admin_permission")
         .eq("guild_id", sourceGuildId)
         .eq("user_id", userId)
@@ -373,7 +373,7 @@ __serve(async (req: Request) => {
 
       // Verify user has access to target guild
       const { data: targetUserGuild } = await supabaseAdmin
-        .from("user_guilds")
+        .from("verified_user_guilds")
         .select("has_admin_permission")
         .eq("guild_id", targetGuildId)
         .eq("user_id", userId)
@@ -454,7 +454,7 @@ __serve(async (req: Request) => {
       // If cloning directly from another guild
       else if (sourceGuildId) {
         const { data: sourceUserGuild } = await supabaseAdmin
-          .from("user_guilds")
+          .from("verified_user_guilds")
           .select("has_admin_permission")
           .eq("guild_id", sourceGuildId)
           .eq("user_id", userId)
@@ -1058,7 +1058,7 @@ __serve(async (req: Request) => {
 
       // Verify access
       const { data: targetUserGuild } = await supabaseAdmin
-        .from("user_guilds")
+        .from("verified_user_guilds")
         .select("has_admin_permission")
         .eq("guild_id", targetGuildId)
         .eq("user_id", userId)
@@ -1150,7 +1150,7 @@ __serve(async (req: Request) => {
               serverSettings = template.server_settings || {};
             } else if (sourceGuildId) {
               const { data: sourceUserGuild } = await supabaseAdmin
-                .from("user_guilds")
+                .from("verified_user_guilds")
                 .select("has_admin_permission")
                 .eq("guild_id", sourceGuildId)
                 .eq("user_id", userId)

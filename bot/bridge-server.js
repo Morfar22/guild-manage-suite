@@ -68,11 +68,12 @@ function authorized(header) {
     b = Buffer.from(secret);
   return a.length === b.length && timingSafeEqual(a, b);
 }
-function reply(res, code, body) {
+function reply(res, code, body, headers = {}) {
   res.writeHead(code, {
     "Content-Type": "application/json; charset=utf-8",
     "Cache-Control": "no-store",
     "X-Content-Type-Options": "nosniff",
+    ...headers,
   });
   res.end(JSON.stringify(body));
 }
@@ -112,12 +113,28 @@ const server = http.createServer(async (req, res) => {
           },
         );
         if (!response.ok) {
+          const errorBody =
+            response.status === 429
+              ? await response.json().catch(() => null)
+              : null;
+          const retryAfter = Number(
+            response.headers?.get("retry-after") || errorBody?.retry_after,
+          );
           console.error(
             "[guildos-bridge] Discord HTTP",
             response.status,
             suffix.replace(/\d{16,22}/g, ":id"),
           );
-          return { status: response.status, error: true };
+          return {
+            status: response.status,
+            error: true,
+            retryAfter:
+              response.status === 429 &&
+              Number.isFinite(retryAfter) &&
+              retryAfter > 0
+                ? retryAfter
+                : null,
+          };
         }
         return {
           status: response.status,
@@ -158,10 +175,16 @@ const server = http.createServer(async (req, res) => {
         const status = [401, 403, 404, 429].includes(result.status)
           ? result.status
           : 502;
-        return reply(res, status, {
-          error: "Discord API request failed",
-          code: "DISCORD_" + result.status,
-        });
+        return reply(
+          res,
+          status,
+          {
+            error: "Discord API request failed",
+            code: "DISCORD_" + result.status,
+            ...(result.retryAfter ? { retry_after: result.retryAfter } : {}),
+          },
+          result.retryAfter ? { "Retry-After": String(result.retryAfter) } : {},
+        );
       }
       if (guildResource?.[2] === "channels") {
         const all = result.data;

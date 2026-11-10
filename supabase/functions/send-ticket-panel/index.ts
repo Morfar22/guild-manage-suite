@@ -56,7 +56,7 @@ serve(async (req) => {
     if (!guild_id) return json({ error: "guild_id required" }, 400);
 
     const { data: userGuild } = await supabase
-      .from("user_guilds")
+      .from("verified_user_guilds")
       .select("has_admin_permission")
       .eq("user_id", user.id)
       .eq("guild_id", guild_id)

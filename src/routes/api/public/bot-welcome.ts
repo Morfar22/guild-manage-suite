@@ -270,7 +270,7 @@ __serve(async (req) => {
 
       if (!isGlobalAdmin) {
         const { data: userGuild } = await supabase
-          .from("user_guilds")
+          .from("verified_user_guilds")
           .select("has_admin_permission")
           .eq("guild_id", requestedGuildId)
           .eq("user_id", dashboardUserId)

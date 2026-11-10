@@ -95,6 +95,7 @@ __serve(async (req) => {
       guild_id: guild.id,
       discord_user_id: user.id,
       has_admin_permission: true,
+      is_demo_access: true,
     });
 
     if (linkError) {

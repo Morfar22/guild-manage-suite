@@ -834,7 +834,7 @@ __serve(async (req) => {
         // Only show bots for guilds the user is admin in
         const { data: adminGuilds, error: adminGuildsError } =
           await adminSupabase
-            .from("user_guilds")
+            .from("verified_user_guilds")
             .select("guild_id")
             .eq("user_id", userId)
             .eq("has_admin_permission", true);
@@ -955,7 +955,7 @@ __serve(async (req) => {
 
     if (!isPlatformAdmin) {
       const { data: userGuild, error: userGuildError } = await supabase
-        .from("user_guilds")
+        .from("verified_user_guilds")
         .select("has_admin_permission")
         .eq("guild_id", guildId)
         .eq("user_id", userId)

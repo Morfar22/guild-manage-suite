@@ -11,6 +11,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { Badge } from "@/components/ui/badge";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Table,
   TableBody,
@@ -32,8 +40,31 @@ import { ShoppingCart, Plus, Trash2, Package } from "lucide-react";
 import { useCurrencyShop } from "@/hooks/useCurrencyShop";
 
 const CurrencyShop = () => {
-  const { items, purchases, isLoading, createItem, updateItem, deleteItem } =
-    useCurrencyShop();
+  const {
+    items,
+    purchases,
+    isLoading,
+    createItem,
+    updateItem,
+    deleteItem,
+    orders,
+    ordersCount,
+    ordersPage,
+    ordersFilter,
+    setOrdersPage,
+    setOrdersFilter,
+    ordersLoading,
+    ordersError,
+    refreshOrders,
+  } = useCurrencyShop();
+  const orderLabels = {
+    pending: "Afventer",
+    processing: "Leveres",
+    delivered: "Leveret",
+    refunded: "Tilbagebetalt",
+    rejected: "Afvist",
+    manual_review: "Kræver kontrol",
+  };
   const [showCreate, setShowCreate] = useState(false);
   const [newItem, setNewItem] = useState({
     name: "",
@@ -160,6 +191,144 @@ const CurrencyShop = () => {
           </DialogContent>
         </Dialog>
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Købsstatus</CardTitle>
+          <CardDescription>
+            Se betaling, levering og tilbagebetaling for hver ordre. Ordrer, der
+            kræver kontrol, gentages eller tilbagebetales ikke automatisk.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <Select
+            value={ordersFilter}
+            onValueChange={(value) =>
+              setOrdersFilter(value as "attention" | "all")
+            }
+          >
+            <SelectTrigger
+              className="w-full sm:w-80"
+              aria-label="Vis købsstatus"
+            >
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="attention">
+                Afventer eller kræver kontrol
+              </SelectItem>
+              <SelectItem value="all">Alle ordrer</SelectItem>
+            </SelectContent>
+          </Select>
+          {ordersError && (
+            <div role="alert" className="text-destructive">
+              Købsstatus kunne ikke hentes.{" "}
+              {orders.length > 0 && "Viser den seneste hentning."}{" "}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => void refreshOrders()}
+              >
+                Prøv igen
+              </Button>
+            </div>
+          )}
+          {ordersLoading ? (
+            <p>Henter købsstatus...</p>
+          ) : orders.length === 0 && !ordersError ? (
+            <p className="text-muted-foreground">
+              {ordersFilter === "attention"
+                ? "Ingen ordrer afventer levering eller kontrol."
+                : "Ingen ordrer endnu."}
+            </p>
+          ) : (
+            orders.length > 0 && (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Bruger og ordre</TableHead>
+                    <TableHead>Vare og pris</TableHead>
+                    <TableHead>Status</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {orders.map((order) => (
+                    <TableRow key={order.id}>
+                      <TableCell>
+                        <p>{order.user_name || order.user_id}</p>
+                        <p className="font-mono text-xs break-all">
+                          {order.id}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {new Date(order.created_at).toLocaleString("da-DK")}
+                        </p>
+                      </TableCell>
+                      <TableCell>
+                        {order.item_name}
+                        <p className="font-mono text-sm">{order.price} coins</p>
+                      </TableCell>
+                      <TableCell>
+                        <Badge
+                          variant={
+                            order.status === "manual_review"
+                              ? "destructive"
+                              : "outline"
+                          }
+                        >
+                          {orderLabels[order.status]}
+                        </Badge>
+                        {order.attempt_count > 0 && (
+                          <p className="text-xs text-muted-foreground">
+                            {order.attempt_count}/5 leveringsforsøg
+                          </p>
+                        )}
+                        {order.last_error && order.status !== "rejected" && (
+                          <p className="text-xs mt-1 max-w-lg break-words">
+                            {order.last_error}
+                          </p>
+                        )}
+                        {order.status === "manual_review" && (
+                          <p className="text-xs mt-1 max-w-lg">
+                            Kontrollér rolle og ordre i Discord, før der
+                            foretages en ny levering eller tilbagebetaling.
+                          </p>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )
+          )}
+          {!ordersLoading && !ordersError && ordersCount > 0 && (
+            <div className="flex flex-wrap gap-3 items-center justify-between">
+              <p className="text-sm text-muted-foreground">
+                Viser {ordersPage * 25 + 1}–
+                {Math.min((ordersPage + 1) * 25, ordersCount)} af {ordersCount}{" "}
+                ordrer
+              </p>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={ordersPage === 0}
+                  onClick={() => setOrdersPage(ordersPage - 1)}
+                >
+                  Forrige
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={(ordersPage + 1) * 25 >= ordersCount}
+                  onClick={() => setOrdersPage(ordersPage + 1)}
+                >
+                  Næste
+                </Button>
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>

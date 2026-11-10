@@ -5,6 +5,7 @@ import type { Json, Tables } from "@/integrations/supabase/types";
 import { useGuild } from "@/contexts/GuildContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import { useAlertCenterData } from "@/hooks/useAlertCenterData";
 import type { Untyped } from "@/types/untyped";
 
 export type ModerationCase = Tables<"moderation_logs">;
@@ -101,22 +102,7 @@ export function useOperationsCenter() {
     refetchInterval: 20_000,
   });
 
-  const alertsQuery = useQuery({
-    queryKey: ["ops-alerts", guildId],
-    queryFn: async () => {
-      if (!guildId) return [];
-      const { data, error } = await supabase
-        .from("dashboard_notifications")
-        .select("*")
-        .eq("guild_id", guildId)
-        .order("created_at", { ascending: false })
-        .limit(150);
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!guildId,
-    refetchInterval: 15_000,
-  });
+  const alertCenter = useAlertCenterData();
 
   const workflowsQuery = useQuery({
     queryKey: ["ops-workflows", guildId],
@@ -382,17 +368,23 @@ export function useOperationsCenter() {
         values.resolved_at = new Date().toISOString();
         values.resolved_by = user?.id ?? null;
       }
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from("dashboard_notifications")
         .update(values)
         .eq("id", id)
-        .eq("guild_id", guildId);
+        .eq("guild_id", guildId)
+        .select("id")
+        .maybeSingle();
       if (error) throw error;
+      if (!data)
+        throw new Error(
+          "Alerten kunne ikke ændres. Opdater listen og kontrollér din adgang.",
+        );
       await logAudit("update", "alert", id, { status });
+      return guildId;
     },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["ops-alerts", guildId] });
-      qc.invalidateQueries({ queryKey: ["dashboard-notifications", guildId] });
+    onSuccess: (changedGuildId) => {
+      alertCenter.refresh(changedGuildId);
       toast.success("Alert opdateret");
     },
     onError: (error) => toast.error(error.message),
@@ -837,9 +829,7 @@ export function useOperationsCenter() {
   const pendingAppeals = (appealsQuery.data ?? []).filter((item) =>
     ["pending", "needs_info"].includes(item.status),
   );
-  const openAlerts = (alertsQuery.data ?? []).filter(
-    (item) => item.status !== "resolved",
-  );
+  const openAlerts = alertCenter.preview.data ?? [];
   const unhealthyCommands = (healthQuery.data ?? []).filter(
     (item) =>
       Number(item.executions ?? 0) >= 3 &&
@@ -853,7 +843,11 @@ export function useOperationsCenter() {
     openCases,
     appeals: appealsQuery.data ?? [],
     pendingAppeals,
-    alerts: alertsQuery.data ?? [],
+    alerts: alertCenter.query.data?.rows ?? [],
+    alertCenter,
+    activeAlertCount: alertCenter.counts.isError
+      ? null
+      : (alertCenter.counts.data?.active ?? null),
     openAlerts,
     workflows: workflowsQuery.data ?? [],
     profiles: profilesQuery.data ?? [],
@@ -866,7 +860,7 @@ export function useOperationsCenter() {
     isLoading:
       casesQuery.isLoading ||
       appealsQuery.isLoading ||
-      alertsQuery.isLoading ||
+      alertCenter.query.isLoading ||
       workflowsQuery.isLoading ||
       profilesQuery.isLoading ||
       staffQuery.isLoading ||

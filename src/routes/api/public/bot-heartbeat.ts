@@ -205,7 +205,11 @@ __serve(async (req) => {
     console.log(`Heartbeat updated for guild: ${payload.guild_id}`);
 
     return new Response(
-      JSON.stringify({ success: true, message: "Heartbeat recorded" }),
+      JSON.stringify({
+        success: true,
+        guild_id: guild.id,
+        message: "Heartbeat recorded",
+      }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   } catch (error) {

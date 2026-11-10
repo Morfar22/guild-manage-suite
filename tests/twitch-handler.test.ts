@@ -380,7 +380,8 @@ describe("Twitch handler behavior with offline transports", () => {
     );
     expect(response.status).toBe(403);
     expect(
-      client.queries.find((query) => query.table === "user_guilds")?.filters,
+      client.queries.find((query) => query.table === "verified_user_guilds")
+        ?.filters,
     ).toContainEqual(["guild_id", "guild-a"]);
   });
 

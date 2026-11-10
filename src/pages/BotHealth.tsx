@@ -1,7 +1,6 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
-import { useGuild } from "@/contexts/GuildContext";
+import { hasFreshLogTelemetry, logCountDisplay } from "@/lib/log-observability";
+import { useBotHealthData } from "@/hooks/useBotHealthData";
 import { useBotStatus } from "@/hooks/useBotStatus";
 import { getBotConnectionLabel } from "@/lib/bot-status";
 import { Button } from "@/components/ui/button";
@@ -68,7 +67,6 @@ const levelColor: Record<string, string> = {
 };
 
 export default function BotHealth() {
-  const { selectedGuild } = useGuild();
   const {
     status,
     isOnline,
@@ -80,62 +78,30 @@ export default function BotHealth() {
   const offline = connectionState === "offline";
   const [logFilter, setLogFilter] = useState<string>("all");
 
-  // Fetch console logs
-  const { data: logs } = useQuery({
-    queryKey: ["bot-console-logs", selectedGuild?.id, logFilter],
-    queryFn: async () => {
-      let query = supabase
-        .from("bot_console_logs")
-        .select("*")
-        .eq("guild_id", selectedGuild!.id)
-        .order("created_at", { ascending: false })
-        .limit(100);
-
-      if (logFilter !== "all") {
-        query = query.eq("level", logFilter);
-      }
-
-      const { data, error } = await query;
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!selectedGuild?.id,
-    refetchInterval: 15000,
-  });
-
-  // Fetch heartbeat history for latency chart
-  const { data: heartbeatHistory } = useQuery({
-    queryKey: ["bot-heartbeat-history", selectedGuild?.id],
-    queryFn: async () => {
-      // Use console logs with source 'heartbeat' for history
-      const { data, error } = await supabase
-        .from("bot_console_logs")
-        .select("created_at, metadata")
-        .eq("guild_id", selectedGuild!.id)
-        .eq("source", "heartbeat")
-        .order("created_at", { ascending: true })
-        .limit(50);
-
-      if (error) throw error;
-      return (data || []).map((entry) => {
-        const meta = entry.metadata as Record<string, unknown> | null;
-        return {
-          time: new Date(entry.created_at).toLocaleTimeString("da-DK", {
-            hour: "2-digit",
-            minute: "2-digit",
-          }),
-          latency: (meta?.latency_ms as number) || 0,
-        };
-      });
-    },
-    enabled: !!selectedGuild?.id,
-    refetchInterval: 30000,
-  });
-
-  // Count errors in last 24h
-  const errorCount = logs?.filter((l) => l.level === "error").length ?? 0;
-  const warnCount = logs?.filter((l) => l.level === "warn").length ?? 0;
-
+  const {
+    logs: logsQuery,
+    counts: countsQuery,
+    history: historyQuery,
+  } = useBotHealthData(logFilter);
+  const logs = logsQuery.data;
+  const heartbeatHistory = historyQuery.data?.filter(
+    (point) => point.latency !== null,
+  );
+  const telemetryFresh =
+    !historyQuery.isError &&
+    hasFreshLogTelemetry(historyQuery.data?.at(-1)?.observedAt);
+  const errorCount = logCountDisplay(
+    countsQuery.data?.errors,
+    countsQuery.isError,
+    telemetryFresh,
+  );
+  const warnCount = logCountDisplay(
+    countsQuery.data?.warnings,
+    countsQuery.isError,
+    telemetryFresh,
+  );
+  const logDataError =
+    logsQuery.isError || countsQuery.isError || historyQuery.isError;
   // Uptime calculation
   const lastHeartbeat = status?.last_heartbeat
     ? formatDistanceToNow(new Date(status.last_heartbeat), {
@@ -169,6 +135,41 @@ export default function BotHealth() {
             Prøv igen
           </Button>
         </div>
+      )}
+      {logDataError && (
+        <div
+          role="alert"
+          className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-warning/40 bg-warning/10 p-4"
+        >
+          <span>
+            Logdata kunne ikke hentes fuldstændigt. Manglende data tælles ikke
+            som nul fejl.
+          </span>
+          <Button
+            variant="outline"
+            disabled={
+              logsQuery.isFetching ||
+              countsQuery.isFetching ||
+              historyQuery.isFetching
+            }
+            onClick={() => {
+              void logsQuery.refetch();
+              void countsQuery.refetch();
+              void historyQuery.refetch();
+            }}
+          >
+            Prøv logdata igen
+          </Button>
+        </div>
+      )}
+      {!logDataError && !historyQuery.isPending && !telemetryFresh && (
+        <p
+          role="status"
+          className="rounded-lg border border-warning/40 p-3 text-sm text-muted-foreground"
+        >
+          Der mangler nye logmålinger fra botten. Nul fejl vises først, når
+          logforbindelsen er bekræftet.
+        </p>
       )}
       {/* Status Cards */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -338,7 +339,15 @@ export default function BotHealth() {
         </CardHeader>
         <CardContent>
           <div className="space-y-1 max-h-[400px] overflow-y-auto font-mono text-xs">
-            {logs && logs.length > 0 ? (
+            {logsQuery.isPending ? (
+              <p className="py-8 text-center text-muted-foreground">
+                Henter logs...
+              </p>
+            ) : logsQuery.isError && !logs ? (
+              <p className="py-8 text-center text-muted-foreground">
+                Logs er ikke tilgængelige.
+              </p>
+            ) : logs && logs.length > 0 ? (
               logs.map((log) => {
                 const Icon = levelIcon[log.level] || Info;
                 const color = levelColor[log.level] || "text-muted-foreground";

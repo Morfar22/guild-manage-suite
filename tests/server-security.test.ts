@@ -46,7 +46,7 @@ describe("API authorization boundaries", () => {
     const db = createSupabaseStub({
       result: (query) => ({
         data:
-          query.table === "user_guilds"
+          query.table === "verified_user_guilds"
             ? { has_admin_permission: admin }
             : exists
               ? { id: "guild", guild_id: "discord" }

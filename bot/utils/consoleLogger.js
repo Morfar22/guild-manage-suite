@@ -98,7 +98,7 @@ function formatValue(value) {
   return String(value);
 }
 
-function installGlobalConsoleLogger() {
+function installGlobalConsoleLogger({ sink } = {}) {
   if (globalThis[INSTALLED]) return globalThis[INSTALLED];
 
   const originals = {
@@ -111,6 +111,7 @@ function installGlobalConsoleLogger() {
 
   const configuredLevel = getConfiguredLevel();
   const useColor = shouldUseColor();
+  let notifying = false;
 
   function write(level, args) {
     if (LEVEL_WEIGHT[level] < LEVEL_WEIGHT[configuredLevel]) return;
@@ -125,6 +126,24 @@ function installGlobalConsoleLogger() {
     else if (level === "warn") originals.warn(output);
     else if (level === "debug") originals.debug(output);
     else originals.log(output);
+
+    // Transport failures must remain local: forwarding them into the same
+    // database transport would manufacture an endless stream of error logs.
+    if (
+      sink &&
+      !notifying &&
+      LEVEL_WEIGHT[level] >= LEVEL_WEIGHT.warn &&
+      !body.startsWith("[ConsoleLogger]")
+    ) {
+      notifying = true;
+      try {
+        sink({ level, message: body });
+      } catch {
+        /* Logging must never crash the bot. */
+      } finally {
+        notifying = false;
+      }
+    }
   }
 
   console.log = (...args) => write("info", args);

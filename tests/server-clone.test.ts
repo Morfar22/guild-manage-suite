@@ -29,7 +29,7 @@ vi.mock("@supabase/supabase-js", async () => {
           state.queries.push(query);
           return {
             data:
-              query.table === "user_guilds"
+              query.table === "verified_user_guilds"
                 ? { has_admin_permission: state.admin }
                 : state.templates,
             error: null,

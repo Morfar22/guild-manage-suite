@@ -12,7 +12,10 @@ const guild = "1501891897663295538";
 const otherGuild = "1501891897663295539";
 const secret = "x".repeat(64);
 
-function bridge(configs, { configStatus = 200, discordStatus = 200 } = {}) {
+function bridge(
+  configs,
+  { configStatus = 200, discordStatus = 200, retryAfter = null } = {},
+) {
   let handler;
   const calls = [];
   const removals = [];
@@ -54,10 +57,13 @@ function bridge(configs, { configStatus = 200, discordStatus = 200 } = {}) {
       return {
         ok: discordStatus === 200,
         status: discordStatus,
+        headers: { get: () => retryAfter },
         json: async () =>
-          String(url).endsWith("users/@me")
-            ? { id: "1555371176224628787" }
-            : [],
+          discordStatus === 429
+            ? { retry_after: retryAfter }
+            : String(url).endsWith("users/@me")
+              ? { id: "1555371176224628787" }
+              : [],
       };
     },
   });
@@ -65,7 +71,7 @@ function bridge(configs, { configStatus = 200, discordStatus = 200 } = {}) {
     calls,
     removals,
     async request(suffix = "channels", guildId = guild, authorized = true) {
-      let status, body;
+      let status, body, headers;
       await handler(
         {
           url: `/v1/guilds/${guildId}/${suffix}`,
@@ -73,15 +79,16 @@ function bridge(configs, { configStatus = 200, discordStatus = 200 } = {}) {
           headers: { authorization: authorized ? `Bearer ${secret}` : "" },
         },
         {
-          writeHead(code) {
+          writeHead(code, values) {
             status = code;
+            headers = values;
           },
           end(text) {
             body = JSON.parse(text);
           },
         },
       );
-      return { status, body };
+      return { status, body, headers };
     },
   };
 }
@@ -138,4 +145,13 @@ test("Discord missing access is preserved without fallback to default bot", asyn
   const app = bridge(configs, { discordStatus: 403 });
   assert.equal((await app.request()).status, 403);
   assert.equal(app.calls.length, 2);
+});
+
+test("Discord429 forwards Retry-After without changing guild credentials", async () => {
+  const app = bridge(configs, { discordStatus: 429, retryAfter: 2.5 });
+  const result = await app.request();
+  assert.equal(result.status, 429);
+  assert.equal(result.body.retry_after, 2.5);
+  assert.equal(result.headers["Retry-After"], "2.5");
+  assert.equal(app.calls[1].headers.Authorization, "Bot custom-token");
 });

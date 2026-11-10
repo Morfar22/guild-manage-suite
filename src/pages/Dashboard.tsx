@@ -71,7 +71,12 @@ export default function Dashboard() {
   } = useBotStatus();
   const { logs, loading: logsLoading } = useModerationLogs({ limit: 5 });
   const { chartData, summary, hasData } = useAnalytics(7);
-  const { data: opsSummary } = useOperationsSummary();
+  const {
+    data: opsSummary,
+    isError: opsSummaryError,
+    isPending: opsSummaryPending,
+    refetch: retryOpsSummary,
+  } = useOperationsSummary();
   const { alerts: configurationAlerts } = useConfigurationAlerts();
   const prefs = useDashboardPreferences();
   const { t, language } = useLanguage();
@@ -169,7 +174,21 @@ export default function Dashboard() {
 
       <SetupProgress />
 
-      {attentionCount > 0 && (
+      {opsSummaryError && (
+        <div
+          role="alert"
+          className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-warning p-3"
+        >
+          <span>
+            Driftsoversigten kunne ikke hentes. Manglende data vises som
+            ukendte.
+          </span>
+          <Button variant="outline" onClick={() => void retryOpsSummary()}>
+            Prøv driftsoversigt igen
+          </Button>
+        </div>
+      )}
+      {!opsSummaryError && !opsSummaryPending && attentionCount > 0 && (
         <Card className="border-warning/25 bg-warning/[0.035]">
           <CardContent className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-start gap-3">
@@ -224,34 +243,58 @@ export default function Dashboard() {
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
             <PulseCard
               label="Åbne cases"
-              value={opsSummary?.openCases ?? 0}
+              value={
+                opsSummaryError || opsSummaryPending
+                  ? "—"
+                  : (opsSummary?.openCases ?? "—")
+              }
               icon={<FileSearch className="h-4 w-4" />}
             />
             <PulseCard
               label="Appeals"
-              value={opsSummary?.pendingAppeals ?? 0}
+              value={
+                opsSummaryError || opsSummaryPending
+                  ? "—"
+                  : (opsSummary?.pendingAppeals ?? "—")
+              }
               icon={<Shield className="h-4 w-4" />}
             />
             <PulseCard
               label="Alerts"
-              value={opsSummary?.openAlerts ?? 0}
+              value={
+                opsSummaryError || opsSummaryPending
+                  ? "—"
+                  : (opsSummary?.openAlerts ?? "—")
+              }
               icon={<Bell className="h-4 w-4" />}
             />
             <PulseCard
               label="SLA"
-              value={opsSummary?.overdueSla ?? 0}
+              value={
+                opsSummaryError || opsSummaryPending
+                  ? "—"
+                  : (opsSummary?.overdueSla ?? "—")
+              }
               icon={<Ticket className="h-4 w-4" />}
               danger
             />
             <PulseCard
               label="Command issues"
-              value={opsSummary?.commandIssues ?? 0}
+              value={
+                opsSummaryError || opsSummaryPending
+                  ? "—"
+                  : (opsSummary?.commandIssues ?? "—")
+              }
               icon={<HeartPulse className="h-4 w-4" />}
               danger
             />
             <PulseCard
               label="Planlagt mod"
-              value={opsSummary?.scheduledModeration ?? 0}
+              value={
+                opsSummaryError || opsSummaryPending
+                  ? "—"
+                  : (opsSummary?.scheduledModeration ?? "—")
+              }
               icon={<CalendarClock className="h-4 w-4" />}
             />
           </div>
@@ -590,11 +633,11 @@ function PulseCard({
   danger = false,
 }: {
   label: string;
-  value: number;
+  value: string | number;
   icon: ReactNode;
   danger?: boolean;
 }) {
-  const activeDanger = danger && value > 0;
+  const activeDanger = danger && typeof value === "number" && value > 0;
   return (
     <Card
       className={

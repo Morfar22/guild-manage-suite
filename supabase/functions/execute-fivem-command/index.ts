@@ -55,7 +55,7 @@ serve(async (req) => {
 
     // Verify user has admin permission for this guild
     const { data: userGuild, error: permError } = await supabase
-      .from("user_guilds")
+      .from("verified_user_guilds")
       .select("has_admin_permission")
       .eq("user_id", user.id)
       .eq("guild_id", guild_id)

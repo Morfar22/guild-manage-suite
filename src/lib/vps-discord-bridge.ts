@@ -1,4 +1,19 @@
 /** Server-side only. Never import from browser code. */
+export class DiscordBridgeError extends Error {
+  status: number;
+  retryAfter: number | null;
+  constructor(
+    message: string,
+    status: number,
+    retryAfter: number | null = null,
+  ) {
+    super(message);
+    this.name = "DiscordBridgeError";
+    this.status = status;
+    this.retryAfter = retryAfter;
+  }
+}
+
 export async function vpsDiscordRequest(
   guildSnowflake: string,
   suffix: string,
@@ -45,7 +60,10 @@ export async function vpsDiscordRequest(
       response.status,
       json?.code || "",
     );
-    throw new Error(
+    const retryAfter = Number(
+      response.headers?.get("retry-after") || json?.retry_after,
+    );
+    throw new DiscordBridgeError(
       response.status === 401
         ? "VPS bridge authentication failed"
         : response.status === 404
@@ -55,6 +73,10 @@ export async function vpsDiscordRequest(
             : response.status === 429
               ? "Discord rate limit hit"
               : "VPS bridge request failed (" + response.status + ")",
+      response.status,
+      response.status === 429 && Number.isFinite(retryAfter) && retryAfter > 0
+        ? retryAfter
+        : null,
     );
   }
   return json?.data;

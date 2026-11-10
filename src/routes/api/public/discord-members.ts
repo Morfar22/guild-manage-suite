@@ -4,7 +4,10 @@ import { decryptBotToken as simpleDecrypt } from "@/lib/server/bot-token-crypto"
 // Migrated from Supabase Edge Function `discord-members` to a TanStack server route.
 import { createFileRoute } from "@tanstack/react-router";
 import { createClient } from "@supabase/supabase-js";
-import { vpsDiscordRequest } from "@/lib/vps-discord-bridge";
+import {
+  DiscordBridgeError,
+  vpsDiscordRequest,
+} from "@/lib/vps-discord-bridge";
 import type { Untyped } from "@/types/untyped";
 
 const __env = (k: string) =>
@@ -84,7 +87,7 @@ async function verifyGuildAccess(
 
   if (!isGlobalAdmin) {
     const { data: userGuild, error } = await supabaseAdmin
-      .from("user_guilds")
+      .from("verified_user_guilds")
       .select("guild_id, has_admin_permission")
       .eq("guild_id", guildId)
       .eq("user_id", userId)
@@ -181,12 +184,32 @@ __serve(async (req) => {
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : "Unknown error";
     const status =
-      message === "Unauthorized" ? 401 : message === "Forbidden" ? 403 : 500;
+      error instanceof DiscordBridgeError
+        ? error.status
+        : message === "Unauthorized"
+          ? 401
+          : message === "Forbidden"
+            ? 403
+            : 500;
     logger.error("discord-members error:", message);
-    return new Response(JSON.stringify({ error: message }), {
-      status,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return new Response(
+      JSON.stringify({
+        error: message,
+        ...(error instanceof DiscordBridgeError && error.retryAfter
+          ? { retry_after: error.retryAfter }
+          : {}),
+      }),
+      {
+        status,
+        headers: {
+          ...corsHeaders,
+          "Content-Type": "application/json",
+          ...(error instanceof DiscordBridgeError && error.retryAfter
+            ? { "Retry-After": String(error.retryAfter) }
+            : {}),
+        },
+      },
+    );
   }
 });
 
