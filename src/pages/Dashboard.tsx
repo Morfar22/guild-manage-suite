@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { useGuild } from "@/contexts/GuildContext";
 import { useBotStatus } from "@/hooks/useBotStatus";
+import { getBotConnectionLabel } from "@/lib/bot-status";
 import { useModerationLogs } from "@/hooks/useModerationLogs";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import { useOperationsSummary } from "@/hooks/useOperationsSummary";
@@ -59,7 +60,15 @@ const tooltipStyle = {
 
 export default function Dashboard() {
   const { selectedGuild } = useGuild();
-  const { status, isOnline, loading: statusLoading } = useBotStatus();
+  const {
+    status,
+    isOnline,
+    connectionState,
+    error: statusError,
+    loading: statusLoading,
+    refreshing,
+    refetch,
+  } = useBotStatus();
   const { logs, loading: logsLoading } = useModerationLogs({ limit: 5 });
   const { chartData, summary, hasData } = useAnalytics(7);
   const { data: opsSummary } = useOperationsSummary();
@@ -67,6 +76,8 @@ export default function Dashboard() {
   const prefs = useDashboardPreferences();
   const { t, language } = useLanguage();
   const dateFnsLocale = language === "da" ? da : enUS;
+  const statusLabel = getBotConnectionLabel(connectionState, language);
+  const offline = connectionState === "offline";
 
   const visible = (id: string) => prefs.widgets.includes(id);
 
@@ -107,18 +118,37 @@ export default function Dashboard() {
     <div
       className={`${prefs.compactMode ? "space-y-4" : "space-y-8"} animate-fade-in`}
     >
+      {statusError && (
+        <div
+          role="alert"
+          className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-warning/40 bg-warning/10 p-4"
+        >
+          <span>
+            {language === "da"
+              ? "Botstatus kunne ikke hentes. Seneste data bevares."
+              : "Bot status could not be loaded. Keeping the last known data."}
+          </span>
+          <Button
+            variant="outline"
+            disabled={refreshing}
+            onClick={() => void refetch()}
+          >
+            {language === "da" ? "Prøv igen" : "Try again"}
+          </Button>
+        </div>
+      )}
       <div className="surface-card relative overflow-hidden rounded-2xl p-6 lg:p-8">
         <div className="pointer-events-none absolute -right-10 -top-24 h-64 w-64 rounded-full bg-primary/15 blur-3xl" />
         <div className="relative flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div>
             <div className="flex flex-wrap items-center gap-3">
               <span
-                className={`inline-flex items-center gap-2 rounded-full border border-border/60 px-3 py-1 text-xs font-medium ${isOnline ? "text-success" : "text-destructive"}`}
+                className={`inline-flex items-center gap-2 rounded-full border border-border/60 px-3 py-1 text-xs font-medium ${isOnline ? "text-success" : offline ? "text-destructive" : "text-muted-foreground"}`}
               >
                 <span
-                  className={`h-1.5 w-1.5 rounded-full ${isOnline ? "bg-success animate-pulse" : "bg-destructive"}`}
+                  className={`h-1.5 w-1.5 rounded-full ${isOnline ? "bg-success animate-pulse" : offline ? "bg-destructive" : "bg-warning"}`}
                 />
-                {isOnline ? t("common.online") : t("common.offline")}
+                {statusLabel}
               </span>
               <span className="text-xs text-muted-foreground">
                 {selectedGuild?.guild_name}
@@ -232,20 +262,22 @@ export default function Dashboard() {
         <section className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           <StatusCard
             title={t("dashboard.botStatus")}
-            value={
-              statusLoading
-                ? t("common.loading")
-                : isOnline
-                  ? t("common.online")
-                  : t("common.offline")
-            }
+            value={statusLabel}
             description={
-              isOnline
-                ? t("dashboard.allSystemsRunning")
-                : t("dashboard.botNotResponding")
+              statusError
+                ? language === "da"
+                  ? "Forbindelsen til statusdata fejlede."
+                  : "The status request failed."
+                : isOnline
+                  ? t("dashboard.allSystemsRunning")
+                  : offline
+                    ? t("dashboard.botNotResponding")
+                    : language === "da"
+                      ? "Afventer et bekræftet heartbeat."
+                      : "Waiting for a confirmed heartbeat."
             }
             icon={Activity}
-            variant={isOnline ? "success" : "destructive"}
+            variant={isOnline ? "success" : offline ? "destructive" : "warning"}
             pulse={isOnline}
           />
           <StatusCard

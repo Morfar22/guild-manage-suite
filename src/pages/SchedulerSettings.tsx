@@ -31,6 +31,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { ChannelSelect } from "@/components/ui/channel-select";
 import { format } from "date-fns";
 import { da } from "date-fns/locale";
+import { JobDeliveryStatus } from "@/components/JobDeliveryStatus";
 
 export default function SchedulerSettings() {
   const {
@@ -179,9 +180,11 @@ export default function SchedulerSettings() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Clock className="h-5 w-5" />
-              Kommende Beskeder
+              Afventer og fejlede beskeder
             </CardTitle>
-            <CardDescription>Beskeder der afventer afsendelse</CardDescription>
+            <CardDescription>
+              Leveringsstatus og eventuelle fejl vises her
+            </CardDescription>
           </CardHeader>
           <CardContent>
             {upcomingMessages.length === 0 ? (
@@ -212,6 +215,7 @@ export default function SchedulerSettings() {
                         )}
                       </div>
                       <p className="line-clamp-2 text-sm">{msg.content}</p>
+                      <JobDeliveryStatus job={msg} />
                       <p className="text-xs text-muted-foreground">
                         Oprettet af {msg.created_by_name}
                       </p>
@@ -219,6 +223,7 @@ export default function SchedulerSettings() {
                     <Button
                       variant="ghost"
                       size="icon"
+                      disabled={msg.delivery_status === "processing"}
                       onClick={() => deleteMessage.mutate(msg.id)}
                     >
                       <Trash2 className="h-4 w-4 text-destructive" />

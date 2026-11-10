@@ -1,4 +1,4 @@
-import { useCallback, useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { Navigate, useNavigate, Link } from "@tanstack/react-router";
 import { useSearchParams } from "@/hooks/useSearchParams";
 import { useAuth } from "@/contexts/AuthContext";
@@ -41,6 +41,8 @@ import {
 } from "@/components/ui/alert-dialog";
 import { invokeFunction } from "@/lib/functions-client";
 import { PUBLIC_BOT_INVITE_URL } from "@/lib/product";
+import { useGuildSelectionData } from "@/hooks/useGuildSelectionData";
+import { getBotConnectionLabel } from "@/lib/bot-status";
 
 export default function GuildSelect() {
   const { user, loading: authLoading, signOut } = useAuth();
@@ -49,60 +51,32 @@ export default function GuildSelect() {
   const en = language === "en";
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const [guilds, setGuilds] = useState<Guild[]>([]);
-  const [botStatusMap, setBotStatusMap] = useState<Record<string, boolean>>({});
   const [showInactive, setShowInactive] = useState(false);
-  const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
   const [deletingGuildId, setDeletingGuildId] = useState<string | null>(null);
-  const { data: isAdmin } = useIsAdmin();
-
-  const fetchGuilds = useCallback(async () => {
-    try {
-      const fiveMinAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
-      const { data: statusData } = await supabase
-        .from("bot_status")
-        .select("guild_id, is_online, last_heartbeat");
-      const statusMap: Record<string, boolean> = {};
-      (statusData || []).forEach((s) => {
-        statusMap[s.guild_id] =
-          s.is_online && !!s.last_heartbeat && s.last_heartbeat > fiveMinAgo;
-      });
-      setBotStatusMap(statusMap);
-
-      if (isAdmin) {
-        const { data, error } = await supabase
-          .from("guilds")
-          .select("*")
-          .order("guild_name");
-        if (error) throw error;
-        setGuilds(data || []);
-      } else {
-        const { data, error } = await supabase
-          .from("user_guilds")
-          .select(`guild_id, has_admin_permission, guilds:guild_id (*)`)
-          .eq("user_id", user?.id ?? "");
-        if (error) throw error;
-        setGuilds(
-          data
-            ?.filter((ug) => ug.guilds && ug.has_admin_permission)
-            .map((ug) => ug.guilds as Guild)
-            .sort((a, b) => a.guild_name.localeCompare(b.guild_name)) || [],
-        );
-      }
-    } catch (err) {
-      console.error("Error fetching guilds:", err);
-    } finally {
-      setLoading(false);
-    }
-  }, [isAdmin, user?.id]);
+  const {
+    data: isAdmin,
+    error: roleError,
+    isFetching: roleRefreshing,
+    refetch: refetchRole,
+  } = useIsAdmin();
+  const {
+    guilds,
+    loading,
+    error,
+    statusError,
+    statusLoading,
+    refreshing,
+    hasLoadedGuilds,
+    getGuildStatus,
+    refetch: fetchGuilds,
+    removeGuild,
+  } = useGuildSelectionData(user?.id, isAdmin);
+  const listError = roleError || error;
 
   useEffect(() => {
-    if (user && isAdmin !== undefined) {
-      void fetchGuilds();
-      if (isAdmin) setShowInactive(true);
-    }
-  }, [user, isAdmin, fetchGuilds]);
+    if (isAdmin) setShowInactive(true);
+  }, [isAdmin]);
 
   useEffect(() => {
     const guildParam = searchParams.get("guild");
@@ -115,12 +89,15 @@ export default function GuildSelect() {
     }
   }, [guilds, loading, searchParams, navigate, setSelectedGuild]);
 
-  const isBotActive = (guildId: string) => !!botStatusMap[guildId];
   const filteredGuilds = showInactive
     ? guilds
-    : guilds.filter((g) => isBotActive(g.id));
-  const inactiveCount = guilds.filter((g) => !isBotActive(g.id)).length;
-  const activeCount = guilds.filter((g) => isBotActive(g.id)).length;
+    : guilds.filter((g) => getGuildStatus(g.id) !== "offline");
+  const inactiveCount = guilds.filter(
+    (g) => getGuildStatus(g.id) === "offline",
+  ).length;
+  const activeCount = guilds.filter(
+    (g) => getGuildStatus(g.id) === "online",
+  ).length;
 
   const handleDeleteGuild = async (guild: Guild) => {
     setDeletingGuildId(guild.id);
@@ -133,7 +110,7 @@ export default function GuildSelect() {
       toast.success(
         en ? `Removed ${guild.guild_name}` : `${guild.guild_name} fjernet`,
       );
-      setGuilds((prev) => prev.filter((g) => g.id !== guild.id));
+      removeGuild(guild.id);
     } catch (err) {
       console.error("Error deleting guild:", err);
       toast.error(en ? "Could not remove server" : "Kunne ikke fjerne server");
@@ -194,7 +171,7 @@ export default function GuildSelect() {
       });
       if (error) throw error;
       toast.success(en ? "Demo server created!" : "Demo server oprettet!");
-      fetchGuilds();
+      void fetchGuilds();
     } catch (err) {
       console.error("Error creating demo guild:", err);
       toast.error(
@@ -307,7 +284,7 @@ export default function GuildSelect() {
                   </Button>
                 </a>
               )}
-              {guilds.length === 0 && (
+              {hasLoadedGuilds && !listError && guilds.length === 0 && (
                 <Button
                   onClick={handleAddDemoGuild}
                   size="lg"
@@ -333,7 +310,7 @@ export default function GuildSelect() {
                 </div>
                 <div className="text-center">
                   <dd className="text-2xl font-bold text-success sm:text-3xl">
-                    {activeCount}
+                    {statusError || statusLoading ? "—" : activeCount}
                   </dd>
                   <p className="mt-1 text-xs text-muted-foreground">
                     {en ? "Bot online" : "Bot online"}
@@ -341,7 +318,7 @@ export default function GuildSelect() {
                 </div>
                 <div className="text-center">
                   <dd className="text-2xl font-bold text-muted-foreground sm:text-3xl">
-                    {inactiveCount}
+                    {statusError || statusLoading ? "—" : inactiveCount}
                   </dd>
                   <p className="mt-1 text-xs text-muted-foreground">
                     {en ? "Inactive" : "Inaktive"}
@@ -355,11 +332,52 @@ export default function GuildSelect() {
 
       {/* ======================= GUILDS ======================= */}
       <section className="mx-auto max-w-7xl px-4 pb-20 sm:px-6 lg:px-8">
-        {loading ? (
+        {(listError || statusError) && (
+          <div
+            role="alert"
+            className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-warning/40 bg-warning/10 p-4"
+          >
+            <div>
+              <p className="font-medium">
+                {roleError
+                  ? en
+                    ? "Could not verify your server access"
+                    : "Kunne ikke kontrollere din serveradgang"
+                  : error
+                    ? en
+                      ? "Could not load your servers"
+                      : "Kunne ikke hente dine servere"
+                    : en
+                      ? "Bot status is unavailable"
+                      : "Botstatus kunne ikke hentes"}
+              </p>
+              <p className="text-sm text-muted-foreground">
+                {listError && guilds.length > 0
+                  ? en
+                    ? "Showing the last successfully loaded server list."
+                    : "Viser den senest hentede serverliste."
+                  : en
+                    ? "Check the connection and try again. An unavailable status does not mean the bot is offline."
+                    : "Tjek forbindelsen og prøv igen. Manglende status betyder ikke, at botten er offline."}
+              </p>
+            </div>
+            <Button
+              variant="outline"
+              disabled={refreshing || roleRefreshing}
+              onClick={() => void (roleError ? refetchRole() : fetchGuilds())}
+            >
+              <RefreshCw
+                className={`mr-2 h-4 w-4 ${refreshing || roleRefreshing ? "animate-spin" : ""}`}
+              />
+              {en ? "Try again" : "Prøv igen"}
+            </Button>
+          </div>
+        )}
+        {loading && !roleError ? (
           <div className="flex items-center justify-center py-20">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
           </div>
-        ) : guilds.length === 0 ? (
+        ) : listError && !hasLoadedGuilds ? null : guilds.length === 0 ? (
           <Card className="mx-auto max-w-2xl border-border/50 bg-card/60 p-10 text-center backdrop-blur sm:p-14">
             <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl gradient-blurple shadow-glow">
               <Users className="h-8 w-8 text-primary-foreground" />
@@ -425,8 +443,10 @@ export default function GuildSelect() {
 
             <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {filteredGuilds.map((guild) => {
-                const active = isBotActive(guild.id);
-                const clickable = active || isAdmin;
+                const connectionState = getGuildStatus(guild.id);
+                const active = connectionState === "online";
+                const offline = connectionState === "offline";
+                const clickable = !offline || isAdmin;
                 return (
                   <li key={guild.id}>
                     <Card
@@ -439,7 +459,7 @@ export default function GuildSelect() {
                     >
                       {/* Status pill */}
                       <div className="absolute right-3 top-3 flex items-center gap-1.5">
-                        {!active && (
+                        {offline && (
                           <AlertDialog>
                             <AlertDialogTrigger asChild>
                               <Button
@@ -500,9 +520,16 @@ export default function GuildSelect() {
                           </Avatar>
                           <span
                             className={`absolute -bottom-0.5 -right-0.5 inline-block h-3.5 w-3.5 rounded-full ring-2 ring-card ${
-                              active ? "bg-success" : "bg-destructive"
+                              active
+                                ? "bg-success"
+                                : offline
+                                  ? "bg-destructive"
+                                  : "bg-warning"
                             }`}
-                            aria-label={active ? "Online" : "Offline"}
+                            aria-label={getBotConnectionLabel(
+                              connectionState,
+                              language,
+                            )}
                           />
                         </div>
 
@@ -518,13 +545,7 @@ export default function GuildSelect() {
                           <p
                             className={`mt-0.5 text-xs ${active ? "text-success" : "text-muted-foreground"}`}
                           >
-                            {active
-                              ? en
-                                ? "Bot online"
-                                : "Bot online"
-                              : en
-                                ? "Bot offline"
-                                : "Bot offline"}
+                            {getBotConnectionLabel(connectionState, language)}
                           </p>
                         </div>
 

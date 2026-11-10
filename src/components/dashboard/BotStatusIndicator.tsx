@@ -1,5 +1,7 @@
 import { useBotStatus } from "@/hooks/useBotStatus";
 import { cn } from "@/lib/utils";
+import { getBotConnectionLabel } from "@/lib/bot-status";
+import { useLanguage } from "@/contexts/LanguageContext";
 import {
   Tooltip,
   TooltipContent,
@@ -15,19 +17,29 @@ export function BotStatusIndicator({
   className,
   showLabel = false,
 }: BotStatusIndicatorProps) {
-  const { status, isOnline, loading } = useBotStatus();
+  const { status, connectionState, error, refreshing, refetch } =
+    useBotStatus();
+  const { language } = useLanguage();
 
   // Determine status: online, slow, offline
   const getStatusInfo = () => {
-    if (loading) {
+    if (connectionState === "loading") {
       return {
         color: "bg-muted-foreground",
-        label: "Checking...",
+        label: getBotConnectionLabel(connectionState, language),
         pulse: false,
       };
     }
 
-    if (!isOnline) {
+    if (connectionState === "error" || connectionState === "unknown") {
+      return {
+        color: "bg-yellow-500",
+        label: getBotConnectionLabel(connectionState, language),
+        pulse: false,
+      };
+    }
+
+    if (connectionState === "offline") {
       return {
         color: "bg-destructive",
         label: "Offline",
@@ -39,7 +51,7 @@ export function BotStatusIndicator({
     if (status?.latency_ms && status.latency_ms > 500) {
       return {
         color: "bg-yellow-500",
-        label: `Slow (${status.latency_ms}ms)`,
+        label: `${language === "da" ? "Langsom" : "Slow"} (${status.latency_ms}ms)`,
         pulse: true,
       };
     }
@@ -77,6 +89,16 @@ export function BotStatusIndicator({
             <span className="text-xs text-muted-foreground">
               {statusInfo.label}
             </span>
+          )}
+          {error && (
+            <button
+              type="button"
+              className="text-xs underline underline-offset-2 disabled:opacity-50"
+              disabled={refreshing}
+              onClick={() => void refetch()}
+            >
+              {language === "da" ? "Prøv igen" : "Try again"}
+            </button>
           )}
         </div>
       </TooltipTrigger>

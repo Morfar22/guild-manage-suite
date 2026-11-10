@@ -2,6 +2,7 @@ import { useState, useCallback } from "react";
 import { useGuild } from "@/contexts/GuildContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useBotStatus } from "@/hooks/useBotStatus";
+import { getBotConnectionLabel } from "@/lib/bot-status";
 import { useConfigurationAlerts } from "@/hooks/useConfigurationAlerts";
 import { supabase } from "@/integrations/supabase/client";
 import { COMMANDS_BY_CATEGORY } from "@/types/discord";
@@ -226,9 +227,14 @@ export default function BotTestPanel() {
   const {
     status: botStatus,
     isOnline,
+    connectionState,
+    error: botStatusError,
+    refreshing: botRefreshing,
     loading: botLoading,
     refetch: refetchBot,
   } = useBotStatus();
+  const offline = connectionState === "offline";
+  const botStatusLabel = getBotConnectionLabel(connectionState, language);
   const { alerts, isLoading: alertsLoading } = useConfigurationAlerts();
 
   const [handlers, setHandlers] = useState<HandlerCheck[]>(
@@ -792,22 +798,41 @@ export default function BotTestPanel() {
 
         {/* Health Check */}
         <TabsContent value="health" className="space-y-4">
+          {botStatusError && (
+            <div
+              role="alert"
+              className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-warning/40 bg-warning/10 p-4"
+            >
+              <span>
+                {language === "da"
+                  ? "Botstatus kunne ikke hentes. Seneste data bevares."
+                  : "Bot status could not be loaded. Keeping the last known data."}
+              </span>
+              <Button
+                variant="outline"
+                disabled={botRefreshing}
+                onClick={() => void refetchBot()}
+              >
+                {language === "da" ? "Prøv igen" : "Try again"}
+              </Button>
+            </div>
+          )}
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             <Card>
               <CardContent className="pt-6">
                 <div className="flex items-center gap-3">
                   {isOnline ? (
                     <Wifi className="h-8 w-8 text-green-500" />
-                  ) : (
+                  ) : offline ? (
                     <WifiOff className="h-8 w-8 text-destructive" />
+                  ) : (
+                    <AlertTriangle className="h-8 w-8 text-warning" />
                   )}
                   <div>
                     <p className="text-sm text-muted-foreground">
                       {t("testPanel.botStatus")}
                     </p>
-                    <p className="text-xl font-bold">
-                      {isOnline ? t("common.online") : t("common.offline")}
-                    </p>
+                    <p className="text-xl font-bold">{botStatusLabel}</p>
                   </div>
                 </div>
               </CardContent>
@@ -898,8 +923,10 @@ export default function BotTestPanel() {
                     <div className="flex items-center gap-3">
                       {isOnline ? (
                         <CheckCircle2 className="h-5 w-5 text-green-500" />
-                      ) : (
+                      ) : offline ? (
                         <XCircle className="h-5 w-5 text-destructive" />
+                      ) : (
+                        <AlertTriangle className="h-5 w-5 text-warning" />
                       )}
                       <span className="font-medium">
                         {t("testPanel.connectionStatus")}
@@ -909,10 +936,12 @@ export default function BotTestPanel() {
                       className={
                         isOnline
                           ? "bg-green-500/10 text-green-500 border-green-500/20"
-                          : "bg-destructive/10 text-destructive"
+                          : offline
+                            ? "bg-destructive/10 text-destructive"
+                            : "bg-warning/10 text-warning"
                       }
                     >
-                      {isOnline ? t("common.online") : t("common.offline")}
+                      {botStatusLabel}
                     </Badge>
                   </div>
                   <div className="flex items-center justify-between p-3 rounded-lg border border-border">

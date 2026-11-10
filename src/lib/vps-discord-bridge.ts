@@ -28,7 +28,10 @@ export async function vpsDiscordRequest(
   }
   const [resourcePath, queryString = ""] = suffix.split("?", 2);
   url.pathname =
-    url.pathname.replace(/\/$/, "") + "/v1/guilds/" + guildSnowflake + resourcePath;
+    url.pathname.replace(/\/$/, "") +
+    "/v1/guilds/" +
+    guildSnowflake +
+    resourcePath;
   url.search = queryString;
   const response = await fetch(url.toString(), {
     method,

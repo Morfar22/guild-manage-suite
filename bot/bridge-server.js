@@ -1,7 +1,9 @@
 "use strict";
 const http = require("node:http");
 const { timingSafeEqual } = require("node:crypto");
-require("dotenv").config();
+// Follow the main bot's private .env during key rotations; PM2 may retain the
+// previous process environment even when the file has been replaced.
+require("dotenv").config({ override: true });
 
 const host = process.env.GUILDOS_BRIDGE_HOST || "127.0.0.1";
 const port = Number(process.env.GUILDOS_BRIDGE_PORT || 3187);

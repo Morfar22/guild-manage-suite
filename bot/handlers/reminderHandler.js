@@ -1,19 +1,14 @@
-/**
- * Reminder Handler
- *
- * Polls the reminders table every 30 seconds and sends reminders
- * to the configured Discord channel (or DM) when remind_at has passed.
- * Supports one-time and recurring reminders (hourly, daily, weekly, monthly).
- *
- * Reminders are claimed before sending (compare-and-swap on `sent`), so
- * overlapping polls or several bot processes never send the same reminder
- * twice. Both schema generations are supported: channel_id/target_channel_id,
- * repeat_interval/(is_recurring + recurrence_interval) and sent/is_sent.
- */
-
+/** Persistent reminders: claim a lease, deliver, then acknowledge success. */
 const { EmbedBuilder } = require("discord.js");
+const {
+  claimJob,
+  listDueJobs,
+  runJob,
+  messageDeliveryOptions,
+  permanentJobError,
+  computeNextOccurrence,
+} = require("../utils/durableJobs");
 
-const POLL_INTERVAL_MS = 30_000;
 const INTERVALS = new Set(["hourly", "daily", "weekly", "monthly"]);
 const INTERVAL_LABELS = {
   hourly: "Hver time",
@@ -28,57 +23,13 @@ function resolveInterval(reminder) {
       ? reminder.repeat_interval
       : null;
   }
-  if (reminder.is_recurring && INTERVALS.has(reminder.recurrence_interval)) {
-    return reminder.recurrence_interval;
-  }
-  return null;
+  return reminder.is_recurring && INTERVALS.has(reminder.recurrence_interval)
+    ? reminder.recurrence_interval
+    : null;
 }
 
-function addInterval(date, interval) {
-  const next = new Date(date);
-  switch (interval) {
-    case "hourly":
-      next.setTime(next.getTime() + 60 * 60 * 1000);
-      break;
-    case "daily":
-      next.setDate(next.getDate() + 1);
-      break;
-    case "weekly":
-      next.setDate(next.getDate() + 7);
-      break;
-    case "monthly":
-      next.setMonth(next.getMonth() + 1);
-      break;
-    default:
-      return null;
-  }
-  return next;
-}
-
-/** Next occurrence strictly after `now`, or null for unknown intervals. */
-function computeNextOccurrence(remindAt, interval, now = new Date()) {
-  let next = addInterval(new Date(remindAt), interval);
-  if (!next || Number.isNaN(next.getTime())) return null;
-  // Skip missed occurrences (bot offline) instead of sending a burst.
-  for (let i = 0; next <= now && i < 100_000; i++) {
-    next = addInterval(next, interval);
-  }
-  return next;
-}
-
-/** Atomically mark a reminder sent. Returns true if this caller claimed it. */
-async function claimReminder(supabase, reminderId) {
-  const { data, error } = await supabase
-    .from("reminders")
-    .update({ sent: true, is_sent: true })
-    .eq("id", reminderId)
-    .or("sent.eq.false,sent.is.null")
-    .select("id");
-  if (error) {
-    console.error(`[Reminders] Claim error for ${reminderId}:`, error.message);
-    return false;
-  }
-  return Array.isArray(data) && data.length === 1;
+function claimReminder(supabase, reminderId) {
+  return claimJob(supabase, "reminders", reminderId);
 }
 
 function buildEmbed(reminder, interval) {
@@ -93,135 +44,95 @@ function buildEmbed(reminder, interval) {
   if (interval) {
     embed.addFields({
       name: "🔁 Gentages",
-      value: INTERVAL_LABELS[interval] || interval,
+      value: INTERVAL_LABELS[interval],
       inline: true,
     });
   }
   return embed;
 }
 
-async function deliverReminder(client, reminder, embed) {
-  const channelId = reminder.channel_id || reminder.target_channel_id;
-  const channel = channelId
-    ? await client.channels.fetch(channelId).catch(() => null)
-    : null;
-
+async function deliverReminder(client, reminder) {
+  const payload = {
+    embeds: [buildEmbed(reminder, resolveInterval(reminder))],
+    allowedMentions: { parse: [] },
+    ...messageDeliveryOptions("reminders", reminder.id),
+  };
   if (reminder.target_user_discord_id) {
     try {
       const user = await client.users.fetch(reminder.target_user_discord_id);
-      await user.send({ embeds: [embed] });
-      return true;
-    } catch {
-      if (channel) {
-        await channel.send({
-          content: `<@${reminder.target_user_discord_id}>`,
-          embeds: [embed],
-          allowedMentions: { users: [reminder.target_user_discord_id] },
-        });
-        return true;
-      }
-      return false;
+      return await user.send(payload);
+    } catch (error) {
+      // Only an explicit Discord refusal can fall back to the channel. A network
+      // timeout may mean the DM was delivered; retry with the same nonce instead.
+      if (![50007, 10013].includes(Number(error.code))) throw error;
+      if (!(reminder.channel_id || reminder.target_channel_id)) throw error;
     }
   }
-  if (!channel) {
-    console.warn(`[Reminders] Channel not found: ${channelId}`);
-    return false;
-  }
-  await channel.send({ embeds: [embed], allowedMentions: { parse: [] } });
-  return true;
-}
-
-async function scheduleNextReminder(supabase, reminder, interval, now) {
-  const nextDate = computeNextOccurrence(reminder.remind_at, interval, now);
-  if (!nextDate) return;
-
-  const { error } = await supabase.from("reminders").insert({
-    guild_id: reminder.guild_id,
-    channel_id: reminder.channel_id || reminder.target_channel_id || null,
-    target_channel_id:
-      reminder.target_channel_id || reminder.channel_id || null,
-    target_user_discord_id: reminder.target_user_discord_id || null,
-    message: reminder.message,
-    remind_at: nextDate.toISOString(),
-    repeat_interval: interval,
-    recurrence_interval: interval,
-    is_recurring: true,
-    created_by_id: reminder.created_by_id || null,
-    created_by_name: reminder.created_by_name || null,
-    created_by_user_id: reminder.created_by_user_id || null,
-    sent: false,
-    is_sent: false,
-  });
-
-  if (error) {
-    console.error(
-      `[Reminders] Error scheduling next occurrence:`,
-      error.message,
+  const channelId = reminder.channel_id || reminder.target_channel_id;
+  if (!channelId)
+    throw permanentJobError("Ingen kanal eller DM-modtager er valgt");
+  const channel = await client.channels.fetch(channelId);
+  if (!channel?.send)
+    throw permanentJobError(
+      "Påmindelsens kanal findes ikke eller kan ikke modtage beskeder",
     );
-  } else {
-    console.log(
-      `[Reminders] Next occurrence for ${reminder.id} scheduled at ${nextDate.toISOString()}`,
-    );
+  if (reminder.target_user_discord_id) {
+    payload.content = `<@${reminder.target_user_discord_id}>`;
+    payload.allowedMentions = {
+      users: [reminder.target_user_discord_id],
+      parse: [],
+    };
   }
+  return channel.send(payload);
 }
 
 async function processDueReminders(client, supabase, options = {}) {
   const { shouldHandleGuild, now = new Date() } = options;
-  const { data: reminders, error } = await supabase
-    .from("reminders")
-    .select("*, guilds!inner(guild_id)")
-    .or("sent.eq.false,sent.is.null")
-    .lte("remind_at", now.toISOString());
-
-  if (error) {
-    console.error("[Reminders] Query error:", error.message);
-    return { sent: 0 };
-  }
+  const reminders = await listDueJobs(supabase, "reminders", "remind_at", now);
   let sent = 0;
-  for (const reminder of reminders || []) {
+  for (const reminder of reminders) {
     const discordGuildId = reminder.guilds?.guild_id;
-    if (!discordGuildId) continue;
-    if (shouldHandleGuild && !shouldHandleGuild(discordGuildId)) continue;
-
-    // Claim first: at-most-once delivery even with overlapping polls.
-    if (!(await claimReminder(supabase, reminder.id))) continue;
-
-    const interval = resolveInterval(reminder);
+    if (
+      !discordGuildId ||
+      (shouldHandleGuild && !shouldHandleGuild(discordGuildId))
+    )
+      continue;
     try {
-      const delivered = await deliverReminder(
-        client,
+      const delivered = await runJob(
+        supabase,
+        "reminders",
         reminder,
-        buildEmbed(reminder, interval),
+        (job) => deliverReminder(client, job),
+        (job) =>
+          computeNextOccurrence(
+            job.remind_at,
+            resolveInterval(job),
+            now,
+          )?.toISOString() || null,
       );
       if (delivered) sent++;
-    } catch (err) {
-      console.error(
-        `[Reminders] Error sending reminder ${reminder.id}:`,
-        err.message,
-      );
+    } catch (error) {
+      console.error(`[Reminders] Job ${reminder.id}:`, error.message);
     }
-    // Recurring reminders continue even if this occurrence failed to deliver.
-    if (interval) await scheduleNextReminder(supabase, reminder, interval, now);
   }
   return { sent };
 }
 
 function setupReminderHandler(client, supabase, options = {}) {
-  const { shouldHandleGuild } = options;
-  console.log("[Reminders] Handler initialized");
   let running = false;
-
-  return setInterval(async () => {
-    if (running) return; // previous poll still in progress
+  const poll = async () => {
+    if (running) return;
     running = true;
     try {
-      await processDueReminders(client, supabase, { shouldHandleGuild });
-    } catch (err) {
-      console.error("[Reminders] Poll error:", err.message);
+      await processDueReminders(client, supabase, options);
+    } catch (error) {
+      console.error("[Reminders] Poll error:", error.message);
     } finally {
       running = false;
     }
-  }, POLL_INTERVAL_MS);
+  };
+  console.log("[Reminders] Handler initialized");
+  return setInterval(poll, 30_000);
 }
 
 module.exports = {
@@ -230,4 +141,5 @@ module.exports = {
   computeNextOccurrence,
   resolveInterval,
   claimReminder,
+  deliverReminder,
 };

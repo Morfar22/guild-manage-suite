@@ -43,6 +43,7 @@ import {
 import { toast } from "sonner";
 import { formatDistanceToNow, format } from "date-fns";
 import { da } from "date-fns/locale";
+import { JobDeliveryStatus } from "@/components/JobDeliveryStatus";
 
 export default function Reminders() {
   const { selectedGuild } = useGuild();
@@ -67,6 +68,7 @@ export default function Reminders() {
       return data as Untyped[];
     },
     enabled: !!selectedGuild?.id,
+    refetchInterval: 15_000,
   });
 
   const createReminder = useMutation({
@@ -196,7 +198,7 @@ export default function Reminders() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Clock className="h-5 w-5 text-primary" /> Ventende (
+            <Clock className="h-5 w-5 text-primary" /> Ventende og fejlede (
             {pending.length})
           </CardTitle>
         </CardHeader>
@@ -211,6 +213,7 @@ export default function Reminders() {
                   <Calendar className="h-4 w-4 mt-1 text-primary shrink-0" />
                   <div className="flex-1 min-w-0">
                     <p className="text-sm">{r.message}</p>
+                    <JobDeliveryStatus job={r} />
                     <div className="flex items-center gap-2 mt-1">
                       <p className="text-xs text-muted-foreground">
                         {format(new Date(r.remind_at), "PPp", { locale: da })}
@@ -225,6 +228,7 @@ export default function Reminders() {
                   <Button
                     variant="ghost"
                     size="icon"
+                    disabled={r.delivery_status === "processing"}
                     onClick={() => deleteReminder.mutate(r.id)}
                   >
                     <Trash2 className="h-4 w-4 text-destructive" />

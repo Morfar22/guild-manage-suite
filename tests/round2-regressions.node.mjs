@@ -195,20 +195,16 @@ test("bot handlers use the shared permission helper", () => {
 // ---------------------------------------------------------------- economy
 const {
   adjustBalance,
-  transferWallet,
+  economyOperation,
 } = require("../bot/utils/economyAtomic.js");
 
-test("economy: concurrent transfers cannot double-spend", async () => {
+test("economy: concurrent single-account adjustments cannot double-spend", async () => {
   const fake = createFakeDb({
-    economy_accounts: [
-      { id: "a", wallet: 100, bank: 0 },
-      { id: "b", wallet: 0, bank: 0 },
-      { id: "c", wallet: 0, bank: 0 },
-    ],
+    economy_accounts: [{ id: "a", wallet: 100, bank: 0 }],
   });
   const results = await Promise.all([
-    transferWallet(fake, "a", "b", 100),
-    transferWallet(fake, "a", "c", 100),
+    adjustBalance(fake, "a", { wallet: -100 }),
+    adjustBalance(fake, "a", { wallet: -100 }),
   ]);
   const okCount = results.filter((r) => r.ok).length;
   assert.equal(okCount, 1, JSON.stringify(results));
@@ -216,7 +212,6 @@ test("economy: concurrent transfers cannot double-spend", async () => {
     fake.db.economy_accounts.map((r) => [r.id, r.wallet]),
   );
   assert.equal(byId.a, 0);
-  assert.equal(byId.b + byId.c, 100);
 });
 
 test("economy: insufficient funds and invalid amounts are rejected", async () => {
@@ -228,11 +223,12 @@ test("economy: insufficient funds and invalid amounts are rejected", async () =>
     "insufficient",
   );
   assert.equal(
-    (await transferWallet(fake, "a", "a", 1)).reason,
-    "same_account",
+    (await adjustBalance(fake, "a", { wallet: Number.MAX_SAFE_INTEGER + 1 }))
+      .reason,
+    "invalid_amount",
   );
   assert.equal(
-    (await transferWallet(fake, "a", "b", -1)).reason,
+    (await adjustBalance(fake, "a", { wallet: 0.5 })).reason,
     "invalid_amount",
   );
   const dep = await adjustBalance(fake, "a", { wallet: -5, bank: 5 });
@@ -240,17 +236,65 @@ test("economy: insufficient funds and invalid amounts are rejected", async () =>
   assert.deepEqual([dep.account.wallet, dep.account.bank], [0, 5]);
 });
 
-test("economy: failed credit refunds the debit", async () => {
-  const fake = createFakeDb({
-    economy_accounts: [{ id: "a", wallet: 50, bank: 0 }],
-  });
-  const r = await transferWallet(fake, "a", "missing", 20);
-  assert.equal(r.ok, false);
-  assert.equal(fake.db.economy_accounts[0].wallet, 50);
+test("economy: commands use the interaction receipt and propagate RPC failure", async () => {
+  const interaction = { id: "123", user: { id: "456", tag: "sender" } };
+  const calls = [];
+  const fake = {
+    rpc: async (...args) => {
+      calls.push(args);
+      return { data: { ok: true, amount: 20, replayed: true }, error: null };
+    },
+  };
+  const result = await economyOperation(
+    fake,
+    interaction,
+    "guild",
+    "transfer",
+    {
+      amount: 20,
+      target: { id: "789", tag: "receiver" },
+    },
+  );
+  assert.equal(result.replayed, true);
+  assert.deepEqual(calls, [
+    [
+      "bot_economy_operation",
+      {
+        p_operation: "transfer",
+        p_interaction_id: "123",
+        p_guild_id: "guild",
+        p_user_id: "456",
+        p_amount: 20,
+        p_target_user_id: "789",
+        p_username: "sender",
+        p_target_username: "receiver",
+        p_description: null,
+      },
+    ],
+  ]);
+  await assert.rejects(
+    economyOperation(
+      { rpc: async () => ({ error: new Error("ledger failed") }) },
+      interaction,
+      "guild",
+      "transfer",
+    ),
+    /ledger failed/,
+  );
+  await assert.rejects(
+    economyOperation(
+      { rpc: async () => ({ data: null, error: null }) },
+      interaction,
+      "guild",
+      "transfer",
+    ),
+    /Invalid economy/,
+  );
 });
 
 // ---------------------------------------------------------------- reminders
 const reminders = require("../bot/handlers/reminderHandler.js");
+const { createJobDb } = require("../tests/helpers/job-db.cjs");
 
 function fakeClient() {
   const sent = [];
@@ -264,7 +308,8 @@ function fakeClient() {
     },
     users: {
       fetch: async (id) => {
-        if (id === "nodm") throw new Error("DMs closed");
+        if (id === "nodm")
+          throw Object.assign(new Error("DMs closed"), { code: 50007 });
         return { send: async (p) => sent.push(["dm", id, p]) };
       },
     },
@@ -304,7 +349,7 @@ test("reminders: next occurrence skips missed slots and stays in the future", ()
 
 test("reminders: due reminder is claimed once, sent, and recurring is rescheduled", async () => {
   const now = new Date("2026-10-19T12:00:00Z");
-  const fake = createFakeDb({
+  const fake = createJobDb({
     reminders: [
       {
         id: "r1",
@@ -336,13 +381,13 @@ test("reminders: due reminder is claimed once, sent, and recurring is reschedule
   const next = rows.filter((r) => r.id !== "r1");
   assert.equal(next.length, 1);
   assert.equal(next[0].sent, false);
-  assert.equal(next[0].repeat_interval, "daily");
+  assert.equal(reminders.resolveInterval(next[0]), "daily");
   assert.ok(new Date(next[0].remind_at) > now);
 });
 
 test("reminders: DM targets work without a channel; failed DM falls back to channel", async () => {
   const now = new Date("2026-10-19T12:00:00Z");
-  const fake = createFakeDb({
+  const fake = createJobDb({
     reminders: [
       {
         id: "dm",

@@ -29,13 +29,19 @@ afterEach(() => {
 });
 
 test("members pagination stays in search while preserving the bridge base path", async () => {
-  assert.deepEqual(await vpsDiscordRequest(guild, "/members?limit=1000&after=0"), []);
+  assert.deepEqual(
+    await vpsDiscordRequest(guild, "/members?limit=1000&after=0"),
+    [],
+  );
   assert.equal(calls.length, 1);
   assert.equal(calls[0].url.origin, "https://bridge.fixture.invalid");
   assert.equal(calls[0].url.pathname, `/proxy/v1/guilds/${guild}/members`);
   assert.equal(calls[0].url.search, "?limit=1000&after=0");
   assert.equal(calls[0].options.method, "GET");
-  assert.equal(calls[0].options.headers.Authorization, "Bearer fixture-only-bridge-secret");
+  assert.equal(
+    calls[0].options.headers.Authorization,
+    "Bearer fixture-only-bridge-secret",
+  );
 });
 
 test("subsequent members page keeps the exact cursor", async () => {
@@ -75,18 +81,27 @@ test("suffix cannot override host or add unapproved query fields", async () => {
     "/members?limit=1&after=0&url=https://attacker.fixture.invalid",
     "/members?limit=1&after=0#fragment",
   ]) {
-    await assert.rejects(vpsDiscordRequest(guild, suffix), /Bridge path not allowed/);
+    await assert.rejects(
+      vpsDiscordRequest(guild, suffix),
+      /Bridge path not allowed/,
+    );
   }
   assert.equal(calls.length, 0);
 });
 
 test("channel access stays outside this helper's existing allowlist", async () => {
-  await assert.rejects(vpsDiscordRequest(guild, "/channels"), /Bridge path not allowed/);
+  await assert.rejects(
+    vpsDiscordRequest(guild, "/channels"),
+    /Bridge path not allowed/,
+  );
   assert.equal(calls.length, 0);
 });
 
 test("invalid guild and credential-bearing base URLs fail before any request", async () => {
-  await assert.rejects(vpsDiscordRequest("invalid-guild", "/members"), /Invalid Discord guild ID/);
+  await assert.rejects(
+    vpsDiscordRequest("invalid-guild", "/members"),
+    /Invalid Discord guild ID/,
+  );
   for (const base of [
     "http://bridge.fixture.invalid",
     "https://user:password@bridge.fixture.invalid",
@@ -94,7 +109,10 @@ test("invalid guild and credential-bearing base URLs fail before any request", a
     "https://bridge.fixture.invalid#fragment",
   ]) {
     process.env.GUILDOS_BRIDGE_URL = base;
-    await assert.rejects(vpsDiscordRequest(guild, "/roles"), /Invalid VPS bridge base URL/);
+    await assert.rejects(
+      vpsDiscordRequest(guild, "/roles"),
+      /Invalid VPS bridge base URL/,
+    );
   }
   assert.equal(calls.length, 0);
 });

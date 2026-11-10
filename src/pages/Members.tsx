@@ -247,7 +247,8 @@ function BulkRoleDialog({
 }
 
 export default function Members() {
-  const { members, roles, loading, error, toggleRole, refetch } = useDiscordMembers();
+  const { members, roles, loading, error, toggleRole, refetch } =
+    useDiscordMembers();
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState<string>("all");
   const [selectedMember, setSelectedMember] = useState<DiscordMember | null>(
@@ -308,7 +309,9 @@ export default function Members() {
           <CardHeader>
             <CardTitle>Kunne ikke hente medlemmer</CardTitle>
             <CardDescription>
-              {error instanceof Error ? error.message : "Prøv igen om et øjeblik."}
+              {error instanceof Error
+                ? error.message
+                : "Prøv igen om et øjeblik."}
             </CardDescription>
           </CardHeader>
           <CardContent>

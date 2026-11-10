@@ -2,8 +2,9 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useGuild } from "@/contexts/GuildContext";
 import { useToast } from "@/hooks/use-toast";
+import type { JobDeliveryFields } from "@/components/JobDeliveryStatus";
 
-export interface ScheduledAction {
+export interface ScheduledAction extends JobDeliveryFields {
   id: string;
   guild_id: string;
   action_type: string;
@@ -68,6 +69,7 @@ export function useScheduledActions() {
       return data as ScheduledAction[];
     },
     enabled: !!selectedGuild?.id,
+    refetchInterval: 15_000,
   });
 
   const moderationQuery = useQuery({

@@ -27,6 +27,7 @@ const {
 } = require("discord.js");
 
 const { requirePermission } = require("../utils/permissions");
+const { adjustBalance } = require("../utils/economyAtomic");
 
 const BRAND = "#6366F1";
 
@@ -1628,11 +1629,21 @@ function createAdminHandlers(client, { supabase, handlers, getKazagumo } = {}) {
         );
       }
 
-      const newWallet = (account.wallet || 0) + refund;
-      await supabase
-        .from("economy_accounts")
-        .update({ wallet: newWallet })
-        .eq("id", account.id);
+      let adjustment;
+      try {
+        adjustment = await adjustBalance(supabase, account.id, {
+          wallet: refund,
+        });
+        if (!adjustment.ok) throw new Error("Refund balance update failed");
+      } catch (error) {
+        // The Discord role was already removed. Restore it when the balance
+        // could not be changed, rather than silently losing the sold item.
+        await member.roles
+          .add(item.role_id, "Salg kunne ikke gennemføres")
+          .catch(() => {});
+        throw error;
+      }
+      const newWallet = adjustment.account.wallet;
       await supabase.from("economy_transactions").insert({
         guild_id: guildUuid,
         to_user_id: interaction.user.id,

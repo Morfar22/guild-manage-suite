@@ -1,169 +1,100 @@
-// Scheduler Handler - Sends scheduled messages
+// Scheduled messages use the same durable lease/retry protocol as reminders.
 const { EmbedBuilder } = require("discord.js");
+const {
+  listDueJobs,
+  runJob,
+  messageDeliveryOptions,
+  permanentJobError,
+  computeNextOccurrence,
+} = require("./utils/durableJobs");
 
 class SchedulerHandler {
   constructor(client, supabase, config = {}) {
     this.client = client;
     this.supabase = supabase;
     this.checkInterval = null;
+    this.initialCheck = null;
+    this.running = false;
     this.shouldHandleGuild = config.shouldHandleGuild || (() => true);
   }
 
   async init() {
-    // Check for pending messages every minute
     this.checkInterval = setInterval(
       () => this.checkScheduledMessages(),
-      60000,
+      60_000,
     );
-
-    // Initial check
-    setTimeout(() => this.checkScheduledMessages(), 5000);
-
+    this.initialCheck = setTimeout(() => this.checkScheduledMessages(), 5000);
     console.log("[Scheduler] Handler initialized");
   }
 
-  async checkScheduledMessages() {
+  async checkScheduledMessages(now = new Date()) {
+    if (this.running) return;
+    this.running = true;
     try {
-      const now = new Date().toISOString();
-
-      // Get all pending messages that should be sent
-      const { data: messages, error } = await this.supabase
-        .from("scheduled_messages")
-        .select("*, guilds!inner(guild_id)")
-        .eq("sent", false)
-        .lte("scheduled_at", now);
-
-      if (error) {
-        console.error("[Scheduler] Error fetching messages:", error);
-        return;
-      }
-
-      if (!messages || messages.length === 0) return;
-
+      const messages = await listDueJobs(
+        this.supabase,
+        "scheduled_messages",
+        "scheduled_at",
+        now,
+      );
       for (const message of messages) {
-        // Check if this bot instance should handle this guild
         if (!this.shouldHandleGuild(message.guilds?.guild_id)) continue;
-        await this.sendScheduledMessage(message);
+        try {
+          await this.sendScheduledMessage(message, now);
+        } catch (error) {
+          console.error(`[Scheduler] Job ${message.id}:`, error.message);
+        }
       }
     } catch (error) {
-      console.error("[Scheduler] Check error:", error);
+      console.error("[Scheduler] Check error:", error.message);
+    } finally {
+      this.running = false;
     }
   }
 
-  async sendScheduledMessage(scheduledMessage) {
-    try {
-      const channel = await this.client.channels.fetch(
-        scheduledMessage.channel_id,
-      );
-
-      if (!channel) {
-        console.error(
-          `[Scheduler] Channel not found: ${scheduledMessage.channel_id}`,
-        );
-        await this.markAsSent(scheduledMessage.id, false);
-        return;
-      }
-
-      // Build message content
-      const messageOptions = {};
-
-      if (scheduledMessage.content) {
-        messageOptions.content = scheduledMessage.content;
-      }
-
-      if (scheduledMessage.embed) {
-        const embedData = scheduledMessage.embed;
-        const embed = new EmbedBuilder();
-
-        if (embedData.title) embed.setTitle(embedData.title);
-        if (embedData.description) embed.setDescription(embedData.description);
-        if (embedData.color) embed.setColor(embedData.color);
-        if (embedData.thumbnail) embed.setThumbnail(embedData.thumbnail);
-        if (embedData.image) embed.setImage(embedData.image);
-        if (embedData.footer) embed.setFooter({ text: embedData.footer });
-        if (embedData.author) {
-          embed.setAuthor({
-            name: embedData.author.name,
-            iconURL: embedData.author.icon_url,
-          });
+  async sendScheduledMessage(candidate, now = new Date()) {
+    return runJob(
+      this.supabase,
+      "scheduled_messages",
+      candidate,
+      async (message) => {
+        const channel = await this.client.channels.fetch(message.channel_id);
+        if (!channel?.send)
+          throw permanentJobError(
+            "Beskedens kanal findes ikke eller kan ikke modtage beskeder",
+          );
+        const payload = {
+          ...messageDeliveryOptions("scheduled_messages", message.id),
+        };
+        if (message.content) payload.content = message.content;
+        if (message.embed) {
+          const data = message.embed;
+          const embed = new EmbedBuilder();
+          if (data.title) embed.setTitle(data.title);
+          if (data.description) embed.setDescription(data.description);
+          if (data.color) embed.setColor(data.color);
+          if (data.thumbnail) embed.setThumbnail(data.thumbnail);
+          if (data.image) embed.setImage(data.image);
+          if (data.footer) embed.setFooter({ text: data.footer });
+          if (data.author)
+            embed.setAuthor({
+              name: data.author.name,
+              iconURL: data.author.icon_url,
+            });
+          if (Array.isArray(data.fields)) embed.addFields(data.fields);
+          if (data.timestamp) embed.setTimestamp();
+          payload.embeds = [embed];
         }
-        if (embedData.fields && Array.isArray(embedData.fields)) {
-          embed.addFields(embedData.fields);
-        }
-        if (embedData.timestamp) embed.setTimestamp();
-
-        messageOptions.embeds = [embed];
-      }
-
-      // Send the message
-      await channel.send(messageOptions);
-      console.log(
-        `[Scheduler] Sent message ${scheduledMessage.id} to channel ${scheduledMessage.channel_id}`,
-      );
-
-      // Handle repeat interval
-      if (scheduledMessage.repeat_interval) {
-        await this.scheduleNextOccurrence(scheduledMessage);
-      }
-
-      // Mark as sent
-      await this.markAsSent(scheduledMessage.id, true);
-    } catch (error) {
-      console.error(
-        `[Scheduler] Error sending message ${scheduledMessage.id}:`,
-        error,
-      );
-      // Mark as sent to prevent infinite retry loop
-      await this.markAsSent(scheduledMessage.id, false);
-    }
-  }
-
-  async markAsSent(messageId, success) {
-    await this.supabase
-      .from("scheduled_messages")
-      .update({
-        sent: true,
-        sent_at: new Date().toISOString(),
-      })
-      .eq("id", messageId);
-  }
-
-  async scheduleNextOccurrence(message) {
-    const scheduledAt = new Date(message.scheduled_at);
-    let nextDate;
-
-    switch (message.repeat_interval) {
-      case "daily":
-        nextDate = new Date(scheduledAt);
-        nextDate.setDate(nextDate.getDate() + 1);
-        break;
-      case "weekly":
-        nextDate = new Date(scheduledAt);
-        nextDate.setDate(nextDate.getDate() + 7);
-        break;
-      case "monthly":
-        nextDate = new Date(scheduledAt);
-        nextDate.setMonth(nextDate.getMonth() + 1);
-        break;
-      default:
-        return; // No repeat
-    }
-
-    // Create new scheduled message
-    await this.supabase.from("scheduled_messages").insert({
-      guild_id: message.guild_id,
-      channel_id: message.channel_id,
-      content: message.content,
-      embed: message.embed,
-      scheduled_at: nextDate.toISOString(),
-      repeat_interval: message.repeat_interval,
-      created_by_id: message.created_by_id,
-      created_by_name: message.created_by_name,
-      sent: false,
-    });
-
-    console.log(
-      `[Scheduler] Scheduled next occurrence for ${message.id} at ${nextDate.toISOString()}`,
+        if (!payload.content && !payload.embeds?.length)
+          throw permanentJobError("Beskeden har intet indhold");
+        return channel.send(payload);
+      },
+      (message) =>
+        computeNextOccurrence(
+          message.scheduled_at,
+          message.repeat_interval,
+          now,
+        )?.toISOString() || null,
     );
   }
 
@@ -228,6 +159,7 @@ class SchedulerHandler {
   }
 
   destroy() {
+    clearTimeout(this.initialCheck);
     if (this.checkInterval) {
       clearInterval(this.checkInterval);
     }

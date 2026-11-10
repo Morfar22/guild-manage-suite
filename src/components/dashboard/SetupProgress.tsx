@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { useGuild } from "@/contexts/GuildContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useBotStatus } from "@/hooks/useBotStatus";
+import { getBotConnectionLabel } from "@/lib/bot-status";
 import { useWelcomeSettings } from "@/hooks/useWelcomeSettings";
 import { useLogSettings } from "@/hooks/useLogSettings";
 import { useTicketCategories } from "@/hooks/useTickets";
@@ -21,7 +22,12 @@ import { cn } from "@/lib/utils";
 export function SetupProgress() {
   const { selectedGuild } = useGuild();
   const { language } = useLanguage();
-  const { isOnline, loading: botLoading } = useBotStatus();
+  const {
+    isOnline,
+    connectionState,
+    loading: botLoading,
+    error: botError,
+  } = useBotStatus();
   const welcome = useWelcomeSettings();
   const logs = useLogSettings();
   const tickets = useTicketCategories();
@@ -31,10 +37,27 @@ export function SetupProgress() {
     {
       id: "bot",
       icon: Bot,
-      title: da ? "Bot forbundet" : "Bot connected",
-      description: da
-        ? "GuildOS svarer på heartbeat fra serveren."
-        : "GuildOS is reporting a current heartbeat.",
+      title:
+        botLoading || botError || connectionState === "unknown"
+          ? getBotConnectionLabel(connectionState, language)
+          : da
+            ? "Bot forbundet"
+            : "Bot connected",
+      description: botError
+        ? da
+          ? "Forbindelsen til statusdata fejlede. Tjek Bot Health og prøv igen."
+          : "The status request failed. Check Bot Health and try again."
+        : connectionState === "unknown" || botLoading
+          ? da
+            ? "Afventer et bekræftet heartbeat fra botten."
+            : "Waiting for a confirmed heartbeat from the bot."
+          : connectionState === "offline"
+            ? da
+              ? "Botten er offline, eller dens heartbeat er for gammelt."
+              : "The bot is offline or its heartbeat has expired."
+            : da
+              ? "GuildOS svarer på heartbeat fra serveren."
+              : "GuildOS is reporting a current heartbeat.",
       complete: isOnline,
       loading: botLoading,
       to: "/dashboard/bot-health",

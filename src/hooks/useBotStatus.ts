@@ -1,6 +1,11 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useGuild } from "@/contexts/GuildContext";
+import {
+  BOT_STATUS_POLL_INTERVAL_MS,
+  getHeartbeatState,
+  type BotConnectionState,
+} from "@/lib/bot-status";
 
 interface BotStatus {
   id: string;
@@ -12,61 +17,88 @@ interface BotStatus {
   message_count_today: number | null;
 }
 
-const POLL_INTERVAL = 30000; // 30 seconds
-
 export function useBotStatus() {
   const { selectedGuild } = useGuild();
+  const guildId = selectedGuild?.id;
   const [status, setStatus] = useState<BotStatus | null>(null);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [now, setNow] = useState(Date.now);
+  const requestId = useRef(0);
+  const invalidateRequest = useCallback(() => {
+    requestId.current++;
+  }, []);
 
   const fetchStatus = useCallback(async () => {
-    if (!selectedGuild) return;
-
-    const { data, error: fetchError } = await supabase
-      .from("bot_status")
-      .select("*")
-      .eq("guild_id", selectedGuild.id)
-      .maybeSingle();
-
-    if (fetchError) {
-      console.error("Error fetching bot status:", fetchError);
-      setError(fetchError.message);
-    } else {
+    if (!guildId) return;
+    const currentRequest = ++requestId.current;
+    setRefreshing(true);
+    try {
+      const { data, error: fetchError } = await supabase
+        .from("bot_status")
+        .select("*")
+        .eq("guild_id", guildId)
+        .maybeSingle();
+      if (fetchError) throw fetchError;
+      if (currentRequest !== requestId.current) return;
+      setNow(Date.now());
       setStatus(data);
       setError(null);
+    } catch (fetchError) {
+      if (currentRequest !== requestId.current) return;
+      console.error("Error fetching bot status:", fetchError);
+      setError(
+        fetchError instanceof Error ? fetchError.message : "Status unavailable",
+      );
+    } finally {
+      if (currentRequest === requestId.current) {
+        setLoading(false);
+        setRefreshing(false);
+      }
     }
-    setLoading(false);
-  }, [selectedGuild]);
+  }, [guildId]);
 
   useEffect(() => {
-    if (!selectedGuild) {
-      setStatus(null);
+    let active = true;
+    setStatus(null);
+    setError(null);
+    if (!guildId) {
       setLoading(false);
+      setRefreshing(false);
       return;
     }
 
     // Initial fetch
     setLoading(true);
-    fetchStatus();
+    void fetchStatus();
 
     // Set up polling interval as backup
-    const pollInterval = setInterval(fetchStatus, POLL_INTERVAL);
+    const pollInterval = setInterval(() => {
+      setNow(Date.now());
+      void fetchStatus();
+    }, BOT_STATUS_POLL_INTERVAL_MS);
 
     // Supabase reuses channels with the same topic. Each effect needs its own
     // channel so concurrent consumers and remounts cannot reuse a subscribed one.
     const channel = supabase
-      .channel(`bot_status_${selectedGuild.id}_${crypto.randomUUID()}`)
+      .channel(`bot_status_${guildId}_${crypto.randomUUID()}`)
       .on(
         "postgres_changes",
         {
           event: "*",
           schema: "public",
           table: "bot_status",
-          filter: `guild_id=eq.${selectedGuild.id}`,
+          filter: `guild_id=eq.${guildId}`,
         },
         (payload) => {
-          console.log("Bot status update:", payload);
+          if (!active) return;
+          // A newer realtime event supersedes an in-flight snapshot request.
+          invalidateRequest();
+          setError(null);
+          setLoading(false);
+          setRefreshing(false);
+          setNow(Date.now());
           if (payload.eventType === "DELETE") {
             setStatus(null);
           } else {
@@ -77,21 +109,26 @@ export function useBotStatus() {
       .subscribe();
 
     return () => {
+      active = false;
+      invalidateRequest();
       clearInterval(pollInterval);
-      supabase.removeChannel(channel);
+      void supabase.removeChannel(channel);
     };
-  }, [selectedGuild, fetchStatus]);
+  }, [guildId, fetchStatus, invalidateRequest]);
 
-  // Check if bot is considered online (heartbeat within last 2 minutes)
-  const isOnline =
-    status?.is_online && status?.last_heartbeat
-      ? new Date(status.last_heartbeat).getTime() > Date.now() - 120000
-      : false;
+  const connectionState: BotConnectionState = loading
+    ? "loading"
+    : error
+      ? "error"
+      : getHeartbeatState(status, now);
+  const isOnline = connectionState === "online";
 
   return {
     status,
     isOnline,
+    connectionState,
     loading,
+    refreshing,
     error,
     refetch: fetchStatus,
   };

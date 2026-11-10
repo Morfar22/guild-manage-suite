@@ -3,8 +3,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { useGuild } from "@/contexts/GuildContext";
 import { useToast } from "@/hooks/use-toast";
 import type { Untyped } from "@/types/untyped";
+import type { JobDeliveryFields } from "@/components/JobDeliveryStatus";
 
-export interface ScheduledMessage {
+export interface ScheduledMessage extends JobDeliveryFields {
   id: string;
   guild_id: string;
   channel_id: string;
@@ -50,6 +51,7 @@ export function useScheduledMessages() {
       return data as ScheduledMessage[];
     },
     enabled: !!selectedGuild?.id,
+    refetchInterval: 15_000,
   });
 
   const upcomingMessages = messagesQuery.data?.filter((m) => !m.sent) ?? [];
@@ -85,7 +87,20 @@ export function useScheduledMessages() {
     mutationFn: async ({
       id,
       ...updates
-    }: Partial<ScheduledMessage> & { id: string }) => {
+    }: Partial<
+      Pick<
+        ScheduledMessage,
+        | "channel_id"
+        | "content"
+        | "embed"
+        | "scheduled_at"
+        | "repeat_interval"
+        | "created_by_id"
+        | "created_by_name"
+      >
+    > & {
+      id: string;
+    }) => {
       const { error } = await supabase
         .from("scheduled_messages")
         .update(updates)

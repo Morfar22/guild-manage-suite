@@ -3,6 +3,8 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useGuild } from "@/contexts/GuildContext";
 import { useBotStatus } from "@/hooks/useBotStatus";
+import { getBotConnectionLabel } from "@/lib/bot-status";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -67,7 +69,15 @@ const levelColor: Record<string, string> = {
 
 export default function BotHealth() {
   const { selectedGuild } = useGuild();
-  const { status, isOnline } = useBotStatus();
+  const {
+    status,
+    isOnline,
+    connectionState,
+    error: statusError,
+    refreshing,
+    refetch,
+  } = useBotStatus();
+  const offline = connectionState === "offline";
   const [logFilter, setLogFilter] = useState<string>("all");
 
   // Fetch console logs
@@ -145,24 +155,41 @@ export default function BotHealth() {
         </p>
       </div>
 
+      {statusError && (
+        <div
+          role="alert"
+          className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-warning/40 bg-warning/10 p-4"
+        >
+          <span>Botstatus kunne ikke hentes. Seneste data bevares.</span>
+          <Button
+            variant="outline"
+            disabled={refreshing}
+            onClick={() => void refetch()}
+          >
+            Prøv igen
+          </Button>
+        </div>
+      )}
       {/* Status Cards */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
               <div
-                className={`p-2 rounded-lg ${isOnline ? "bg-emerald-500/10" : "bg-destructive/10"}`}
+                className={`p-2 rounded-lg ${isOnline ? "bg-emerald-500/10" : offline ? "bg-destructive/10" : "bg-warning/10"}`}
               >
                 {isOnline ? (
                   <Wifi className="h-5 w-5 text-emerald-500" />
-                ) : (
+                ) : offline ? (
                   <WifiOff className="h-5 w-5 text-destructive" />
+                ) : (
+                  <AlertCircle className="h-5 w-5 text-warning" />
                 )}
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Status</p>
                 <p className="text-2xl font-bold">
-                  {isOnline ? "Online" : "Offline"}
+                  {getBotConnectionLabel(connectionState, "da")}
                 </p>
                 <p className="text-xs text-muted-foreground">
                   Heartbeat: {lastHeartbeat}

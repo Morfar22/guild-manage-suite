@@ -40,6 +40,7 @@ import { useScheduledActions } from "@/hooks/useScheduledActions";
 import { useAuth } from "@/contexts/AuthContext";
 import { format } from "date-fns";
 import { da } from "date-fns/locale";
+import { JobDeliveryStatus } from "@/components/JobDeliveryStatus";
 
 const ACTION_LABELS: Record<string, string> = {
   mute: "Mute",
@@ -364,7 +365,9 @@ export default function ScheduledActions() {
               <Clock className="h-5 w-5" />
               Afventende ({pendingActions.length})
             </CardTitle>
-            <CardDescription>Handlinger der afventer udførelse</CardDescription>
+            <CardDescription>
+              Ventende og fejlede handlinger med leveringsstatus
+            </CardDescription>
           </CardHeader>
           <CardContent>
             {pendingActions.length === 0 ? (
@@ -398,6 +401,7 @@ export default function ScheduledActions() {
                       <p className="text-sm font-medium">
                         {action.target_name ?? action.target_discord_id}
                       </p>
+                      <JobDeliveryStatus job={action} />
                       {action.reason && (
                         <p className="text-xs text-muted-foreground line-clamp-2">
                           {action.reason}
@@ -407,6 +411,7 @@ export default function ScheduledActions() {
                     <Button
                       variant="ghost"
                       size="icon"
+                      disabled={action.delivery_status === "processing"}
                       onClick={() => deleteAction.mutate(action.id)}
                     >
                       <Trash2 className="h-4 w-4 text-destructive" />

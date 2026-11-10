@@ -1,13 +1,12 @@
 "use strict";
 
 /**
- * Race-safe wallet/bank updates for economy_accounts.
+ * Wallet/bank operations for economy_accounts.
  *
- * Supabase JS has no transactions, and the previous read-modify-write code let
- * concurrent /pay, /rob, /deposit or /withdraw calls double-spend. Every update
- * here is a compare-and-swap: it only applies when wallet and bank still hold
- * the values we read, and retries with fresh values otherwise. Balances never
- * go below zero.
+ * Single-account adjustments used by games/shop remain compare-and-swap.
+ * Commands that move money or issue rewards use a PostgreSQL transaction so
+ * balances, cooldowns, the ledger and the Discord interaction receipt commit
+ * together. Never emulate a transfer with a debit followed by a refund.
  */
 
 const DEFAULT_RETRIES = 5;
@@ -24,6 +23,9 @@ async function adjustBalance(
   { wallet = 0, bank = 0 },
   { retries = DEFAULT_RETRIES } = {},
 ) {
+  if (!Number.isSafeInteger(wallet) || !Number.isSafeInteger(bank)) {
+    return { ok: false, reason: "invalid_amount" };
+  }
   for (let attempt = 0; attempt < retries; attempt++) {
     const { data: current, error: readError } = await supabase
       .from("economy_accounts")
@@ -35,6 +37,9 @@ async function adjustBalance(
 
     const nextWallet = (current.wallet || 0) + wallet;
     const nextBank = (current.bank || 0) + bank;
+    if (!Number.isSafeInteger(nextWallet) || !Number.isSafeInteger(nextBank)) {
+      return { ok: false, reason: "balance_limit" };
+    }
     if (nextWallet < 0 || nextBank < 0) {
       return { ok: false, reason: "insufficient", account: current };
     }
@@ -56,33 +61,29 @@ async function adjustBalance(
   return { ok: false, reason: "conflict" };
 }
 
-/**
- * Move `amount` from one account's wallet to another's. The debit happens
- * first; if the credit fails the debit is refunded.
- */
-async function transferWallet(supabase, fromAccountId, toAccountId, amount) {
-  if (!Number.isInteger(amount) || amount <= 0) {
-    return { ok: false, reason: "invalid_amount" };
-  }
-  if (fromAccountId === toAccountId)
-    return { ok: false, reason: "same_account" };
-
-  const debit = await adjustBalance(supabase, fromAccountId, {
-    wallet: -amount,
+async function economyOperation(
+  supabase,
+  interaction,
+  guildId,
+  operation,
+  options = {},
+) {
+  const { data, error } = await supabase.rpc("bot_economy_operation", {
+    p_operation: operation,
+    p_interaction_id: interaction.id,
+    p_guild_id: guildId,
+    p_user_id: interaction.user.id,
+    p_amount: options.amount ?? null,
+    p_target_user_id: options.target?.id ?? null,
+    p_username: interaction.user.tag,
+    p_target_username: options.target?.tag ?? null,
+    p_description: options.description ?? null,
   });
-  if (!debit.ok) return debit;
-
-  let credit;
-  try {
-    credit = await adjustBalance(supabase, toAccountId, { wallet: amount });
-  } catch (error) {
-    credit = { ok: false, reason: "error", error };
+  if (error) throw error;
+  if (!data || typeof data.ok !== "boolean") {
+    throw new Error("Invalid economy operation response");
   }
-  if (!credit.ok) {
-    await adjustBalance(supabase, fromAccountId, { wallet: amount });
-    return { ok: false, reason: credit.reason || "credit_failed" };
-  }
-  return { ok: true, from: debit.account, to: credit.account };
+  return data;
 }
 
-module.exports = { adjustBalance, transferWallet };
+module.exports = { adjustBalance, economyOperation };

@@ -20,7 +20,7 @@ export function useIsAdmin() {
 
       if (error) {
         console.error("Error checking admin/staff role:", error);
-        return false;
+        throw error;
       }
 
       return !!data;

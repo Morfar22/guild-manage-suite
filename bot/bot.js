@@ -34,7 +34,7 @@ if (!/^https?:\/\//i.test(process.env.APP_API_BASE)) {
 }
 
 require("./utils/consoleLogger").installGlobalConsoleLogger();
-const { adjustBalance, transferWallet } = require("./utils/economyAtomic");
+const { economyOperation } = require("./utils/economyAtomic");
 
 const {
   Events,
@@ -2130,74 +2130,39 @@ function createSlashHandlers(client) {
           .select("*")
           .eq("guild_id", guild.id)
           .maybeSingle();
-        const dailyAmount = settings?.daily_amount || 100;
-        const cooldownHours = settings?.daily_cooldown_hours || 24;
         const currencyName = settings?.currency_name || "coins";
         const currencySymbol = settings?.currency_symbol || "🪙";
 
-        // Get or create account
-        let { data: account } = await supabase
-          .from("economy_accounts")
-          .select("*")
-          .eq("guild_id", guild.id)
-          .eq("user_id", interaction.user.id)
-          .maybeSingle();
-
-        if (!account) {
-          const { data: newAccount } = await supabase
-            .from("economy_accounts")
-            .insert({
-              guild_id: guild.id,
-              user_id: interaction.user.id,
-              discord_username: interaction.user.tag,
-              wallet: settings?.starting_balance || 0,
-            })
-            .select()
-            .single();
-          account = newAccount;
-        }
-
-        // Check cooldown
-        if (account.last_daily_at) {
-          const lastDaily = new Date(account.last_daily_at);
-          const nextDaily = new Date(
-            lastDaily.getTime() + cooldownHours * 3600000,
-          );
-          if (new Date() < nextDaily) {
-            const remaining = nextDaily - new Date();
+        const result = await economyOperation(
+          supabase,
+          interaction,
+          guild.id,
+          "daily",
+        );
+        if (!result.ok) {
+          if (result.reason === "cooldown") {
+            const remaining = Math.max(
+              0,
+              new Date(result.retry_at) - Date.now(),
+            );
             const hours = Math.floor(remaining / 3600000);
             const minutes = Math.floor((remaining % 3600000) / 60000);
             return interaction.editReply(
               `⏰ Du kan hente din daglige belønning igen om **${hours}t ${minutes}m**.`,
             );
           }
+          return interaction.editReply("❌ Kunne ikke hente daglig belønning.");
         }
-
-        await supabase
-          .from("economy_accounts")
-          .update({
-            wallet: (account.wallet || 0) + dailyAmount,
-            total_earned: (account.total_earned || 0) + dailyAmount,
-            last_daily_at: new Date().toISOString(),
-            discord_username: interaction.user.tag,
-          })
-          .eq("id", account.id);
-
-        await supabase.from("economy_transactions").insert({
-          guild_id: guild.id,
-          to_user_id: interaction.user.id,
-          amount: dailyAmount,
-          transaction_type: "daily",
-          description: "Daglig belønning",
-        });
 
         const embed = new EmbedBuilder()
           .setColor("#00FF00")
           .setTitle(`${currencySymbol} Daglig Belønning`)
-          .setDescription(`Du har modtaget **${dailyAmount} ${currencyName}**!`)
+          .setDescription(
+            `Du har modtaget **${result.amount} ${currencyName}**!`,
+          )
           .addFields({
             name: "Ny Balance",
-            value: `${currencySymbol} ${(account.wallet || 0) + dailyAmount}`,
+            value: `${currencySymbol} ${result.account.wallet}`,
             inline: true,
           });
 
@@ -2223,50 +2188,8 @@ function createSlashHandlers(client) {
           .select("*")
           .eq("guild_id", guild.id)
           .maybeSingle();
-        const workMin = settings?.work_min || 10;
-        const workMax = settings?.work_max || 50;
-        const cooldownMinutes = settings?.work_cooldown_minutes || 30;
         const currencyName = settings?.currency_name || "coins";
         const currencySymbol = settings?.currency_symbol || "🪙";
-
-        let { data: account } = await supabase
-          .from("economy_accounts")
-          .select("*")
-          .eq("guild_id", guild.id)
-          .eq("user_id", interaction.user.id)
-          .maybeSingle();
-
-        if (!account) {
-          const { data: newAccount } = await supabase
-            .from("economy_accounts")
-            .insert({
-              guild_id: guild.id,
-              user_id: interaction.user.id,
-              discord_username: interaction.user.tag,
-              wallet: settings?.starting_balance || 0,
-            })
-            .select()
-            .single();
-          account = newAccount;
-        }
-
-        if (account.last_work_at) {
-          const lastWork = new Date(account.last_work_at);
-          const nextWork = new Date(
-            lastWork.getTime() + cooldownMinutes * 60000,
-          );
-          if (new Date() < nextWork) {
-            const remaining = nextWork - new Date();
-            const minutes = Math.floor(remaining / 60000);
-            const seconds = Math.floor((remaining % 60000) / 1000);
-            return interaction.editReply(
-              `⏰ Du kan arbejde igen om **${minutes}m ${seconds}s**.`,
-            );
-          }
-        }
-
-        const earned =
-          Math.floor(Math.random() * (workMax - workMin + 1)) + workMin;
         const jobs = [
           "programmør",
           "kok",
@@ -2281,26 +2204,32 @@ function createSlashHandlers(client) {
         ];
         const job = jobs[Math.floor(Math.random() * jobs.length)];
 
-        await supabase
-          .from("economy_accounts")
-          .update({
-            wallet: (account.wallet || 0) + earned,
-            total_earned: (account.total_earned || 0) + earned,
-            last_work_at: new Date().toISOString(),
-            discord_username: interaction.user.tag,
-          })
-          .eq("id", account.id);
-
-        await supabase.from("economy_transactions").insert({
-          guild_id: guild.id,
-          to_user_id: interaction.user.id,
-          amount: earned,
-          transaction_type: "work",
-          description: `Arbejdede som ${job}`,
-        });
+        const result = await economyOperation(
+          supabase,
+          interaction,
+          guild.id,
+          "work",
+          {
+            description: job,
+          },
+        );
+        if (!result.ok) {
+          if (result.reason === "cooldown") {
+            const remaining = Math.max(
+              0,
+              new Date(result.retry_at) - Date.now(),
+            );
+            const minutes = Math.floor(remaining / 60000);
+            const seconds = Math.floor((remaining % 60000) / 1000);
+            return interaction.editReply(
+              `⏰ Du kan arbejde igen om **${minutes}m ${seconds}s**.`,
+            );
+          }
+          return interaction.editReply("❌ Kunne ikke udføre arbejde.");
+        }
 
         await interaction.editReply(
-          `💼 Du arbejdede som **${job}** og tjente **${currencySymbol} ${earned} ${currencyName}**!`,
+          `💼 Du arbejdede som **${result.job}** og tjente **${currencySymbol} ${result.amount} ${currencyName}**!`,
         );
       } catch (error) {
         logger.error("[Bot] Work fejl:", error);
@@ -2373,7 +2302,7 @@ function createSlashHandlers(client) {
         const amount = interaction.options.getInteger("amount");
         if (target.id === interaction.user.id)
           return interaction.editReply("❌ Du kan ikke betale dig selv.");
-        if (amount <= 0)
+        if (!Number.isSafeInteger(amount) || amount <= 0)
           return interaction.editReply("❌ Beløbet skal være positivt.");
 
         const { data: guild } = await supabase
@@ -2383,62 +2312,22 @@ function createSlashHandlers(client) {
           .single();
         if (!guild) return interaction.editReply("❌ Server ikke fundet.");
 
-        const { data: senderAccount } = await supabase
-          .from("economy_accounts")
-          .select("*")
-          .eq("guild_id", guild.id)
-          .eq("user_id", interaction.user.id)
-          .maybeSingle();
-        if (!senderAccount || (senderAccount.wallet || 0) < amount)
-          return interaction.editReply(
-            "❌ Du har ikke nok penge i din wallet.",
-          );
-
-        let { data: receiverAccount } = await supabase
-          .from("economy_accounts")
-          .select("*")
-          .eq("guild_id", guild.id)
-          .eq("user_id", target.id)
-          .maybeSingle();
-        if (!receiverAccount) {
-          const { data: newAccount } = await supabase
-            .from("economy_accounts")
-            .insert({
-              guild_id: guild.id,
-              user_id: target.id,
-              discord_username: target.tag,
-              wallet: 0,
-            })
-            .select()
-            .single();
-          receiverAccount = newAccount;
-        }
-
-        if (!receiverAccount)
-          return interaction.editReply(
-            "❌ Kunne ikke oprette modtagerens konto.",
-          );
-
-        const transfer = await transferWallet(
+        const transfer = await economyOperation(
           supabase,
-          senderAccount.id,
-          receiverAccount.id,
-          amount,
+          interaction,
+          guild.id,
+          "transfer",
+          {
+            amount,
+            target,
+          },
         );
         if (!transfer.ok)
           return interaction.editReply(
-            transfer.reason === "insufficient"
+            ["insufficient", "not_found"].includes(transfer.reason)
               ? "❌ Du har ikke nok penge i din wallet."
               : "❌ Betalingen kunne ikke gennemføres. Prøv igen.",
           );
-        await supabase.from("economy_transactions").insert({
-          guild_id: guild.id,
-          to_user_id: target.id,
-          from_user_id: interaction.user.id,
-          amount,
-          transaction_type: "transfer",
-          description: `Betaling fra ${interaction.user.tag}`,
-        });
 
         await interaction.editReply(
           `✅ Du betalte **${amount}** til **${target.tag}**.`,
@@ -2453,7 +2342,7 @@ function createSlashHandlers(client) {
       await interaction.deferReply();
       try {
         const amount = interaction.options.getInteger("amount");
-        if (amount <= 0)
+        if (!Number.isSafeInteger(amount) || amount <= 0)
           return interaction.editReply("❌ Beløbet skal være positivt.");
 
         const { data: guild } = await supabase
@@ -2463,24 +2352,18 @@ function createSlashHandlers(client) {
           .single();
         if (!guild) return interaction.editReply("❌ Server ikke fundet.");
 
-        const { data: account } = await supabase
-          .from("economy_accounts")
-          .select("*")
-          .eq("guild_id", guild.id)
-          .eq("user_id", interaction.user.id)
-          .maybeSingle();
-        if (!account || (account.wallet || 0) < amount)
-          return interaction.editReply(
-            "❌ Du har ikke nok penge i din wallet.",
-          );
-
-        const result = await adjustBalance(supabase, account.id, {
-          wallet: -amount,
-          bank: amount,
-        });
+        const result = await economyOperation(
+          supabase,
+          interaction,
+          guild.id,
+          "deposit",
+          {
+            amount,
+          },
+        );
         if (!result.ok)
           return interaction.editReply(
-            result.reason === "insufficient"
+            ["insufficient", "not_found"].includes(result.reason)
               ? "❌ Du har ikke nok penge i din wallet."
               : "❌ Kunne ikke indsætte penge. Prøv igen.",
           );
@@ -2494,7 +2377,7 @@ function createSlashHandlers(client) {
       await interaction.deferReply();
       try {
         const amount = interaction.options.getInteger("amount");
-        if (amount <= 0)
+        if (!Number.isSafeInteger(amount) || amount <= 0)
           return interaction.editReply("❌ Beløbet skal være positivt.");
 
         const { data: guild } = await supabase
@@ -2504,22 +2387,18 @@ function createSlashHandlers(client) {
           .single();
         if (!guild) return interaction.editReply("❌ Server ikke fundet.");
 
-        const { data: account } = await supabase
-          .from("economy_accounts")
-          .select("*")
-          .eq("guild_id", guild.id)
-          .eq("user_id", interaction.user.id)
-          .maybeSingle();
-        if (!account || (account.bank || 0) < amount)
-          return interaction.editReply("❌ Du har ikke nok penge i banken.");
-
-        const result = await adjustBalance(supabase, account.id, {
-          wallet: amount,
-          bank: -amount,
-        });
+        const result = await economyOperation(
+          supabase,
+          interaction,
+          guild.id,
+          "withdraw",
+          {
+            amount,
+          },
+        );
         if (!result.ok)
           return interaction.editReply(
-            result.reason === "insufficient"
+            ["insufficient", "not_found"].includes(result.reason)
               ? "❌ Du har ikke nok penge i banken."
               : "❌ Kunne ikke hæve penge. Prøv igen.",
           );
@@ -2543,74 +2422,29 @@ function createSlashHandlers(client) {
           .single();
         if (!guild) return interaction.editReply("❌ Server ikke fundet.");
 
-        const { data: targetAccount } = await supabase
-          .from("economy_accounts")
-          .select("*")
-          .eq("guild_id", guild.id)
-          .eq("user_id", target.id)
-          .maybeSingle();
-        if (!targetAccount || (targetAccount.wallet || 0) < 10)
+        // Resolve the random outcome under the same locks as the debit and
+        // credit. A retried Discord interaction reuses its original outcome.
+        const result = await economyOperation(
+          supabase,
+          interaction,
+          guild.id,
+          "rob",
+          { target },
+        );
+        if (!result.ok) {
           return interaction.editReply(
-            "❌ Denne bruger har ikke nok penge at røve.",
+            ["insufficient", "not_found"].includes(result.reason)
+              ? "❌ Denne bruger har ikke nok penge at røve."
+              : "❌ Kunne ikke udføre røveriet.",
           );
-
-        let { data: robberAccount } = await supabase
-          .from("economy_accounts")
-          .select("*")
-          .eq("guild_id", guild.id)
-          .eq("user_id", interaction.user.id)
-          .maybeSingle();
-        if (!robberAccount) {
-          const { data: newAccount } = await supabase
-            .from("economy_accounts")
-            .insert({
-              guild_id: guild.id,
-              user_id: interaction.user.id,
-              discord_username: interaction.user.tag,
-              wallet: 0,
-            })
-            .select()
-            .single();
-          robberAccount = newAccount;
         }
-
-        const success = Math.random() < 0.4; // 40% chance
-        if (success) {
-          const stolen =
-            Math.floor(Math.random() * Math.min(targetAccount.wallet, 200)) + 1;
-          if (!robberAccount)
-            return interaction.editReply("❌ Kunne ikke oprette din konto.");
-          const transfer = await transferWallet(
-            supabase,
-            targetAccount.id,
-            robberAccount.id,
-            stolen,
-          );
-          if (!transfer.ok)
-            return interaction.editReply(
-              "❌ Røveriet mislykkedes, offeret har ikke længere pengene.",
-            );
-          await supabase.from("economy_transactions").insert({
-            guild_id: guild.id,
-            to_user_id: interaction.user.id,
-            from_user_id: target.id,
-            amount: stolen,
-            transaction_type: "rob",
-            description: `Røvede ${target.tag}`,
-          });
+        if (result.outcome === "robbed") {
           await interaction.editReply(
-            `🦹 Du røvede **${stolen}** fra **${target.tag}**!`,
+            `🦹 Du røvede **${result.amount}** fra **${target.tag}**!`,
           );
         } else {
-          const fine = Math.floor(Math.random() * 50) + 10;
-          const actualFine = Math.min(fine, robberAccount.wallet || 0);
-          if (actualFine > 0 && robberAccount) {
-            await adjustBalance(supabase, robberAccount.id, {
-              wallet: -actualFine,
-            });
-          }
           await interaction.editReply(
-            `👮 Du blev fanget! Du mistede **${actualFine}** i bøde.`,
+            `👮 Du blev fanget! Du mistede **${result.amount}** i bøde.`,
           );
         }
       } catch (error) {
