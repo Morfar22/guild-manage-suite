@@ -26,8 +26,10 @@ export async function vpsDiscordRequest(
   ) {
     throw new Error("Invalid VPS bridge base URL");
   }
+  const [resourcePath, queryString = ""] = suffix.split("?", 2);
   url.pathname =
-    url.pathname.replace(/\/$/, "") + "/v1/guilds/" + guildSnowflake + suffix;
+    url.pathname.replace(/\/$/, "") + "/v1/guilds/" + guildSnowflake + resourcePath;
+  url.search = queryString;
   const response = await fetch(url.toString(), {
     method,
     headers: { Authorization: "Bearer " + secret },
