@@ -89,12 +89,14 @@ export default function GuildSelect() {
     }
   }, [guilds, loading, searchParams, navigate, setSelectedGuild]);
 
+  const isInactiveGuild = (guild: Guild) => {
+    const status = getGuildStatus(guild.id);
+    return status === "offline" || status === "unknown";
+  };
   const filteredGuilds = showInactive
     ? guilds
-    : guilds.filter((g) => getGuildStatus(g.id) !== "offline");
-  const inactiveCount = guilds.filter(
-    (g) => getGuildStatus(g.id) === "offline",
-  ).length;
+    : guilds.filter((guild) => !isInactiveGuild(guild));
+  const inactiveCount = guilds.filter(isInactiveGuild).length;
   const activeCount = guilds.filter(
     (g) => getGuildStatus(g.id) === "online",
   ).length;
@@ -416,14 +418,18 @@ export default function GuildSelect() {
                 <span className="inline-flex items-center gap-2 text-sm text-muted-foreground">
                   <span className="inline-block h-2 w-2 rounded-full bg-destructive" />
                   {inactiveCount}{" "}
-                  {en
-                    ? "server(s) hidden — bot not active"
-                    : "server(e) skjult — bot ikke aktiv"}
+                  {showInactive
+                    ? en
+                      ? "server(s) shown — bot not active"
+                      : "server(e) vises — bot ikke aktiv"
+                    : en
+                      ? "server(s) hidden — bot not active"
+                      : "server(e) skjult — bot ikke aktiv"}
                 </span>
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => setShowInactive(!showInactive)}
+                  onClick={() => setShowInactive((show) => !show)}
                 >
                   {showInactive ? (
                     <EyeOff className="mr-2 h-4 w-4" />
