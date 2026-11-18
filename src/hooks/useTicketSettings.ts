@@ -17,6 +17,7 @@ export interface TicketSettings {
   dm_transcript_to_user: boolean;
   ratings_dm_prompt: string | null;
   role_ping_warning_role_ids: string[];
+  user_ping_warning_user_ids: string[];
   operating_hours: OperatingHours;
   created_at: string;
   updated_at: string;

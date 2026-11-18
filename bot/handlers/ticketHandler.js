@@ -261,7 +261,10 @@ function setupTicketHandler(client, config = {}) {
     }
 
     let ticketForRolePingWarning = null;
-    if (supabase && message.mentions?.roles?.size) {
+    if (
+      supabase &&
+      (message.mentions?.roles?.size || message.mentions?.users?.size)
+    ) {
       try {
         const { data, error } = await supabase
           .from("tickets")
@@ -302,7 +305,7 @@ function setupTicketHandler(client, config = {}) {
     try {
       const { data: settings, error: settingsError } = await supabase
         .from("ticket_settings")
-        .select("role_ping_warning_role_ids")
+        .select("role_ping_warning_role_ids, user_ping_warning_user_ids")
         .eq("guild_id", ticketForRolePingWarning.guild_id)
         .maybeSingle();
       if (settingsError) return;
@@ -312,10 +315,18 @@ function setupTicketHandler(client, config = {}) {
           ? settings.role_ping_warning_role_ids
           : [],
       );
-      const hasProtectedRoleMention = [...message.mentions.roles.keys()].some(
-        (roleId) => protectedRoleIds.has(roleId),
+      const protectedUserIds = new Set(
+        Array.isArray(settings?.user_ping_warning_user_ids)
+          ? settings.user_ping_warning_user_ids
+          : [],
       );
-      if (!hasProtectedRoleMention) return;
+      const hasProtectedRoleMention = [
+        ...(message.mentions.roles?.keys() || []),
+      ].some((roleId) => protectedRoleIds.has(roleId));
+      const hasProtectedUserMention = [
+        ...(message.mentions.users?.keys() || []),
+      ].some((userId) => protectedUserIds.has(userId));
+      if (!hasProtectedRoleMention && !hasProtectedUserMention) return;
 
       await message.reply({
         content: "⚠️ Undlad venligst at tagge denne rolle i tickets.",

@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
 import { ChannelSelect } from "@/components/ui/channel-select";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -42,6 +43,10 @@ export default function GeneralSettingsCard() {
   const [rolePingWarningRoleIds, setRolePingWarningRoleIds] = useState<string[]>(
     [],
   );
+  const [userPingWarningUserIds, setUserPingWarningUserIds] = useState<string[]>(
+    [],
+  );
+  const [discordUserIdInput, setDiscordUserIdInput] = useState("");
 
   useEffect(() => {
     if (!settings) return;
@@ -52,6 +57,7 @@ export default function GeneralSettingsCard() {
     setDmTranscript(settings.dm_transcript_to_user !== false);
     setRatingsPrompt(settings.ratings_dm_prompt || "");
     setRolePingWarningRoleIds(settings.role_ping_warning_role_ids || []);
+    setUserPingWarningUserIds(settings.user_ping_warning_user_ids || []);
   }, [settings]);
 
   const save = async () => {
@@ -64,11 +70,27 @@ export default function GeneralSettingsCard() {
         dm_transcript_to_user: dmTranscript,
         ratings_dm_prompt: ratingsPrompt || null,
         role_ping_warning_role_ids: rolePingWarningRoleIds,
+        user_ping_warning_user_ids: userPingWarningUserIds,
       });
       toast({ title: "Saved" });
     } catch {
       toast({ title: "Error", variant: "destructive" });
     }
+  };
+
+  const addDiscordUserId = () => {
+    const discordUserId = discordUserIdInput.trim();
+    if (!/^\d{17,20}$/.test(discordUserId)) {
+      toast({
+        title: "Enter a valid Discord user ID",
+        variant: "destructive",
+      });
+      return;
+    }
+    setUserPingWarningUserIds((userIds) =>
+      userIds.includes(discordUserId) ? userIds : [...userIds, discordUserId],
+    );
+    setDiscordUserIdInput("");
   };
 
   return (
@@ -126,8 +148,8 @@ export default function GeneralSettingsCard() {
           <div>
             <p className="text-sm font-medium">Role-ping warning</p>
             <p className="text-xs text-muted-foreground">
-              A warning is posted in the ticket whenever one of these roles is
-              tagged. The rule applies to everyone, including staff and admins.
+              A warning is posted when one of these roles or users is tagged.
+              The rule applies to everyone, including staff and admins.
             </p>
           </div>
           <div className="flex min-h-8 flex-wrap gap-2">
@@ -182,6 +204,50 @@ export default function GeneralSettingsCard() {
                 ))}
             </SelectContent>
           </Select>
+          <div className="space-y-2 border-t border-border/40 pt-3">
+            <Label className="text-xs">Discord user IDs</Label>
+            <div className="flex min-h-8 flex-wrap gap-2">
+              {userPingWarningUserIds.length === 0 ? (
+                <span className="text-sm text-muted-foreground">
+                  No users selected.
+                </span>
+              ) : (
+                userPingWarningUserIds.map((userId) => (
+                  <Badge key={userId} variant="secondary" className="gap-1">
+                    {userId}
+                    <button
+                      type="button"
+                      aria-label="Remove user"
+                      onClick={() =>
+                        setUserPingWarningUserIds((userIds) =>
+                          userIds.filter((id) => id !== userId),
+                        )
+                      }
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </Badge>
+                ))
+              )}
+            </div>
+            <div className="flex gap-2">
+              <Input
+                value={discordUserIdInput}
+                onChange={(event) => setDiscordUserIdInput(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") {
+                    event.preventDefault();
+                    addDiscordUserId();
+                  }
+                }}
+                inputMode="numeric"
+                placeholder="Discord user ID"
+              />
+              <Button type="button" variant="outline" onClick={addDiscordUserId}>
+                Add user
+              </Button>
+            </div>
+          </div>
         </div>
 
         <div className="space-y-4 rounded-lg border border-border/40 p-4">

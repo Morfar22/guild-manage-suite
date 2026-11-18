@@ -94,3 +94,54 @@ test("ticket role-ping warning applies without checking the sender rank", async 
     Module._load = originalLoad;
   }
 });
+
+test("ticket user-ping warning uses the configured Discord user ID", async () => {
+  const listeners = new Map();
+  const client = {
+    on(event, listener) {
+      listeners.set(event, listener);
+    },
+  };
+  const supabase = {
+    from(table) {
+      if (table === "tickets") return query({ guild_id: "guild-record" });
+      if (table === "ticket_settings") {
+        return query({ user_ping_warning_user_ids: ["protected-user"] });
+      }
+      throw new Error(`Unexpected table ${table}`);
+    },
+  };
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async () => Response.json({ success: true });
+
+  try {
+    const { setupTicketHandler } = loadTicketHandler();
+    setupTicketHandler(client, { supabase });
+
+    const replies = [];
+    await listeners.get("messageCreate")({
+      author: { id: "admin-user", username: "Admin", bot: false },
+      guild: { id: "discord-guild" },
+      channel: { id: "ticket-channel", isThread: () => true },
+      content: "Please help",
+      attachments: new Map(),
+      mentions: {
+        roles: new Map(),
+        users: new Map([["protected-user", { id: "protected-user" }]]),
+      },
+      reply(payload) {
+        replies.push(payload);
+        return Promise.resolve();
+      },
+    });
+
+    assert.equal(replies.length, 1);
+    assert.deepEqual(replies[0].allowedMentions, {
+      parse: [],
+      repliedUser: false,
+    });
+  } finally {
+    globalThis.fetch = originalFetch;
+    Module._load = originalLoad;
+  }
+});
