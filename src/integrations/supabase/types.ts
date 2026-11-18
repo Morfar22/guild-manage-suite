@@ -6066,6 +6066,7 @@ export type Database = {
           panel_channel_id: string | null;
           panel_message_id: string | null;
           ratings_dm_prompt: string | null;
+          role_ping_warning_role_ids: string[];
           thread_category_id: string | null;
           transcript_channel_id: string | null;
           updated_at: string;
@@ -6081,6 +6082,7 @@ export type Database = {
           panel_channel_id?: string | null;
           panel_message_id?: string | null;
           ratings_dm_prompt?: string | null;
+          role_ping_warning_role_ids?: string[];
           thread_category_id?: string | null;
           transcript_channel_id?: string | null;
           updated_at?: string;
@@ -6096,6 +6098,7 @@ export type Database = {
           panel_channel_id?: string | null;
           panel_message_id?: string | null;
           ratings_dm_prompt?: string | null;
+          role_ping_warning_role_ids?: string[];
           thread_category_id?: string | null;
           transcript_channel_id?: string | null;
           updated_at?: string;

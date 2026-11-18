@@ -235,6 +235,7 @@ function setupTicketHandler(client, config = {}) {
   const shouldHandleGuild = config.shouldHandleGuild || (() => true);
   const checkCommandAccess = config.checkCommandAccess;
   const queueCommandExecution = config.queueCommandExecution;
+  const supabase = config.supabase;
 
   // Track which channels are ticket threads (populated on ticket creation)
   const ticketChannels = new Set();
@@ -259,8 +260,22 @@ function setupTicketHandler(client, config = {}) {
       }
     }
 
-    // Save every message in a thread to the ticket_messages table
-    // The API will silently fail if the thread isn't a ticket thread
+    let ticketForRolePingWarning = null;
+    if (supabase && message.mentions?.roles?.size) {
+      try {
+        const { data, error } = await supabase
+          .from("tickets")
+          .select("guild_id")
+          .eq("channel_id", message.channel.id)
+          .maybeSingle();
+        if (!error) ticketForRolePingWarning = data;
+      } catch (error) {
+        console.error("[Tickets] Role-ping ticket lookup failed:", error);
+      }
+    }
+
+    // Save every message in a thread to the ticket_messages table.
+    // The API silently ignores threads that are not tickets.
     try {
       await callAPI("saveMessage", {
         ticketChannelId: message.channel.id,
@@ -280,6 +295,34 @@ function setupTicketHandler(client, config = {}) {
       });
     } catch (err) {
       // Silently ignore - thread might not be a ticket
+    }
+
+    if (!ticketForRolePingWarning) return;
+
+    try {
+      const { data: settings, error: settingsError } = await supabase
+        .from("ticket_settings")
+        .select("role_ping_warning_role_ids")
+        .eq("guild_id", ticketForRolePingWarning.guild_id)
+        .maybeSingle();
+      if (settingsError) return;
+
+      const protectedRoleIds = new Set(
+        Array.isArray(settings?.role_ping_warning_role_ids)
+          ? settings.role_ping_warning_role_ids
+          : [],
+      );
+      const hasProtectedRoleMention = [...message.mentions.roles.keys()].some(
+        (roleId) => protectedRoleIds.has(roleId),
+      );
+      if (!hasProtectedRoleMention) return;
+
+      await message.reply({
+        content: "⚠️ Undlad venligst at tagge denne rolle i tickets.",
+        allowedMentions: { parse: [], repliedUser: false },
+      });
+    } catch (error) {
+      console.error("[Tickets] Role-ping warning failed:", error);
     }
   });
 

@@ -3479,6 +3479,7 @@ manager.registerHandler((client, guildId, assignedDiscordGuildId) => {
       shouldHandleGuild,
       checkCommandAccess,
       queueCommandExecution,
+      supabase,
     });
     console.log(`[Bot] ✅ Ticket handler for ${clientLabel}`);
   } catch (e) {

@@ -11,17 +11,27 @@ import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ChannelSelect } from "@/components/ui/channel-select";
+import { Badge } from "@/components/ui/badge";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { useDiscordRoles } from "@/hooks/useDiscordRoles";
 import {
   useTicketSettings,
   useUpsertTicketSettings,
 } from "@/hooks/useTicketSettings";
 import { useToast } from "@/hooks/use-toast";
-import { Settings2, Star, FileText } from "lucide-react";
+import { Settings2, Star, FileText, X } from "lucide-react";
 
 export default function GeneralSettingsCard() {
   const { data: settings } = useTicketSettings();
   const upsert = useUpsertTicketSettings();
   const { toast } = useToast();
+  const { data: discordRoles = [] } = useDiscordRoles();
 
   const [threadCategoryId, setThreadCategoryId] = useState("");
   const [transcriptChannelId, setTranscriptChannelId] = useState("");
@@ -29,6 +39,9 @@ export default function GeneralSettingsCard() {
   const [enableTranscripts, setEnableTranscripts] = useState(true);
   const [dmTranscript, setDmTranscript] = useState(true);
   const [ratingsPrompt, setRatingsPrompt] = useState("");
+  const [rolePingWarningRoleIds, setRolePingWarningRoleIds] = useState<string[]>(
+    [],
+  );
 
   useEffect(() => {
     if (!settings) return;
@@ -38,6 +51,7 @@ export default function GeneralSettingsCard() {
     setEnableTranscripts(settings.enable_transcripts !== false);
     setDmTranscript(settings.dm_transcript_to_user !== false);
     setRatingsPrompt(settings.ratings_dm_prompt || "");
+    setRolePingWarningRoleIds(settings.role_ping_warning_role_ids || []);
   }, [settings]);
 
   const save = async () => {
@@ -49,6 +63,7 @@ export default function GeneralSettingsCard() {
         enable_transcripts: enableTranscripts,
         dm_transcript_to_user: dmTranscript,
         ratings_dm_prompt: ratingsPrompt || null,
+        role_ping_warning_role_ids: rolePingWarningRoleIds,
       });
       toast({ title: "Saved" });
     } catch {
@@ -105,6 +120,68 @@ export default function GeneralSettingsCard() {
             onChange={setDmTranscript}
             disabled={!enableTranscripts}
           />
+        </div>
+
+        <div className="space-y-3 rounded-lg border border-border/40 p-4">
+          <div>
+            <p className="text-sm font-medium">Role-ping warning</p>
+            <p className="text-xs text-muted-foreground">
+              A warning is posted in the ticket whenever one of these roles is
+              tagged. The rule applies to everyone, including staff and admins.
+            </p>
+          </div>
+          <div className="flex min-h-8 flex-wrap gap-2">
+            {rolePingWarningRoleIds.length === 0 ? (
+              <span className="text-sm text-muted-foreground">
+                No roles selected.
+              </span>
+            ) : (
+              rolePingWarningRoleIds.map((roleId) => {
+                const role = discordRoles.find((item) => item.id === roleId);
+                return (
+                  <Badge key={roleId} variant="secondary" className="gap-1">
+                    {role?.name || roleId}
+                    <button
+                      type="button"
+                      aria-label="Remove role"
+                      onClick={() =>
+                        setRolePingWarningRoleIds((roleIds) =>
+                          roleIds.filter((id) => id !== roleId),
+                        )
+                      }
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </Badge>
+                );
+              })
+            )}
+          </div>
+          <Select
+            value=""
+            onValueChange={(roleId) =>
+              setRolePingWarningRoleIds((roleIds) =>
+                roleIds.includes(roleId) ? roleIds : [...roleIds, roleId],
+              )
+            }
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Add role" />
+            </SelectTrigger>
+            <SelectContent>
+              {discordRoles
+                .filter(
+                  (role) =>
+                    role.name !== "@everyone" &&
+                    !rolePingWarningRoleIds.includes(role.id),
+                )
+                .map((role) => (
+                  <SelectItem key={role.id} value={role.id}>
+                    {role.name}
+                  </SelectItem>
+                ))}
+            </SelectContent>
+          </Select>
         </div>
 
         <div className="space-y-4 rounded-lg border border-border/40 p-4">
