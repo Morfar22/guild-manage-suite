@@ -128,6 +128,12 @@ function memberHasRole(interaction, roleId) {
   return false;
 }
 
+function isTicketConversation(channel) {
+  return Boolean(
+    channel?.isThread?.() || channel?.type === ChannelType.GuildText,
+  );
+}
+
 async function requireTicketAccess(interaction, { allowCreator = false } = {}) {
   const channelId = interaction.channel?.id;
   if (!channelId) {
@@ -245,7 +251,7 @@ function setupTicketHandler(client, config = {}) {
   // Listen for messages in ticket threads and save them
   client.on("messageCreate", async (message) => {
     if (message.author.bot) return;
-    if (!message.channel?.isThread()) return;
+    if (!isTicketConversation(message.channel)) return;
     if (message.guild && !shouldHandleGuild(message.guild.id)) return;
 
     // Cancel auto-delete timer if the ticket creator responds
@@ -443,9 +449,9 @@ function setupTicketHandler(client, config = {}) {
     // Handle /ticket-close
     if (interaction.isChatInputCommand?.() && commandName === "ticket-close") {
       try {
-        if (!interaction.channel?.isThread()) {
+        if (!isTicketConversation(interaction.channel)) {
           return interaction.reply({
-            content: "❌ Denne kommando kan kun bruges i en ticket-tråd.",
+            content: "❌ Denne kommando kan kun bruges i en ticket.",
             ephemeral: true,
           });
         }
@@ -472,9 +478,9 @@ function setupTicketHandler(client, config = {}) {
     // Handle /ticket-claim
     if (interaction.isChatInputCommand?.() && commandName === "ticket-claim") {
       try {
-        if (!interaction.channel?.isThread()) {
+        if (!isTicketConversation(interaction.channel)) {
           return interaction.reply({
-            content: "❌ Denne kommando kan kun bruges i en ticket-tråd.",
+            content: "❌ Denne kommando kan kun bruges i en ticket.",
             ephemeral: true,
           });
         }
@@ -495,9 +501,9 @@ function setupTicketHandler(client, config = {}) {
     // Handle /unclaim
     if (interaction.isChatInputCommand?.() && commandName === "unclaim") {
       try {
-        if (!interaction.channel?.isThread()) {
+        if (!isTicketConversation(interaction.channel)) {
           return interaction.reply({
-            content: "❌ Denne kommando kan kun bruges i en ticket-tråd.",
+            content: "❌ Denne kommando kan kun bruges i en ticket.",
             ephemeral: true,
           });
         }
@@ -518,16 +524,24 @@ function setupTicketHandler(client, config = {}) {
     // Handle /ticket-add
     if (interaction.isChatInputCommand?.() && commandName === "ticket-add") {
       try {
-        if (!interaction.channel?.isThread()) {
+        if (!isTicketConversation(interaction.channel)) {
           return interaction.reply({
-            content: "❌ Denne kommando kan kun bruges i en ticket-tråd.",
+            content: "❌ Denne kommando kan kun bruges i en ticket.",
             ephemeral: true,
           });
         }
         const access = await requireTicketAccess(interaction);
         if (!access) return;
         const user = interaction.options.getUser("user");
-        await interaction.channel.members.add(user.id);
+        if (interaction.channel.isThread?.()) {
+          await interaction.channel.members.add(user.id);
+        } else {
+          await interaction.channel.permissionOverwrites.edit(user.id, {
+            ViewChannel: true,
+            SendMessages: true,
+            ReadMessageHistory: true,
+          });
+        }
         await interaction.reply({
           content: `✅ <@${user.id}> er blevet tilføjet til denne ticket.`,
           ephemeral: true,
@@ -551,9 +565,9 @@ function setupTicketHandler(client, config = {}) {
     // Handle /rename
     if (interaction.isChatInputCommand?.() && commandName === "rename") {
       try {
-        if (!interaction.channel?.isThread()) {
+        if (!isTicketConversation(interaction.channel)) {
           return interaction.reply({
-            content: "❌ Denne kommando kan kun bruges i en ticket-tråd.",
+            content: "❌ Denne kommando kan kun bruges i en ticket.",
             ephemeral: true,
           });
         }
@@ -590,16 +604,20 @@ function setupTicketHandler(client, config = {}) {
     // Handle /ticket-remove
     if (interaction.isChatInputCommand?.() && commandName === "ticket-remove") {
       try {
-        if (!interaction.channel?.isThread()) {
+        if (!isTicketConversation(interaction.channel)) {
           return interaction.reply({
-            content: "❌ Denne kommando kan kun bruges i en ticket-tråd.",
+            content: "❌ Denne kommando kan kun bruges i en ticket.",
             ephemeral: true,
           });
         }
         const access = await requireTicketAccess(interaction);
         if (!access) return;
         const user = interaction.options.getUser("user");
-        await interaction.channel.members.remove(user.id);
+        if (interaction.channel.isThread?.()) {
+          await interaction.channel.members.remove(user.id);
+        } else {
+          await interaction.channel.permissionOverwrites.delete(user.id);
+        }
         await interaction.reply({
           content: `✅ <@${user.id}> er blevet fjernet fra denne ticket.`,
           ephemeral: true,
@@ -1112,38 +1130,83 @@ async function handleCreateTicket(
     });
   }
 
-  // Get parent channel
+  const ticketMode =
+    settings?.ticket_channel_mode === "channel" ? "channel" : "thread";
+
+  // Get the text-channel parent for threads or the category for channels.
   const parentChannel = settings?.thread_category_id
     ? await interaction.guild.channels
         .fetch(settings.thread_category_id)
         .catch(() => null)
     : interaction.channel;
 
-  if (!parentChannel?.threads?.create) {
+  if (ticketMode === "thread" && !parentChannel?.threads?.create) {
     return interaction.editReply({
       content:
         "❌ Ticket parent er ikke en tekstkanal, der understøtter private threads. Ret den i ticket-indstillingerne.",
       components: [],
     });
   }
+  if (ticketMode === "channel" && parentChannel?.type !== ChannelType.GuildCategory) {
+    return interaction.editReply({
+      content:
+        "❌ Ticket parent skal være en kategori, når tickets oprettes som kanaler.",
+      components: [],
+    });
+  }
 
-  // Create thread
+  // Create the private ticket conversation.
   const ticketNumber = Date.now().toString(36).toUpperCase();
-  const thread = await parentChannel.threads.create({
-    name: `${category.emoji || "🎫"} ${category.name}-${ticketNumber}`.substring(
-      0,
-      100,
-    ),
-    type: ChannelType.PrivateThread,
-    invitable: false,
-  });
+  const ticketName = `${category.emoji || "🎫"} ${category.name}-${ticketNumber}`.substring(
+    0,
+    100,
+  );
+  const ticketChannel =
+    ticketMode === "channel"
+      ? await interaction.guild.channels.create({
+          name: ticketName,
+          type: ChannelType.GuildText,
+          parent: parentChannel.id,
+          permissionOverwrites: [
+            {
+              id: interaction.guild.roles.everyone.id,
+              deny: [PermissionFlagsBits.ViewChannel],
+            },
+            {
+              id: interaction.user.id,
+              allow: [
+                PermissionFlagsBits.ViewChannel,
+                PermissionFlagsBits.SendMessages,
+                PermissionFlagsBits.ReadMessageHistory,
+              ],
+            },
+            ...(category.staff_role_id
+              ? [
+                  {
+                    id: category.staff_role_id,
+                    allow: [
+                      PermissionFlagsBits.ViewChannel,
+                      PermissionFlagsBits.SendMessages,
+                      PermissionFlagsBits.ReadMessageHistory,
+                    ],
+                  },
+                ]
+              : []),
+          ],
+        })
+      : await parentChannel.threads.create({
+          name: ticketName,
+          type: ChannelType.PrivateThread,
+          invitable: false,
+        });
 
-  // Add creator to thread
-  await thread.members.add(interaction.user.id);
+  if (ticketMode === "thread") {
+    await ticketChannel.members.add(interaction.user.id);
+  }
 
   if (category.staff_role_id) {
     try {
-      const pingMsg = await thread.send({
+      const pingMsg = await ticketChannel.send({
         content: `<@&${category.staff_role_id}>`,
         allowedMentions: { roles: [category.staff_role_id] },
       });
@@ -1154,6 +1217,12 @@ async function handleCreateTicket(
       console.error("Failed to notify staff role:", error);
     }
   }
+
+  /*
+   * Continue using the same ticket channel object for embeds, controls, and
+   * persistence. Text channels and private threads share these operations.
+   */
+  const thread = ticketChannel;
 
   // Create embed
   let description = category.welcome_message || "Tak for din henvendelse!";
@@ -1474,16 +1543,24 @@ async function handleCloseTicket(interaction, threadId, deleteThread = false) {
       await interaction.channel.setArchived(true).catch(console.error);
       await interaction.channel.setLocked(true).catch(console.error);
     }
+  } else if (interaction.channel) {
+    if (deleteThread) {
+      await interaction.channel.delete().catch(console.error);
+    } else if (access.creator_id) {
+      await interaction.channel.permissionOverwrites
+        .edit(access.creator_id, { SendMessages: false })
+        .catch(console.error);
+    }
   }
 }
 
 const TWELVE_HOURS = 12 * 60 * 60 * 1000;
 
 async function handleTicketRemind(interaction, remindTimers) {
-  // Must be used inside a thread
-  if (!interaction.channel?.isThread()) {
+  // Must be used inside a ticket thread or ticket channel.
+  if (!isTicketConversation(interaction.channel)) {
     return interaction.reply({
-      content: "❌ Denne kommando kan kun bruges i en ticket-tråd.",
+      content: "❌ Denne kommando kan kun bruges i en ticket.",
       ephemeral: true,
     });
   }
@@ -1565,9 +1642,14 @@ async function handleTicketRemind(interaction, remindTimers) {
 
       await interaction.channel.send({ embeds: [closeEmbed] }).catch(() => {});
 
-      // Archive and lock the thread
-      await interaction.channel.setArchived(true).catch(() => {});
-      await interaction.channel.setLocked(true).catch(() => {});
+      if (interaction.channel.isThread?.()) {
+        await interaction.channel.setArchived(true).catch(() => {});
+        await interaction.channel.setLocked(true).catch(() => {});
+      } else {
+        await interaction.channel.permissionOverwrites
+          .edit(creatorId, { SendMessages: false })
+          .catch(() => {});
+      }
 
       console.log(
         `[Tickets] Auto-closed ticket ${interaction.channel.id} — no response after remind`,

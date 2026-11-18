@@ -35,6 +35,9 @@ export default function GeneralSettingsCard() {
   const { data: discordRoles = [] } = useDiscordRoles();
 
   const [threadCategoryId, setThreadCategoryId] = useState("");
+  const [ticketChannelMode, setTicketChannelMode] = useState<
+    "thread" | "channel"
+  >("thread");
   const [transcriptChannelId, setTranscriptChannelId] = useState("");
   const [enableRatings, setEnableRatings] = useState(false);
   const [enableTranscripts, setEnableTranscripts] = useState(true);
@@ -51,6 +54,7 @@ export default function GeneralSettingsCard() {
   useEffect(() => {
     if (!settings) return;
     setThreadCategoryId(settings.thread_category_id || "");
+    setTicketChannelMode(settings.ticket_channel_mode || "thread");
     setTranscriptChannelId(settings.transcript_channel_id || "");
     setEnableRatings(!!settings.enable_ratings);
     setEnableTranscripts(settings.enable_transcripts !== false);
@@ -64,6 +68,7 @@ export default function GeneralSettingsCard() {
     try {
       await upsert.mutateAsync({
         thread_category_id: threadCategoryId || null,
+        ticket_channel_mode: ticketChannelMode,
         transcript_channel_id: transcriptChannelId || null,
         enable_ratings: enableRatings,
         enable_transcripts: enableTranscripts,
@@ -104,15 +109,47 @@ export default function GeneralSettingsCard() {
       <CardContent className="space-y-6">
         <div className="grid gap-4 md:grid-cols-2">
           <div className="space-y-2">
-            <Label>Ticket parent channel</Label>
+            <Label>Ticket type</Label>
+            <Select
+              value={ticketChannelMode}
+              onValueChange={(value: "thread" | "channel") =>
+                setTicketChannelMode(value)
+              }
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="thread">Private thread</SelectItem>
+                <SelectItem value="channel">Private channel</SelectItem>
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground">
+              Choose how new tickets are created.
+            </p>
+          </div>
+          <div className="space-y-2">
+            <Label>
+              {ticketChannelMode === "thread"
+                ? "Ticket parent channel"
+                : "Ticket category"}
+            </Label>
             <ChannelSelect
               value={threadCategoryId}
               onValueChange={setThreadCategoryId}
-              placeholder="Text channel for private ticket threads"
+              placeholder={
+                ticketChannelMode === "thread"
+                  ? "Text channel for private ticket threads"
+                  : "Category for private ticket channels"
+              }
+              includeCategories={ticketChannelMode === "channel"}
+              allowedTypes={ticketChannelMode === "thread" ? [0] : undefined}
+              showChannels={ticketChannelMode === "thread"}
             />
             <p className="text-xs text-muted-foreground">
-              Private ticket threads are created inside this Discord text
-              channel.
+              {ticketChannelMode === "thread"
+                ? "Private ticket threads are created inside this Discord text channel."
+                : "Private ticket channels are created inside this Discord category."}
             </p>
           </div>
           <div className="space-y-2">

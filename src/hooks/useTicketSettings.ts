@@ -10,6 +10,7 @@ export interface TicketSettings {
   guild_id: string;
   panel_channel_id: string | null;
   thread_category_id: string | null;
+  ticket_channel_mode: "thread" | "channel";
   panel_message_id: string | null;
   transcript_channel_id: string | null;
   enable_ratings: boolean;

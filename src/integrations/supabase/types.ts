@@ -6069,6 +6069,7 @@ export type Database = {
           role_ping_warning_role_ids: string[];
           user_ping_warning_user_ids: string[];
           thread_category_id: string | null;
+          ticket_channel_mode: string;
           transcript_channel_id: string | null;
           updated_at: string;
         };
@@ -6086,6 +6087,7 @@ export type Database = {
           role_ping_warning_role_ids?: string[];
           user_ping_warning_user_ids?: string[];
           thread_category_id?: string | null;
+          ticket_channel_mode?: string;
           transcript_channel_id?: string | null;
           updated_at?: string;
         };
@@ -6103,6 +6105,7 @@ export type Database = {
           role_ping_warning_role_ids?: string[];
           user_ping_warning_user_ids?: string[];
           thread_category_id?: string | null;
+          ticket_channel_mode?: string;
           transcript_channel_id?: string | null;
           updated_at?: string;
         };

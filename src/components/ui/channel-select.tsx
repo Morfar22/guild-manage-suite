@@ -22,6 +22,7 @@ interface ChannelSelectProps {
   includeCategories?: boolean;
   disabled?: boolean;
   allowedTypes?: number[];
+  showChannels?: boolean;
 }
 
 const channelIcons: Record<
@@ -50,6 +51,7 @@ export const ChannelSelect = React.forwardRef<
     includeCategories = false,
     disabled = false,
     allowedTypes,
+    showChannels = true,
   },
   _ref,
 ) {
@@ -153,7 +155,8 @@ export const ChannelSelect = React.forwardRef<
           </SelectGroup>
         )}
 
-        {Object.entries(groupedChannels).map(([parentId, channelList]) => (
+        {showChannels &&
+          Object.entries(groupedChannels).map(([parentId, channelList]) => (
           <SelectGroup key={parentId}>
             <SelectLabel className="text-xs text-muted-foreground px-2">
               {getCategoryName(parentId)}
@@ -167,7 +170,7 @@ export const ChannelSelect = React.forwardRef<
               </SelectItem>
             ))}
           </SelectGroup>
-        ))}
+          ))}
 
         {channels.length === 0 && categories.length === 0 && (
           <div className="px-2 py-4 text-center text-sm text-muted-foreground">
