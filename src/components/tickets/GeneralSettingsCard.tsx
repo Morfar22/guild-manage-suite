@@ -112,9 +112,10 @@ export default function GeneralSettingsCard() {
             <Label>Ticket type</Label>
             <Select
               value={ticketChannelMode}
-              onValueChange={(value: "thread" | "channel") =>
-                setTicketChannelMode(value)
-              }
+              onValueChange={(value: "thread" | "channel") => {
+                setTicketChannelMode(value);
+                setThreadCategoryId("");
+              }}
             >
               <SelectTrigger>
                 <SelectValue />
