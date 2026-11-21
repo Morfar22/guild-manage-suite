@@ -34,7 +34,6 @@ import { NotificationLogTable } from "@/components/twitch/NotificationLogTable";
 import { StreamerFiltersDialog } from "@/components/twitch/StreamerFiltersDialog";
 import { StreamScheduleTab } from "@/components/twitch/StreamScheduleTab";
 import {
-  Twitch,
   Plus,
   Settings2,
   Radio,
@@ -54,6 +53,7 @@ import {
   Star,
   Calendar,
 } from "lucide-react";
+import { Twitch } from "@/components/icons/Twitch";
 import {
   Dialog,
   DialogContent,

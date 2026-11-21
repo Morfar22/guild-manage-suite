@@ -21,10 +21,10 @@ import {
   Sparkles,
   Ticket,
   TrendingUp,
-  Twitch,
   Users,
   Zap,
 } from "lucide-react";
+import { Twitch } from "@/components/icons/Twitch";
 import { PRODUCT_COUNTS, PUBLIC_BOT_INVITE_URL } from "@/lib/product";
 
 interface PlatformStats {

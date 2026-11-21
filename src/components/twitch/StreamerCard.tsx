@@ -16,7 +16,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
-  Twitch,
   MoreVertical,
   Edit2,
   Trash2,
@@ -30,6 +29,7 @@ import {
   PlayCircle,
   Settings2,
 } from "lucide-react";
+import { Twitch } from "@/components/icons/Twitch";
 import { formatDistanceToNow } from "date-fns";
 import { da } from "date-fns/locale";
 

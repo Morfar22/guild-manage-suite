@@ -75,7 +75,9 @@ test("ticket role-ping warning applies without checking the sender rank", async 
       channel: { id: "ticket-channel", isThread: () => true },
       content: "Please help",
       attachments: new Map(),
-      mentions: { roles: new Map([["protected-role", { id: "protected-role" }]]) },
+      mentions: {
+        roles: new Map([["protected-role", { id: "protected-role" }]]),
+      },
       reply(payload) {
         replies.push(payload);
         return Promise.resolve();

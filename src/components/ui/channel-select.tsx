@@ -157,19 +157,19 @@ export const ChannelSelect = React.forwardRef<
 
         {showChannels &&
           Object.entries(groupedChannels).map(([parentId, channelList]) => (
-          <SelectGroup key={parentId}>
-            <SelectLabel className="text-xs text-muted-foreground px-2">
-              {getCategoryName(parentId)}
-            </SelectLabel>
-            {channelList.map((channel) => (
-              <SelectItem key={channel.id} value={channel.id}>
-                <div className="flex items-center gap-2">
-                  {getChannelIcon(channel.type)}
-                  <span>{channel.name}</span>
-                </div>
-              </SelectItem>
-            ))}
-          </SelectGroup>
+            <SelectGroup key={parentId}>
+              <SelectLabel className="text-xs text-muted-foreground px-2">
+                {getCategoryName(parentId)}
+              </SelectLabel>
+              {channelList.map((channel) => (
+                <SelectItem key={channel.id} value={channel.id}>
+                  <div className="flex items-center gap-2">
+                    {getChannelIcon(channel.type)}
+                    <span>{channel.name}</span>
+                  </div>
+                </SelectItem>
+              ))}
+            </SelectGroup>
           ))}
 
         {channels.length === 0 && categories.length === 0 && (

@@ -70,6 +70,8 @@ await api("/rest/v1/user_guilds?on_conflict=user_id,guild_id", {
     guild_id: guild.id,
     discord_user_id: user.id,
     has_admin_permission: true,
+    // Seed runs after migrations, so mark this fixture's demo authorization.
+    is_demo_access: true,
   }),
 });
 await api("/rest/v1/guild_modules?on_conflict=guild_id,module_type", {

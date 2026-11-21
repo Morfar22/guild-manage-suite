@@ -13,7 +13,6 @@ import {
   UserPlus,
   Smile,
   ShieldAlert,
-  Twitch,
   Mic,
   Copy,
   ScrollText,
@@ -28,6 +27,7 @@ import {
   Bot,
   MessageSquare,
 } from "lucide-react";
+import { Twitch } from "@/components/icons/Twitch";
 import {
   Card,
   CardContent,
