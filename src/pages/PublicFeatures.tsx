@@ -18,12 +18,12 @@ import {
   Sparkles,
   Ticket,
   TrendingUp,
-  Twitch,
   UserPlus,
   Video,
   Webhook,
   Zap,
 } from "lucide-react";
+import { Twitch } from "@/components/icons/Twitch";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PUBLIC_BOT_INVITE_URL, PRODUCT_COUNTS } from "@/lib/product";

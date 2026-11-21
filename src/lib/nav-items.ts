@@ -15,7 +15,6 @@ import {
   Coins,
   Gift,
   FileText,
-  Twitch,
   Video,
   Mic,
   Sparkles,
@@ -52,6 +51,7 @@ import {
   Bug,
   type LucideIcon,
 } from "lucide-react";
+import { Twitch } from "@/components/icons/Twitch";
 
 export interface NavItem {
   to: string;

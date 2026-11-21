@@ -3,12 +3,12 @@ import {
   Gamepad2,
   Bot,
   Copy,
-  Twitch,
   Shield,
   Mic,
   Star,
   ClipboardList,
 } from "lucide-react";
+import { Twitch } from "@/components/icons/Twitch";
 
 export const PREMIUM_FEATURES = {
   ai_chat: {

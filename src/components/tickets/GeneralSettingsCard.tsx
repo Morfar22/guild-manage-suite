@@ -43,12 +43,12 @@ export default function GeneralSettingsCard() {
   const [enableTranscripts, setEnableTranscripts] = useState(true);
   const [dmTranscript, setDmTranscript] = useState(true);
   const [ratingsPrompt, setRatingsPrompt] = useState("");
-  const [rolePingWarningRoleIds, setRolePingWarningRoleIds] = useState<string[]>(
-    [],
-  );
-  const [userPingWarningUserIds, setUserPingWarningUserIds] = useState<string[]>(
-    [],
-  );
+  const [rolePingWarningRoleIds, setRolePingWarningRoleIds] = useState<
+    string[]
+  >([]);
+  const [userPingWarningUserIds, setUserPingWarningUserIds] = useState<
+    string[]
+  >([]);
   const [discordUserIdInput, setDiscordUserIdInput] = useState("");
 
   useEffect(() => {
@@ -281,7 +281,11 @@ export default function GeneralSettingsCard() {
                 inputMode="numeric"
                 placeholder="Discord user ID"
               />
-              <Button type="button" variant="outline" onClick={addDiscordUserId}>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={addDiscordUserId}
+              >
                 Add user
               </Button>
             </div>

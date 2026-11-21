@@ -10,7 +10,8 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Twitch, Radio, BellOff, Eye, Gamepad2 } from "lucide-react";
+import { Radio, BellOff, Eye, Gamepad2 } from "lucide-react";
+import { Twitch } from "@/components/icons/Twitch";
 import { formatDistanceToNow, format } from "date-fns";
 import { da } from "date-fns/locale";
 

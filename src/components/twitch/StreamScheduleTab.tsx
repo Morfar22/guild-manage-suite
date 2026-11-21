@@ -37,15 +37,8 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import {
-  Calendar,
-  Clock,
-  Plus,
-  Trash2,
-  Twitch,
-  Loader2,
-  Send,
-} from "lucide-react";
+import { Calendar, Clock, Plus, Trash2, Loader2, Send } from "lucide-react";
+import { Twitch } from "@/components/icons/Twitch";
 
 interface StreamScheduleTabProps {
   streamers: TwitchStreamer[];

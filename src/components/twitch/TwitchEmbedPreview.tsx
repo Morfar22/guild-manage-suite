@@ -1,6 +1,6 @@
 import { forwardRef } from "react";
 import { cn } from "@/lib/utils";
-import { Twitch } from "lucide-react";
+import { Twitch } from "@/components/icons/Twitch";
 
 interface TwitchEmbedPreviewProps {
   streamerName: string;
